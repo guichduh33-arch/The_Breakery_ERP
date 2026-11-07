@@ -7,9 +7,8 @@
 // les sépare — une commande peut être payée sans être complétée, remboursée
 // sans être annulée. La frise montre les étapes à venir en creux.
 //
-// Lecture seule (route gate `orders.read`) : les gestes — void, édition —
-// vivent sur la liste, au plus près du flux. Rien ne s'édite ici : un
-// remboursement est une contre-écriture, jamais une correction.
+// Le détail propose les mêmes flux d'édition et de void que la liste,
+// sous leurs permissions et contrôles serveur respectifs.
 
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -21,7 +20,7 @@ import { Card } from '@/components/BackofficeUi.js';
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
 import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
-import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
+import { useOrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
   isB2BOrder,
@@ -36,6 +35,8 @@ import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js'
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { OrderHistory } from '@/features/orders/components/OrderHistory.js';
+import { OrderDetailActions } from '@/features/orders/components/OrderDetailActions.js';
 
 const fmtDateTime = formatDateTimeShortWita;
 
@@ -120,22 +121,25 @@ export function OrderDetailPage(): JSX.Element {
       <PageHeader
         title={`Order #${orderNo}`}
         actions={
-          hasReprint && isPaid ? (
-            <button
-              type="button"
-              className={TOOLBAR_BTN_SECONDARY}
-              data-testid="detail-reprint"
-              disabled={reprint.isPending}
-              onClick={() => {
-                reprint.reprint(data, {
-                  onError: (e) => { toast.error(e.message || 'Could not generate the receipt'); },
-                });
-              }}
-            >
-              <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
-              {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
-            </button>
-          ) : undefined
+          <>
+            <OrderDetailActions key={data.id} order={data} />
+            {hasReprint && isPaid && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
+                data-testid="detail-reprint"
+                disabled={reprint.isPending}
+                onClick={() => {
+                  reprint.reprint(data, {
+                    onError: (e) => { toast.error(e.message || 'Could not generate the receipt'); },
+                  });
+                }}
+              >
+                <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+                {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
+              </button>
+            )}
+          </>
         }
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
@@ -340,7 +344,7 @@ export function OrderDetailPage(): JSX.Element {
 
           <Card variant="default" padding="md" className="shadow-none">
             <h2 className={SECTION_LABEL}>Timeline</h2>
-            <Timeline data={data} isPaid={isPaid} refundState={refundState} />
+            <OrderHistory order={data} />
           </Card>
         </div>
       </div>
@@ -376,90 +380,5 @@ function MoneyRow({
         {value}
       </dd>
     </div>
-  );
-}
-
-// La frise du Document : les étapes franchies portent leur horodatage, les
-// étapes à venir restent en creux. Void et remboursement sont des étapes
-// exceptionnelles — elles n'apparaissent que si elles ont eu lieu.
-function Timeline({
-  data, isPaid, refundState,
-}: {
-  data: OrderDetail;
-  isPaid: boolean;
-  refundState: 'none' | 'partial' | 'full';
-}): JSX.Element {
-  // Les paiements sont triés chronologiquement par le hook ; l'horodatage du
-  // règlement préfère paid_at (serveur), puis le premier paiement. Un ordre
-  // réglé PAR STATUT sans ligne de paiement (B2B) marque l'étape accomplie,
-  // avec ou sans date (review PR #367).
-  const firstPayment = data.payments[0];
-  const paidAt = data.paid_at ?? firstPayment?.paid_at;
-  const steps: { key: string; label: string; at?: string; done: boolean; tone?: 'danger' }[] = [
-    { key: 'created', label: 'Created', at: data.created_at, done: true },
-  ];
-  if (data.status === 'voided') {
-    if (isPaid) steps.push({ key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true });
-    steps.push({ key: 'voided', label: 'Voided', done: true, tone: 'danger' });
-  } else {
-    // Une étape À VENIR se nomme au futur. « Paid — pending » et « Completed —
-    // pending » collaient un état franchi à sa propre négation : l'oxymore se
-    // lisait comme une contradiction de données, pas comme une attente
-    // (critique design 2026-08-26). Le libellé porte donc l'état, entier.
-    steps.push(
-      isPaid
-        ? { key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true }
-        : { key: 'paid', label: 'Payment pending', done: false },
-    );
-    steps.push(
-      data.status === 'completed'
-        ? { key: 'completed', label: 'Completed', done: true }
-        : { key: 'completed', label: 'Completion pending', done: false },
-    );
-  }
-  if (refundState !== 'none') {
-    const last = data.refunds[data.refunds.length - 1];
-    steps.push({
-      key: 'refunded',
-      label: refundState === 'full' ? 'Fully refunded' : 'Partially refunded',
-      ...(last !== undefined ? { at: last.created_at } : {}),
-      done: true,
-      tone: 'danger',
-    });
-  }
-
-  return (
-    <ol className="mt-3 space-y-0">
-      {steps.map((step, i) => (
-        <li key={step.key} className="relative flex gap-3 pb-3.5 last:pb-0">
-          {i < steps.length - 1 && (
-            <span aria-hidden className="absolute left-[3.5px] top-3 h-full w-px bg-border-strong" />
-          )}
-          <span
-            aria-hidden
-            className={cn(
-              'relative mt-1.5 h-2 w-2 shrink-0 rounded-full',
-              step.done
-                ? step.tone === 'danger' ? 'bg-danger' : 'bg-success'
-                : 'border border-border-strong bg-transparent',
-            )}
-          />
-          <span className="min-w-0 flex-1">
-            {/* UN SEUL nœud texte, dont le libellé dit déjà l'état de l'étape :
-                l'attente n'est plus un suffixe accolé au nom de l'étape
-                franchie. Le suffixe séparé demandait un séparateur textuel,
-                faute de quoi la copie sortait « Completedpending » (audit
-                UX/UI 2026-08-13, lot 6a) — le problème disparaît avec lui.
-                Toute étape ajoutée ici nomme donc son propre état à venir. */}
-            <span className={cn('block text-sm', step.done ? 'text-text-primary' : 'text-text-muted')}>
-              {step.label}
-            </span>
-            {step.at !== undefined && (
-              <span className="block font-data text-xs tabular-nums text-text-muted">{fmtDateTime(step.at)}</span>
-            )}
-          </span>
-        </li>
-      ))}
-    </ol>
   );
 }

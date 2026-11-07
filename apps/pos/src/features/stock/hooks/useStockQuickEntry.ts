@@ -45,11 +45,11 @@ export function useStockQuickEntry(
   const [wasteOpen, setWasteOpen] = useState<boolean>(false);
   const [adjustOpen, setAdjustOpen] = useState<boolean>(false);
 
-  const isOut = product.display_stock <= 0;
+  const isOut = product.is_sellable === false || (product.display_stock !== null && product.display_stock <= 0);
   const isLow =
     !isOut &&
     product.min_stock_threshold > 0 &&
-    product.display_stock <= product.min_stock_threshold;
+    product.display_stock !== null && product.display_stock <= product.min_stock_threshold;
 
   const increments = deriveStockIncrements(product.unit, product.min_stock_threshold);
 

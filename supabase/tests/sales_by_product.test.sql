@@ -8,7 +8,7 @@
 -- n'a aucun moyen de savoir laquelle des deux ment. T13 est cette assertion, et
 -- c'est celle à ne jamais retirer.
 --
---   T1  : get_sales_by_product_v2 MANAGER happy path — 5-key JSONB
+--   T1  : get_sales_by_product_v2 Owner happy path — 5-key JSONB
 --   T2  : get_sales_by_product_v2 CASHIER denied (42501)
 --   T3  : end < start raises P0001
 --   T4  : clamp 366 jours — la borne de DÉBUT est rognée, la fin demandée tient
@@ -16,7 +16,7 @@
 --   T6  : counter.revenue + b2b.revenue == summary.revenue — le canal referme
 --   T7  : summary.unattributed porte order_discount ET promotion_total
 --   T8  : ligne annulée et cadeau promo EXCLUS, remise de ligne comptée (fixture)
---   T9  : get_product_sales_lines_v2 MANAGER happy path — 4 clés de page
+--   T9  : get_product_sales_lines_v2 Owner happy path — 4 clés de page
 --   T10 : get_product_sales_lines_v2 CASHIER denied (42501)
 --   T11 : curseur malformé → P0001 (jamais un retour silencieux à la page 1)
 --   T12 : p_limit=1 rend 1 ligne et un next_cursor quand il en reste
@@ -24,7 +24,7 @@
 --   T14 : la page 2 ne rejoue pas la dernière ligne de la page 1 (keyset stable)
 --
 -- Utilisateurs seedés réutilisés (aucune fixture d'identité nécessaire) :
---   MANAGER : auth_user_id = 00000000-0000-0000-0000-000000000004
+--   Owner : auth_user_id = 00000000-0000-0000-0000-000000000001
 --   CASHIER : auth_user_id = 00000000-0000-0000-0000-000000000002
 --
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
@@ -42,20 +42,20 @@ SELECT plan(16);
 -- A. get_sales_by_product_v2 — garde, bornes, invariants
 -- ============================================================
 
--- T1 happy path : MANAGER, JSONB à 5 clés
+-- T1 happy path : Owner, JSONB à 5 clés
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   v_ok := (v_r ? 'period') AND (v_r ? 'timezone') AND (v_r ? 'generated_at')
       AND (v_r ? 'summary') AND (v_r ? 'by_product');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_sales_by_product_v2 MANAGER happy path returns 5-key JSONB');
+  'T1: get_sales_by_product_v5 Owner happy path returns 5-key JSONB');
 
 INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
 SELECT id,p.code,false,'Transactional report deny fixture' FROM public.user_profiles
@@ -69,7 +69,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+    PERFORM get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
@@ -81,9 +81,9 @@ SELECT ok(current_setting('breakery.t2')::boolean,
 DO $$
 DECLARE v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_sales_by_product_v2(CURRENT_DATE, '2026-01-01');
+    PERFORM get_sales_by_product_v5(CURRENT_DATE, '2026-01-01');
   EXCEPTION WHEN invalid_parameter_value THEN v_caught := SQLERRM='invalid_date_range';
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -95,10 +95,10 @@ SELECT ok(current_setting('breakery.t3')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2020-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2020-01-01', CURRENT_DATE);
   v_ok := ((v_r->'period'->>'start')::date = CURRENT_DATE::date - 366)
       AND ((v_r->'period'->>'end')::date   = CURRENT_DATE::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -110,10 +110,10 @@ SELECT ok(current_setting('breakery.t4')::boolean,
 DO $$
 DECLARE v_r JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   SELECT COALESCE(SUM((p->>'revenue')::numeric), 0)
     INTO v_sum FROM jsonb_array_elements(v_r->'by_product') p;
   v_ok := (v_sum = (v_r->'summary'->>'revenue')::numeric);
@@ -126,10 +126,10 @@ SELECT ok(current_setting('breakery.t5')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   v_ok := ((v_r->'summary'->'counter'->>'revenue')::numeric
          + (v_r->'summary'->'b2b'->>'revenue')::numeric
          = (v_r->'summary'->>'revenue')::numeric);
@@ -142,10 +142,10 @@ SELECT ok(current_setting('breakery.t6')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   v_ok := (v_r->'summary'->'unattributed' ? 'order_discount')
       AND (v_r->'summary'->'unattributed' ? 'promotion_total');
   PERFORM set_config('breakery.t7', v_ok::text, false);
@@ -162,7 +162,7 @@ DECLARE
   v_r JSONB; v_row JSONB;
   v_qty_before NUMERIC := 0; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
 
   -- Un produit non-test, sinon la commande entière serait exclue du périmètre.
   SELECT id INTO v_pid FROM products WHERE is_test = false AND deleted_at IS NULL LIMIT 1;
@@ -172,7 +172,7 @@ BEGIN
   -- Base de comparaison : ce que le produit pèse AVANT la fixture.
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   SELECT COALESCE((p->>'qty')::numeric, 0) INTO v_qty_before
     FROM jsonb_array_elements(v_r->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -193,7 +193,7 @@ BEGIN
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
 
-  v_r := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   SELECT p INTO v_row
     FROM jsonb_array_elements(v_r->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -231,16 +231,16 @@ LIMIT 1;
 DO $$
 DECLARE v_r JSONB; v_pid uuid; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE);
+  v_r := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
   v_ok := (v_r ? 'lines') AND (v_r ? 'totals') AND (v_r ? 'next_cursor') AND (v_r ? 'has_more');
   PERFORM set_config('breakery.t9', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t9')::boolean,
-  'T9: get_product_sales_lines_v2 returns lines/totals/next_cursor/has_more');
+  'T9: get_product_sales_lines_v5 returns lines/totals/next_cursor/has_more');
 
 -- T10 garde : CASHIER → 42501
 DO $$
@@ -249,7 +249,7 @@ BEGIN
   SELECT pid INTO v_pid FROM _sbp_subject;
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE);
+    PERFORM get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t10', v_caught::text, false);
@@ -262,10 +262,10 @@ SELECT ok(current_setting('breakery.t10')::boolean,
 DO $$
 DECLARE v_caught BOOLEAN := false; v_pid uuid;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
   BEGIN
-    PERFORM get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE, 100, 'not-a-cursor');
+    PERFORM get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 100, 'not-a-cursor');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t11', v_caught::text, false);
@@ -277,11 +277,11 @@ SELECT ok(current_setting('breakery.t11')::boolean,
 DO $$
 DECLARE v_r JSONB; v_pid uuid; v_n INT; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE, 1);
+  v_r := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1);
   v_ok := (jsonb_array_length(v_r->'lines') = 1)
       AND (CASE WHEN v_n > 1 THEN (v_r->>'has_more')::boolean ELSE true END);
   PERFORM set_config('breakery.t12', v_ok::text, false);
@@ -293,14 +293,14 @@ SELECT ok(current_setting('breakery.t12')::boolean,
 DO $$
 DECLARE v_agg JSONB; v_lines JSONB; v_pid uuid; v_prod NUMERIC; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_agg   := get_sales_by_product_v2('2026-01-01', CURRENT_DATE);
+  v_agg   := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_lines := get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE);
+  v_lines := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
   SELECT (p->>'revenue')::numeric INTO v_prod
     FROM jsonb_array_elements(v_agg->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -317,17 +317,17 @@ DO $$
 DECLARE
   v_p1 JSONB; v_p2 JSONB; v_pid uuid; v_n INT; v_cur TEXT; v_last TEXT; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_p1  := get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE, 1);
+  v_p1  := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1);
   v_cur := v_p1->>'next_cursor';
   v_last := (v_p1->'lines'->0)->>'id';
   IF v_n > 1 AND v_cur IS NOT NULL THEN
     PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-    v_p2 := get_product_sales_lines_v2(v_pid, '2026-01-01', CURRENT_DATE, 1, v_cur);
+    v_p2 := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1, v_cur);
     v_ok := (jsonb_array_length(v_p2->'lines') = 1)
         AND (((v_p2->'lines'->0)->>'id') <> v_last);
   ELSE
@@ -342,8 +342,8 @@ SELECT ok(current_setting('breakery.t14')::boolean,
 UPDATE public.user_permission_overrides SET is_granted=true WHERE permission_code='reports.product_sales.read'
  AND user_profile_id=(SELECT id FROM public.user_profiles WHERE employee_code='EMP001' AND deleted_at IS NULL);
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000002"}',true);
-SELECT lives_ok($$SELECT get_sales_by_product_v2('2026-01-01',CURRENT_DATE)$$,'Dedicated product-sales permission can read the report');
-SELECT lives_ok(format('SELECT get_product_sales_lines_v2(%L,%L,%L)',pid,'2026-01-01',CURRENT_DATE),
+SELECT lives_ok($$SELECT get_sales_by_product_v5('2026-01-01',CURRENT_DATE)$$,'Dedicated product-sales permission can read the report');
+SELECT lives_ok(format('SELECT get_product_sales_lines_v5(%L,%L,%L)',pid,'2026-01-01',CURRENT_DATE),
  'Dedicated product-sales permission can read its lines') FROM _sbp_subject;
 SELECT * FROM finish();
 ROLLBACK;

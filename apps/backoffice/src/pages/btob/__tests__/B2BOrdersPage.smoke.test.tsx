@@ -266,7 +266,7 @@ describe('B2BOrdersPage', () => {
   });
 
   it('shows status only, with no pickup or payment buttons in the list', async () => {
-    permRef.current = new Set(['b2b.read', 'pos.sale.create', 'b2b.payment.record']);
+    permRef.current = new Set(['b2b.read', 'b2b.order.create', 'b2b.payment.record']);
     render(wrap(<B2BOrdersPage />));
     await screen.findByText('B2B-0002');
     expect(screen.queryByRole('button', { name: /Mark delivered|Schedule pickup|Record payment/ })).not.toBeInTheDocument();
@@ -354,15 +354,15 @@ describe('B2BOrdersPage', () => {
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
     const btn = screen.getByRole('button', { name: /new b2b order/i });
     expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute('title', 'Requires the pos.sale.create permission.');
+    expect(btn).toHaveAttribute('title', 'Requires the b2b.order.create permission.');
     const describedBy = btn.getAttribute('aria-describedby');
     expect(describedBy).not.toBeNull();
     expect(document.getElementById(describedBy!)?.textContent)
-      .toBe('Requires the pos.sale.create permission.');
+      .toBe('Requires the b2b.order.create permission.');
   });
 
   it('E3 — avec la permission, le bouton est actif et sans raison affichée', async () => {
-    permRef.current = new Set(['pos.sale.create']);
+    permRef.current = new Set(['b2b.order.create']);
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
     const btn = screen.getByRole('button', { name: /new b2b order/i });

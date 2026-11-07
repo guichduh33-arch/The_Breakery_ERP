@@ -89,4 +89,10 @@ describe('ProductionForm smoke', () => {
     const btn = screen.getByRole('button', { name: /Record production/i });
     expect(btn).toBeDisabled();
   });
+
+  it('keeps a production product selectable with its theoretical stock hidden', async () => {
+    renderForm();
+    expect(await screen.findByRole('option', { name: 'Test Baguette (pcs)' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Test Baguette.*stock/ })).not.toBeInTheDocument();
+  });
 });

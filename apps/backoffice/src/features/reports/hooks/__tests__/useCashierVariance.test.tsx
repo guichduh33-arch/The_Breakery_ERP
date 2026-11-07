@@ -57,13 +57,13 @@ beforeEach(() => {
 });
 
 describe('useCashierVariance', () => {
-  it('appelle get_cashier_variance_v2 avec p_start_date / p_end_date', async () => {
+  it('appelle get_cashier_variance_v3 avec p_start_date / p_end_date', async () => {
     const { result } = renderHook(
       () => useCashierVariance('2026-07-01', '2026-07-31'),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_cashier_variance_v2', {
+    expect(mockRpc).toHaveBeenCalledWith('get_cashier_variance_v3', {
       p_start_date: '2026-07-01',
       p_end_date:   '2026-07-31',
     });

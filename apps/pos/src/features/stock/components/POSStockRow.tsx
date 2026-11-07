@@ -91,7 +91,7 @@ export function POSStockRow({
         {/* Stock count */}
         <div className="w-14 text-right">
           <span className={cn('font-mono text-xl font-bold tabular-nums', stockTextTone)}>
-            {product.display_stock}
+            {product.display_stock ?? 'Hidden'}
           </span>
           <span className="block text-xs text-text-muted">{product.unit}</span>
         </div>

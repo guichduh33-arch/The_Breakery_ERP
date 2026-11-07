@@ -1,23 +1,13 @@
-// apps/pos/src/features/stock/__tests__/usePOSStockProducts.test.ts
-//
-// POS display-stock isolation — usePOSStockProducts now reads the vitrine
-// counter via the embedded display_stock(quantity) and filters is_display_item.
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 
-// --- supabase mock (same style as POSStockView.test.tsx) ---
-const eqMock = vi.fn();
-const isMock = vi.fn();
-const orderMock = vi.fn();
-const selectMock = vi.fn();
-const fromMock = vi.fn();
+const api = vi.hoisted(() => ({ rpc: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]): unknown => fromMock(...args),
+    rpc: api.rpc,
   },
 }));
 
@@ -30,11 +20,13 @@ function wrapper({ children }: { children: ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Build a chainable thenable query builder: from().select().eq().eq().is().order()
   const result = {
     data: [
       {
         id: 'p1',
+        is_active: true,
+        is_display_item: true,
+        is_sellable: true,
         sku: 'SKU-1',
         name: 'Croissant',
         unit: 'pcs',
@@ -43,17 +35,12 @@ beforeEach(() => {
         retail_price: 25_000,
         category_id: 'c1',
         display_stock: { quantity: 7 },
-        category: { id: 'c1', name: 'Pastry', slug: 'pastry' },
+        categories: { id: 'c1', name: 'Pastry', slug: 'pastry' },
       },
     ],
     error: null,
   };
-  orderMock.mockResolvedValue(result);
-  isMock.mockReturnValue({ order: orderMock });
-  // two .eq() calls chain (is_active + is_display_item)
-  eqMock.mockReturnValue({ eq: eqMock, is: isMock });
-  selectMock.mockReturnValue({ eq: eqMock });
-  fromMock.mockReturnValue({ select: selectMock });
+  api.rpc.mockResolvedValue(result);
 });
 
 describe('usePOSStockProducts', () => {
@@ -68,19 +55,17 @@ describe('usePOSStockProducts', () => {
     expect(rows[0]?.name).toBe('Croissant');
     expect(rows[0]?.category_name).toBe('Pastry');
 
-    // SELECT must request the embedded display_stock(quantity)
-    expect(selectMock).toHaveBeenCalledWith(expect.stringContaining('display_stock(quantity)'));
-    // and must NOT select current_stock anymore
-    expect(selectMock.mock.calls[0]?.[0]).not.toContain('current_stock');
-    // .eq('is_display_item', true) must be part of the query chain
-    expect(eqMock).toHaveBeenCalledWith('is_display_item', true);
+    expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v2');
   });
 
-  it('defaults display_stock to 0 when the embed is null', async () => {
-    orderMock.mockResolvedValue({
+  it.each([null, { quantity: null }, { quantity: 0 }])('preserves null and zero display counters for %j', async (displayStock) => {
+    api.rpc.mockResolvedValue({
       data: [
         {
           id: 'p2',
+          is_active: true,
+          is_display_item: true,
+          is_sellable: true,
           sku: 'SKU-2',
           name: 'Baguette',
           unit: 'pcs',
@@ -88,8 +73,8 @@ describe('usePOSStockProducts', () => {
           min_stock_threshold: 0,
           retail_price: 10_000,
           category_id: 'c1',
-          display_stock: null,
-          category: null,
+          display_stock: displayStock,
+          categories: null,
         },
       ],
       error: null,
@@ -98,7 +83,7 @@ describe('usePOSStockProducts', () => {
     const { result } = renderHook(() => usePOSStockProducts(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     const rows = result.current.data ?? [];
-    expect(rows[0]?.display_stock).toBe(0);
+    expect(rows[0]?.display_stock).toBe(displayStock?.quantity ?? null);
     expect(rows[0]?.category_name).toBe('Uncategorized');
   });
 });

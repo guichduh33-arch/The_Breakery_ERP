@@ -16,12 +16,11 @@ export async function loadCountProducts(): Promise<CountProduct[]> {
 
 export async function importCountRows(countId: string, rows: readonly CountImportRow[], onSaved: () => void): Promise<void> {
   const existing = new Map<string, { id: string; unit: string }>();
-  for (let start = 0; ; start += 500) {
-    const { data, error } = await supabase.from('inventory_count_items')
-      .select('id, product_id, unit').eq('count_id', countId).order('id').range(start, start + 499);
+  {
+    const { data: payload, error } = await supabase.rpc('get_opname_items_v1', { p_count_id: countId });
+    const data = (payload ?? []) as unknown as { id: string; product_id: string; unit: string }[];
     if (error) throw error;
     for (const item of data ?? []) existing.set(item.product_id, item);
-    if ((data?.length ?? 0) < 500) break;
   }
   const products = new Map((await loadCountProducts()).map((product) => [product.id, product]));
   for (const row of rows) {
@@ -34,13 +33,13 @@ export async function importCountRows(countId: string, rows: readonly CountImpor
   for (const row of rows) {
     let itemId = existing.get(row.productId)?.id;
     if (!itemId) {
-      const result = await supabase.rpc('add_opname_item_v2', { p_count_id: countId, p_product_id: row.productId });
+      const result = await supabase.rpc('add_opname_item_v3', { p_count_id: countId, p_product_id: row.productId });
       if (result.error) throw new Error(`${row.sku}: ${result.error.message}`);
       const payload = result.data as { item_id?: string } | null;
       if (!payload?.item_id) throw new Error(`${row.sku}: No count item returned.`);
       itemId = payload.item_id;
     }
-    const result = await supabase.rpc('set_opname_count_v2', {
+    const result = await supabase.rpc('set_opname_count_v3', {
       p_count_item_id: itemId, p_counted_qty: row.quantity, p_notes: row.notes,
     });
     if (result.error) throw new Error(`${row.sku}: ${result.error.message}`);

@@ -49,6 +49,12 @@ export interface ReportShellProps {
 /** Traduit les erreurs de garde en langage humain — un code ne dit pas à un
  *  gérant ce qu'il doit en conclure. */
 function errorText(error: Error): string {
+  if (error.message.includes('business_day_not_closed') || error.message.includes('business_day_not_released')) {
+    return 'This period includes an open business day. Select closed days to view the report.';
+  }
+  if (error.message.includes('stock_visibility_owner_required')) {
+    return 'This report contains confidential stock information and is available to the owner.';
+  }
   if (error.message === 'permission_denied' || error.message.includes('42501')) {
     return 'You do not have permission to view this report.';
   }

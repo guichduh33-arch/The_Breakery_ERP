@@ -38,7 +38,7 @@ BEGIN
   v_auth := gen_random_uuid(); v_profile := gen_random_uuid();
   INSERT INTO auth.users(id) VALUES (v_auth);
   INSERT INTO public.user_profiles(id, auth_user_id, role_code, employee_code, full_name, pin_hash, is_active)
-    VALUES (v_profile, v_auth, 'CASHIER', 'RPT-' || left(v_profile::text,8), 'Report fixture', hash_pin('285741'), true);
+    VALUES (v_profile, v_auth, 'SUPER_ADMIN', 'RPT-' || left(v_profile::text,8), 'Owner report fixture', hash_pin('285741'), true);
   INSERT INTO public.user_permission_overrides(user_profile_id, permission_code, is_granted, reason, granted_by)
     SELECT v_profile, code, true, 'Transactional report fixture', v_profile
     FROM unnest(ARRAY['reports.read','reports.sales.read','reports.financial.read','accounting.cash.read']) code;
@@ -50,7 +50,7 @@ BEGIN
 
   -- ── Baseline avant seed ───────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_before := get_dashboard_overview_v4();
+  v_before := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
   v_cash_b := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_before->'payments'->'lines') e
@@ -122,7 +122,7 @@ BEGIN
 
   -- ── Après seed ────────────────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_after := get_dashboard_overview_v4();
+  v_after := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
   v_cash_a := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_after->'payments'->'lines') e
@@ -197,7 +197,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_rand);
   EXECUTE 'SET LOCAL ROLE authenticated';
   BEGIN
-    PERFORM get_dashboard_overview_v4();
+    PERFORM get_dashboard_overview_v7();
     v_denied := false;
   EXCEPTION WHEN insufficient_privilege THEN v_denied := true;
   END;
@@ -206,14 +206,14 @@ BEGIN
 
   -- T14 : anon n'a pas EXECUTE (trio S20)
   INSERT INTO _r SELECT 'T14_anon_execute_revoked',
-    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v4()', 'EXECUTE');
+    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v7()', 'EXECUTE');
 
   -- T15 : le helper privé reste hors de portée des deux rôles clients. La refonte
   --       a déplacé le calcul dans _dashboard_kpis_v2 ; sans cette assertion, un
   --       GRANT accidentel sur le helper ouvrirait les KPI sans passer la gate.
   INSERT INTO _r SELECT 'T15_kpis_helper_not_client_callable',
-    NOT has_function_privilege('anon', 'public._dashboard_kpis_v2(text,date)', 'EXECUTE')
-    AND NOT has_function_privilege('authenticated', 'public._dashboard_kpis_v2(text,date)', 'EXECUTE');
+    NOT has_function_privilege('anon', 'public._dashboard_kpis_v3(text,date)', 'EXECUTE')
+    AND NOT has_function_privilege('authenticated', 'public._dashboard_kpis_v3(text,date)', 'EXECUTE');
 END $$;
 
 SELECT ok(pass, name) FROM _r ORDER BY name;

@@ -11,8 +11,8 @@ SELECT plan(9);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') $$,
-  '42501', NULL,
+  $$ SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') $$,
+  'P0003', NULL,
   'anon / no-perm caller is denied (reports.sales.read)'
 );
 
@@ -22,22 +22,22 @@ SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_top_products_v2(NULL, '2026-07-11') $$, 'P0001', NULL,
-  'NULL start date raises P0001');
+  $$ SELECT get_pos_top_products_v4(NULL, '2026-07-11') $$, '22023', NULL,
+  'NULL start date raises 22023');
 SELECT throws_ok(
-  $$ SELECT get_pos_top_products_v2('2026-07-11','2026-05-01') $$, 'P0001', NULL,
+  $$ SELECT get_pos_top_products_v4('2026-07-11','2026-05-01') $$, '22023', NULL,
   'start > end raises invalid_date_range');
 
 -- ── Envelope shape + timezone ─────────────────────────────────────────────
-WITH r AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j)
 SELECT ok((SELECT j ? 'timezone' AND j ? 'total_revenue' AND j ? 'products' FROM r),
           'envelope exposes timezone/total_revenue/products');
-WITH r AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j)
 SELECT is((SELECT j->>'timezone' FROM r), 'Asia/Makassar',
           'timezone is the business tz (WITA)');
 
 -- ── Product revenue sums back to the envelope total_revenue ───────────────
-WITH r AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((p->>'revenue')::numeric),0)
      FROM r, jsonb_array_elements(j->'products') p),
@@ -45,7 +45,7 @@ SELECT is(
   'sum(products.revenue) = total_revenue');
 
 -- ── Products are sorted by revenue DESC ───────────────────────────────────
-WITH r AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j),
+WITH r AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j),
 arr AS (
   SELECT p, ROW_NUMBER() OVER () AS rn
     FROM r, jsonb_array_elements(j->'products') p
@@ -58,7 +58,7 @@ SELECT ok(
 FROM arr a JOIN arr b ON b.rn = a.rn + 1;
 
 -- ── Shares sum to ~100 when there is any revenue ──────────────────────────
-WITH r AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j)
 SELECT ok(
   (SELECT (j->>'total_revenue')::numeric FROM r) = 0
   OR (SELECT COALESCE(SUM((p->>'share_pct')::numeric),0)
@@ -66,8 +66,8 @@ SELECT ok(
   'product shares sum to ~100% (or no revenue)');
 
 -- ── Cross-report reconciliation: products revenue = Mix by_category revenue ─
-WITH tp AS (SELECT get_pos_top_products_v2('2026-05-01','2026-07-11') AS j),
-mix AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH tp AS (SELECT get_pos_top_products_v4('2026-05-01','2026-07-11') AS j),
+mix AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((p->>'revenue')::numeric),0)
      FROM tp, jsonb_array_elements(j->'products') p),

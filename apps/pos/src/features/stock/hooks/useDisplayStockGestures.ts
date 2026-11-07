@@ -45,13 +45,19 @@ export function useDisplayStockGestures(canManage: boolean) {
       const result = a.kind === 'adjust'
         ? await adjust.mutateAsync({ productId: a.product.id, newQty: a.quantity, reason: a.reason, idempotencyKey: a.idempotencyKey })
         : await (a.kind === 'receive' ? receive : a.kind === 'return' ? returned : waste).mutateAsync(args);
-      if (typeof result !== 'object' || result === null || Array.isArray(result)
-        || result.product_id !== a.product.id || typeof result.new_display_stock !== 'number'
-        || !Number.isFinite(result.new_display_stock)) throw new Error('Unconfirmed response');
+      const declaration = a.kind === 'adjust' || a.kind === 'waste';
+      if (typeof result !== 'object' || result === null || Array.isArray(result)) throw new Error('Unconfirmed response');
+      if (declaration) {
+        if (typeof result.declaration_id !== 'string' || typeof result.status !== 'string' ||
+          !['pending','approved','rejected'].includes(result.status)) throw new Error('Unconfirmed declaration');
+      } else if (result.product_id !== a.product.id ||
+        (result.new_display_stock !== null && (typeof result.new_display_stock !== 'number' || !Number.isFinite(result.new_display_stock)))) {
+        throw new Error('Unconfirmed response');
+      }
       attempts.current.delete(a.product.id);
       setCompleted((previous) => ({ ...previous, [a.product.id]: (previous[a.product.id] ?? 0) + 1 }));
       const replay = typeof result === 'object' && result !== null && !Array.isArray(result) && result.idempotent_replay === true;
-      const confirmation = `${a.product.name}: display stock ${result.new_display_stock} ${a.product.unit}.`;
+      const confirmation = declaration ? `${a.product.name}: declaration submitted for owner approval.` : `${a.product.name}: operation recorded.`;
       if (replay) toast.info(`Already recorded — ${confirmation}`);
       else toast.success(`Recorded — ${confirmation}`);
       return true;

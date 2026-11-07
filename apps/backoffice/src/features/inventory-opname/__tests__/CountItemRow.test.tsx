@@ -79,4 +79,10 @@ describe('opname quantity entry', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(mutate).toHaveBeenCalledTimes(2);
   });
+  it('accepts a masked expected quantity without revealing a zero or variance', () => {
+    renderRow({ expected_qty: null, counted_qty: 2, variance: null });
+    expect(screen.getByLabelText('Counted quantity for Flour')).toHaveValue(2);
+    expect(screen.queryByTestId('cell-expected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cell-variance')).not.toBeInTheDocument();
+  });
 });

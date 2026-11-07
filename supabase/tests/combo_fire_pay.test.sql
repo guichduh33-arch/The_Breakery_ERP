@@ -59,7 +59,7 @@ SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v24(
+  r := pay_existing_order_v25(
     p_order_id := current_setting('combo.fp_order_id')::uuid,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb
   , p_idempotency_key := gen_random_uuid());
@@ -76,8 +76,8 @@ SELECT is((SELECT status::text FROM orders WHERE id=current_setting('combo.fp_or
 
 -- Hardening checks.
 -- Signature 14 args depuis v14 (D9 : + p_discount_auth_id) — était périmée (13 args).
-SELECT ok(NOT has_function_privilege('anon','pay_existing_order_v24(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, uuid, jsonb, jsonb, boolean,uuid,boolean)','EXECUTE'),
-  'T6 anon EXECUTE revoked on pay_existing_order_v24');
+SELECT ok(NOT has_function_privilege('anon','pay_existing_order_v25(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, uuid, jsonb, jsonb, boolean,uuid,boolean)','EXECUTE'),
+  'T6 anon EXECUTE revoked on pay_existing_order_v25');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='pay_existing_order_v9'),
   'T7 pay_existing_order_v9 dropped');
 

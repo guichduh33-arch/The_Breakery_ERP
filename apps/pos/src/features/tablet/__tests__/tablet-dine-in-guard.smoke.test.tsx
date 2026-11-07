@@ -103,7 +103,7 @@ describe('garde dine-in avant enfilement (ADR-018 D7)', () => {
       });
     });
 
-    expect(rpcMock).toHaveBeenCalledWith('create_tablet_order_v10', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('create_tablet_order_v12', expect.objectContaining({
       p_order_type: 'take_out',
     }));
   });
@@ -118,7 +118,7 @@ describe('garde dine-in avant enfilement (ADR-018 D7)', () => {
       });
     });
 
-    expect(rpcMock).toHaveBeenCalledWith('create_tablet_order_v10', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('create_tablet_order_v12', expect.objectContaining({
       p_table_number: '7',
     }));
   });

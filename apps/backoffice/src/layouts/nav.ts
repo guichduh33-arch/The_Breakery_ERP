@@ -31,6 +31,7 @@ export interface NavLinkDef {
   /** Exact-match routing (react-router `end`) — pour les routes index. */
   end?: boolean;
   permission?: PermissionCode;
+  anyPermission?: readonly PermissionCode[];
 }
 
 export interface NavColumn {
@@ -199,8 +200,8 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/basket-analysis', label: 'Basket analysis', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/refunds-voids', label: 'Refunds & voids', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/discounts-loyalty', label: 'Discounts & loyalty', permission: 'reports.sales.read' },
-          { to: '/backoffice/reports/cashier-variance', label: 'Cashier variance', permission: 'reports.read' },
-          { to: '/backoffice/reports/off-hours-sales', label: 'Off-hours sales', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/cashier-variance', label: 'Cashier variance', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/off-hours-sales', label: 'Off-hours sales', permission: 'reports.audit.read' },
         ],
       },
       {
@@ -224,7 +225,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           // Cette ligne est là pour que la prochaine comparaison mécanique des
           // deux listes trouve la réponse avant de « corriger » la décision.
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe cost', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'inventory.read' },
+          { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production report', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-efficiency', label: 'Production efficiency', permission: 'reports.inventory.read' },
         ],
@@ -254,7 +255,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Audit',
         links: [
-          { to: '/backoffice/reports/audit', label: 'Audit log', permission: 'reports.audit.read' },
+          { to: '/backoffice/reports/audit', label: 'Activity & control log', permission: 'reports.audit.read' },
           { to: '/backoffice/reports/price-changes', label: 'Price changes', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/permission-changes', label: 'Permission change log', permission: 'reports.audit.read' },
         ],
@@ -297,6 +298,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/settings/notifications', label: 'Notifications', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/email', label: 'Email templates', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/invoice', label: 'Invoice template', permission: 'settings.read' },
         ],
       },
       {
@@ -334,7 +336,8 @@ export function visibleDomains(
       .map((col) => ({
         label: col.label,
         links: col.links.filter(
-          (l) => l.permission === undefined || hasPermission(l.permission),
+          (l) => (l.permission === undefined || hasPermission(l.permission))
+            && (l.anyPermission === undefined || l.anyPermission.some(hasPermission)),
         ),
       }))
       .filter((col) => col.links.length > 0);

@@ -4,7 +4,7 @@
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
 // CE QUI NE CHANGE PAS : les montants, parts, frais estimés et nets estimés
-// viennent de `get_payments_by_method_v3` et sont rendus tels quels. Les frais
+// viennent de `get_payments_by_method_v5` et sont rendus tels quels. Les frais
 // restent INFORMATIFS (ADR-006 déc. 9, `business_config.payment_method_fees`) :
 // ils n'entrent dans aucune écriture comptable.
 //
@@ -156,7 +156,20 @@ export default function PaymentByMethodPage(): JSX.Element {
           ? {
               pdf: {
                 template: 'payment_by_method' as const,
-                data,
+                data: {
+                  period: data.period,
+                  summary: {
+                    total_amount: data.total,
+                    total_count: data.totalCount,
+                    total_orders: data.totalOrders,
+                  },
+                  by_method: data.lines,
+                  by_day: data.byDay.map((day) => ({
+                    ...day,
+                    // Le PDF regroupe les wallets dans sa colonne « Other ».
+                    other: day.other + day.gopay + day.ovo + day.dana,
+                  })),
+                },
                 period:   { start, end },
                 filename: `payment-by-method-${start}_${end}`,
               },

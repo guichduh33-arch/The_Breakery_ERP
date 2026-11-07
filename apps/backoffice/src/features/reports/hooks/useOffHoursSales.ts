@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useOffHoursSales.ts
 // ADR-006 déc. 9 (business hours) — paiements encaissés hors du créneau
-// d'ouverture du jour (get_off_hours_sales_v1, gate reports.audit.read).
+// d'ouverture du jour (get_off_hours_sales_v2, gate reports.audit.read).
 // Jour fermé (null) = tout marqué ; jour absent de la config = jamais marqué.
 
 import { useQuery } from '@tanstack/react-query';
@@ -35,7 +35,7 @@ export function useOffHoursSales(params: UseOffHoursSalesParams) {
   return useQuery<OffHoursSalesData, Error>({
     queryKey: ['reports', 'off_hours_sales', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_off_hours_sales_v1', {
+      const { data, error } = await supabase.rpc('get_off_hours_sales_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

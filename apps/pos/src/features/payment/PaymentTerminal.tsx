@@ -69,6 +69,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         open
         orderNumber={success.orderNumber}
         receiptId={success.orderId ?? paymentId}
+        paymentAttemptId={paymentId}
         total={success.total}
         taxAmount={success.taxAmount}
         changeGiven={success.changeGiven}
@@ -88,7 +89,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
         {...(success.appliedPromotions ? { appliedPromotions: success.appliedPromotions } : {})}
         {...(success.offline ? { offline: true } : {})}
-        {...(success.outstandingDue !== undefined ? { outstandingDue: success.outstandingDue } : {})}
+        {...(success.outstandingDue !== undefined ? { outstandingDue: success.outstandingDue, amountReceived: success.amountReceived ?? 0, amountPaid: success.amountPaid ?? 0 } : {})}
       />
     );
   }
@@ -248,7 +249,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
             <>
               <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod}
                 onOutstanding={() => { void handleOutstanding(); }}
-                outstandingDisabled={tenders.length > 0 || checkoutPending || cart.items.length === 0} />
+                outstandingDisabled={remaining <= 0 || checkoutPending || cart.items.length === 0} />
 
               {selectedMethod && (
                 <TenderDraftPanel

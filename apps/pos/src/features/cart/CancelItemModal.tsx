@@ -6,7 +6,7 @@
 // ADR-010 D4 — a locked (kitchen-sent) item requires a waste declaration:
 // quantity prefilled to the line qty, adjustable 0..qty by the authorizing
 // manager (0 = nothing was produced; the declaration itself stays mandatory
-// and is enforced server-side by cancel_order_item_rpc_v6).
+// and is enforced server-side by cancel_order_item_rpc_v7).
 
 import { useRef, useState, type JSX } from 'react';
 import { X } from 'lucide-react';

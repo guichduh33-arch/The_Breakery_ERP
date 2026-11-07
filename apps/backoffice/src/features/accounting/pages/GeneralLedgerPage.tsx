@@ -18,6 +18,7 @@ import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSour
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { ChevronRight } from 'lucide-react';
@@ -44,6 +45,7 @@ interface AccumulatedLine extends GLLineRaw {
 
 export default function GeneralLedgerPage(): JSX.Element {
   const accounts = useChartOfAccounts();
+  const owner = useAuthStore((state) => state.user?.role_code === 'SUPER_ADMIN');
   const [searchParams] = useSearchParams();
 
   // S32 — seed initial state from URL params (?account_id=&start=&end=).
@@ -61,7 +63,8 @@ export default function GeneralLedgerPage(): JSX.Element {
   // remise à zéro et celui qui poussait chaque page (avec un `setState` posé
   // dans l'updater d'un autre, que StrictMode pouvait rejouer) n'ont plus
   // d'objet.
-  const gl = useGeneralLedger({ accountId: accountId || null, startDate, endDate });
+  const restrictedAccount = !owner && accounts.data?.some((account) => account.id === accountId && account.code.startsWith('114'));
+  const gl = useGeneralLedger({ accountId: restrictedAccount || (!owner && !accounts.data) ? null : accountId || null, startDate, endDate });
 
   // Période et solde d'ouverture sont calculés sur la période entière côté RPC :
   // identiques sur toutes les pages, on les lit sur la première.
@@ -126,7 +129,7 @@ export default function GeneralLedgerPage(): JSX.Element {
           >
             <option value="">— select an account —</option>
             {(accounts.data ?? [])
-              .filter((a) => a.is_postable && a.is_active)
+              .filter((a) => a.is_postable && a.is_active && (owner || !a.code.startsWith('114')))
               .map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.code} — {a.name}
@@ -262,6 +265,7 @@ export default function GeneralLedgerPage(): JSX.Element {
         </div>
       )}
 
+      {restrictedAccount && <p role="status">Inventory valuation is available to the owner.</p>}
       {gl.hasNextPage && (
         <Button
           variant="secondary"

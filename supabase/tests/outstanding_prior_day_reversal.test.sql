@@ -10,8 +10,8 @@ BEGIN
  WHERE role_code='SUPER_ADMIN' AND is_active AND deleted_at IS NULL AND auth_user_id IS NOT NULL LIMIT 1;
  PERFORM set_config('request.jwt.claim.sub',u::text,true);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u)::text,true);
- INSERT INTO prior_day_baselines VALUES('sale',public.get_daily_sales_v4(d::text,d::text));
- INSERT INTO prior_day_baselines VALUES('today',public.get_daily_sales_v4(current_date::text,current_date::text));
+ INSERT INTO prior_day_baselines VALUES('sale',public.get_daily_sales_v5(d::text,d::text));
+ INSERT INTO prior_day_baselines VALUES('today',public.get_daily_sales_v5(current_date::text,current_date::text));
  INSERT INTO pos_sessions(opened_by,opening_cash,status,opened_at,closed_at,closed_by,closing_cash,expected_cash)
  VALUES(a,0,'closed',d,d+interval '18 hours',a,0,0) RETURNING id INTO origin;
  INSERT INTO pos_sessions(opened_by,opening_cash,status,opened_at,closed_at,closed_by,closing_cash,expected_cash)
@@ -55,9 +55,9 @@ INSERT INTO prior_day_checks SELECT is((SELECT payment_session_id FROM refunds W
 SET CONSTRAINTS ALL IMMEDIATE;
 INSERT INTO prior_day_checks SELECT ok((SELECT bool_and(entry_date=current_date) FROM journal_entries
  WHERE reference_id=(result->>'refund_id')::uuid),'refund journal uses the current business day') FROM prior_day_refund;
-INSERT INTO prior_day_checks SELECT is((public.get_daily_sales_v4((current_date-35)::text,(current_date-35)::text)->'summary'->>'total')::numeric
+INSERT INTO prior_day_checks SELECT is((public.get_daily_sales_v5((current_date-35)::text,(current_date-35)::text)->'summary'->>'total')::numeric
  -(value->'summary'->>'total')::numeric,100000::numeric,'historical sale remains in its original reporting day') FROM prior_day_baselines WHERE kind='sale';
-INSERT INTO prior_day_checks SELECT is((public.get_daily_sales_v4(current_date::text,current_date::text)->'summary'->>'refund_total')::numeric
+INSERT INTO prior_day_checks SELECT is((public.get_daily_sales_v5(current_date::text,current_date::text)->'summary'->>'refund_total')::numeric
  -(value->'summary'->>'refund_total')::numeric,100000::numeric,'full return is reported on the actual refund day') FROM prior_day_baselines WHERE kind='today';
 INSERT INTO prior_day_checks SELECT * FROM finish();
 SELECT jsonb_agg(result) FROM prior_day_checks;

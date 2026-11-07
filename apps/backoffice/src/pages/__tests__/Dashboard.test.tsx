@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/__tests__/Dashboard.test.tsx
 //
-// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v4).
+// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v7).
 // La prop `data` désactive le hook agrégat ET les trois panneaux : aucun réseau.
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';

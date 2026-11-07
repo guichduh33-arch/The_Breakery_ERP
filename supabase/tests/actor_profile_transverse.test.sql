@@ -79,10 +79,10 @@ BEGIN
 
   -- Catalogue.
   v_cat  := create_category_v2(jsonb_build_object('name', 'Actor category 0906'));
-  v_prod := create_product_v4(jsonb_build_object(
+  v_prod := create_product_v5(jsonb_build_object(
               'name', 'Actor product 0906', 'sku', 'ACTOR0906-P1',
               'category_id', v_cat->>'id', 'retail_price', 10000, 'unit', 'pcs'));
-  PERFORM update_product_v5((v_prod->'product'->>'id')::uuid, jsonb_build_object('name', 'Actor product 0906 renamed'));
+  PERFORM update_product_v6((v_prod->'product'->>'id')::uuid, jsonb_build_object('name', 'Actor product 0906 renamed'));
   PERFORM set_product_is_test_v2((v_prod->'product'->>'id')::uuid, TRUE);
   v_sec := upsert_section_v2(jsonb_build_object('code', 'ACT0906', 'name', 'Actor section', 'kind', 'warehouse'));
   PERFORM delete_section_v2((v_sec->>'id')::uuid);
@@ -160,13 +160,13 @@ SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'product.create'
      AND entity_id = current_setting('apt.prod')::uuid ORDER BY created_at DESC LIMIT 1),
   current_setting('apt.prof')::uuid,
-  'T4: create_product_v4 — actor_id = profil');
+  'T4: create_product_v5 — actor_id = profil');
 
 SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'product.update'
      AND entity_id = current_setting('apt.prod')::uuid ORDER BY created_at DESC LIMIT 1),
   current_setting('apt.prof')::uuid,
-  'T5: update_product_v5 — actor_id = profil');
+  'T5: update_product_v6 — actor_id = profil');
 
 SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'product.set_test_flag'
@@ -286,12 +286,12 @@ SELECT is(
   (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
-      'create_product_v4','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
+      'create_product_v5','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
   'delete_variant_v2','discard_held_order_v3','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
-      'set_product_base_unit_v3','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v7','update_product_v5','update_variant_v2',
+      'set_product_base_unit_v4','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
+      'update_category_v2','update_order_item_qty_v7','update_product_v6','update_variant_v2',
       'upsert_product_modifiers_v3','upsert_section_v2')),
   32::bigint,
   'T22: les 32 nouvelles versions existent');
@@ -300,12 +300,12 @@ SELECT is(
   (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
-      'create_product_v4','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
+      'create_product_v5','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
   'delete_variant_v2','discard_held_order_v3','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
-      'set_product_base_unit_v3','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v7','update_product_v5','update_variant_v2',
+      'set_product_base_unit_v4','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
+      'update_category_v2','update_order_item_qty_v7','update_product_v6','update_variant_v2',
       'upsert_product_modifiers_v3','upsert_section_v2')
       AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   0::bigint,

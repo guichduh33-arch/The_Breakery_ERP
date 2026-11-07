@@ -42,6 +42,7 @@ export interface VariantSelectModalProps {
 }
 
 function isVariantDisabled(v: POSVariantRow): boolean {
+  if (v.is_sellable !== undefined) return !v.is_active || !v.is_sellable;
   // Repli legacy seulement : les anciens snapshots ne portaient que deduct_stock.
   return !v.is_active || !isSellable(v.track_inventory ?? v.deduct_stock, v.display_stock?.quantity ?? null, v.current_stock ?? 0);
 }
@@ -103,7 +104,7 @@ export function VariantSelectModal({
                 <div className="text-sm font-mono">
                   {formatIdr(v.retail_price)}
                 </div>
-                {(v.track_inventory ?? v.deduct_stock) && (
+                {(v.track_inventory ?? v.deduct_stock) && v.current_stock !== null && (
                   <div className="text-xs text-text-muted">
                     stock {v.display_stock?.quantity ?? v.current_stock ?? 0}
                   </div>

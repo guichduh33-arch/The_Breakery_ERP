@@ -17,14 +17,14 @@ serve((req) => handleCancelUnpaid(req, {
       bucketKey: `ip:${ip}`, ipAddress: ip, maxPerWindow: 10, windowSec: 60 });
     return result.allowed ? null : rateLimitedResponse(result.retryAfterSec);
   },
-  manager: async (pin, request) => {
+  manager: async (pin, request, actingAuthUserId) => {
     const ip = getClientIp(request);
-    if (await isManagerPinBlocked(ip)) return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
+    if (await isManagerPinBlocked(ip, actingAuthUserId)) return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
     const result = await verifyManagerPin(pin);
     if (result.ok) return result.manager_profile_id;
     if (result.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
     if (result.reason === 'no_match') {
-      const failed = await recordManagerPinFailure(ip, 'cancel-unpaid-order');
+      const failed = await recordManagerPinFailure(ip, 'cancel-unpaid-order', actingAuthUserId);
       return failed.blocked ? rateLimitedResponse(failed.retryAfterSec) : jsonResponse({ error: 'wrong_pin' }, 401);
     }
     return jsonResponse({ error: 'authorization_unavailable' }, 503);

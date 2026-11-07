@@ -5,6 +5,7 @@
 // modal pattern.
 
 import { useEffect, useState } from 'react';
+import { todayIsoDate } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
@@ -23,13 +24,13 @@ interface Draft {
   notes: string;
 }
 
-const DEFAULT: Draft = {
+const defaultDraft = (): Draft => ({
   name: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: todayIsoDate(),
   type: 'company',
   is_recurring: false,
   notes: '',
-};
+});
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -74,13 +75,13 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
   const createMut = useCreateHoliday();
   const updateMut = useUpdateHoliday();
 
-  const [draft, setDraft]             = useState<Draft>(initial ? rowToDraft(initial) : DEFAULT);
+  const [draft, setDraft]             = useState<Draft>(() => initial ? rowToDraft(initial) : defaultDraft());
   const [errors, setErrors]           = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setDraft(initial ? rowToDraft(initial) : DEFAULT);
+      setDraft(initial ? rowToDraft(initial) : defaultDraft());
       setErrors({});
       setServerError(null);
     }

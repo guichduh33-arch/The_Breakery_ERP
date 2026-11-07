@@ -88,7 +88,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args?: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_ar_aging_v1') {
+      if (fn === 'get_ar_aging_v2') {
         return Promise.resolve({ data: reportPayload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -136,10 +136,10 @@ describe('ArAgingPage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Finance');
   });
 
-  it('calls get_ar_aging_v1 — a snapshot takes no period arguments', async () => {
+  it('calls get_ar_aging_v2 — a snapshot takes no period arguments', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_ar_aging_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_ar_aging_v2');
       expect(call).toBeDefined();
       expect((call as [string, unknown])[1]).toBeUndefined();
     });

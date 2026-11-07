@@ -168,6 +168,6 @@ describe('HubPresenceMount', () => {
   it('does not emit a heartbeat without a device code', () => {
     usePosSettingsStore.setState({ deviceCode: '' });
     mountAt('/pos');
-    expect(rpcMock).not.toHaveBeenCalledWith('update_lan_heartbeat_v2', expect.anything());
+    expect(rpcMock).not.toHaveBeenCalledWith('update_lan_heartbeat_v3', expect.anything());
   });
 });

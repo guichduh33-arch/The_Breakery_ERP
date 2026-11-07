@@ -122,7 +122,7 @@ vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
     sel({
       hasPermission: (p: string) =>
-        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update' || p === 'b2b.read',
+        p === 'customers.read' || p === 'b2b.order.create' || p === 'customers.update' || p === 'b2b.read',
     }),
 }));
 

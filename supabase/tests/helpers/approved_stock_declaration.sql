@@ -58,7 +58,7 @@ RETURNS jsonb LANGUAGE sql AS $$ SELECT pg_temp.approved_stock_declaration('adju
 CREATE OR REPLACE FUNCTION pg_temp.approved_waste(uuid,numeric,text,uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE sql AS $$ SELECT pg_temp.approved_stock_declaration('waste',$1,$2,$3,$4) $$;
 CREATE OR REPLACE FUNCTION pg_temp.immediate_display_adjustment(uuid,numeric,text,uuid DEFAULT NULL)
-RETURNS jsonb LANGUAGE sql AS $$ SELECT public.adjust_display_stock_v5($1,$2,$3,COALESCE($4,gen_random_uuid())) $$;
+RETURNS jsonb LANGUAGE sql AS $$ SELECT public.adjust_display_stock_v6($1,$2,$3,COALESCE($4,gen_random_uuid())) $$;
 CREATE OR REPLACE FUNCTION pg_temp.approved_display_waste(uuid,numeric,text,uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE sql AS $$ SELECT pg_temp.approved_stock_declaration('display_waste',$1,$2,$3,$4) $$;
 REVOKE ALL ON FUNCTION pg_temp.approved_adjustment(uuid,numeric,text,uuid),pg_temp.approved_waste(uuid,numeric,text,uuid),

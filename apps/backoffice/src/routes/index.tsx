@@ -106,6 +106,7 @@ const SettingsBusinessHoursPage = lazy(() => import('@/pages/settings/SettingsBu
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
 const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNotificationsPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
+const SettingsInvoiceTemplatePage = lazy(() => import('@/pages/settings/SettingsInvoiceTemplatePage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
 const SettingsHistoryPage = lazy(() => import('@/pages/settings/SettingsHistoryPage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
@@ -660,7 +661,7 @@ export function AppRoutes() {
           path="accounting/trial-balance"
           element={
             <PermissionGate required="accounting.tb.read">
-              <TrialBalancePage />
+              <SuperAdminGate><TrialBalancePage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -820,7 +821,7 @@ export function AppRoutes() {
           path="reports/profit-loss"
           element={
             <PermissionGate required="reports.financial.read">
-              <ProfitLossPage />
+              <SuperAdminGate><ProfitLossPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -828,7 +829,7 @@ export function AppRoutes() {
           path="reports/gross-margin"
           element={
             <PermissionGate required="reports.financial.read">
-              <GrossMarginPage />
+              <SuperAdminGate><GrossMarginPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -836,7 +837,7 @@ export function AppRoutes() {
           path="reports/balance-sheet"
           element={
             <PermissionGate required="reports.financial.read">
-              <BalanceSheetPage />
+              <SuperAdminGate><BalanceSheetPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -844,7 +845,7 @@ export function AppRoutes() {
           path="reports/cash-flow"
           element={
             <PermissionGate required="reports.financial.read">
-              <CashFlowPage />
+              <SuperAdminGate><CashFlowPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -894,7 +895,7 @@ export function AppRoutes() {
           path="reports/payment-by-method"
           element={
             <PermissionGate required="reports.financial.read">
-              <PaymentByMethodPage />
+              <SuperAdminGate><PaymentByMethodPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -902,7 +903,7 @@ export function AppRoutes() {
           path="reports/pb1"
           element={
             <PermissionGate required="reports.financial.read">
-              <Pb1ReportPage />
+              <SuperAdminGate><Pb1ReportPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -1191,6 +1192,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsReceiptTemplatesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/templates/invoice"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsInvoiceTemplatePage />
             </PermissionGate>
           }
         />

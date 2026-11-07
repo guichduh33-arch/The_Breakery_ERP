@@ -113,3 +113,27 @@ describe('renderReceipt', () => {
     expect(log[log.length - 1]).toBe('<cut>');
   });
 });
+
+it('prints received tenders and the remaining balance for a partially deferred sale', () => {
+  const { p, log } = makeFake();
+  renderReceipt(p, { ...BASE, outstanding_due: 12000,
+    payment: { method: 'cash', amount: 20000, cash_received: 25000, change_given: 5000 } });
+  const text = log.join('\n');
+  expect(text).toContain('Cash | 20.000');
+  expect(text).toContain('Cash received | 25.000');
+  expect(text).toContain('Change | 5.000');
+  expect(text).toContain('OUTSTANDING BALANCE | 12.000');
+  expect(text).not.toContain('NOT PAID');
+});
+it('prints cash change from a split even when the first tender is card', () => {
+  const { p, log } = makeFake();
+  renderReceipt(p, { ...BASE, outstanding_due: 2000,
+    payment: { method: 'card', amount: 30000 },
+    payments: [{ method: 'card', amount: 10000 }, { method: 'cash', amount: 20000, cash_received: 25000, change_given: 5000 }] });
+  const text = log.join('\n');
+  expect(text).toContain('Card | 10.000');
+  expect(text).toContain('Cash | 20.000');
+  expect(text).toContain('Cash received | 25.000');
+  expect(text).toContain('Change | 5.000');
+  expect(text).toContain('OUTSTANDING BALANCE | 2.000');
+});

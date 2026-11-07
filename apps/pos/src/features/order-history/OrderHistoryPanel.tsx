@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { X, Receipt, CreditCard, Coins, QrCode } from 'lucide-react';
-import { Button, Currency, FullScreenModal, SectionLabel, cn } from '@breakery/ui';
+import { Button, Currency, FullScreenModal, Input, SectionLabel, cn } from '@breakery/ui';
 import { RefundReceiptModal } from '@breakery/ui';
 import { orderTypeLabel } from '@breakery/domain';
 import { useOrderHistory, type OrderHistoryRow } from './hooks/useOrderHistory';
@@ -89,9 +89,11 @@ function HistoryRowSkeleton(): JSX.Element {
 }
 
 export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JSX.Element {
+  const [receiptInput, setReceiptInput] = useState('');
+  const [receiptSearch, setReceiptSearch] = useState<string | null>(null);
   // `open` gate le fetch : le panel est monté en permanence, la requête ne
   // doit vivre que modale ouverte (re-audit 2026-08-24 perf P1).
-  const history = useOrderHistory(open);
+  const history = useOrderHistory(open, receiptSearch);
   // P1-3 : le panel est monté en permanence — sans refetch à l'ouverture, la
   // liste et les KPI (même query, via bucketStats) restent figés au dernier
   // mount (constaté live : vente tablette absente du shift history).
@@ -100,7 +102,9 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const detail = useOrderDetail(selectedId);
+  const visibleRows = history.financialVisible || receiptSearch ? history.data ?? [] : [];
+  const selectedNumber = visibleRows.find((row) => row.id === selectedId)?.order_number ?? null;
+  const detail = useOrderDetail(open ? selectedNumber : null);
 
   const [voidOpen, setVoidOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
@@ -128,6 +132,8 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
   }
 
   function handleClose(): void {
+    setReceiptInput('');
+    setReceiptSearch(null);
     setSelectedId(null);
     setVoidOpen(false);
     setRefundOpen(false);
@@ -154,7 +160,9 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
               <div>
                 <h2 className="font-bold text-xl">Transaction History</h2>
                 <p className="text-text-secondary text-xs">
-                  {stats.count} transaction{stats.count !== 1 ? 's' : ''} this shift
+                  {receiptSearch ? 'Receipt search' : history.financialVisible
+                    ? `${stats.count} transaction${stats.count !== 1 ? 's' : ''} this shift`
+                    : 'Shift totals are hidden until closure'}
                 </p>
               </div>
             </div>
@@ -169,21 +177,39 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
               écran quand une commande est sélectionnée, avec retour. */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] overflow-hidden">
             <section className={cn('overflow-y-auto p-4 space-y-4', selectedId && 'max-lg:hidden')}>
-              <OrderHistoryStats stats={stats} />
+              {history.financialVisible && !receiptSearch && <OrderHistoryStats stats={stats} />}
+              <form className="flex flex-wrap gap-2" onSubmit={(event) => {
+                event.preventDefault();
+                const number = receiptInput.trim();
+                if (number.length < 3) return;
+                setSelectedId(null);
+                setReceiptSearch(number);
+              }}>
+                <Input className="min-w-0 flex-1 basis-40" aria-label="Receipt number" placeholder="Exact receipt number"
+                  value={receiptInput} maxLength={64}
+                  onChange={(event) => setReceiptInput(event.target.value)} />
+                <Button type="submit" disabled={receiptInput.trim().length < 3}>Find receipt</Button>
+                {receiptSearch && <Button type="button" variant="ghost" onClick={() => {
+                  setReceiptInput(''); setReceiptSearch(null); setSelectedId(null);
+                }}>Clear</Button>}
+              </form>
+              {!history.financialVisible && <p className="text-sm text-text-secondary">
+                Enter an exact receipt number to view a single transaction.
+              </p>}
               <PendingRefundRecovery onConfirmed={(res) => presentReceipt(res, false)} />
 
               <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
 
               {history.isError && <div className="text-red-as-text text-sm">Failed to load order history</div>}
-              {!history.isLoading && history.data?.length === 0 && (
+              {!history.isLoading && history.data?.length === 0 && (history.financialVisible || receiptSearch) && (
                 <div className="text-text-secondary text-sm py-12 text-center">
-                  No orders in this shift yet.
+                  {receiptSearch ? 'No matching receipt in this shift.' : 'No orders in this shift yet.'}
                 </div>
               )}
               <ul className="space-y-2">
                 {history.isLoading &&
                   Array.from({ length: 5 }).map((_, i) => <HistoryRowSkeleton key={`history-skeleton-${i}`} />)}
-                {history.data?.map((row) => {
+                {visibleRows.map((row) => {
                   const isSelected = selectedId === row.id;
                   const isVoided = row.status === 'voided';
                   const partial = row.total_refunded > 0 && !isVoided;

@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
 import { ProductTypeahead } from '@/features/inventory/components/ProductTypeahead.js';
 import type { ProductTypeaheadRow } from '@/features/inventory/hooks/useProductsForInventory.js';
 import { useAddOpnameItem } from '../hooks/useOpnameMutations.js';
@@ -15,7 +14,6 @@ export interface AddItemFormProps {
 
 export function AddItemForm({ countId, onPendingChange }: AddItemFormProps) {
   const [product, setProduct] = useState<ProductTypeaheadRow | null>(null);
-  const [expectedQty, setExpectedQty] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const addItem = useAddOpnameItem();
   useEffect(() => {
@@ -28,20 +26,12 @@ export function AddItemForm({ countId, onPendingChange }: AddItemFormProps) {
       setError('Pick a product.');
       return;
     }
-    const expected = expectedQty.trim() === ''
-      ? undefined
-      : Number(expectedQty);
-    if (expected !== undefined && (!Number.isFinite(expected) || expected < 0)) {
-      setError('Expected qty must be a non-negative number, or empty for auto-load.');
-      return;
-    }
     setError(null);
     addItem.mutate(
-      { countId, productId: product.id, expectedQty: expected },
+      { countId, productId: product.id },
       {
         onSuccess: () => {
           setProduct(null);
-          setExpectedQty('');
         },
         onError: (e) => { setError(e.message); },
       },
@@ -65,25 +55,6 @@ export function AddItemForm({ countId, onPendingChange }: AddItemFormProps) {
             value={product}
             onChange={setProduct}
             placeholder="Search by SKU or name…"
-          />
-        </div>
-        <div>
-          <label htmlFor="opname-expected" className="block text-xs text-text-secondary mb-1">Expected (optional)</label>
-          <input
-            id="opname-expected"
-            type="number"
-            step="0.001"
-            min={0}
-            value={expectedQty}
-            onChange={(e) => { setExpectedQty(e.target.value); }}
-            // Champ écrit à la main, hors primitif `Input` : il retombait sur
-            // l'anneau de focus du navigateur (2,09-2,40:1, sous les 3:1 de
-            // WCAG 1.4.11) et sur le `gray-400` du Preflight pour son
-            // placeholder (2,21:1). Le seul de cet anti-patron qui vive dans un
-            // fichier déjà édité par cette campagne ; les 35 autres sont
-            // recensés dans DESIGN.md comme écart ouvert (2026-08-18).
-            className={`w-32 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
-            placeholder="auto"
           />
         </div>
         {/* Critique 2026-08-31 (P1) — `secondary`, plus `ink`. L'encre de la

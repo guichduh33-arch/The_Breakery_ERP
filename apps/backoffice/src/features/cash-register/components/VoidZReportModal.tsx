@@ -2,7 +2,7 @@
 //
 // S29 Wave 6.B.2 — Modal to void a signed Z-Report. Admin-only (perm zreports.void).
 // Reason field min 10 char enforced UI + DB.
-// S50 V2a-i T5 — 2 steps: reason + manager PIN. void_zreport_v2 validates the PIN
+// S50 V2a-i T5 — 2 steps: reason + manager PIN. void_zreport_v3 validates the PIN
 // server-side (mirror SignZReportModal).
 
 import { useEffect, useState } from 'react';

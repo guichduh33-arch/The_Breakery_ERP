@@ -59,12 +59,12 @@ const FIELDS: FieldSpec[] = [
   { key: 'tax_inclusive',  label: 'Tax inclusive',  type: 'boolean', category: 'tax',          section: 'identity', helper: 'When true, listed prices include tax' },
   { key: 'shift_variance_threshold_pct', label: 'Shift variance % threshold', type: 'percent', category: 'pos', section: 'cash', helper: 'Percent — e.g. 0.5 for 0.5%' },
   { key: 'shift_variance_threshold_abs', label: 'Shift variance abs threshold', type: 'number', category: 'pos', section: 'cash', helper: 'IDR' },
-  // S66 (12 D2.1) — above these (higher) thresholds, close_shift_v5 also
+  // S66 (12 D2.1) — above these (higher) thresholds, close_shift_v13 also
   // requires a designated manager + 6-digit PIN on top of the variance note.
   { key: 'shift_variance_pin_threshold_pct', label: 'Manager-PIN variance % threshold', type: 'percent', category: 'pos', section: 'cash', helper: 'Percent — e.g. 2 for 2% — large variances need a manager PIN at close' },
   { key: 'shift_variance_pin_threshold_abs', label: 'Manager-PIN variance abs threshold', type: 'number', category: 'pos', section: 'cash', helper: 'IDR — large variances need a manager PIN at close' },
   // S67 (12 D2.3) — when true the POS forces the cash count (open & close)
-  // through the IDR denomination grid; close_shift_v5 enforces it server-side.
+  // through the IDR denomination grid; close_shift_v13 enforces it server-side.
   { key: 'shift_denomination_count_enabled', label: 'Denomination count required', type: 'boolean', category: 'pos', section: 'cash', helper: 'When on, opening/closing cash must be counted note-by-note (grid)' },
 ];
 

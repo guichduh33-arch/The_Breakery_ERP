@@ -154,7 +154,7 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin_uid);
 
-  v_order_id := create_tablet_order_v11(
+  v_order_id := create_tablet_order_v12(
     p_client_uuid  => v_client,
     p_waiter_id    => v_admin_pid,
     p_table_number => 'T-T1',
@@ -172,7 +172,7 @@ BEGIN
   PERFORM set_config('breakery.t1_order_id', v_order_id::text, false);
 END $t1$;
 SELECT ok(current_setting('breakery.t1_pass')::boolean,
-  'T1: create_tablet_order_v11 first call with fresh client_uuid returns a UUID order_id');
+  'T1: create_tablet_order_v12 first call with fresh client_uuid returns a UUID order_id');
 
 -- ===========================================================================
 -- T2 — create_tablet_order_v11 same p_client_uuid second call → replay
@@ -190,7 +190,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin_uid);
 
   -- Second call with the SAME p_client_uuid → must return same order_id.
-  v_order_id_2 := create_tablet_order_v11(
+  v_order_id_2 := create_tablet_order_v12(
     p_client_uuid  => v_client,
     p_waiter_id    => v_admin_pid,
     p_table_number => 'T-T2',  -- different on purpose; replay must ignore the new args
@@ -215,7 +215,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t2$;
 SELECT ok(current_setting('breakery.t2_pass')::boolean,
-  'T2: create_tablet_order_v11 replay returns same order_id, 1 orders row, 1 idempotency_keys row');
+  'T2: create_tablet_order_v12 replay returns same order_id, 1 orders row, 1 idempotency_keys row');
 
 -- ===========================================================================
 -- T3 — create_tablet_order v1 dropped (D14 monotonic versioning)
@@ -351,10 +351,10 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.create_tablet_order_v11(uuid, uuid, text, order_type, jsonb, text, uuid, boolean, text, uuid)',
+    'public.create_tablet_order_v12(uuid, uuid, text, order_type, jsonb, text, uuid, boolean, text, uuid)',
     'EXECUTE'
   ),
-  'T8: anon has NO EXECUTE privilege on create_tablet_order_v11'
+  'T8: anon has NO EXECUTE privilege on create_tablet_order_v12'
 );
 
 -- ===========================================================================
@@ -386,7 +386,7 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin_uid);
 
-  v_order_id := create_tablet_order_v11(
+  v_order_id := create_tablet_order_v12(
     p_client_uuid  => v_client,
     p_waiter_id    => v_admin_pid,
     p_table_number => 'T-T10',
@@ -405,7 +405,7 @@ BEGIN
     CASE WHEN v_db_notes = v_note THEN 'true' ELSE 'false' END, false);
 END $t10$;
 SELECT ok(current_setting('breakery.t10_pass')::boolean,
-  'T10: create_tablet_order_v11 writes p_notes verbatim to orders.notes');
+  'T10: create_tablet_order_v12 writes p_notes verbatim to orders.notes');
 
 SELECT * FROM finish();
 ROLLBACK;

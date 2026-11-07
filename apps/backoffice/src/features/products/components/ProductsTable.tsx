@@ -204,6 +204,7 @@ export function ProductsTable({
       render: (r: ProductRow) => {
         if (!r.track_inventory) return DASH;
         const qty = r.current_stock;
+        if (qty === null) return <span className="text-text-secondary">Hidden</span>;
         const tone =
           qty <= 0 ? 'text-danger font-semibold'
             : qty <= r.min_stock_threshold ? 'text-warning font-semibold'

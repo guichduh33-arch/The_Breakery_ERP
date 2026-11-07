@@ -111,8 +111,8 @@ SELECT ok(
   (SELECT pg_get_function_identity_arguments(p.oid) LIKE '%p_payments jsonb%'
       AND pg_get_function_identity_arguments(p.oid) LIKE '%p_offline_replay boolean%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v24'),
-  'pay_existing_order_v24 carries p_payments and p_offline_replay');
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v25'),
+  'pay_existing_order_v25 carries p_payments and p_offline_replay');
 
 -- 12: le multi-règlements est borné 1..5 côté serveur (ADR-015 : le split
 --     hors-ligne s'appuie dessus, il ne le contourne pas).
@@ -120,7 +120,7 @@ SELECT ok(
   (SELECT prosrc LIKE '%Invalid tender count%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'stock_private' AND p.proname = 'pay_existing_order_v23'),
-  'pay_existing_order_v24 enforces the 1..5 tender bound');
+  'pay_existing_order_v25 enforces the 1..5 tender bound');
 
 -- 13: p_offline_replay force allow_negative MAIS ne bypasse PAS le gate
 --     store_credit — c'est ce qui justifie l'exclusion de l'avoir (ADR-015).
@@ -137,8 +137,8 @@ SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v13', 'get_settings_by_category_v10', 'pay_existing_order_v24')),
-  'anon has no EXECUTE on set_setting_v13 / get_settings_by_category_v10 / pay_existing_order_v24');
+     AND p.proname IN ('set_setting_v13', 'get_settings_by_category_v10', 'pay_existing_order_v25')),
+  'anon has no EXECUTE on set_setting_v13 / get_settings_by_category_v10 / pay_existing_order_v25');
 
 SELECT * FROM finish();
 ROLLBACK;

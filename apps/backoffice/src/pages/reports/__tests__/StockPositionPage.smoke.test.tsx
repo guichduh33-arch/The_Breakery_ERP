@@ -64,7 +64,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args?: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_stock_position_v1') {
+      if (fn === 'get_stock_position_v3') {
         return Promise.resolve({ data: reportPayload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -104,6 +104,18 @@ beforeEach(() => {
 });
 
 describe('StockPositionPage smoke', () => {
+  it('affiche et autorise le jour métier courant avant 08 h WITA', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-11-06T17:00:00Z'));
+      renderPage();
+      expect(screen.getByTestId('as-of-picker')).toHaveValue('2026-11-07');
+      expect(screen.getByTestId('as-of-picker')).toHaveAttribute('max', '2026-11-07');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('renders the heading and the Reports › Inventory breadcrumb', () => {
     renderPage();
     expect(
@@ -112,10 +124,10 @@ describe('StockPositionPage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Inventory');
   });
 
-  it('calls get_stock_position_v1 without args when no date is picked', async () => {
+  it('calls get_stock_position_v3 without args when no date is picked', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_position_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_position_v3');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toEqual({});
     });
@@ -124,7 +136,7 @@ describe('StockPositionPage smoke', () => {
   it('passes the picked as_of date down to the RPC', async () => {
     renderPage('?as_of=2026-08-14');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_position_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_position_v3');
       expect(call).toBeDefined();
       expect((call as [string, { p_as_of: string }])[1]).toEqual({ p_as_of: '2026-08-14' });
     });

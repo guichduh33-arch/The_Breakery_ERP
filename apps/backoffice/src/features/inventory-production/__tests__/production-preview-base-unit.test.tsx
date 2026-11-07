@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProductionEntryCard } from '../components/ProductionEntryCard.js';
 
 vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: () => true }),
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean; user: { role_code: string } }) => unknown) =>
+    sel({ hasPermission: () => true, user: { role_code: 'SUPER_ADMIN' } }),
 }));
 
 const mockRpc = vi.fn();
@@ -87,7 +87,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
   beforeEach(() => {
     mockRpc.mockReset();
     mockRpc.mockImplementation((fn: string) =>
-      fn === 'recipe_bom_full_v3'
+      fn === 'recipe_bom_full_v5'
         ? { data: [FLOUR_LEAF], error: null }
         : { data: null, error: { message: 'unexpected rpc' } },
     );
@@ -119,7 +119,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
     await waitFor(() => {
       expect(flourRowText()).toMatch(/0,05 kg/);
     });
-    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v3', { p_product_id: 'p-bag', p_max_depth: 5 });
+    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v5', { p_product_id: 'p-bag', p_max_depth: 5 });
     expect(screen.getByTestId('status-ok')).toBeInTheDocument();
   });
 

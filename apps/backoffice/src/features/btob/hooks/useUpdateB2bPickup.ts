@@ -6,7 +6,7 @@ export function useUpdateB2bPickup() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { orderId: string; pickupDate?: string; delivered: boolean }) => {
-      const { data, error } = await supabase.rpc('update_b2b_pickup_v1', {
+      const { data, error } = await supabase.rpc('update_b2b_pickup_v2', {
         p_order_id: args.orderId,
         ...(args.pickupDate ? { p_pickup_date: args.pickupDate } : {}),
         p_mark_delivered: args.delivered,

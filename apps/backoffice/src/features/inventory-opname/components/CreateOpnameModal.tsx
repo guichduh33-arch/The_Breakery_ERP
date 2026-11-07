@@ -6,6 +6,7 @@
 // n'exige plus rien. Les notes restent facultatives.
 
 import { useState, type JSX } from 'react';
+import { businessDateIso } from '@breakery/utils';
 import { Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateOpname } from '../hooks/useOpnameMutations.js';
@@ -18,13 +19,14 @@ export interface CreateOpnameModalProps {
 
 export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps): JSX.Element {
   const [notes, setNotes] = useState<string>('');
+  const [businessDay, setBusinessDay] = useState(() => businessDateIso(new Date()));
   const [error, setError] = useState<string | null>(null);
   const createOpname = useCreateOpname();
 
   function handleSubmit() {
     setError(null);
     createOpname.mutate(
-      { notes: notes.trim() === '' ? undefined : notes },
+      { notes: notes.trim() === '' ? undefined : notes, businessDay },
       {
         onSuccess: (data) => { onCreated(data.count_id); },
         onError: (e) => { setError(e.message); },
@@ -44,6 +46,14 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
 
         <div className="space-y-3">
           <div>
+            <label htmlFor="opname-business-day" className="block text-sm">Business day</label>
+            <input id="opname-business-day" type="date" required value={businessDay}
+              max={businessDateIso(new Date())} disabled={createOpname.isPending}
+              className={`w-full rounded border border-border-strong bg-bg-input p-2 ${FOCUS_RING}`}
+              onChange={(e) => { setBusinessDay(e.target.value); }} />
+            <p className="text-xs text-text-secondary">Select the day being closed, including when counting after midnight.</p>
+          </div>
+          <div>
             <label htmlFor="opname-notes" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">Notes</label>
             <textarea
               id="opname-notes"
@@ -62,7 +72,7 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="ink" onClick={handleSubmit} disabled={createOpname.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={createOpname.isPending || !/^\d{4}-\d{2}-\d{2}$/.test(businessDay)}>
             {createOpname.isPending ? 'Creating…' : 'Create count'}
           </Button>
         </DialogFooter>

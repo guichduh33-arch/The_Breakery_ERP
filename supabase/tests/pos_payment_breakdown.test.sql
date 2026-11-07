@@ -11,8 +11,8 @@ SELECT plan(8);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') $$,
-  '42501',
+  $$ SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') $$,
+  'P0003',
   NULL,
   'anon / no-perm caller is denied (reports.sales.read)'
 );
@@ -23,23 +23,23 @@ SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_payment_breakdown_v1(NULL, '2026-07-11') $$, 'P0001', NULL,
-  'NULL start date raises P0001');
+  $$ SELECT get_pos_payment_breakdown_v3(NULL, '2026-07-11') $$, '22023', NULL,
+  'NULL start date raises 22023');
 SELECT throws_ok(
-  $$ SELECT get_pos_payment_breakdown_v1('2026-07-11','2026-05-14') $$, 'P0001', NULL,
+  $$ SELECT get_pos_payment_breakdown_v3('2026-07-11','2026-05-14') $$, '22023', NULL,
   'start > end raises invalid_date_range');
 
 -- ── Envelope shape + timezone ─────────────────────────────────────────────
-WITH r AS (SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') AS j)
 SELECT ok((SELECT j ? 'timezone' AND j ? 'total_amount' AND j ? 'total_orders'
              AND j ? 'total_tenders' AND j ? 'by_method' FROM r),
           'envelope exposes timezone/total_amount/total_orders/total_tenders/by_method');
-WITH r AS (SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT j->>'timezone' FROM r), 'Asia/Makassar',
           'timezone is the business tz (WITA)');
 
 -- ── Shares reconcile to ~100 (allowing rounding when any tender exists) ────
-WITH r AS (SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') AS j),
+WITH r AS (SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') AS j),
 sums AS (
   SELECT (SELECT (r.j->>'total_amount')::numeric FROM r) AS total,
          COALESCE((SELECT SUM((e->>'share_pct')::numeric)
@@ -64,7 +64,7 @@ expected AS (
   SELECT COALESCE(SUM(op.amount),0) tendered
   FROM order_payments op JOIN scoped s ON s.id = op.order_id
 ),
-got AS (SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') AS j)
+got AS (SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT (j->>'total_amount')::numeric FROM got), (SELECT tendered FROM expected),
           'tendered total matches independent recomputation over Overview scope');
 
@@ -78,7 +78,7 @@ scoped AS (
     AND ((COALESCE(o.paid_at,o.created_at) AT TIME ZONE (SELECT v FROM tz))::date)
         BETWEEN '2026-05-14' AND '2026-07-11'
 ),
-got AS (SELECT get_pos_payment_breakdown_v1('2026-05-14','2026-07-11') AS j)
+got AS (SELECT get_pos_payment_breakdown_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT (j->>'total_orders')::int FROM got), (SELECT COUNT(*)::int FROM scoped),
           'total_orders matches the scoped order count');
 

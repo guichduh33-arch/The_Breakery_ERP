@@ -25,7 +25,7 @@ export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
   return useQuery<POSReportsTopProduct[]>({
     queryKey: ['pos-reports-top-products', period.startDate, period.endDate, limit],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_top_products_v3', {
+      const { data, error } = await supabase.rpc('get_pos_top_products_v4', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -46,7 +46,7 @@ export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
 
 
 //
-// Source of truth: server RPC `get_pos_activity_v2(p_start_date, p_end_date)`.
+// Source of truth: server RPC `get_pos_activity_v3(p_start_date, p_end_date)`.
 // One 'sale' event per in-scope order (same order scope as the Overview),
 // newest first, capped server-side at the 500 most-recent events. Session
 // open/close events were REMOVED here in Lot D — counting them as two separate
@@ -83,7 +83,7 @@ export function usePOSReportsActivity(period: ReportsPeriod) {
   return useQuery<POSReportsEvent[]>({
     queryKey: ['pos-reports-activity', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_activity_v2', {
+      const { data, error } = await supabase.rpc('get_pos_activity_v3', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -104,7 +104,7 @@ export function usePOSReportsActivity(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_margin_v3(p_start_date, p_end_date)`.
+// Source of truth: server RPC `get_pos_margin_v4(p_start_date, p_end_date)`.
 // Same order scope as the Overview (summary.revenue_ttc reconciles exactly);
 // margin math is line-level HT (net of item discounts) against CURRENT
 // products.cost_price — NOT a snapshot at sale time (Vague 3). Promo-gift

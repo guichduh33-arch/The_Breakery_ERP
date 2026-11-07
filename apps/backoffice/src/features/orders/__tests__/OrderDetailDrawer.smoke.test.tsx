@@ -79,6 +79,9 @@ vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/l
 vi.mock('@/features/orders/hooks/useReprintReceipt.js', () => ({
   useReprintReceipt: () => ({ reprint: vi.fn(), isPending: false, error: null }),
 }));
+vi.mock('@/features/orders/hooks/useOrderHistory.js', () => ({
+  useOrderHistory: () => ({ data: undefined, isLoading: false, isError: false, hasNextPage: false }),
+}));
 vi.mock('@/features/orders/hooks/useRefundOrder.js', () => ({
   useRefundOrder: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
 }));
@@ -103,7 +106,7 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     installFinancialBrowser(); resetFinancialSession();
     financialTestAuth.setState({ hasPermission: (code) => grantedPerms.has(code) });
     orderOverrides = {};
-    grantedPerms = new Set(['orders.edit_open', 'orders.void']);
+    grantedPerms = new Set(['orders.edit_open', 'orders.void', 'payments.process']);
   });
 
   // ── 2 · isPaid ───────────────────────────────────────────────────────────
@@ -203,6 +206,15 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     await screen.findByTestId('order-detail-drawer');
     expect(screen.queryByTestId('drawer-void')).toBeNull();
     expect(screen.queryByTestId('drawer-edit-items')).toBeNull();
+  });
+
+  it('opens unpaid cancellation separately from the paid void flow', async () => {
+    orderOverrides = { status: 'pending_payment', paid_at: null, payments: [] };
+    const onCancelUnpaid = vi.fn();
+    renderDrawer({ onCancelUnpaid, onVoid: vi.fn() });
+    fireEvent.click(await screen.findByTestId('drawer-cancel-unpaid'));
+    expect(onCancelUnpaid).toHaveBeenCalledWith('o-1');
+    expect(screen.queryByTestId('drawer-void')).toBeNull();
   });
 
   it('T11 without a callback the drawer stays a read-only preview', async () => {

@@ -8,7 +8,7 @@
 // socle Report shell v2 (archétype maquette 4c, patron : PurchaseItemsPage).
 //
 // LA SÉMANTIQUE MÉTIER NE BOUGE PAS D'UN POUCE. La fenêtre horaire est calculée
-// SERVEUR (`get_off_hours_sales_v1`) contre `business_hours` ; rien n'est
+// SERVEUR (`get_off_hours_sales_v2`) contre `business_hours` ; rien n'est
 // recalculé ici, aucun seuil n'est deviné côté page. Un jour dont la config dit
 // « fermé » (open/close à NULL) marque TOUT, et la colonne le dit par « Closed » ;
 // un jour absent de la config ne marque JAMAIS rien. Ces deux règles sont celles

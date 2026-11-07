@@ -23,15 +23,15 @@ SELECT plan(7);
 
 CREATE TEMP TABLE out AS
 SELECT * FROM (VALUES
-  ((SELECT is((SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_low_stock_v3'), 1, 'T_ALERT_01'))),
-  ((SELECT throws_ok($$SELECT * FROM get_low_stock_v3()$$, 'P0003', NULL, 'T_ALERT_02'))),
-  ((SELECT is((SELECT COUNT(*)::INT FROM information_schema.parameters WHERE specific_schema='public' AND specific_name LIKE 'get_low_stock_v3%' AND parameter_mode='OUT'), 7, 'T_ALERT_03'))),
-  ((SELECT throws_ok($$SELECT * FROM get_reorder_suggestions_v2()$$, 'P0003', NULL, 'T_ALERT_04'))),
-  ((SELECT is((SELECT COUNT(*)::INT FROM information_schema.parameters WHERE specific_schema='public' AND specific_name LIKE 'get_reorder_suggestions_v2%' AND parameter_mode='OUT'), 12, 'T_ALERT_05'))),
-  ((SELECT throws_ok($$SELECT get_product_dashboard_v4(gen_random_uuid())$$, 'P0003', NULL, 'T_ALERT_06'))),
+  ((SELECT is((SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_low_stock_v4'), 1, 'T_ALERT_01'))),
+  ((SELECT throws_ok($$SELECT * FROM get_low_stock_v4()$$, 'P0003', NULL, 'T_ALERT_02'))),
+  ((SELECT is((SELECT COUNT(*)::INT FROM information_schema.parameters WHERE specific_schema='public' AND specific_name LIKE 'get_low_stock_v4%' AND parameter_mode='OUT'), 7, 'T_ALERT_03'))),
+  ((SELECT throws_ok($$SELECT * FROM get_reorder_suggestions_v3()$$, 'P0003', NULL, 'T_ALERT_04'))),
+  ((SELECT is((SELECT COUNT(*)::INT FROM information_schema.parameters WHERE specific_schema='public' AND specific_name LIKE 'get_reorder_suggestions_v3%' AND parameter_mode='OUT'), 12, 'T_ALERT_05'))),
+  ((SELECT throws_ok($$SELECT get_product_dashboard_v7(gen_random_uuid())$$, 'P0003', NULL, 'T_ALERT_06'))),
   -- Cannot easily test product_not_found without an admin caller in pgTAP envelope.
   -- We assert the function source contains the product_not_found raise instead.
-  ((SELECT ok((SELECT prosrc FROM pg_proc WHERE proname='get_product_dashboard_v4') LIKE '%product_not_found%', 'T_ALERT_07: product_not_found raise present')))
+  ((SELECT ok((SELECT prosrc FROM pg_proc WHERE proname='get_product_dashboard_v7') LIKE '%product_not_found%', 'T_ALERT_07: product_not_found raise present')))
 ) AS t(line);
 
 SELECT line FROM out ORDER BY 1;

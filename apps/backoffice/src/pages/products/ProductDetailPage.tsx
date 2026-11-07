@@ -113,6 +113,10 @@ export default function ProductDetailPage(): JSX.Element {
       setSaveWarning('Enter a name, a SKU and a retail price of zero or more.');
       return;
     }
+    if (draft.wholesale_price !== null && (!Number.isFinite(draft.wholesale_price) || draft.wholesale_price < 0)) {
+      setSaveWarning('Enter a corporate price of zero or more, or leave it blank to use the retail price.');
+      return;
+    }
     setSaveWarning(null);
     updateProduct.mutate(
       { productId, patch },

@@ -263,7 +263,7 @@ serve(withPermissionErrors(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v30, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v32, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -291,14 +291,14 @@ serve(withPermissionErrors(async (req) => {
     if (!managerPin || managerPin.trim().length === 0) {
       return jsonResponse({ error: 'missing_manager_pin' }, 400);
     }
-    if (await isManagerPinBlocked(ip)) {
+    if (await isManagerPinBlocked(ip, actingUser)) {
       return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
     }
     const mgr = await verifyManagerPin(managerPin);
     if (!mgr.ok) {
       if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
       if (mgr.reason === 'no_match') {
-        const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment');
+        const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment', actingUser);
         if (blocked) return rateLimitedResponse(retryAfterSec);
         // Oracle harmonisé void/refund/cancel — aucun détail sur le gate.
         return jsonResponse({ error: 'wrong_pin' }, 401);
@@ -323,7 +323,7 @@ serve(withPermissionErrors(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v30', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v32', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,

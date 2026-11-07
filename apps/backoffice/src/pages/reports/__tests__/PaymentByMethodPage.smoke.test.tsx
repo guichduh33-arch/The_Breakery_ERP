@@ -17,12 +17,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
 const mockRpc = vi.fn();
+const mockGeneratePdf = vi.fn();
+
+vi.mock('@/features/reports/hooks/useGeneratePdf.js', () => ({
+  useGeneratePdf: () => ({ mutateAsync: mockGeneratePdf, isPending: false }),
+}));
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_payments_by_method_v3') {
+      if (fn === 'get_payments_by_method_v5') {
         // Real RPC shape: { period, summary, by_method, by_day }.
         return Promise.resolve({
           data: {
@@ -75,6 +80,7 @@ function renderPage(search = '?start=2026-06-01&end=2026-06-07') {
 beforeEach(() => {
   useAuthStore.setState({ permissions: ['reports.export'] });
   mockRpc.mockReset();
+  mockGeneratePdf.mockReset().mockResolvedValue({ signed_url: 'https://example.com/report.pdf' });
   sessionStorage.clear();
 });
 
@@ -84,10 +90,10 @@ describe('PaymentByMethodPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Payment by Method/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_payments_by_method_v3 with p_date_start and p_date_end', async () => {
+  it('calls get_payments_by_method_v5 with p_date_start and p_date_end', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_payments_by_method_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_payments_by_method_v5');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
       expect(args.p_date_start).toBe('2026-06-01');
@@ -150,5 +156,35 @@ describe('PaymentByMethodPage (smoke)', () => {
     fireEvent.click(screen.getByTestId('export-menu'));
     expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
+  });
+
+  it('exports the PDF template contract with payment counts and wallet amounts', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    try {
+      renderPage();
+      await waitFor(() => expect(screen.getByTestId('export-menu')).not.toBeDisabled());
+      fireEvent.click(screen.getByTestId('export-menu'));
+      fireEvent.click(screen.getByTestId('export-pdf'));
+      await waitFor(() => expect(mockGeneratePdf).toHaveBeenCalledOnce());
+      expect(mockGeneratePdf.mock.calls[0]?.[0] as unknown).toMatchObject({
+        template: 'payment_by_method',
+        period: { start: '2026-06-01', end: '2026-06-07' },
+        data: {
+          period: { start: '2026-06-01', end: '2026-06-07' },
+          summary: { total_amount: 3_500_000, total_count: 85, total_orders: 80 },
+          by_method: [
+            { method: 'cash', amount: 2_000_000, count: 45 },
+            { method: 'qris', amount: 1_000_000, count: 28 },
+            { method: 'gopay', amount: 500_000, count: 12, share_pct: 14.29 },
+          ],
+          by_day: [
+            { day: '2026-06-01', cash: 1_000_000, qris: 500_000, other: 250_000, total: 1_750_000 },
+            { day: '2026-06-02', cash: 1_000_000, qris: 500_000, other: 250_000, total: 1_750_000 },
+          ],
+        },
+      });
+    } finally {
+      open.mockRestore();
+    }
   });
 });

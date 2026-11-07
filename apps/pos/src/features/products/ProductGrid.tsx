@@ -179,7 +179,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   : null;
               // Low-stock heuristic — current_stock > 0 && <= 3 (matches ref 06 "LOW STOCK · 2 LEFT").
               const lowStockLabel =
-                !disabled && p.current_stock > 0 && p.current_stock <= 3
+                !disabled && p.current_stock !== null && p.current_stock > 0 && p.current_stock <= 3
                   ? `Low stock · ${p.current_stock} left`
                   : null;
 

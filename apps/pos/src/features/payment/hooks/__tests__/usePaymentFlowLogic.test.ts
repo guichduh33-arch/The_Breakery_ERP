@@ -349,3 +349,26 @@ describe('payment durability', () => {
     expect(usePaymentStore.getState().attempt?.result?.offline).toBe(true);
   });
 });
+
+describe('Outstanding partial payment', () => {
+  beforeEach(() => { seedCartOneItem(); offlineGateMock.current = { offlineMode: false, paymentsAllowed: true, blockedReason: null }; checkoutMock.mutateAsync.mockReset(); useShiftStore.setState({ current: { id: 'shift', opened_at: '', opening_cash: 0 } }); });
+  it('freezes actual tenders and the deferred flag in the durable attempt', async () => {
+    useCartStore.setState({ attachedCustomer: { id: 'customer', name: 'Client', lifetime_points: 0 } as never,
+      cart: { ...useCartStore.getState().cart, customerId: 'customer' } });
+    usePaymentStore.setState({ isOpen: true, tenders: [{ method: 'cash', amount: 10000, cash_received: 10000 }] });
+    checkoutMock.mutateAsync.mockResolvedValue({ ok: true, order_id: 'order', order_number: 'P-1', total: 25000, tax_amount: 0,
+      change_given: 0, amount_received: 10000, amount_paid: 10000, outstanding_due: 15000, remaining_due: 15000 });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleOutstanding(); });
+    const sent = checkoutMock.mutateAsync.mock.calls[0]?.[0] as { payment: unknown; context: { outstanding: boolean } };
+    expect(sent.payment).toEqual([{ method: 'cash', amount: 10000, cash_received: 10000 }]);
+    expect(sent.context.outstanding).toBe(true);
+    expect(result.current.success).toMatchObject({ outstandingDue: 15000, amountReceived: 10000, amountPaid: 10000 });
+    expect(usePaymentStore.getState().attempt?.tenders[0]?.amount).toBe(10000);
+  });
+  it('does not defer without an identified customer', async () => {
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleOutstanding(); });
+    expect(checkoutMock.mutateAsync).not.toHaveBeenCalled();
+  });
+});

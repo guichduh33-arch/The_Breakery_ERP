@@ -35,7 +35,7 @@ BEGIN
   INSERT INTO pos_audit_results VALUES('replay preserves a single line', (SELECT count(*)=1 FROM order_items WHERE order_items.order_id=v_order_id));
   UPDATE order_items SET is_cancelled=true, cancelled_at=now(), cancelled_by=profile,
     cancelled_reason='Audit cancellation' WHERE order_items.order_id=v_order_id;
-  envelope := get_pos_order_snapshot_v4(v_order_id);
+  envelope := get_pos_order_snapshot_v5(v_order_id);
   INSERT INTO pos_audit_results VALUES('snapshot retains cancellation facts', (envelope->'items'->0->>'is_cancelled')::boolean);
   payload := jsonb_set(payload, '{0,discount_amount}', '1000');
   BEGIN
@@ -53,7 +53,7 @@ BEGIN
   INSERT INTO pos_audit_results VALUES('a nonce cannot authorize another fire', refused);
   envelope := fire_counter_order_v12(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_tolerate_unsellable:=true,p_offline_replay:=true);
   INSERT INTO pos_audit_results VALUES('legacy offline discounted sale remains replayable', envelope->>'order_id' IS NOT NULL);
-  tablet_id := create_tablet_order_v11(gen_random_uuid(),profile,'','take_out',payload);
+  tablet_id := create_tablet_order_v12(gen_random_uuid(),profile,'','take_out',payload);
   INSERT INTO pos_audit_results VALUES('tablet resolves the same canonical simple price',
     (SELECT line_total=46000 FROM order_items WHERE order_items.order_id=tablet_id));
 END;

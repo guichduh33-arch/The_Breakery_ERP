@@ -27,6 +27,8 @@
 // tout le chiffre ».
 
 import { useMemo, useState, type JSX } from 'react';
+import { useAuthStore } from '@/stores/authStore.js';
+import { useProductSalesVisibilityRealtime } from '@/features/reports/hooks/useProductSalesVisibilityRealtime.js';
 import { Link } from 'react-router-dom';
 import { selectClassName, cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
@@ -112,6 +114,8 @@ interface KpiDescriptor {
 }
 
 export default function SalesByProductPage(): JSX.Element {
+  const user = useAuthStore((state) => state.user);
+  useProductSalesVisibilityRealtime(!!user);
   const period = useReportPeriod();
   const { start, end, compareRange } = period;
   const [categoryId, setCategoryId] = useUrlState('category_id', '');
@@ -127,9 +131,9 @@ export default function SalesByProductPage(): JSX.Element {
     start: compareRange.start, end: compareRange.end, categoryId: categoryId || null,
   });
 
-  const rows    = useMemo(() => current.data?.by_product ?? [], [current.data]);
-  const summary = current.data?.summary;
-  const prev    = compare.data?.summary;
+  const rows    = useMemo(() => current.isError || current.isFetching ? [] : current.data?.by_product ?? [], [current.data, current.isError, current.isFetching]);
+  const summary = current.isError || current.isFetching ? undefined : current.data?.summary;
+  const prev    = compare.isError || compare.isFetching ? undefined : compare.data?.summary;
   const comparable = compare.data !== undefined ? prev : undefined;
 
   const sorted = useSortedRows<SalesProductRow, SortKey>(rows, SORT_SPECS);
@@ -236,7 +240,7 @@ export default function SalesByProductPage(): JSX.Element {
       </label>
       <ExportMenu
         csv={{ rows, columns: csvColumns, filename: `sales-by-product-${start}_${end}` }}
-        disabled={rows.length === 0}
+        disabled={rows.length === 0 || current.isError || current.isFetching}
       />
     </>
   );
@@ -428,7 +432,7 @@ export default function SalesByProductPage(): JSX.Element {
       </PanelCard>
 
       <ProductSalesLinesDrawer
-        product={opened}
+        product={current.isError || current.isFetching ? null : opened}
         start={start}
         end={end}
         onClose={() => { setOpened(null); }}

@@ -48,15 +48,17 @@ describe('B2B stock validation', () => {
     expect(screen.queryByText(/Only .* in stock/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create B2B order' }));
     await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
-    expect(rpc).toHaveBeenCalledWith('create_b2b_order_v8', expect.objectContaining({ p_items: [{ product_id: 'mini', quantity: 2, unit_price: 5000 }] }));
+    expect(rpc).toHaveBeenCalledWith('create_b2b_order_v10', expect.objectContaining({ p_items: [{ product_id: 'mini', quantity: 2, unit_price: 5000 }] }));
   });
 
-  it('still blocks a tracked product with insufficient own stock', async () => {
+  it('submits a tracked product without reading or revealing its hidden stock', async () => {
     product.track_inventory = true;
-    await fillOrder();
-    expect(screen.getByLabelText('Quantity for line 1')).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByRole('button', { name: 'Create B2B order' })).toBeDisabled();
-    expect(rpc).not.toHaveBeenCalled();
+    const close = await fillOrder();
+    expect(select.mock.calls[0]?.[0]).not.toContain('current_stock');
+    expect(screen.getByLabelText('Quantity for line 1')).toHaveAttribute('aria-invalid', 'false');
+    expect(screen.queryByText(/Only .* in stock/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Create B2B order' }));
+    await waitFor(() => expect(close).toHaveBeenCalledOnce());
   });
 
   it('shows server rejection when recipe components are insufficient', async () => {

@@ -10,8 +10,8 @@ SELECT plan(8);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') $$,
-  '42501',
+  $$ SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') $$,
+  'P0003',
   NULL,
   'anon / no-perm caller is denied (reports.sales.read)'
 );
@@ -22,21 +22,21 @@ SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_sales_overview_v1(NULL, '2026-07-11') $$, 'P0001', NULL,
-  'NULL start date raises P0001');
+  $$ SELECT get_pos_sales_overview_v3(NULL, '2026-07-11') $$, '22023', NULL,
+  'NULL start date raises 22023');
 SELECT throws_ok(
-  $$ SELECT get_pos_sales_overview_v1('2026-07-11','2026-05-14') $$, 'P0001', NULL,
+  $$ SELECT get_pos_sales_overview_v3('2026-07-11','2026-05-14') $$, '22023', NULL,
   'start > end raises invalid_date_range');
 
 -- ── Envelope shape + timezone ─────────────────────────────────────────────
-WITH r AS (SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') AS j)
 SELECT ok((SELECT j ? 'revenue' AND j ? 'tax' AND j ? 'orders'
              AND j ? 'avg_basket' AND j ? 'sales_by_hour' FROM r),
           'envelope exposes revenue/tax/orders/avg_basket/sales_by_hour');
-WITH r AS (SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT j->>'timezone' FROM r), 'Asia/Makassar',
           'timezone is the business tz (WITA)');
-WITH r AS (SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT jsonb_array_length(j->'sales_by_hour') FROM r), 24,
           'sales_by_hour is a full 0..23 axis');
 
@@ -52,7 +52,7 @@ expected AS (
     AND ((COALESCE(o.paid_at,o.created_at) AT TIME ZONE (SELECT v FROM tz))::date)
         BETWEEN '2026-05-14' AND '2026-07-11'
 ),
-got AS (SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') AS j)
+got AS (SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT (j->>'orders')::int FROM got), (SELECT ord FROM expected),
           'orders match independent recomputation');
 WITH tz AS (SELECT COALESCE(MAX(timezone),'Asia/Makassar') v FROM business_config WHERE id=1),
@@ -66,7 +66,7 @@ expected AS (
     AND ((COALESCE(o.paid_at,o.created_at) AT TIME ZONE (SELECT v FROM tz))::date)
         BETWEEN '2026-05-14' AND '2026-07-11'
 ),
-got AS (SELECT get_pos_sales_overview_v1('2026-05-14','2026-07-11') AS j)
+got AS (SELECT get_pos_sales_overview_v3('2026-05-14','2026-07-11') AS j)
 SELECT is((SELECT (j->>'revenue')::numeric FROM got), (SELECT rev FROM expected),
           'revenue (TTC) matches independent recomputation');
 

@@ -24,6 +24,8 @@
 import { useEffect, useRef, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { Input, cn, selectClassName } from '@breakery/ui';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
+import type { AuditLogRow } from '../hooks/useAuditLogs.js';
+import { AUDIT_ACTION_LABELS } from '../utils/auditLabels.js';
 
 export interface AuditLogFilterValues {
   actorId:    string;
@@ -37,6 +39,7 @@ export const EMPTY_AUDIT_LOG_FILTERS: AuditLogFilterValues = {
 
 export interface AuditLogFiltersProps {
   value: AuditLogFilterValues;
+  actors?: Pick<AuditLogRow, 'actor_id' | 'actor_name'>[];
   // Forme « updater fonctionnel » (celle du setter de useState, que AuditPage
   // passe directement). Obligatoire — voir le commentaire sur la fermeture
   // périmée que la signature `(next) => void` provoquait.
@@ -66,8 +69,12 @@ const DEBOUNCE_MS = 300;
 const FIELD = 'h-8 w-40';
 const FIELD_LABEL = 'flex items-center gap-2 text-sm text-text-secondary';
 
-export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.Element {
+export function AuditLogFilters({ value, onChange, actors = [] }: AuditLogFiltersProps): JSX.Element {
   const users = useLoginUsers();
+  const actorOptions = new Map((users.data ?? []).map((user) => [user.id, user.display_name]));
+  for (const actor of actors) {
+    if (actor.actor_id && actor.actor_name) actorOptions.set(actor.actor_id, actor.actor_name);
+  }
   const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== '';
 
   // Brouillons locaux : le champ suit chaque frappe pendant que le commit vers
@@ -119,44 +126,49 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
   return (
     <>
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Actor</span>
+        <span className="sr-only">Account</span>
         <select
           value={value.actorId}
           onChange={(e) => { onChange((prev) => ({ ...prev, actorId: e.target.value })); }}
           className={cn(selectClassName, FIELD)}
           data-testid="audit-filter-actor"
-          aria-label="Filter by actor"
+          aria-label="Filter by account"
         >
-          <option value="">All actors</option>
-          {(users.data ?? []).map((u) => (
-            <option key={u.id} value={u.id}>{u.display_name}</option>
+          <option value="">All accounts</option>
+          {[...actorOptions].map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
           ))}
         </select>
       </label>
 
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Action</span>
+        <span className="sr-only">Event</span>
         <Input
           type="text"
           value={actionDraft}
           onChange={(e) => { handleActionChange(e.target.value); }}
-          placeholder="Action, e.g. product.update"
+          placeholder="Event code…"
+          title="Choose a suggested event or enter its exact action code"
+          list="audit-action-hints"
           className={FIELD}
           data-testid="audit-filter-action"
-          aria-label="Filter by action"
+          aria-label="Filter by event"
         />
+        <datalist id="audit-action-hints">
+          {Object.entries(AUDIT_ACTION_LABELS).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+        </datalist>
       </label>
 
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Entity type</span>
+        <span className="sr-only">Record type</span>
         <Input
           list="audit-entity-type-hints"
           value={entityDraft}
           onChange={(e) => { handleEntityChange(e.target.value); }}
-          placeholder="Entity, e.g. product"
+          placeholder="Record type…"
           className={FIELD}
           data-testid="audit-filter-entity"
-          aria-label="Filter by entity type"
+          aria-label="Filter by record type"
         />
         <datalist id="audit-entity-type-hints">
           {ENTITY_TYPE_HINTS.map((t) => <option key={t} value={t} />)}

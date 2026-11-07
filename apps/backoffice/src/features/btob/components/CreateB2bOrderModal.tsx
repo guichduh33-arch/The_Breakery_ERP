@@ -28,7 +28,7 @@ import {
   type CreditLimitExceededPayload,
 } from '../hooks/useCreateB2bOrder.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
-import { useProductsForB2bOrder } from '../hooks/useProductsForB2bOrder.js';
+import { useProductsForB2bOrder, type B2bOrderProductOption } from '../hooks/useProductsForB2bOrder.js';
 import { useCustomerNegotiatedPrices } from '@/features/customers/hooks/useCustomerNegotiatedPrices.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -100,7 +100,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
   }, [negotiatedPrices.data]);
 
   const productById = useMemo(() => {
-    const m = new Map<string, NonNullable<typeof products.data>[number]>();
+    const m = new Map<string, B2bOrderProductOption>();
     for (const p of products.data ?? []) m.set(p.id, p);
     return m;
   }, [products.data]);
@@ -145,7 +145,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     if (!Number.isFinite(p) || p < 0)  return false;
     const product = productById.get(r.productId);
     // Untracked products consume recipe components; the RPC validates their stock.
-    if (product?.track_inventory === true && product.current_stock < q) return false;
+    if (product?.track_inventory === true && product.current_stock !== null && product.current_stock < q) return false;
     return true;
   });
 
@@ -193,7 +193,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             setFormError('Selected customer is not a B2B account.');
             break;
           case 'permission_denied':
-            setFormError('You do not have permission to create B2B orders (needs pos.sale.create).');
+            setFormError('You do not have permission to create B2B orders.');
             break;
           case 'fiscal_period_closed':
             setFormError('The current fiscal period is closed. Reopen it before creating B2B orders.');
@@ -277,7 +277,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               {items.map((row, idx) => {
                 const product   = row.productId !== '' ? productById.get(row.productId) ?? null : null;
                 const q         = Number.parseFloat(row.quantity);
-                const overstock = product?.track_inventory === true && Number.isFinite(q) && q > product.current_stock;
+                const overstock = product?.track_inventory === true && product.current_stock !== null && Number.isFinite(q) && q > product.current_stock;
                 return (
                   <div key={row.rowKey} className="grid grid-cols-12 gap-2 items-start">
                     <Select
@@ -328,7 +328,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
                     </Button>
-                    {overstock && product !== null && (
+                    {overstock && product?.current_stock != null && (
                       <p className="col-span-12 text-xs text-red">
                         Only {formatQuantity(product.current_stock, null)} in stock for {product.name}.
                       </p>

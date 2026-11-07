@@ -14,7 +14,7 @@
 // invisible here and could never sign in. It now consumes
 // `useLoginUsers()` (→ `list_login_users_v1`, anon-callable pre-auth RPC).
 // PIN length is also now EXACTLY 6 digits everywhere (was a stale "4-6"
-// copy while `create_user_v1` accepted 4-8 — the two were out of sync).
+// copy while `create_user_v2` accepted 4-8 — the two were out of sync).
 //
 // Notes:
 //  - Dots indicator is purely visual ; auto-submit fires when length ===

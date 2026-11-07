@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useArAging.ts
 //
-// Query hook pour `get_ar_aging_v1` — l'AR aging B2B. SNAPSHOT COURANT (pas de
+// Query hook pour `get_ar_aging_v2` — l'AR aging B2B. SNAPSHOT COURANT (pas de
 // période) : une facture est une créance tant qu'elle est b2b_pending, son
 // encours = total − Σ allocations. Les buckets se calculent par jours de
 // RETARD après échéance (émission + terms client, défaut 30 j). La page
@@ -100,7 +100,7 @@ export function useArAging() {
     queryKey: ['ar-aging'],
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_ar_aging_v1');
+      const { data, error } = await supabase.rpc('get_ar_aging_v2');
       if (error) throw error as Error;
 
       const r         = (data ?? {}) as Record<string, unknown>;

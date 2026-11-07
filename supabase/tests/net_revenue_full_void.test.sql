@@ -29,7 +29,7 @@ BEGIN
   v_auth := gen_random_uuid(); v_profile := gen_random_uuid();
   INSERT INTO auth.users(id) VALUES (v_auth);
   INSERT INTO public.user_profiles(id, auth_user_id, role_code, employee_code, full_name, pin_hash, is_active)
-    VALUES (v_profile, v_auth, 'CASHIER', 'RPT-' || left(v_profile::text,8), 'Report fixture', hash_pin('285741'), true);
+    VALUES (v_profile, v_auth, 'SUPER_ADMIN', 'RPT-' || left(v_profile::text,8), 'Report fixture', hash_pin('285741'), true);
   INSERT INTO public.user_permission_overrides(user_profile_id, permission_code, is_granted, reason, granted_by)
     SELECT v_profile, code, true, 'Transactional report fixture', v_profile
     FROM unnest(ARRAY['reports.read','reports.sales.read','reports.financial.read','accounting.cash.read']) code;
@@ -40,9 +40,9 @@ BEGIN
 
   -- ── Baseline ──────────────────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_b  := get_dashboard_overview_v4();
+  v_dash_b  := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
-  v_daily_b := get_daily_sales_v3(v_today::text, v_today::text);
+  v_daily_b := get_daily_sales_v5(v_today::text, v_today::text);
   v_rev30_today_b := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_b->'revenue_30d') e
                                 WHERE (e->>'date')::date = v_today), 0);
@@ -63,9 +63,9 @@ BEGIN
     VALUES (v_o1, v_prod, 'S64 NetVoid Item', 60000, 1, 60000);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_1  := get_dashboard_overview_v4();
+  v_dash_1  := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
-  v_daily_1 := get_daily_sales_v3(v_today::text, v_today::text);
+  v_daily_1 := get_daily_sales_v5(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T01_dash_revenue_today_delta_plus_60k',
     (v_dash_1->'kpis'->'net_revenue'->>'value')::numeric - (v_dash_b->'kpis'->'net_revenue'->>'value')::numeric = 60000;
@@ -89,9 +89,9 @@ BEGIN
             v_profile, v_profile, v_session, true);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_2  := get_dashboard_overview_v4();
+  v_dash_2  := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
-  v_daily_2 := get_daily_sales_v3(v_today::text, v_today::text);
+  v_daily_2 := get_daily_sales_v5(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T03_dash_full_void_net_delta_zero',
     (v_dash_2->'kpis'->'net_revenue'->>'value')::numeric - (v_dash_b->'kpis'->'net_revenue'->>'value')::numeric = 0;
@@ -119,9 +119,9 @@ BEGIN
             v_profile, v_profile, v_session);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_3  := get_dashboard_overview_v4();
+  v_dash_3  := get_dashboard_overview_v7();
   EXECUTE 'RESET ROLE';
-  v_daily_3 := get_daily_sales_v3(v_today::text, v_today::text);
+  v_daily_3 := get_daily_sales_v5(v_today::text, v_today::text);
   v_rev30_today_3 := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_3->'revenue_30d') e
                                 WHERE (e->>'date')::date = v_today), 0);

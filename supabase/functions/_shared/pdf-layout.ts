@@ -3,12 +3,14 @@
 // S29 Wave 3.A.1 — header/footer + IDR formatter commun à tous les PDF templates.
 
 import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import type { InvoicePrintOptions } from './invoice-print-options.ts';
 
 export interface BusinessInfo {
   name:     string;
   npwp?:    string;
   address?: string;
   logoUrl?: string;
+  phone?: string;
 }
 
 export interface LayoutContext {
@@ -17,6 +19,7 @@ export interface LayoutContext {
   fontBold: PDFFont;
   business: BusinessInfo;
   logo?:    PDFImage;
+  invoiceTemplate?: InvoicePrintOptions;
 }
 
 export async function initLayout(business: BusinessInfo): Promise<LayoutContext> {

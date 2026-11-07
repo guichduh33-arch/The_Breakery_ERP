@@ -8,10 +8,8 @@
 // filet dur : ce hook réduit la fenêtre de vente d'un produit périmé, il ne
 // la ferme pas.
 //
-// Subscribes postgres_changes on `products` and `categories` (published by
-// migration 20260722000202) and invalidates the matching TanStack queries —
-// the server stays the single source of truth (we trigger a re-read, we never
-// trust the event payload). Mirror of useSettingsRealtime (ADR-006 déc. 4).
+// Le topic catalogue signale les changements de produits sans exposer de
+// payload de stock. Les catégories restent publiées directement.
 //
 // On every SUBSCRIBED transition (initial join AND rejoin after a drop) all
 // catalog keys are invalidated, so events missed while disconnected are
@@ -31,18 +29,6 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
-
-// A products event touches the grid (useProducts, incl. the has_variants
-// probe) and the variant picker (useProductVariants — prefix invalidation
-// covers every ['pos-product-variants', parentId] entry).
-const PRODUCTS_KEYS: readonly (readonly string[])[] = [
-  ['products'],
-  ['pos-product-variants'],
-  ['pos-product-variants-batch'],
-  ['display', 'showcase-products'],
-  ['combo-config'],
-  ['product-modifiers'],
-];
 
 // A categories event touches the category nav AND the product grid: rows
 // embed categories(dispatch_station), and grid grouping follows sort_order.
@@ -86,13 +72,6 @@ export function useCatalogRealtime(enabled: boolean): void {
     const channelName = `catalog-realtime-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
-      .on(
-        // Same strict-literal typing workaround as useKdsRealtime.
-        'postgres_changes' as never,
-        // INSERT/UPDATE ; les suppressions passent par le signal privé ci-dessous.
-        { event: '*', schema: 'public', table: 'products' } as never,
-        () => invalidateAll(qc, PRODUCTS_KEYS),
-      )
       .on(
         'postgres_changes' as never,
         { event: '*', schema: 'public', table: 'categories' } as never,

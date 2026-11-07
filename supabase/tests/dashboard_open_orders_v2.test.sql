@@ -7,7 +7,7 @@ CREATE TEMP TABLE dashboard_fixture(label text,id uuid DEFAULT gen_random_uuid()
  held boolean DEFAULT false,legacy boolean DEFAULT false,voided_at timestamptz,created_at timestamptz);
 GRANT SELECT,INSERT ON dashboard_result TO authenticated;
 SET LOCAL ROLE authenticated;
-INSERT INTO dashboard_result VALUES('before',get_dashboard_open_orders_v2());
+INSERT INTO dashboard_result VALUES('before',get_dashboard_open_orders_v3());
 RESET ROLE;
 -- Reprise financiere reelle sous transaction : elle reste une creance ouverte.
 UPDATE historical_fixture SET payload=payload||jsonb_build_object('stock_mode','financial_only','payments','[]'::jsonb,
@@ -35,7 +35,7 @@ INSERT INTO orders(id,order_number,session_id,created_via,order_type,status,tota
  CASE WHEN f.status='voided' THEN h.actor END,CASE WHEN f.status='voided' THEN 'Fixture void' END
  FROM dashboard_fixture f CROSS JOIN session s CROSS JOIN historical_fixture h;
 SET LOCAL ROLE authenticated;
-INSERT INTO dashboard_result VALUES('after',get_dashboard_open_orders_v2());
+INSERT INTO dashboard_result VALUES('after',get_dashboard_open_orders_v3());
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(r.result->'orders') o WHERE o->>'id'=f.id::text),
  'real open order included: '||f.label) FROM dashboard_result r,dashboard_fixture f WHERE r.phase='after' AND f.label IN ('old-real','draft','pending');
@@ -50,16 +50,16 @@ INSERT INTO historical_tap(result) SELECT is(jsonb_array_length(result->'orders'
 INSERT INTO historical_tap(result) SELECT is((SELECT sum((o->>'total')::numeric) FROM jsonb_array_elements(result->'orders') o),(result->>'open_total')::numeric,'rows and amount agree') FROM dashboard_result WHERE phase='after';
 INSERT INTO historical_tap(result) SELECT is((SELECT status::text FROM orders WHERE financial_import_document_id=(SELECT id FROM historical_import_documents WHERE run_id=(f.result->>'run_id')::uuid)),'pending_payment','financial receivable remains open') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT total FROM orders WHERE financial_import_document_id=(SELECT id FROM historical_import_documents WHERE run_id=(f.result->>'run_id')::uuid)),100000::numeric,'financial receivable amount unchanged') FROM historical_fixture f;
-INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','get_dashboard_open_orders_v2()','EXECUTE'),'anon has no execute grant');
-INSERT INTO historical_tap(result) SELECT ok(has_function_privilege('authenticated','get_dashboard_open_orders_v2()','EXECUTE') AND has_function_privilege('service_role','get_dashboard_open_orders_v2()','EXECUTE'),'existing caller grants retained');
+INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','get_dashboard_open_orders_v3()','EXECUTE'),'anon has no execute grant');
+INSERT INTO historical_tap(result) SELECT ok(has_function_privilege('authenticated','get_dashboard_open_orders_v3()','EXECUTE') AND has_function_privilege('service_role','get_dashboard_open_orders_v3()','EXECUTE'),'existing caller grants retained');
 GRANT INSERT,SELECT ON historical_tap TO anon;
 GRANT USAGE ON SEQUENCE historical_tap_id_seq TO anon;
 SET LOCAL ROLE anon;
-INSERT INTO historical_tap(result) SELECT throws_ok('SELECT get_dashboard_open_orders_v2()','42501',NULL,'anon call refused');
+INSERT INTO historical_tap(result) SELECT throws_ok('SELECT get_dashboard_open_orders_v3()','42501',NULL,'anon call refused');
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',true),set_config('request.jwt.claims','{}',true);
 SET LOCAL ROLE authenticated;
-INSERT INTO historical_tap(result) SELECT throws_ok('SELECT get_dashboard_open_orders_v2()','42501','permission denied: orders.read required','missing identity refused');
+INSERT INTO historical_tap(result) SELECT throws_ok('SELECT get_dashboard_open_orders_v3()','42501','permission denied: orders.read required','missing identity refused');
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is(to_regprocedure('get_dashboard_open_orders_v1()'),NULL::regprocedure,'old version removed');
 SET CONSTRAINTS ALL IMMEDIATE;

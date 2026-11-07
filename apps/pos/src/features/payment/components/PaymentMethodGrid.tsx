@@ -76,7 +76,7 @@ export function PaymentMethodGrid({ selectedMethod, onSelect, onOutstanding, out
         className="min-h-14 w-full mb-4 rounded-md border border-border-subtle px-4 py-3 text-left disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
         data-testid="pay-method-outstanding">
         <span className="font-semibold">Outstanding</span>
-        <span className="block text-sm text-text-secondary">{!attachedCustomer ? 'Attach a customer to pay later' : 'Save as unpaid — collect later'}</span>
+        <span className="block text-sm text-text-secondary">{!attachedCustomer ? 'Attach a customer to pay later' : 'Save remaining balance — collect later'}</span>
       </button>}
     </>
   );

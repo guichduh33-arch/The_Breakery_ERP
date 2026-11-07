@@ -63,22 +63,22 @@ BEGIN
 END;
 $fixture$;
 
-SELECT ok(NOT has_function_privilege('anon', 'public.reopen_held_order_v9(uuid,uuid)', 'EXECUTE'), 'anonymous access refused');
-SELECT ok(has_function_privilege('authenticated', 'public.reopen_held_order_v9(uuid,uuid)', 'EXECUTE'), 'authenticated access preserved');
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,NULL)', id),
+SELECT ok(NOT has_function_privilege('anon', 'public.reopen_held_order_v10(uuid,uuid)', 'EXECUTE'), 'anonymous access refused');
+SELECT ok(has_function_privilege('authenticated', 'public.reopen_held_order_v10(uuid,uuid)', 'EXECUTE'), 'authenticated access preserved');
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,NULL)', id),
   'P0001', 'no_open_shift', 'receiving shift required') FROM transfer_cases WHERE label = 'pos';
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.origin')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.origin')),
   'P0001', 'no_open_shift', 'closed receiving shift refused') FROM transfer_cases WHERE label = 'pos';
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.other')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.other')),
   'P0001', 'no_open_shift', 'another cashier receiving shift refused') FROM transfer_cases WHERE label = 'pos';
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.receiving')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.receiving')),
   'P0002', 'order_shift_still_open', 'another active shift is not taken over') FROM transfer_cases WHERE label = 'active_origin';
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.receiving')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.receiving')),
   'P0002', 'order_already_has_payments', 'partial payment cannot move') FROM transfer_cases WHERE label = 'partial';
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.receiving')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.receiving')),
   'P0002', 'order_not_available_for_reopen', 'unavailable ticket refused: ' || label)
   FROM transfer_cases WHERE label IN ('unfired', 'paid', 'voided');
-SELECT lives_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.receiving')),
+SELECT lives_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.receiving')),
   'previous shift ticket resumed: ' || label) FROM transfer_cases WHERE label IN ('pos', 'tablet');
 SELECT is(o.session_id, current_setting('transfer.receiving')::uuid, 'ticket assigned to receiving shift: ' || c.label)
   FROM transfer_cases c JOIN public.orders o ON o.id = c.id WHERE c.label IN ('pos', 'tablet');
@@ -95,8 +95,8 @@ SELECT ok(EXISTS(SELECT 1 FROM public.audit_logs a WHERE a.entity_id = c.id AND 
   AND a.metadata->>'receiving_session_id' = current_setting('transfer.receiving')
   AND (a.metadata->>'shift_transferred')::boolean), 'origin and receiving shifts audited: ' || c.label)
   FROM transfer_cases c WHERE c.label IN ('pos', 'tablet');
-SELECT is(public.reopen_held_order_v9(id, current_setting('transfer.receiving')::uuid),
-  public.reopen_held_order_v9(id, current_setting('transfer.receiving')::uuid), 'repeat resume preserves snapshot')
+SELECT is(public.reopen_held_order_v10(id, current_setting('transfer.receiving')::uuid),
+  public.reopen_held_order_v10(id, current_setting('transfer.receiving')::uuid), 'repeat resume preserves snapshot')
   FROM transfer_cases WHERE label = 'tablet';
 
 DO $payment$
@@ -104,12 +104,12 @@ DECLARE v_order uuid; v_session uuid := current_setting('transfer.receiving')::u
 BEGIN
   SELECT id INTO v_order FROM transfer_cases WHERE label = 'tablet';
   -- La production et le développement ont des money-path différents.
-  IF EXISTS(SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v24') THEN
-    EXECUTE 'SELECT public.pay_existing_order_v24(p_order_id := $1, p_payment := $2,
+  IF EXISTS(SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v25') THEN
+    EXECUTE 'SELECT public.pay_existing_order_v25(p_order_id := $1, p_payment := $2,
       p_idempotency_key := $3, p_session_id := $4)'
       USING v_order, '{"method":"cash","amount":100,"cash_received":100}'::jsonb, gen_random_uuid(), v_session;
   ELSE
-    EXECUTE 'SELECT public.pay_existing_order_v22(p_order_id := $1, p_payment := $2, p_idempotency_key := $3)'
+    EXECUTE 'SELECT public.pay_existing_order_v25(p_order_id := $1, p_payment := $2, p_idempotency_key := $3)'
       USING v_order, '{"method":"cash","amount":100,"cash_received":100}'::jsonb, gen_random_uuid();
   END IF;
 END;
@@ -126,7 +126,7 @@ SELECT is((SELECT count(*)::int FROM public.order_payments p JOIN public.orders 
   0, 'closed drawer receives no new payment');
 SELECT set_config('request.jwt.claim.sub', '', true);
 SELECT set_config('request.jwt.claims', '{}', true);
-SELECT throws_ok(format('SELECT public.reopen_held_order_v9(%L,%L)', id, current_setting('transfer.receiving')),
+SELECT throws_ok(format('SELECT public.reopen_held_order_v10(%L,%L)', id, current_setting('transfer.receiving')),
   'P0001', 'Not authenticated', 'unauthenticated resume refused') FROM transfer_cases WHERE label = 'pos';
 SELECT * FROM finish();
 ROLLBACK;

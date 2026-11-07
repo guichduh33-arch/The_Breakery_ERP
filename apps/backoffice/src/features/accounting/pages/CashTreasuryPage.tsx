@@ -30,7 +30,7 @@ const SMALL_MONEY_FLOAT = 5_000_000;
 
 export default function CashTreasuryPage() {
   // La requête entière, plus seulement ses données : son échec n'était rendu
-  // NULLE PART. Un `get_cash_wallet_balances_v3` refusé (permission, réseau)
+  // NULLE PART. Un `get_cash_wallet_balances_v4` refusé (permission, réseau)
   // laissait la rangée de tuiles vide sous un titre « Cash Treasury », ce qui se
   // lit « aucun coffre » — l'écran affirmait alors qu'il n'y a pas d'argent.
   const walletsQuery = useCashWallets();

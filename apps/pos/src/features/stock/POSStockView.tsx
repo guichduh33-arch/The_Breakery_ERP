@@ -31,6 +31,7 @@ import { POSStockCard } from './components/POSStockCard';
 import { POSStockRow } from './components/POSStockRow';
 import { POSStockCategoriesSettings } from './components/POSStockCategoriesSettings';
 import { useAuthStore } from '@/stores/authStore';
+import { DisplayDayClosingModal } from './components/DisplayDayClosingModal';
 
 const STOCK_VIEW_KEY = 'pos-stock-view';
 
@@ -38,6 +39,8 @@ export default function POSStockView(): JSX.Element {
   const navigate = useNavigate();
   const products = usePOSStockProducts();
   const hasDisplayManage = useAuthStore((s) => s.hasPermission('display.manage'));
+  const canCount = useAuthStore((s) => s.hasPermission('display.count'));
+  const [closingOpen, setClosingOpen] = useState(false);
   const hasInventoryManage = useAuthStore((s) => s.hasPermission('settings.update'));
   const gestures = useDisplayStockGestures(hasDisplayManage);
 
@@ -67,8 +70,8 @@ export default function POSStockView(): JSX.Element {
     let out = 0;
     let low = 0;
     for (const r of rows) {
-      if (r.display_stock <= 0) out++;
-      else if (r.min_stock_threshold > 0 && r.display_stock <= r.min_stock_threshold) low++;
+      if (r.is_sellable === false || (r.display_stock !== null && r.display_stock <= 0)) out++;
+      else if (r.display_stock !== null && r.min_stock_threshold > 0 && r.display_stock <= r.min_stock_threshold) low++;
     }
     return { out, low, total: rows.length };
   }, [rows]);
@@ -117,6 +120,8 @@ export default function POSStockView(): JSX.Element {
 
         <div className="flex-1" />
 
+        {canCount && <Button variant="primary" onClick={() => setClosingOpen(true)}>End-of-day count</Button>}
+
         {/* View toggle — Card / List */}
         <div
           role="group"
@@ -158,6 +163,7 @@ export default function POSStockView(): JSX.Element {
         <KpiChip tone="neutral" label={`${counts.total} products`} />
       </header>
 
+      {closingOpen && <DisplayDayClosingModal onClose={() => setClosingOpen(false)} />}
       {!hasDisplayManage && <p role="status" className="px-4 py-2 text-sm text-text-secondary">Read-only access to display stock.</p>}
       {gestures.pending.map((attempt) => (
         <div key={attempt.product.id} role="status" className="flex items-center justify-between gap-3 px-4 py-2 bg-warning-soft text-text-primary">

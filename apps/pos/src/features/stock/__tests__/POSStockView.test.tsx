@@ -108,6 +108,9 @@ describe('POSStockView', () => {
     for (const mutation of [receiveMutate, returnToKitchenMutate, wasteMutate, adjustMutate]) {
       mutation.mockResolvedValue({ product_id: 'p1', new_display_stock: 4, idempotent_replay: false });
     }
+    for (const mutation of [wasteMutate, adjustMutate]) {
+      mutation.mockResolvedValue({ declaration_id: 'declaration-1', status: 'pending', idempotent_replay: false });
+    }
     productsState.current = { data: [], isLoading: false, isError: false };
   });
 
@@ -219,7 +222,7 @@ describe('POSStockView', () => {
     expect(toast.success).not.toHaveBeenCalled();
     const original: unknown = receiveMutate.mock.calls[0]?.[0];
     fireEvent.click(screen.getByRole('button', { name: 'Retry operation' }));
-    await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('6.375 pcs')));
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('Already recorded')));
     expect(receiveMutate.mock.calls[1]?.[0]).toEqual(original);
     expect(screen.getByLabelText(/Enter quantity/)).toHaveValue(0);
     expect(screen.queryByRole('button', { name: 'Retry operation' })).not.toBeInTheDocument();

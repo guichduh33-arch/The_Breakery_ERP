@@ -14,6 +14,7 @@ import {
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from '../lib/supabase.js';
+import { clearSessionCache } from '../lib/queryClient.js';
 import { isSameTabReload, localSessionFromServer, localSessionValid, type LocalSession } from '@/features/auth/localSession';
 import { useCloudStatusStore } from '@/features/lan/cloudStatusStore';
 
@@ -141,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
           // Supabase CLI) refuses to validate via `auth.setSession`. We inject
           // the bearer token directly via the custom-fetch wrapper. NO
           // `supabase.auth.setSession()` here, NO `signOut()` in logout.
+          if (get().sessionToken !== res.session.token) clearSessionCache();
           setSupabaseAccessToken(res.auth.access_token);
           setSupabaseCloudEnabled(true);
           set({
@@ -176,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout() {
         authGeneration += 1;
+        clearSessionCache();
         const token = get().sessionToken;
         if (token) sessionRevocations.enqueue(token);
         // Drop the client-side bearer (counterpart to setSupabaseAccessToken on login).

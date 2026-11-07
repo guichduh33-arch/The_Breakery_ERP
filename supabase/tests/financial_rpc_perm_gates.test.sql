@@ -31,10 +31,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_general_ledger_v3'
+      AND p.proname = 'get_general_ledger_v4'
       AND p.prosecdef = true
   ),
-  'T1 — get_general_ledger_v3 existe et SECURITY DEFINER'
+  'T1 — get_general_ledger_v4 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -42,10 +42,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_trial_balance_v4'
+      AND p.proname = 'get_trial_balance_v5'
       AND p.prosecdef = true
   ),
-  'T2 — get_trial_balance_v4 existe et SECURITY DEFINER'
+  'T2 — get_trial_balance_v5 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -53,10 +53,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_profit_loss_v3'
+      AND p.proname = 'get_profit_loss_v4'
       AND p.prosecdef = true
   ),
-  'T3 — get_profit_loss_v3 existe et SECURITY DEFINER'
+  'T3 — get_profit_loss_v4 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -64,10 +64,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_balance_sheet_v3'
+      AND p.proname = 'get_balance_sheet_v4'
       AND p.prosecdef = true
   ),
-  'T4 — get_balance_sheet_v3 existe et SECURITY DEFINER'
+  'T4 — get_balance_sheet_v4 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -75,10 +75,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_sales_by_hour_v3'
+      AND p.proname = 'get_sales_by_hour_v5'
       AND p.prosecdef = true
   ),
-  'T5 — get_sales_by_hour_v3 existe et SECURITY DEFINER'
+  'T5 — get_sales_by_hour_v5 existe et SECURITY DEFINER'
 );
 
 -- ============================================================
@@ -162,10 +162,10 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.get_general_ledger_v3(uuid, date, date, int, jsonb)',
+    'public.get_general_ledger_v4(uuid, date, date, int, jsonb)',
     'EXECUTE'
   ),
-  'T12 — anon cannot EXECUTE get_general_ledger_v3'
+  'T12 — anon cannot EXECUTE get_general_ledger_v4'
 );
 
 -- ============================================================

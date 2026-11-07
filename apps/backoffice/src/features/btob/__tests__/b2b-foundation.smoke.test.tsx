@@ -3,7 +3,7 @@
 // Session 24 / Phase 2.A.5 — smoke for the B2B foundation surfaces.
 //   T1 — useB2bDashboard.aging is built from view_ar_aging (not last_visit_at).
 //   T2 — "+ New B2B Order" is enabled, click opens CreateB2bOrderModal.
-//   T3 — RecordB2bPaymentModal submit calls the record_b2b_payment_v3 mutation.
+//   T3 — RecordB2bPaymentModal submit calls the record_b2b_payment_v5 mutation.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -199,7 +199,7 @@ describe('B2B foundation (S24)', () => {
   beforeEach(() => {
     mockRpc.mockReset(); installFinancialBrowser(); resetFinancialSession();
     financialTestAuth.setState({ hasPermission: (p) =>
-      p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update'
+      p === 'customers.read' || p === 'b2b.order.create' || p === 'customers.update'
       || p === 'b2b.payment.record' || p === 'b2b.order.cancel' });
   });
 

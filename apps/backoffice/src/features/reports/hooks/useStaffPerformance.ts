@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/reports/hooks/useStaffPerformance.ts
-// S40 Wave B1 — Query hook for get_staff_performance_v2 RPC.
+// S40 Wave B1 — Query hook for get_staff_performance_v3 RPC.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -35,7 +35,7 @@ export function useStaffPerformance(params: UseStaffPerformanceParams) {
   return useQuery<StaffPerformanceData, Error>({
     queryKey: ['reports', 'staff-performance', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_staff_performance_v2', {
+      const { data, error } = await supabase.rpc('get_staff_performance_v3', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

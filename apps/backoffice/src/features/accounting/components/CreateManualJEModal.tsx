@@ -6,7 +6,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Input, Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/BackofficeUi.js';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, todayIsoDate } from '@breakery/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { usePostableAccounts } from '../hooks/usePostableAccounts.js';
 import { useCreateManualJournalEntry, type ManualJELine } from '../hooks/useCreateManualJournalEntry.js';
@@ -42,7 +42,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
 
   const [step, setStep]                 = useState<1 | 2>(1);
   const [description, setDescription]   = useState('');
-  const [entryDate, setEntryDate]       = useState(new Date().toISOString().slice(0, 10));
+  const [entryDate, setEntryDate]       = useState(todayIsoDate);
   const [lines, setLines]               = useState<DraftLine[]>([newDraftLine(), newDraftLine()]);
   const [pin, setPin]                   = useState('');
   const [error, setError]               = useState<string | null>(null);

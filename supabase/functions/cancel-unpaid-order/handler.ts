@@ -31,7 +31,7 @@ export interface CancelDependencies {
   json: (body: unknown, status?: number) => Response;
   rateLimit: (req: Request) => Promise<Response | null>;
   actor: (req: Request) => Promise<string | Response | null>;
-  manager: (pin: string, req: Request) => Promise<string | Response>;
+  manager: (pin: string, req: Request, actingAuthUserId: string) => Promise<string | Response>;
   execute: (args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
 }
 export async function handleCancelUnpaid(req: Request, deps: CancelDependencies): Promise<Response> {
@@ -51,7 +51,7 @@ export async function handleCancelUnpaid(req: Request, deps: CancelDependencies)
   try { raw = await req.json(); } catch { return deps.json({ error: 'invalid_json' }, 400); }
   const body = parsePayload(raw);
   if (!body) return deps.json({ error: 'invalid_request' }, 400);
-  const manager = await deps.manager(pin, req);
+  const manager = await deps.manager(pin, req, actor);
   if (manager instanceof Response) return manager;
   const { data, error } = await deps.execute({
     p_order_id: body.order_id, p_expected_updated_at: body.expected_updated_at,

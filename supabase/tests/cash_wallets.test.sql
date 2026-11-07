@@ -5,6 +5,8 @@
 -- execute_sql); ROLLBACK restores the real function.
 
 BEGIN;
+\ir helpers/pin_session.sql
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 
 -- Stub the permission gate for write-path cases (rolled back at COMMIT/ROLLBACK).
 CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
@@ -71,24 +73,24 @@ BEGIN
                                          'aaaa2222-2222-2222-2222-222222222222',NULL);
 END $$;
 
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1110'), 'balances include 1110');
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1117'), 'balances include 1117');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1110'), 'balances include 1110');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1117'), 'balances include 1117');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v3('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v4('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'petty ledger returns at least the transfer row');
 SELECT is(
-  (SELECT in_amount FROM get_cash_wallet_ledger_v3('1111', CURRENT_DATE-1, CURRENT_DATE+1)
+  (SELECT in_amount FROM get_cash_wallet_ledger_v4('1111', CURRENT_DATE-1, CURRENT_DATE+1)
    WHERE remark LIKE '%replenish%' LIMIT 1),
   100000::numeric, 'petty In row = 100000');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v3('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v4('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'undeposited ledger executes and returns rows');
 
 -- ── Task 9: analysis RPC ──────────────────────────────────────────────────────
-SELECT ok( (get_cash_wallet_analysis_v2(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'revenue_by_shift',
+SELECT ok( (get_cash_wallet_analysis_v3(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'revenue_by_shift',
   'analysis payload has revenue_by_shift key');
-SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v2(date,date)','EXECUTE'), false,
-  'anon has no EXECUTE on get_cash_wallet_analysis_v2');
+SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v3(date,date)','EXECUTE'), false,
+  'anon has no EXECUTE on get_cash_wallet_analysis_v3');
 
 -- ── Task 22: stricter accounting.cash.adjust gate (adjustments + boss withdrawal) ──
 -- Re-stub: caller has cash.write but NOT cash.adjust.
@@ -117,13 +119,13 @@ CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.read' $$;
 
 SELECT throws_ok(
-  $q$ SELECT * FROM get_cash_wallet_balances_v3() $q$,
+  $q$ SELECT * FROM get_cash_wallet_balances_v4() $q$,
   '42501', NULL, 'balances refuse sans accounting.cash.read');
 SELECT throws_ok(
-  $q$ SELECT * FROM get_cash_wallet_ledger_v3('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,
+  $q$ SELECT * FROM get_cash_wallet_ledger_v4('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,
   '42501', NULL, 'ledger refuse sans accounting.cash.read');
 SELECT throws_ok(
-  $q$ SELECT get_cash_wallet_analysis_v2(CURRENT_DATE-31, CURRENT_DATE+1) $q$,
+  $q$ SELECT get_cash_wallet_analysis_v3(CURRENT_DATE-31, CURRENT_DATE+1) $q$,
   '42501', NULL, 'analysis refuse sans accounting.cash.read');
 
 SELECT * FROM finish();

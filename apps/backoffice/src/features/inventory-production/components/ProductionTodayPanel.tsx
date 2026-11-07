@@ -167,6 +167,13 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
                       <div className="font-mono text-xs uppercase tracking-widest text-text-muted">
                         {r.production_number}
                       </div>
+                      <div className="mt-1 text-xs text-text-secondary">
+                        Produced · {formatDateTimeShortWita(r.production_date)}
+                      </div>
+                      <div className="text-xs text-text-secondary">
+                        Created · {r.created_at ? formatDateTimeShortWita(r.created_at) : 'Unknown date'}
+                        {' · '}{r.author?.full_name ?? 'Unknown author'}
+                      </div>
                       {/* Un état NOMMÉ, pas une opacité : la contre-passation est
                           un fait du registre, elle se lit à plein contraste. */}
                       {reverted && r.reverted_at !== null && (

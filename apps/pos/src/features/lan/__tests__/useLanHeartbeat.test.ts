@@ -38,7 +38,7 @@ describe('useLanHeartbeat', () => {
     vi.useRealTimers();
   });
 
-  it('calls update_lan_heartbeat_v2 immediately on mount with a batch of one', () => {
+  it('calls update_lan_heartbeat_v3 immediately on mount with a batch of one', () => {
     // The hook's tick() calls supabase.rpc(...) synchronously before its first
     // `await` — renderHook's act() flush is enough, no need to await anything.
     renderHook(() => useLanHeartbeat({ deviceCode: 'POS-FRONT-01', deviceType: 'pos' }));

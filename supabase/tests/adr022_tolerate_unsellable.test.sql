@@ -134,7 +134,7 @@ DO $t5$ DECLARE v_oid UUID; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.tab_auth'), true);
   BEGIN
-    v_oid := create_tablet_order_v11(
+    v_oid := create_tablet_order_v12(
       p_client_uuid  := gen_random_uuid(),
       p_waiter_id    := current_setting('a22t.tab_prof')::uuid,
       p_table_number := '',
@@ -168,7 +168,7 @@ DO $t8$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v11(
+    PERFORM create_tablet_order_v12(
       p_client_uuid  := gen_random_uuid(),
       p_waiter_id    := current_setting('a22t.tab_prof')::uuid,
       p_table_number := '',

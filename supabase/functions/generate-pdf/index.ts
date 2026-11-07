@@ -26,6 +26,7 @@ import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { TEMPLATES, type TemplateName } from '../_shared/pdf-templates/index.ts';
+import type { InvoicePrintOptions } from '../_shared/invoice-print-options.ts';
 
 interface Body {
   template:         TemplateName;
@@ -93,6 +94,14 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
+  const ownerTemplates = ['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover',
+    'payment_by_method', 'pb1'];
+  if (ownerTemplates.includes(body.template)) {
+    const { data: owner, error: ownerError } = await userClient.rpc('can_view_stock_v1');
+    if (ownerError) return jsonResponse({ error: 'permission_check_failed' }, 500);
+    if (owner !== true) return jsonResponse({ error: 'stock_visibility_owner_required' }, 403);
+  }
+
   // Audit Reports 2026-08-01, lot C / D3 — second verrou : EXTRAIRE un rapport
   // est un geste distinct de le CONSULTER. `reports.export` existait dans le set
   // fermé de permissions et était seedée, mais n'était lue nulle part ; elle
@@ -110,7 +119,7 @@ serve(async (req) => {
   const admin = getAdminClient();
   const { data: biz } = await admin
     .from('business_config')
-    .select('name, fiscal_address, npwp, logo_url')
+    .select('name, fiscal_address, npwp, logo_url, phone')
     .limit(1)
     .maybeSingle();
   const business: BusinessInfo = {
@@ -118,12 +127,23 @@ serve(async (req) => {
     npwp:    biz?.npwp || undefined,
     address: biz?.fiscal_address || undefined,
     logoUrl: biz?.logo_url || undefined,
+    phone: biz?.phone || undefined,
   };
+
+  // La présentation des factures vient du modèle audité, jamais du body client.
+  let invoiceTemplate: InvoicePrintOptions | undefined;
+  if (body.template === 'b2b_invoice') {
+    const { data: savedTemplate, error: templateError } = await admin
+      .from('invoice_print_templates').select('*').eq('id', true).maybeSingle();
+    if (templateError || !savedTemplate) return jsonResponse({ error: 'invoice_template_unavailable' }, 503);
+    invoiceTemplate = savedTemplate as InvoicePrintOptions;
+  }
 
   // Build PDF
   let pdfBytes: Uint8Array;
   try {
     const ctx = await initLayout(business);
+    if (invoiceTemplate) ctx.invoiceTemplate = invoiceTemplate;
     await tplReg.render(ctx, body.data, body.period ?? null);
     if (body.comparePrevious) {
       // Render previous period as additional page(s).

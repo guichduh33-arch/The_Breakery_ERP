@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/dashboard/hooks/useDashboardOverview.ts
 //
-// Écran 1c — l'agrégat du dashboard « Today », câblé sur get_dashboard_overview_v4.
+// Écran 1c — l'agrégat du dashboard « Today », câblé sur get_dashboard_overview_v7.
 //
 // L'enveloppe jsonb du RPC est typée à la main (le regen produit `Json`), même
 // pattern que usePaymentsByMethod. Les types portent les DEUX réserves de source
@@ -40,8 +40,8 @@ export interface CashWallet {
 
 export interface CashOnHandKpi {
   value: number | null;
-  drawer?: number;
-  safe?: number;
+  drawer?: number | null;
+  safe?: number | null;
   is_derived?: boolean;
   wallets: CashWallet[];
   /** Vrai quand le rôle n'a pas `accounting.cash.read`. */
@@ -119,7 +119,7 @@ export function useDashboardOverview(enabled = true) {
   return useQuery<DashboardOverview, Error>({
     queryKey: DASHBOARD_OVERVIEW_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_overview_v4');
+      const { data, error } = await supabase.rpc('get_dashboard_overview_v7');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as DashboardOverview;
     },

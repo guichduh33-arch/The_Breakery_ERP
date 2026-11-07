@@ -18,8 +18,8 @@ export const useReceiptJobs = create<ReceiptJobsState>()(persist((set) => ({
 }), { name: 'breakery.receipt-jobs.v1', storage: createJSONStorage(() => localStorage) }));
 
 /** Store the original receipt before printing. Retrying only prints that snapshot. */
-export async function runReceiptJob(payload: ReceiptPayload, printer?: PrinterTarget) {
-  const id = payload.order.id ?? payload.order.order_number;
+export async function runReceiptJob(payload: ReceiptPayload, printer?: PrinterTarget, paymentAttemptId?: string) {
+  const id = paymentAttemptId ?? payload.order.id ?? payload.order.order_number;
   const previous = useReceiptJobs.getState().jobs.find((job) => job.id === id);
   const job: ReceiptJob = { id, payload: previous?.payload ?? payload, status: 'pending', attempts: (previous?.attempts ?? 0) + 1 };
   try {

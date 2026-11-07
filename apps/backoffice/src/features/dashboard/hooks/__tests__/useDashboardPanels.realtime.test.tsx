@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase.js', () => ({ supabase: {
   },
 } }));
 
-import { useOpenOrders } from '../useDashboardPanels.js';
+import { isRestricted, useDisplayStockActivity, useOpenOrders } from '../useDashboardPanels.js';
 
 function wrapper(client: QueryClient, strict = false) {
   return ({ children }: { children: ReactNode }) => {
@@ -47,7 +47,7 @@ describe('dashboard open orders — suppressions distantes', () => {
     }, error: null });
     const { result, unmount } = renderHook(() => useOpenOrders(), { wrapper: wrapper(client) });
     await waitFor(() => expect(result.current.data?.open_total).toBe(45000));
-    expect(mock.rpc).toHaveBeenCalledWith('get_dashboard_open_orders_v2');
+    expect(mock.rpc).toHaveBeenCalledWith('get_dashboard_open_orders_v3');
     const signal = mock.subscriptions.find(({ filter }) => filter.table === 'ui_invalidation_topics');
     expect(signal?.filter).toEqual({
       event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders',
@@ -70,5 +70,17 @@ describe('dashboard open orders — suppressions distantes', () => {
     mock.names.length = 0;
     renderHook(() => useOpenOrders(false), { wrapper: wrapper(client) });
     expect(mock.names).toHaveLength(0);
+  });
+
+  it('classe le refus Owner du stock comme restreint sans relancer la requête', async () => {
+    mock.rpc.mockResolvedValue({
+      data: null,
+      error: { code: 'P0003', message: 'stock_visibility_owner_required' },
+    });
+    const { result } = renderHook(() => useDisplayStockActivity(), { wrapper: wrapper(client) });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(isRestricted(result.current.error)).toBe(true);
+    expect(mock.rpc).toHaveBeenCalledOnce();
+    expect(isRestricted(new Error('network_failure'))).toBe(false);
   });
 });

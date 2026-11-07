@@ -29,6 +29,7 @@
 -- Runner : apply this body inside MCP execute_sql under a BEGIN .. ROLLBACK envelope.
 
 BEGIN;
+\ir helpers/production_candidate.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -121,7 +122,7 @@ DECLARE
   v_pr_count INT;
   v_pr_match INT;
 BEGIN
-  v_payload := record_batch_production_v10(
+  v_payload := record_batch_production_v12(
     jsonb_build_object(
       'notes',      'T1 happy path',
       'section_id', current_setting('bp.section_id')
@@ -164,7 +165,7 @@ BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
 
   BEGIN
-    PERFORM record_batch_production_v10(
+    PERFORM record_batch_production_v12(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -202,7 +203,7 @@ DECLARE
   v_replay JSONB;
   v_batches INT;
 BEGIN
-  v_first := record_batch_production_v10(
+  v_first := record_batch_production_v12(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -211,7 +212,7 @@ BEGIN
       jsonb_build_object('product_id', current_setting('bp.fc'), 'quantity_produced', 1)
     )
   );
-  v_replay := record_batch_production_v10(
+  v_replay := record_batch_production_v12(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -254,7 +255,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_uid::text, false);
   PERFORM set_config('role', 'authenticated', false);
   BEGIN
-    PERFORM record_batch_production_v10(
+    PERFORM record_batch_production_v12(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1)
@@ -284,7 +285,7 @@ DECLARE
 BEGIN
   UPDATE products SET current_stock = 4 WHERE id = current_setting('bp.mx')::uuid;
   BEGIN
-    PERFORM record_batch_production_v10(
+    PERFORM record_batch_production_v12(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -313,7 +314,7 @@ DO $t6$
 DECLARE v_err TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_batch_production_v10(
+    PERFORM record_batch_production_v12(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       '[]'::jsonb
     );
@@ -339,7 +340,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
   BEGIN
-    PERFORM record_batch_production_v10(
+    PERFORM record_batch_production_v12(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),

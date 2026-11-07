@@ -23,6 +23,7 @@
 import { useMemo, type JSX } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { cn } from '@breakery/ui';
+import { todayIsoDate } from '@breakery/utils';
 import type { CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
@@ -74,7 +75,7 @@ function StatusPill({ status }: { status: StockPositionStatus }): JSX.Element {
 export default function StockPositionPage(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const asOf = searchParams.get('as_of') ?? '';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIsoDate();
 
   const report = useStockPosition(asOf !== '' ? asOf : undefined);
   const summary  = report.data?.summary;

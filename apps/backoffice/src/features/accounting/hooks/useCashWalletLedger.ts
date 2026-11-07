@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/accounting/hooks/useCashWalletLedger.ts
-// Cash Wallets module — wraps get_cash_wallet_ledger_v3 RPC (gate accounting.cash.read).
+// Cash Wallets module — wraps get_cash_wallet_ledger_v4 RPC (gate accounting.cash.read).
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
@@ -27,7 +27,7 @@ export function useCashWalletLedger(
     enabled: !!accountCode,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cash_wallet_ledger_v3', {
+      const { data, error } = await supabase.rpc('get_cash_wallet_ledger_v4', {
         p_account_code: accountCode!,
         p_date_start:   startDate,
         p_date_end:     endDate,

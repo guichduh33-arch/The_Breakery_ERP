@@ -39,6 +39,9 @@ export interface PaymentResultLine {
 }
 
 export interface PaymentResult {
+  amount_received?: number;
+  amount_paid?: number;
+  remaining_due?: number;
   outstanding_due?: number;
   ok: true;
   order_id: string;

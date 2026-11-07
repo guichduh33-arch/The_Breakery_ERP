@@ -70,17 +70,17 @@ SELECT is_empty(
 -- T2 — la v8 existe.
 SELECT isnt_empty(
   $$ SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-      WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v11' $$,
-  'T2 — create_tablet_order_v11 existe'
+      WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v12' $$,
+  'T2 — create_tablet_order_v12 existe'
 );
 
 -- T3 — SECURITY DEFINER : les écritures de commande passent par la RPC, jamais
 -- par un INSERT direct depuis l'application.
 SELECT is(
   (SELECT p.prosecdef FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v11'),
+    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v12'),
   true,
-  'T3 — create_tablet_order_v11 est SECURITY DEFINER'
+  'T3 — create_tablet_order_v12 est SECURITY DEFINER'
 );
 
 -- T4 — anon n'a aucun EXECUTE. anon hérite EXECUTE via PUBLIC : un REVOKE
@@ -91,7 +91,7 @@ SELECT is(
      FROM pg_proc p
      JOIN pg_namespace n ON n.oid = p.pronamespace,
      unnest(coalesce(p.proacl, '{}'::aclitem[])) AS acl
-    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v11'
+    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v12'
       AND (acl::text LIKE 'anon=%' OR acl::text LIKE '=%')),
   0::bigint,
   'T4 — ni anon ni PUBLIC ne portent EXECUTE sur la v8'
@@ -104,7 +104,7 @@ SELECT is(
      FROM pg_proc p
      JOIN pg_namespace n ON n.oid = p.pronamespace,
      unnest(coalesce(p.proacl, '{}'::aclitem[])) AS acl
-    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v11'
+    WHERE n.nspname = 'public' AND p.proname = 'create_tablet_order_v12'
       AND acl::text LIKE 'authenticated=X%'),
   1::bigint,
   'T5 — authenticated porte EXECUTE sur la v8'
@@ -113,7 +113,7 @@ SELECT is(
 -- T6 — LE test du lot. Créer au nom d'un autre serveur est refusé.
 SELECT throws_ok(
   format(
-    $$ SELECT create_tablet_order_v11(
+    $$ SELECT create_tablet_order_v12(
          gen_random_uuid(), %L::uuid, '99', 'dine_in'::order_type,
          jsonb_build_array(jsonb_build_object(
            'product_id', %L, 'quantity', 1, 'unit_price', 10000)),
@@ -129,7 +129,7 @@ SELECT throws_ok(
 -- bloque le drain. Voir l'en-tête de ce fichier : c'est la moitié utile de T6.
 SELECT throws_ok(
   format(
-    $$ SELECT create_tablet_order_v11(
+    $$ SELECT create_tablet_order_v12(
          gen_random_uuid(), %L::uuid, '99', 'dine_in'::order_type,
          jsonb_build_array(jsonb_build_object(
            'product_id', %L, 'quantity', 1, 'unit_price', 10000)),
@@ -150,7 +150,7 @@ DECLARE
   v_o1 UUID;
   v_o2 UUID;
 BEGIN
-  v_o1 := create_tablet_order_v11(
+  v_o1 := create_tablet_order_v12(
     gen_random_uuid(), current_setting('wid.prof_a')::uuid, '99',
     'dine_in'::order_type,
     jsonb_build_array(jsonb_build_object(
@@ -158,7 +158,7 @@ BEGIN
       'quantity', 1, 'unit_price', 10000)),
     NULL, NULL, true, 'T1');
 
-  v_o2 := create_tablet_order_v11(
+  v_o2 := create_tablet_order_v12(
     gen_random_uuid(), NULL, '99', 'dine_in'::order_type,
     jsonb_build_array(jsonb_build_object(
       'product_id', current_setting('wid.prod')::uuid,

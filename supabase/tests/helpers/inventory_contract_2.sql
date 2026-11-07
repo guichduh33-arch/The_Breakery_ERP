@@ -82,7 +82,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v4(
+  $$ SELECT record_incoming_stock_v5(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        1.000,
        NULL, NULL, 'T16 cashier should fail'
@@ -108,7 +108,7 @@ END $$;
 -- T17 — record_incoming_stock_v4 with quantity = 0 -> quantity_must_be_positive
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v4(
+  $$ SELECT record_incoming_stock_v5(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        0,
        NULL, NULL, 'T17 zero qty'
@@ -140,7 +140,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v4(
+  SELECT record_incoming_stock_v5(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     5.000,
     NULL, NULL, 'T18 free-form receipt'
@@ -171,7 +171,7 @@ SELECT ok(current_setting('breakery.t18_pass')::boolean,
 -- T19 — record_incoming_stock_v4 with soft-deleted supplier -> P0002
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v4(
+  $$ SELECT record_incoming_stock_v5(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        3.000,
        '11111111-2222-3333-4444-777777777777'::uuid,
@@ -207,7 +207,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v4(
+  SELECT record_incoming_stock_v5(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -215,7 +215,7 @@ BEGIN
   SELECT current_stock INTO v_after_first FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v4(
+  SELECT record_incoming_stock_v5(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -238,7 +238,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t20$;
 SELECT ok(current_setting('breakery.t20_pass')::boolean,
-  'T20: record_incoming_stock_v4 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+  'T20: record_incoming_stock_v5 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
 
 -- =========================================================================
 -- T21 — ADR-024 déc. 1 : le total ne voyage plus sur les lignes. Il vient de
@@ -256,14 +256,14 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   SELECT COUNT(*) INTO v_expected FROM products WHERE deleted_at IS NULL;
 
-  SELECT total_count INTO v_total_seen FROM get_stock_counters_v2(NULL, NULL);
+  SELECT total_count INTO v_total_seen FROM get_stock_counters_v3(NULL, NULL);
   SELECT COUNT(*) INTO v_window_rows
-    FROM get_stock_levels_v5(NULL, NULL, 'all', 5, 0);
+    FROM get_stock_levels_v6(NULL, NULL, 'all', 5, 0);
 
   -- Le cœur de la décision : une recherche qui ne ramène AUCUNE ligne laisse
   -- quand même un total lisible. Avec l'ancien contrat, il valait 0.
   SELECT total_count INTO v_empty_total
-    FROM get_stock_counters_v2(NULL, 'PGTAP-AUCUN-PRODUIT-NE-MATCHE-CECI');
+    FROM get_stock_counters_v3(NULL, 'PGTAP-AUCUN-PRODUIT-NE-MATCHE-CECI');
 
   PERFORM set_config('breakery.t21_pass',
     CASE WHEN
@@ -275,7 +275,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t21$;
 SELECT ok(current_setting('breakery.t21_pass')::boolean,
-  'T21: get_stock_counters_v2 renders a total independent of the page window, and still answers on an empty result set');
+  'T21: get_stock_counters_v3 renders a total independent of the page window, and still answers on an empty result set');
 
 -- =========================================================================
 -- T22 — get_stock_levels_v5 search is case-insensitive (ILIKE in the RPC).
@@ -289,12 +289,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'PGTAP-PROD-1', 'all', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-1', 'all', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_upper;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'pgtap-prod-1', 'all', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'pgtap-prod-1', 'all', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_lower;
 
@@ -302,7 +302,7 @@ BEGIN
     (v_has_upper AND v_has_lower)::text, false);
 END $t22$;
 SELECT ok(current_setting('breakery.t22_pass')::boolean,
-  'T22: get_stock_levels_v5 p_search is case-insensitive (ILIKE) — upper/lower both match');
+  'T22: get_stock_levels_v6 p_search is case-insensitive (ILIKE) — upper/lower both match');
 
 -- =========================================================================
 -- T23 — get_stock_levels_v5 p_category_id filter returns only matching rows.
@@ -328,12 +328,12 @@ BEGIN
 
   -- Every row returned must have category_id = v_cat (no leakage).
   SELECT COUNT(*) INTO v_other_cnt
-    FROM get_stock_levels_v5(v_cat, NULL, 'all', 100, 0)
+    FROM get_stock_levels_v6(v_cat, NULL, 'all', 100, 0)
    WHERE category_id <> v_cat OR category_id IS NULL;
 
   -- The three fixtures must be present in the filtered result.
   SELECT COUNT(*) INTO v_match_cnt
-    FROM get_stock_levels_v5(v_cat, 'PGTAP-PROD', 'all', 100, 0)
+    FROM get_stock_levels_v6(v_cat, 'PGTAP-PROD', 'all', 100, 0)
    WHERE sku LIKE 'PGTAP-PROD%';
 
   PERFORM set_config('breakery.t23_pass',
@@ -341,7 +341,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t23$;
 SELECT ok(current_setting('breakery.t23_pass')::boolean,
-  'T23: get_stock_levels_v5 p_category_id filter returns only matching products (no leakage)');
+  'T23: get_stock_levels_v6 p_category_id filter returns only matching products (no leakage)');
 
 -- =========================================================================
 -- T24 — get_stock_levels_v5 bucket 'low' excludes rows where
@@ -359,12 +359,12 @@ BEGIN
   UPDATE products SET current_stock = 5   WHERE id = '99999999-aaaa-bbbb-cccc-333333333333'::uuid;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'PGTAP-PROD-2', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-2', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-2'
   ) INTO v_prod2_in_low;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_prod_low_in_low;
 
@@ -374,7 +374,7 @@ BEGIN
     (NOT v_prod2_in_low AND v_prod_low_in_low)::text, false);
 END $t24$;
 SELECT ok(current_setting('breakery.t24_pass')::boolean,
-  'T24: get_stock_levels_v5 bucket low excludes rows where current_stock >= threshold (threshold>0)');
+  'T24: get_stock_levels_v6 bucket low excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
 -- T25 — adjust_stock_v4 p_new_qty=0 is allowed (sets stock exactly to 0).

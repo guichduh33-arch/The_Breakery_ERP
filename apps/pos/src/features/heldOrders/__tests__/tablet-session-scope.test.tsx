@@ -36,7 +36,7 @@ describe('tablette reprise : changement de shift', () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: 'P0002' } });
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await expect(result.current.mutateAsync('tablet-id')).rejects.toMatchObject({ code: 'P0002' });
-    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v9', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
+    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v10', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
     expect(useCartStore.getState().cart).toBe(cart);
   });
   it('refuse la reprise d un ancien ticket sans shift ouvert avant tout appel serveur', async () => {

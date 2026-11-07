@@ -210,7 +210,12 @@ export function BottomActionBar({
     setVoidPending(true);
     try {
       if (useCartStore.getState().pickedUpOrderId) throw new Error('Use the unpaid order cancellation flow');
-      await verifyManagerPin(managerPin);
+      if (useCartStore.getState().offlineOrder) throw new Error('Sync this offline order before cancelling it');
+      const verification = await verifyManagerPin(managerPin, 'orders.void');
+      if (!verification.ok) throw new Error('Manager authorization failed');
+      if (useCartStore.getState().offlineOrder || useCartStore.getState().pickedUpOrderId) {
+        throw new Error('Use the unpaid order cancellation flow');
+      }
       voidOrder();
       toast.info(`Order voided — ${reason}`);
     } catch (err: unknown) {

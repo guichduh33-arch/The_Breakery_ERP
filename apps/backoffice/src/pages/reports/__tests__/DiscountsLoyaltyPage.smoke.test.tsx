@@ -66,7 +66,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_discounts_loyalty_v2') {
+      if (fn === 'get_discounts_loyalty_v3') {
         return Promise.resolve({ data: reportPayload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -114,10 +114,10 @@ describe('DiscountsLoyaltyPage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Sales');
   });
 
-  it('calls get_discounts_loyalty_v2 with the business-day bounds', async () => {
+  it('calls get_discounts_loyalty_v3 with the business-day bounds', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_discounts_loyalty_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_discounts_loyalty_v3');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start_date: string; p_end_date: string }])[1];
       expect(args.p_start_date).toBe('2026-06-01');

@@ -29,6 +29,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import type { VerifyResult } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { BottomActionBar } from '../BottomActionBar';
 
@@ -60,9 +61,9 @@ vi.mock('../VoidOrderModal', () => ({
     ) : null,
 }));
 
-// The never-fired path verifies the PIN client-side — mock it to resolve.
+// Le parcours local attend le résultat structuré du hook de vérification PIN.
 vi.mock('@/features/discounts/hooks/useVerifyManagerPin', () => ({
-  useVerifyManagerPin: () => () => Promise.resolve('manager-1'),
+  useVerifyManagerPin: () => () => Promise.resolve({ ok: true, userId: 'manager-1' } satisfies VerifyResult),
 }));
 
 vi.mock('sonner', () => ({

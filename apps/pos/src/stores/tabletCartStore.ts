@@ -7,6 +7,17 @@ import {
   updateQuantity as domainUpdateQuantity,
 } from '@breakery/domain';
 import type { CartItem, ComboComponent, Product, SelectedModifiers, TabletCart } from '@breakery/domain';
+import { emitPosEvent, type PosEventFields, type PosEventType } from '@/features/audit/emitPosEvent';
+
+function emitTabletEvent(type: PosEventType, fields: PosEventFields = {}): void {
+  const state = useTabletCartStore.getState();
+  emitPosEvent(type, {
+    order_id: state.appendToOrderId,
+    order_number_snap: state.appendToOrderNumber,
+    ...fields,
+    payload: { surface: 'tablet', table_number: state.tableNumber, ...fields.payload },
+  });
+}
 
 export interface TabletSendAttempt {
   clientUuid: string;
@@ -92,39 +103,68 @@ export const useTabletCartStore = create<TabletCartState>()(
 
       addItem: (product, modifiers = []) => {
         if (get().pendingSend) return;
+        const wasEmpty = get().items.length === 0;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainAddItem(fakeCart, product, modifiers);
         set({ items: updated.items });
+        if (wasEmpty) emitTabletEvent('order_opened', { payload: { order_type: get().orderType } });
+        emitTabletEvent('item_added', { payload: { product_id: product.id, name: product.name } });
       },
 
-      // Lot D (2026-09-05) — même « fakeCart » que `addItem`. Ce store n'émet
-      // aucun événement POS (contrairement au panier caisse) : rien à ajouter ici.
+      // Même journal durable que le panier caisse, avec la surface tablette.
       addCombo: (product, modifiers, components, unitPrice) => {
         if (get().pendingSend) return;
+        const wasEmpty = get().items.length === 0;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainAddComboItem(fakeCart, product, modifiers, components, 1, unitPrice);
         set({ items: updated.items });
+        if (wasEmpty) emitTabletEvent('order_opened', { payload: { order_type: get().orderType } });
+        emitTabletEvent('item_added', { amount: unitPrice,
+          payload: { product_id: product.id, name: product.name, combo: true } });
       },
 
       updateQuantity: (itemId, qty) => {
         if (get().pendingSend) return;
+        const item = get().items.find((row) => row.id === itemId);
+        if (!item || item.quantity === qty) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainUpdateQuantity(fakeCart, itemId, qty);
         set({ items: updated.items });
+        emitTabletEvent(qty <= 0 ? 'item_removed_pre_fire' : 'item_qty_changed', {
+          order_item_id: itemId, payload: { name: item.name, old_qty: item.quantity, qty },
+        });
       },
 
       removeItem: (itemId) => {
         if (get().pendingSend) return;
+        const item = get().items.find((row) => row.id === itemId);
+        if (!item) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainRemoveItem(fakeCart, itemId);
         set({ items: updated.items });
+        emitTabletEvent('item_removed_pre_fire', { order_item_id: itemId,
+          payload: { product_id: item.product_id, name: item.name } });
       },
 
-      setTableNumber: (name) => { if (!get().pendingSend) set({ tableNumber: name }); },
+      setTableNumber: (name) => {
+        if (get().pendingSend || get().tableNumber === name) return;
+        const previous = get().tableNumber;
+        set({ tableNumber: name });
+        emitTabletEvent('table_assigned', { payload: { previous_table: previous } });
+      },
 
-      setOrderType: (type) => { if (!get().pendingSend) set({ orderType: type }); },
+      setOrderType: (type) => {
+        if (get().pendingSend || get().orderType === type) return;
+        const previous = get().orderType;
+        set({ orderType: type });
+        emitTabletEvent('order_type_changed', { payload: { old_type: previous, new_type: type } });
+      },
 
-      setNotes: (notes) => { if (!get().pendingSend) set({ notes }); },
+      setNotes: (notes) => {
+        if (get().pendingSend || get().notes === notes) return;
+        set({ notes });
+        emitTabletEvent('note_added', { payload: { notes } });
+      },
 
       // Entrer en mode ajout REMET le panier à zéro : on compose la 2ᵉ tournée,
       // pas une copie de la première. La table vient de la commande visée pour
@@ -143,6 +183,7 @@ export const useTabletCartStore = create<TabletCartState>()(
                 orderType: 'dine_in',
               },
         );
+        if (target) emitTabletEvent('order_resumed', { payload: { mode: 'append' } });
       },
 
       clearCart: () =>

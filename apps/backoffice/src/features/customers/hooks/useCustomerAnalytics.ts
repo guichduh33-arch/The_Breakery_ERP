@@ -71,7 +71,7 @@ export function useCustomerAnalytics(customerId: string | null | undefined) {
       };
       if (!customerId) return empty;
 
-      const { data: orders, error } = await supabase.rpc('get_customer_recognized_orders_v1', {
+      const { data: orders, error } = await supabase.rpc('get_customer_recognized_orders_v2', {
         p_customer_id: customerId,
       });
       if (error) throw error;

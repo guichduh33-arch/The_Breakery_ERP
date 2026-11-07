@@ -8,7 +8,7 @@
 -- les seats se joignent par NOM en LEFT JOIN (T9-T10) ; la heatmap est en
 -- jour ISO avec commandes ET CA (T11) ; et tout se recoupe (T12).
 --
---   T1  : happy path MANAGER — 6-key JSONB
+--   T1  : happy path Owner — 6-key JSONB
 --   T2  : CASHIER denied (42501)
 --   T3  : end < start raises P0001
 --   T4  : clamp 366 jours
@@ -21,7 +21,7 @@
 --   T11 : heatmap ISO — A dim(7) 2 cmd 200k, A lun(1) 1 cmd, B lun(1) 1 cmd
 --   T12 : Σ by_table = summary ; Σ heatmap.orders = summary.orders
 --
--- Utilisateurs seedés : MANAGER 00000000-0000-0000-0000-000000000004,
+-- Utilisateurs seedés : Owner 00000000-0000-0000-0000-000000000001,
 -- CASHIER 00000000-0000-0000-0000-000000000002.
 -- Fenêtre de fixture : janvier 2027 (17/01 = dimanche ISO 7, 18/01 = lundi 1).
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
@@ -71,15 +71,15 @@ END $$;
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary')
       AND (v_r ? 'by_table') AND (v_r ? 'by_table_dow');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_sales_by_table_v1 MANAGER happy path returns 7-key JSONB');
+  'T1: get_sales_by_table_v3 Owner happy path returns 7-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -87,22 +87,22 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_sales_by_table_v1('2027-01-01', '2027-01-31');
+    PERFORM get_sales_by_table_v3('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_sales_by_table_v1 CASHIER raises 42501');
+  'T2: get_sales_by_table_v3 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
 DECLARE v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_sales_by_table_v1('2027-01-31', '2027-01-01');
-  EXCEPTION WHEN raise_exception THEN v_caught := true;
+    PERFORM get_sales_by_table_v3('2027-01-31', '2027-01-01');
+  EXCEPTION WHEN invalid_parameter_value THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
 END $$;
@@ -113,8 +113,8 @@ SELECT ok(current_setting('breakery.t3')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2020-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2020-01-01', '2027-01-31');
   v_ok := ((v_r->'period'->>'start')::date = '2027-01-31'::date - 366)
       AND ((v_r->'period'->>'end')::date   = '2027-01-31'::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -126,8 +126,8 @@ SELECT ok(current_setting('breakery.t4')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'revenue')::numeric = 350000)
       AND ((v_r->'summary'->>'orders')::int = 4)
       AND ((v_r->'summary'->>'tables_used')::int = 2);
@@ -140,8 +140,8 @@ SELECT ok(current_setting('breakery.t5')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'revenue')::numeric = 350000);  -- pas 1 349k
   PERFORM set_config('breakery.t6', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -152,8 +152,8 @@ SELECT ok(current_setting('breakery.t6')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   SELECT NOT EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_r->'by_table') t
     WHERE (t->>'revenue')::numeric >= 777000)
@@ -167,8 +167,8 @@ SELECT ok(current_setting('breakery.t7')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'orders')::int = 4);  -- pas 5
   PERFORM set_config('breakery.t8', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -179,8 +179,8 @@ SELECT ok(current_setting('breakery.t8')::boolean,
 DO $$
 DECLARE v_r JSONB; v_t JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   SELECT t INTO v_t FROM jsonb_array_elements(v_r->'by_table') t
    WHERE t->>'table_number' = 'PGTAP-TBL-A';
   v_ok := ((v_t->>'seats')::int = 4)
@@ -197,8 +197,8 @@ SELECT ok(current_setting('breakery.t9')::boolean,
 DO $$
 DECLARE v_r JSONB; v_t JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   SELECT t INTO v_t FROM jsonb_array_elements(v_r->'by_table') t
    WHERE t->>'table_number' = 'PGTAP-TBL-B';
   v_ok := ((v_t->>'seats')::int = 2)
@@ -213,8 +213,8 @@ SELECT ok(current_setting('breakery.t10')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   SELECT bool_and(CASE
            WHEN d->>'table_number' = 'PGTAP-TBL-A' AND (d->>'dow')::int = 7
              THEN (d->>'orders')::int = 2 AND (d->>'revenue')::numeric = 200000
@@ -234,8 +234,8 @@ SELECT ok(current_setting('breakery.t11')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN; v_ok2 BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_table_v1('2027-01-01', '2027-01-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_r := get_sales_by_table_v3('2027-01-01', '2027-01-31');
   SELECT (SUM((t->>'revenue')::numeric) = (v_r->'summary'->>'revenue')::numeric)
      AND (SUM((t->>'orders')::int) = (v_r->'summary'->>'orders')::int)
     INTO v_ok FROM jsonb_array_elements(v_r->'by_table') t;

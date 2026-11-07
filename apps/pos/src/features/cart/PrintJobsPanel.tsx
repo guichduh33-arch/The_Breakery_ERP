@@ -30,7 +30,7 @@ export function PrintJobsPanel({ compact = false }: { compact?: boolean }) {
           <p className={job.status === 'confirmed' ? 'text-text-secondary' : 'text-gold'}>{job.status === 'confirmed' ? 'Printer acknowledged' : 'Print to verify'}{job.error ? ` — ${job.error}` : ''}</p>
           <Button variant="secondary" disabled={busy !== null} onClick={() => {
             setBusy(job.id);
-            void runReceiptJob(job.payload, printers?.get('cashier')).finally(() => setBusy(null));
+            void runReceiptJob(job.payload, printers?.get('cashier'), job.id).finally(() => setBusy(null));
           }}>{busy === job.id ? 'Printing…' : 'Reprint duplicate'}</Button>
         </div>)}
         {[...jobs].reverse().map((job) => <div key={job.id} className="p-3 border border-border-subtle rounded-md space-y-2">

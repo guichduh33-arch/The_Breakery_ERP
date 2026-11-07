@@ -42,17 +42,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
     align: 'right',
     width: '140px',
     render: (r) => (
-      <span className="font-mono tabular-nums text-text-primary">{formatQuantity(r.quantity, r.unit)}</span>
-    ),
-  },
-  {
-    id: 'updated',
-    header: 'Last updated',
-    width: '200px',
-    render: (r) => (
-      <span className="font-mono text-xs text-text-secondary whitespace-nowrap">
-        {formatDateTimeShortWita(r.updated_at)}
-      </span>
+      <span className="font-mono tabular-nums text-text-primary">{r.quantity === null ? 'Hidden' : formatQuantity(r.quantity, r.unit)}</span>
     ),
   },
 ];
@@ -143,7 +133,7 @@ export default function DisplayStockPage(): JSX.Element {
           </QueryErrorBanner>
         ) : (
           <DataTable
-            caption="Product, display-case quantity and last update per display product"
+            caption="Product and display-case quantity per display product"
             data-testid="display-stock-table"
             columns={STOCK_COLUMNS}
             rows={stock.data ?? []}

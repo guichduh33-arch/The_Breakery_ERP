@@ -15,6 +15,7 @@ const MOCK_ROWS: OpnameListRow[] = [
   {
     id:             'op-1',
     count_number:   'OPN-2026-0001',
+    business_day: '2026-05-10',
     section_id:     's-1',
     status:         'counting',
     started_at:     '2026-05-10T10:00:00Z',
@@ -27,6 +28,7 @@ const MOCK_ROWS: OpnameListRow[] = [
   {
     id:             'op-2',
     count_number:   'OPN-2026-0002',
+    business_day: '2026-05-11',
     section_id:     's-2',
     status:         'review',
     started_at:     '2026-05-11T10:00:00Z',

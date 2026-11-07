@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_off_hours_sales_v1') {
+      if (fn === 'get_off_hours_sales_v2') {
         if (emptyPeriod) {
           return Promise.resolve({
             data: { summary: { payment_count: 0, order_count: 0, total_amount: 0 }, rows: [] },
@@ -76,7 +76,7 @@ describe('OffHoursSalesPage (smoke)', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /Off-Hours Sales/i, level: 1 })).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_off_hours_sales_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_off_hours_sales_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
       expect(args.p_date_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);

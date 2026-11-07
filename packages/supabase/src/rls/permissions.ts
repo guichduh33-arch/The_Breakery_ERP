@@ -12,6 +12,7 @@
  * - `users.*`          - Manage user_profiles and audit log access.
  */
 export type PermissionCode =
+  | 'reports.product_sales.read'
   | 'kiosk.issue'
   | 'pos.session.open'
   | 'pos.session.close_own'
@@ -94,6 +95,7 @@ export type PermissionCode =
   | 'inventory.recipes.update'
   // POS display-stock isolation — vitrine counter management
   | 'display.read'
+  | 'display.count'
   | 'display.manage'
   // Session 15 / Phase 4.A — Batch production
   | 'inventory.production.create'
@@ -183,6 +185,7 @@ export type PermissionCode =
   // Session 50 / Vague 1 — dedicated B2B read gate + security-settings management
   // (seeded by 20260710000053_seed_b2b_settings_security_perms)
   | 'b2b.read'
+  | 'b2b.order.create'
   | 'settings.security.manage'
   // Session 50 / Vague 2a-i — dedicated B2B AR balance adjust gate (20260710000058)
   | 'b2b.balance.adjust'

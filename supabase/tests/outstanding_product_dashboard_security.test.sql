@@ -13,17 +13,17 @@ BEGIN
 END $fixture$;
 GRANT INSERT,SELECT ON dashboard_security_results TO authenticated;
 SET LOCAL ROLE authenticated;
-INSERT INTO dashboard_security_results SELECT lives_ok(format('SELECT public.get_product_dashboard_v6(%L,30)',
+INSERT INTO dashboard_security_results SELECT lives_ok(format('SELECT public.get_product_dashboard_v7(%L,30)',
  current_setting('dashboard.product')),'authenticated inventory reader can use the private recognized-sales projection');
 RESET ROLE;
 INSERT INTO dashboard_security_results SELECT ok(NOT has_function_privilege('anon',
- 'public.get_product_dashboard_v6(uuid,integer)','EXECUTE'),'anonymous reader denied');
+ 'public.get_product_dashboard_v7(uuid,integer)','EXECUTE'),'anonymous reader denied');
 INSERT INTO dashboard_security_results SELECT ok(NOT has_schema_privilege('authenticated','reporting_private','USAGE'),
  'private reporting schema remains private');
 SELECT set_config('request.jwt.claim.sub','',true);
 SELECT set_config('request.jwt.claims','{}',true);
-INSERT INTO dashboard_security_results SELECT throws_ok(format('SELECT public.get_product_dashboard_v6(%L,30)',
- current_setting('dashboard.product')),'P0003','forbidden','inventory permission remains mandatory');
+INSERT INTO dashboard_security_results SELECT throws_ok(format('SELECT public.get_product_dashboard_v7(%L,30)',
+ current_setting('dashboard.product')),'P0003','stock_visibility_owner_required','stock reader requires an Owner identity');
 INSERT INTO dashboard_security_results SELECT * FROM finish();
 SELECT jsonb_agg(result) FROM dashboard_security_results;
 ROLLBACK;

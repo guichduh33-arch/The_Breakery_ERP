@@ -42,3 +42,9 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/** Les données chargées par l'Owner ne doivent pas survivre à sa session. */
+export function clearSessionCache(): void {
+  void queryClient.cancelQueries();
+  queryClient.clear();
+}

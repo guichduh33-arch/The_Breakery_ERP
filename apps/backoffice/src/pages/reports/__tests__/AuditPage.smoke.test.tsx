@@ -1,18 +1,4 @@
-// apps/backoffice/src/pages/reports/__tests__/AuditPage.smoke.test.tsx
-//
-// Filtres + dépliage du contexte sur le journal d'audit. Prouve :
-//   1. acteur / action / entité sont câblés sur les params de useAuditLogs ;
-//   2. cliquer une ligne déplie son `metadata` (JSON rendu) ;
-//   3. `audit_logs.payload` (la colonne de diff avant/après, S19) n'est PAS
-//      servie par get_audit_logs_v3 — seul `metadata` est affichable ;
-//   4. Action / Entity type sont débouncés 300 ms avant d'atteindre
-//      useAuditLogs ; l'acteur (un `<select>`) reste immédiat.
-//
-// Lot G (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
-// v2 : les bornes de date quittent la barre de filtres pour le contrôle de
-// période du bandeau (params `start` / `end`), donc TOUT appel à useAuditLogs
-// porte désormais `dateStart` / `dateEnd`. Et le tri de colonne entre en scène :
-// il réordonne les lignes chargées sans toucher à la pagination par curseur.
+// Régressions du journal regroupé, des noms, descriptions, filtres et détails.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -21,18 +7,19 @@ import AuditPage from '@/pages/reports/AuditPage.js';
 
 const ROWS = [
   {
-    id: 2, actor_id: 'u-1', action: 'expense.approve', entity_type: 'expense',
+    id: '2', actor_id: 'u-1', actor_name: 'Made', source: 'audit', payload: { before: 'submitted', after: 'approved' }, action: 'expense.approve', entity_type: 'expense',
     entity_id: 'e-1', metadata: { before: { status: 'submitted' }, after: { status: 'approved' } },
     created_at: '2026-07-04T10:00:00Z',
   },
   {
-    id: 1, actor_id: 'u-2', action: 'product.update', entity_type: 'product',
+    id: '1', actor_id: 'u-2', actor_name: 'Wayan', source: 'audit', payload: null, action: 'product.update', entity_type: 'product',
     entity_id: 'p-1', metadata: { field: 'price', before: 10000, after: 12000 },
     created_at: '2026-07-03T09:00:00Z',
   },
 ];
 
 const mockUseAuditLogs = vi.fn();
+const exportSpy = vi.hoisted(() => vi.fn());
 vi.mock('@/features/reports/hooks/useAuditLogs.js', () => ({
   useAuditLogs: (filters: unknown) => mockUseAuditLogs(filters) as unknown,
 }));
@@ -49,7 +36,7 @@ vi.mock('@/features/auth/hooks/useLoginUsers.js', () => ({
 // ExportMenu monte useGeneratePdf (useMutation) : hors QueryClientProvider, il
 // faut le neutraliser. Ce test porte sur les filtres, pas sur l'export.
 vi.mock('@/features/reports/components/ExportMenu.js', () => ({
-  ExportMenu: () => <div data-testid="export-menu" />,
+  ExportMenu: (props: unknown) => { exportSpy(props); return <div data-testid="export-menu" />; },
 }));
 
 function renderPage(entry = '/reports/audit'): ReturnType<typeof render> {
@@ -72,6 +59,7 @@ describe('AuditPage — filtres + contexte déplié', () => {
   beforeEach(() => {
     sessionStorage.clear();
     mockUseAuditLogs.mockReset();
+    exportSpy.mockClear();
     mockUseAuditLogs.mockReturnValue({
       data: { pages: [ROWS] },
       isLoading: false,
@@ -86,6 +74,16 @@ describe('AuditPage — filtres + contexte déplié', () => {
     renderPage();
     expect(screen.getByTestId('audit-row-1')).toBeInTheDocument();
     expect(screen.getByTestId('audit-row-2')).toBeInTheDocument();
+  });
+
+  it('shows the user name and a readable description while retaining the action code', () => {
+    renderPage();
+    const row = within(screen.getByTestId('audit-row-2'));
+    expect(row.getByRole('link', { name: 'Made' })).toBeInTheDocument();
+    expect(row.getByText(/Expense approved/)).toBeInTheDocument();
+    expect(row.getByText('expense.approve')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('audit-row-2'));
+    expect(screen.getByTestId('audit-detail-2')).toHaveTextContent('Changes / event details');
   });
 
   it('affiche une période récupérable pour une URL invalide', () => {
@@ -209,9 +207,9 @@ describe('AuditPage — filtres + contexte déplié', () => {
   describe('tri de colonne (lot G)', () => {
     it('les en-têtes triables sont des BOUTONS focusables portant aria-sort', () => {
       renderPage();
-      const header = screen.getByRole('columnheader', { name: 'Action' });
+      const header = screen.getByRole('columnheader', { name: 'Event & context' });
       expect(header).toHaveAttribute('aria-sort', 'none');
-      expect(within(header).getByRole('button', { name: 'Action' })).toBeInTheDocument();
+      expect(within(header).getByRole('button', { name: 'Event & context' })).toBeInTheDocument();
     });
 
     it('trie les lignes chargées sans toucher à l\'ordre serveur par défaut', () => {
@@ -225,19 +223,45 @@ describe('AuditPage — filtres + contexte déplié', () => {
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
 
       // Tri ascendant par action : « expense.approve » avant « product.update ».
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
-      expect(screen.getByRole('columnheader', { name: 'Action' })).toHaveAttribute('aria-sort', 'ascending');
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
+      expect(screen.getByRole('columnheader', { name: 'Event & context' })).toHaveAttribute('aria-sort', 'ascending');
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
 
       // Descendant : l'inverse.
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
       expect(bodyIds()).toEqual(['audit-row-1', 'audit-row-2']);
 
       // Troisième clic : retour à l'ordre serveur.
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
-      expect(screen.getByRole('columnheader', { name: 'Action' })).toHaveAttribute('aria-sort', 'none');
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
+      expect(screen.getByRole('columnheader', { name: 'Event & context' })).toHaveAttribute('aria-sort', 'none');
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
     });
+  });
+
+  it('identifies a targeted account and explains a review cue without calling it fraud', () => {
+    mockUseAuditLogs.mockReturnValue({ data: { pages: [[{ ...ROWS[0], action: 'login.failed', metadata: { attempts: 3 } }]] },
+      isLoading: false, error: null, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'Activity & Control Log' })).toBeInTheDocument();
+    const row = within(screen.getByTestId('audit-row-2'));
+    expect(row.getByText('Target account')).toBeInTheDocument();
+    expect(row.getByText(/Review cue:.*Verify repeated attempts/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('audit-toggle-2'));
+    expect(screen.getByTestId('audit-detail-2')).toHaveTextContent('does not identify the person');
+  });
+
+  it('keeps secrets out of visible details and out of the PDF request body', () => {
+    mockUseAuditLogs.mockReturnValue({ data: { pages: [[{ ...ROWS[0],
+      metadata: { pin_hash: 'never-export-this', reason: 'Review' }, payload: { access_token: 'never-send-this' } }]] },
+      isLoading: false, error: null, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: vi.fn() });
+    renderPage();
+    fireEvent.click(screen.getByTestId('audit-toggle-2'));
+    expect(screen.getByTestId('audit-detail-2')).not.toHaveTextContent('never-export-this');
+    expect(screen.getByTestId('audit-detail-2')).not.toHaveTextContent('never-send-this');
+    const props = exportSpy.mock.calls.at(-1)?.[0] as { pdf: { data: unknown[] } };
+    expect(JSON.stringify(props.pdf.data)).not.toContain('never-');
+    expect(props.pdf.data[0]).not.toHaveProperty('metadata');
+    expect(props.pdf.data[0]).not.toHaveProperty('payload');
   });
 
   it('rend la bannière d\'erreur unifiée du socle quand la requête échoue', () => {
