@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore.js';
 import { captureFinancialSession } from '@/lib/useFinancialAttempt.js';
 import { supabase } from '@/lib/supabase.js';
@@ -7,15 +8,39 @@ import { SectionLabel } from '@/components/SectionLabel.js';
 import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 import { PoInvoiceUploader } from './PoInvoiceUploader.js';
+import { PO_INVOICE_UPLOAD_KEY } from '../hooks/usePoInvoice.js';
 
 export function PoInvoicePanel({ po, hasPayments, fullyPaid, paymentsKnown, onBusyChange }: {
   po: PurchaseOrderDetail; hasPayments: boolean; fullyPaid: boolean; paymentsKnown: boolean; onBusyChange: (busy: boolean) => void;
 }): JSX.Element {
   const profile = useAuthStore(s => s.user?.id);
   const token = useAuthStore(s => s.sessionToken);
-  const permitted = useAuthStore(s => s.hasPermission);
-  const canEdit = paymentsKnown && po.status !== 'cancelled' && !fullyPaid && (!hasPayments || !po.invoice_path)
-    && (permitted('purchasing.po.create') || permitted('purchasing.po.pay'));
+  const canManage = useAuthStore(s => s.hasPermission('purchasing.po.create') || s.hasPermission('purchasing.po.pay'));
+  const accessInstance = useId();
+  const accessSession = useRef({ profile, token, revision: 0 });
+  if (accessSession.current.profile !== profile || accessSession.current.token !== token) {
+    accessSession.current = { profile, token, revision: accessSession.current.revision + 1 };
+  }
+  // Aucun jeton dans le cache ; chaque montage et changement de session est isolé.
+  const uploadAccess = useQuery({
+    queryKey: [...PO_INVOICE_UPLOAD_KEY, accessInstance, accessSession.current.revision, profile,
+      po.id, po.invoice_path, po.updated_at, po.status, hasPayments, fullyPaid],
+    enabled: paymentsKnown && canManage && Boolean(profile && token),
+    retry: false,
+    gcTime: 0,
+    queryFn: async () => {
+      const session = captureFinancialSession();
+      const allowed = () => session.current() && (useAuthStore.getState().hasPermission('purchasing.po.create')
+        || useAuthStore.getState().hasPermission('purchasing.po.pay'));
+      if (!allowed()) throw new Error('Your session or permissions changed. Reopen this purchase order.');
+      const { data, error: accessError } = await supabase.rpc('can_upload_po_invoice_v1' as never, { p_po_id: po.id } as never);
+      if (!allowed()) throw new Error('Your session or permissions changed. Reopen this purchase order.');
+      if (accessError || typeof data !== 'boolean') throw new Error('Invoice upload availability could not be checked.');
+      return data;
+    },
+  });
+  // Le serveur vérifie l'objet réel et verrouille les pièces valides, même après paiement.
+  const canEdit = canManage && paymentsKnown && uploadAccess.isSuccess && !uploadAccess.isFetching && uploadAccess.data === true;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const identity = JSON.stringify([po.id, po.invoice_path, profile, token]);
@@ -49,6 +74,11 @@ export function PoInvoicePanel({ po, hasPayments, fullyPaid, paymentsKnown, onBu
       : <p className="text-sm text-text-secondary">No invoice attached.</p>}
     <p className="text-sm text-text-secondary">{po.invoice_exempt ? 'Historical import: invoice requirement does not apply.' : INVOICE_PAYMENT_MESSAGE} JPEG or PDF, max 5 MB.</p>
     {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+    {canManage && paymentsKnown && uploadAccess.isFetching && <p role="status" className="text-sm text-text-secondary">Checking invoice upload availability…</p>}
+    {canManage && paymentsKnown && uploadAccess.isError && <div role="alert" className="space-y-2 text-sm text-danger">
+      <p>Invoice upload availability could not be checked.</p>
+      <Button size="sm" variant="ghost" disabled={uploadAccess.isFetching} onClick={() => { void uploadAccess.refetch(); }}>Check invoice upload availability</Button>
+    </div>}
     <PoInvoiceUploader poId={po.id} value={po.invoice_path ?? null} editable={canEdit} removable={canEdit && !hasPayments} onBusyChange={onBusyChange} />
   </Card>;
 }

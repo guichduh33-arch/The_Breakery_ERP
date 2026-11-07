@@ -6,6 +6,8 @@ import { captureFinancialSession, useFinancialAttempt } from '@/lib/useFinancial
 import { invoiceFileDigest } from '@/lib/invoiceFiles.js';
 import { PURCHASE_ORDER_DETAIL_QUERY_KEY } from './usePurchaseOrderDetail.js';
 
+export const PO_INVOICE_UPLOAD_KEY = ['po-invoice-upload'] as const;
+
 export interface PoInvoiceResult {
   po_id: string; invoice_path: string | null; applied: boolean; idempotent_replay: boolean;
   reason?: 'invoice_requires_unpaid_order' | 'invoice_changed';
@@ -53,7 +55,10 @@ export function usePoInvoice(poId: string) {
         throw new FinancialAttemptError('The invoice change is unconfirmed. Check it again.');
       }
       assertSession();
-      await qc.invalidateQueries({ queryKey: [...PURCHASE_ORDER_DETAIL_QUERY_KEY, poId] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: [...PURCHASE_ORDER_DETAIL_QUERY_KEY, poId] }),
+        qc.invalidateQueries({ queryKey: PO_INVOICE_UPLOAD_KEY }),
+      ]);
       assertSession();
       return result as PoInvoiceResult;
     });

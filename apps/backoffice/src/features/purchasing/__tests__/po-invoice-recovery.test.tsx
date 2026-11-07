@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
 import type { ReactNode } from 'react';
-import { usePoInvoice } from '../hooks/usePoInvoice.js';
+import { PO_INVOICE_UPLOAD_KEY, usePoInvoice } from '../hooks/usePoInvoice.js';
 import { PoInvoiceUploader } from '../components/PoInvoiceUploader.js';
 import { PoInvoicePanel } from '../components/PoInvoicePanel.js';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
@@ -12,6 +12,7 @@ import { deferred, financialTestAuth, installFinancialBrowser, resetFinancialSes
 import { readFinancialSlot } from '@/lib/pendingFinancialAttempts.js';
 
 const { rpc, upload, download } = vi.hoisted(() => ({ rpc: vi.fn(), upload: vi.fn(), download: vi.fn() }));
+const access = vi.hoisted(() => ({ allowed: false }));
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc, functions: { invoke: download }, storage: { from: () => ({ upload }) } } }));
 vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 const poId = '00000000-0000-4000-8000-000000000001';
@@ -30,10 +31,11 @@ const po = { id: poId, status: 'pending', invoice_path: 'purchase-orders/' + poI
 describe('purchase invoice durable recovery', () => {
   beforeEach(() => {
     vi.restoreAllMocks(); installFinancialBrowser(); resetFinancialSession(); rpc.mockReset(); upload.mockReset(); download.mockReset();
+    access.allowed = false;
     vi.stubGlobal('crypto', webcrypto);
-    rpc.mockImplementation((_name: string, args: Record<string, unknown>) => Promise.resolve({
-      data: { po_id: args.p_po_id, invoice_path: args.p_storage_path ?? null, applied: true, idempotent_replay: false }, error: null,
-    }));
+    rpc.mockImplementation((name: string, args: Record<string, unknown>) => Promise.resolve(name === 'can_upload_po_invoice_v1'
+      ? { data: access.allowed, error: null }
+      : { data: { po_id: args.p_po_id, invoice_path: args.p_storage_path ?? null, applied: true, idempotent_replay: false }, error: null }));
     upload.mockResolvedValue({ data: {}, error: null });
   });
   it('checks first and uploads only the missing object with a durable UUID and no upsert', async () => {
@@ -66,15 +68,55 @@ describe('purchase invoice durable recovery', () => {
     fireEvent.change(screen.getByLabelText('Invoice file'), { target: { files: [file('png', 'image/png')] } });
     expect(await screen.findByRole('alert')).toHaveTextContent('JPEG or PDF'); expect(rpc).not.toHaveBeenCalled(); expect(localStorage.length).toBe(0);
   });
-  it('freezes an existing invoice after partial payment and all invoices after full payment', () => {
+  it('keeps an existing invoice locked when the server denies replacement', async () => {
     const view = render(<PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith('can_upload_po_invoice_v1', { p_po_id: poId }));
     expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument(); expect(screen.queryByText('Remove invoice')).not.toBeInTheDocument();
     view.rerender(<PoInvoicePanel po={{ ...po, invoice_path: null }} hasPayments fullyPaid paymentsKnown onBusyChange={vi.fn()} />);
     expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();
   });
-  it('permits a missing invoice after partial payment', () => {
+  it('permits a missing invoice after partial payment when confirmed by the server', async () => {
+    access.allowed = true;
     render(<PoInvoicePanel po={{ ...po, invoice_path: null }} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
-    expect(screen.getByLabelText('Invoice file')).toBeInTheDocument(); expect(screen.queryByText('Remove invoice')).not.toBeInTheDocument();
+    expect(await screen.findByLabelText('Invoice file')).toBeInTheDocument(); expect(screen.queryByText('Remove invoice')).not.toBeInTheDocument();
+  });
+  it.each([false, true])('allows server-confirmed repair of a non-null reference after payment (fully paid: %s)', async fullyPaid => {
+    access.allowed = true;
+    render(<PoInvoicePanel po={po} hasPayments fullyPaid={fullyPaid} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    expect(await screen.findByLabelText('Invoice file')).toBeEnabled();
+    expect(screen.queryByText('Remove invoice')).not.toBeInTheDocument();
+  });
+  it.each([null, 'true', { allowed: true }])('keeps upload closed for an invalid server result %j', async data => {
+    rpc.mockResolvedValue({ data, error: null });
+    render(<PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    expect(await screen.findByRole('alert')).toHaveTextContent('availability could not be checked');
+    expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();
+  });
+  it('keeps upload closed on server error and allows a fresh check', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'unavailable' } });
+    access.allowed = true;
+    render(<PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Check invoice upload availability' }));
+    expect(await screen.findByLabelText('Invoice file')).toBeEnabled();
+  });
+  it('withdraws previously granted upload access if the next server check fails', async () => {
+    access.allowed = true;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} /></QueryClientProvider>);
+    expect(await screen.findByLabelText('Invoice file')).toBeEnabled();
+    rpc.mockResolvedValue({ data: null, error: { message: 'unavailable' } });
+    await act(async () => { await client.invalidateQueries({ queryKey: PO_INVOICE_UPLOAD_KEY }); });
+    expect(await screen.findByRole('alert')).toHaveTextContent('availability could not be checked');
+    expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();
+  });
+  it('discards authorization that finishes after the purchase order changes', async () => {
+    const reply = deferred<{ data: boolean; error: null }>();
+    rpc.mockReturnValueOnce(reply.promise);
+    const view = render(<PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    await waitFor(() => expect(rpc).toHaveBeenCalledOnce());
+    view.rerender(<PoInvoicePanel po={{ ...po, id: '00000000-0000-4000-8000-000000000002' }} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />);
+    await act(async () => { reply.resolve({ data: true, error: null }); await reply.promise; });
+    expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();
   });
   it('downloads privately and revokes the temporary URL', async () => {
     const create = vi.fn(() => 'blob:private-invoice'), revoke = vi.fn();
@@ -92,5 +134,40 @@ describe('purchase invoice durable recovery', () => {
     render(<PoInvoicePanel po={po} hasPayments={false} fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
     fireEvent.click(screen.getByText('Download invoice')); act(() => { financialTestAuth.setState({ sessionToken: 'new-session' }); });
     await act(async () => { response.resolve({ data: new Blob(['private']), error: null }); await response.promise; }); expect(create).not.toHaveBeenCalled();
+  });
+
+  const interruptions = ['session', 'operator', 'target', 'permission'] as const;
+  const nextPo = '00000000-0000-4000-8000-000000000002';
+  function changeIdentity(kind: typeof interruptions[number], changeTarget: () => void) {
+    if (kind === 'target') changeTarget();
+    else if (kind === 'permission') financialTestAuth.setState({ hasPermission: () => false });
+    else if (kind === 'session') financialTestAuth.setState({ sessionToken: 'replacement-session' });
+    else financialTestAuth.setState({ user: { ...financialTestAuth.getState().user, id: 'profile-b' }, sessionToken: 'operator-b-session' });
+  }
+  it.each(interruptions)('sends nothing when %s changes during file hashing', async kind => {
+    const bytes = deferred<ArrayBuffer>(); const selected = file();
+    Object.defineProperty(selected, 'arrayBuffer', { value: () => bytes.promise });
+    const props = { poId, value: null, editable: true, removable: true, onBusyChange: vi.fn() };
+    const view = render(<PoInvoiceUploader {...props} />, { wrapper });
+    fireEvent.change(screen.getByLabelText('Invoice file'), { target: { files: [selected] } });
+    act(() => { changeIdentity(kind, () => view.rerender(<PoInvoiceUploader {...props} poId={nextPo} />)); });
+    await act(async () => { bytes.resolve(new TextEncoder().encode('invoice').buffer); await bytes.promise; });
+    expect(rpc).not.toHaveBeenCalled(); expect(upload).not.toHaveBeenCalled(); expect(localStorage.length).toBe(0);
+  });
+  it.each(interruptions)('preserves the original attempt when %s changes during upload', async kind => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'invoice_object_not_found' } });
+    const reply = deferred<{ data: object; error: null }>(); upload.mockReturnValue(reply.promise);
+    const selected = file(), input = await snapshot(selected);
+    const view = renderHook(({ id }) => usePoInvoice(id), { wrapper, initialProps: { id: poId } });
+    let task!: ReturnType<typeof view.result.current.submit>;
+    act(() => { task = view.result.current.submit(input, selected); });
+    await waitFor(() => expect(upload).toHaveBeenCalledOnce());
+    const saved = readFinancialSlot(scope);
+    act(() => { changeIdentity(kind, () => view.rerender({ id: nextPo })); });
+    await act(async () => { reply.resolve({ data: {}, error: null }); await task; });
+    expect(rpc).toHaveBeenCalledOnce(); expect(readFinancialSlot(scope)).toEqual(saved);
+    expect(readFinancialSlot(scope)?.status).toBe('pending');
+    expect(readFinancialSlot({ ...scope, target: nextPo })).toBeNull();
+    expect(readFinancialSlot({ ...scope, profileId: 'profile-b' })).toBeNull();
   });
 });
