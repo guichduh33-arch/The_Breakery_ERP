@@ -82,6 +82,23 @@ describe('verrouillage durable du PIN manager', () => {
     expect(state.rpc).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { request_count: 0 },
+    { request_count: 0, window_end: null },
+    { request_count: 0, window_end: 'invalid' },
+    { request_count: 0, window_end: '0' },
+    { request_count: 0, window_end: '2026-11-07T01:00:00' },
+  ])('refuse une fenêtre durable absente ou malformée %j', async (data) => {
+    state.read.mockResolvedValue({ data, error: null });
+    await expect(isManagerPinBlocked('192.0.2.1', 'cashier-a')).rejects.toMatchObject({ name: 'PermissionsUnavailableError' });
+    expect(state.rpc).not.toHaveBeenCalled();
+  });
+
+  it('libère une fenêtre expirée pendant le transport de la réponse SQL', async () => {
+    state.read.mockResolvedValue({ data: { request_count: 5, window_end: new Date(Date.now() - 1).toISOString() }, error: null });
+    expect(await isManagerPinBlocked('192.0.2.1', 'cashier-a')).toBe(false);
+  });
+
   it.each([{ data: null }, { data: [] }, { data: [{}] },
     { data: [{ allowed: 'true', retry_after_sec: 0, current_count: 1 }] },
     { data: [{ allowed: true, retry_after_sec: -1, current_count: 1 }] },

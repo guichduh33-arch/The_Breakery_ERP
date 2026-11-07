@@ -17,6 +17,7 @@ import { getAdminClient } from './supabase-admin.ts';
 import { PermissionsUnavailableError } from './permissions.ts';
 
 const PIN_REGEX = /^\d{6}$/;
+const TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const MANAGER_ROLES = ['MANAGER', 'ADMIN', 'SUPER_ADMIN'];
 
 // Brute-force guard constants (SEC-07).
@@ -90,10 +91,13 @@ export async function isManagerPinBlocked(ip: string, actingAuthUserId: string):
         .gt('window_end', new Date().toISOString())
         .maybeSingle();
       if (error || data === undefined || (data !== null
-        && (!Number.isInteger(data.request_count) || data.request_count < 0))) {
+        && (!Number.isInteger(data.request_count) || data.request_count < 0
+          || typeof data.window_end !== 'string' || !TIMESTAMP_REGEX.test(data.window_end)
+          || !Number.isFinite(Date.parse(data.window_end))))) {
         throw new PermissionsUnavailableError();
       }
-      return data !== null && data.request_count >= MANAGER_PIN_FAIL_MAX;
+      // La fenêtre peut expirer entre la lecture SQL et la réponse réseau.
+      return data !== null && data.request_count >= MANAGER_PIN_FAIL_MAX && Date.parse(data.window_end) > Date.now();
     } catch {
       console.error('[manager-pin] durable failure bucket unavailable');
       throw new PermissionsUnavailableError();
