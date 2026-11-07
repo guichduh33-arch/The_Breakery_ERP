@@ -25,6 +25,7 @@ import { useEffect, useRef, useState, type Dispatch, type JSX, type SetStateActi
 import { Input, cn, selectClassName } from '@breakery/ui';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
 import type { AuditLogRow } from '../hooks/useAuditLogs.js';
+import { AUDIT_ACTION_LABELS } from '../utils/auditLabels.js';
 
 export interface AuditLogFilterValues {
   actorId:    string;
@@ -125,15 +126,15 @@ export function AuditLogFilters({ value, onChange, actors = [] }: AuditLogFilter
   return (
     <>
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Actor</span>
+        <span className="sr-only">Account</span>
         <select
           value={value.actorId}
           onChange={(e) => { onChange((prev) => ({ ...prev, actorId: e.target.value })); }}
           className={cn(selectClassName, FIELD)}
           data-testid="audit-filter-actor"
-          aria-label="Filter by actor"
+          aria-label="Filter by account"
         >
-          <option value="">All actors</option>
+          <option value="">All accounts</option>
           {[...actorOptions].map(([id, name]) => (
             <option key={id} value={id}>{name}</option>
           ))}
@@ -141,28 +142,33 @@ export function AuditLogFilters({ value, onChange, actors = [] }: AuditLogFilter
       </label>
 
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Action</span>
+        <span className="sr-only">Event</span>
         <Input
           type="text"
           value={actionDraft}
           onChange={(e) => { handleActionChange(e.target.value); }}
-          placeholder="Action, e.g. product.update"
+          placeholder="Event code…"
+          title="Choose a suggested event or enter its exact action code"
+          list="audit-action-hints"
           className={FIELD}
           data-testid="audit-filter-action"
-          aria-label="Filter by action"
+          aria-label="Filter by event"
         />
+        <datalist id="audit-action-hints">
+          {Object.entries(AUDIT_ACTION_LABELS).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+        </datalist>
       </label>
 
       <label className={FIELD_LABEL}>
-        <span className="sr-only">Entity type</span>
+        <span className="sr-only">Record type</span>
         <Input
           list="audit-entity-type-hints"
           value={entityDraft}
           onChange={(e) => { handleEntityChange(e.target.value); }}
-          placeholder="Entity, e.g. product"
+          placeholder="Record type…"
           className={FIELD}
           data-testid="audit-filter-entity"
-          aria-label="Filter by entity type"
+          aria-label="Filter by record type"
         />
         <datalist id="audit-entity-type-hints">
           {ENTITY_TYPE_HINTS.map((t) => <option key={t} value={t} />)}
