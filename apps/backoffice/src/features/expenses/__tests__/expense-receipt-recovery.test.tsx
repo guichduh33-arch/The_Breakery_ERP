@@ -9,9 +9,12 @@ import { ExpenseReceiptPanel } from '../components/ExpenseReceiptPanel.js';
 import type { ExpenseRow } from '../hooks/useExpensesList.js';
 import { receiptFileDigest } from '../utils/expenseReceiptFiles.js';
 import { deferred, financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
-import { readFinancialSlot } from '@/lib/pendingFinancialAttempts.js';
+import { readFinancialSlot, runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 
-const {rpc, upload, download} = vi.hoisted(() => ({rpc: vi.fn(), upload: vi.fn(), download: vi.fn()}));
+const {rpc, upload, download} = vi.hoisted(() => ({
+ rpc: vi.fn<(_name:string,args:Record<string,unknown>)=>Promise<{data:unknown;error:unknown}>>(),
+ upload: vi.fn(), download: vi.fn(),
+}));
 vi.mock('@/lib/supabase.js', () => ({supabase: {rpc, functions: {invoke: download}, storage: {from: () => ({upload})}}}));
 vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth}));
 const expenseId='00000000-0000-4000-8000-000000000001';
@@ -119,5 +122,61 @@ describe('expense receipt durable recovery',()=>{
   const first=renderHook(()=>useExpenseReceipt(expenseId),{wrapper});await act(async()=>{await first.result.current.submit(input);});first.unmount();
   const next=renderHook(()=>useExpenseReceipt(expenseId),{wrapper});await act(async()=>{await next.result.current.submit(input);});
   expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[0]);expect(readFinancialSlot(scope)?.status).toBe('resolved');expect(upload).not.toHaveBeenCalled();
+ });
+ it.each(['image/png','image/webp'] as const)('resolves a local-only %s attempt without uploading it and starts a JPEG with a new key',async mime=>{
+  const old=file('legacy',mime);
+  const input={expenseId,expectedPath:null,kind:'attach' as const,mime,size:old.size,sha256:await receiptFileDigest(old)};
+  await expect(runFinancialAttempt({scope,payload:input,expectedRevision:null,current:()=>true,
+   send:()=>Promise.reject(new TypeError('Interrupted before reaching the server'))})).rejects.toThrow('Interrupted');
+  const saved=readFinancialSlot(scope);
+  const legacyKey=saved?.status==='pending'?saved.idempotencyKey:'';
+  expect(legacyKey).not.toBe('');
+  rpc.mockResolvedValue({data:{expense_id:expenseId,receipt_path:null,applied:false,idempotent_replay:false,reason:'legacy_upload_unavailable'},error:null});
+  mountUploader();
+  fireEvent.click(screen.getByRole('button',{name:'Check pending receipt'}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your expense is retained. Choose a new JPEG or PDF invoice.');
+  expect(readFinancialSlot(scope)?.status).toBe('resolved');expect(upload).not.toHaveBeenCalled();
+  expect(rpc).toHaveBeenCalledOnce();expect(rpc.mock.calls[0]![1].p_idempotency_key).toBe(legacyKey);
+  expect(screen.queryByText('Receipt change confirmed.')).not.toBeInTheDocument();
+  const picker=screen.getByLabelText('Receipt file');expect(picker).toHaveAttribute('accept','image/jpeg,application/pdf');
+  rpc.mockImplementation((_name:string,args:Record<string,unknown>)=>Promise.resolve(response(args))).mockResolvedValueOnce(noObject);
+  fireEvent.change(picker,{target:{files:[file('replacement','image/jpeg')]}});
+  expect(await screen.findByText('Receipt change confirmed.')).toBeInTheDocument();
+  expect(upload).toHaveBeenCalledOnce();expect(upload.mock.calls[0]![0]).toMatch(/[.]jpg$/);
+  expect(upload.mock.calls[0]![2]).toEqual({upsert:false,contentType:'image/jpeg'});
+  expect(rpc.mock.calls[1]![1].p_idempotency_key).not.toBe(legacyKey);
+  expect(rpc.mock.calls[2]).toEqual(rpc.mock.calls[1]);
+  for(const [,args] of rpc.mock.calls) expect(args.p_expense_id).toBe(expenseId);
+  expect(readFinancialSlot(scope)?.status).toBe('resolved');
+ });
+ it.each([
+  {receipt_path:undefined},{receipt_path:42},{expense_id:'another-expense'},
+  {applied:'false'},{idempotent_replay:'false'},{reason:'unknown_terminal_result'},
+ ])('retains the pending attempt for a malformed terminal response %j',async invalid=>{
+  const old=file('legacy','image/png');
+  const input={expenseId,expectedPath:null,kind:'attach' as const,mime:'image/png' as const,size:old.size,sha256:await receiptFileDigest(old)};
+  await expect(runFinancialAttempt({scope,payload:input,expectedRevision:null,current:()=>true,
+   send:()=>Promise.reject(new TypeError('Interrupted before reaching the server'))})).rejects.toThrow('Interrupted');
+  const saved=readFinancialSlot(scope);
+  rpc.mockResolvedValue({data:{expense_id:expenseId,receipt_path:null,applied:false,idempotent_replay:false,
+   reason:'legacy_upload_unavailable',...invalid},error:null});
+  mountUploader();fireEvent.click(screen.getByRole('button',{name:'Check pending receipt'}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('unconfirmed');
+  expect(readFinancialSlot(scope)).toEqual(saved);expect(upload).not.toHaveBeenCalled();
+  expect(screen.getByRole('button',{name:'Check pending receipt'})).toBeInTheDocument();
+  expect(screen.queryByLabelText('Receipt file')).not.toBeInTheDocument();
+ });
+ it('retains a contradictory legacy result even when its path matches the request',async()=>{
+  const old=file('legacy','image/png');
+  const input={expenseId,expectedPath:null,kind:'attach' as const,mime:'image/png' as const,size:old.size,sha256:await receiptFileDigest(old)};
+  rpc.mockRejectedValueOnce(new Error('Response lost')).mockImplementation((_name:string,args:Record<string,unknown>)=>Promise.resolve({
+   data:{...response(args).data,reason:'legacy_upload_unavailable'},error:null,
+  }));
+  const view=renderHook(()=>useExpenseReceipt(expenseId),{wrapper});
+  await act(async()=>{await view.result.current.submit(input);});
+  const saved=readFinancialSlot(scope);
+  await act(async()=>{await view.result.current.submit(input);});
+  expect(readFinancialSlot(scope)).toEqual(saved);expect(readFinancialSlot(scope)?.status).toBe('pending');
+  expect(upload).not.toHaveBeenCalled();
  });
 });

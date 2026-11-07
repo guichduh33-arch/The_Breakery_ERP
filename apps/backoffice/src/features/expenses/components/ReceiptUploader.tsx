@@ -45,9 +45,11 @@ export function ReceiptUploader({expenseId, value, editable, removable = editabl
       setError(outcome.error instanceof Error ? outcome.error.message : 'The receipt change is unconfirmed. Check it again.');
     } else if (outcome.result) {
       setFile(undefined);
-      if (!outcome.result.applied) setError(outcome.result.reason === 'receipt_requires_draft'
-        ? 'This expense no longer allows this receipt change. Review its current status.'
-        : 'The receipt changed in another tab. Review the current expense before continuing.');
+      if (!outcome.result.applied) setError(outcome.result.reason === 'legacy_upload_unavailable'
+        ? 'The previous receipt file is not available on the server. Your expense is retained. Choose a new JPEG or PDF invoice.'
+        : outcome.result.reason === 'receipt_requires_draft'
+          ? 'This expense no longer allows this receipt change. Review its current status.'
+          : 'The receipt changed in another tab. Review the current expense before continuing.');
       else setMessage('Receipt change confirmed.');
     }
   }

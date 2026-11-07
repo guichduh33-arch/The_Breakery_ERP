@@ -8,7 +8,7 @@ import { EXPENSES_QUERY_KEY } from './useExpensesList.js';
 
 export interface ExpenseReceiptResult {
  expense_id:string; receipt_path:string|null; applied:boolean; idempotent_replay:boolean;
- reason?:'receipt_requires_draft'|'receipt_changed';
+ reason?:'receipt_requires_draft'|'receipt_changed'|'legacy_upload_unavailable';
 }
 export function useExpenseReceipt(expenseId:string) {
  const attempt=useFinancialAttempt('expense_receipt',expenseId,true);
@@ -46,8 +46,10 @@ export function useExpenseReceipt(expenseId:string) {
    if(typeof result!=='object'||result===null||Array.isArray(result))throw new FinancialAttemptError('The receipt change is unconfirmed. Check it before trying another file.');
    const r=result as Record<string,unknown>;
    if(r.expense_id!==expenseId||typeof r.applied!=='boolean'||typeof r.idempotent_replay!=='boolean'
+    ||(r.receipt_path!==null&&typeof r.receipt_path!=='string')
+    ||(r.reason==='legacy_upload_unavailable'&&r.applied!==false)
     ||(r.applied===true&&r.receipt_path!==path)
-    ||(r.applied===false&&(typeof r.reason!=='string'||!['receipt_requires_draft','receipt_changed'].includes(r.reason)))) {
+    ||(r.applied===false&&(typeof r.reason!=='string'||!['receipt_requires_draft','receipt_changed','legacy_upload_unavailable'].includes(r.reason)))) {
     throw new FinancialAttemptError('The receipt change is unconfirmed. Check it before trying another file.');
    }
    assertSession();
