@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
-          ref: eae0d2dfa3bb31e352d203c5598e3cf5f9cb63f3
+          ref: b70a5da89523197e2109428b9ad54da1f1ec9275
           path: candidate
           persist-credentials: false
 

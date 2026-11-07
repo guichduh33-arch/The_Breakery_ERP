@@ -12,7 +12,7 @@ export const BANK_RELEASE = Object.freeze({
   migration: 'supabase/migrations/20261030000010_bank_historical_clearing.sql',
 });
 // Sources SQL corrigées, séparées du candidat applicatif bancaire inchangé.
-export const BANK_SQL_TEST_SHA = 'eae0d2dfa3bb31e352d203c5598e3cf5f9cb63f3';
+export const BANK_SQL_TEST_SHA = 'b70a5da89523197e2109428b9ad54da1f1ec9275';
 export const BANK_SQL_TEST_COUNT = 314;
 export const BANK_SQL_FIXTURE_FILES = Object.freeze([
   "supabase/tests/adr008_d2_d3_d9.test.sql",
