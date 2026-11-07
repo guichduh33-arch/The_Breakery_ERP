@@ -156,7 +156,20 @@ export default function PaymentByMethodPage(): JSX.Element {
           ? {
               pdf: {
                 template: 'payment_by_method' as const,
-                data,
+                data: {
+                  period: data.period,
+                  summary: {
+                    total_amount: data.total,
+                    total_count: data.totalCount,
+                    total_orders: data.totalOrders,
+                  },
+                  by_method: data.lines,
+                  by_day: data.byDay.map((day) => ({
+                    ...day,
+                    // Le PDF regroupe les wallets dans sa colonne « Other ».
+                    other: day.other + day.gopay + day.ovo + day.dana,
+                  })),
+                },
                 period:   { start, end },
                 filename: `payment-by-method-${start}_${end}`,
               },
