@@ -32,20 +32,20 @@ BEGIN
     '{"before":1,"after":2}', '2026-11-04T12:00:00+08:00' FROM generate_series(1,55);
   INSERT INTO pos_events(client_event_id,event_type,occurred_at,device_id,actor_id,order_id,order_number_snap,payload)
   VALUES(gen_random_uuid(),'item_added','2026-11-04T12:00:00+08:00',v_device,v_actor,v_entity,'TEST-ACTIVITY','{"name":"Coffee"}');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_action:='test.activity',p_limit:=200)),55,'tous les audits sont consultables');
-  RETURN NEXT is((SELECT actor_name FROM get_activity_logs_v1(p_action:='test.activity',p_limit:=1)),v_name,'nom résolu par identifiant de profil');
-  RETURN NEXT is((SELECT payload FROM get_activity_logs_v1(p_action:='test.activity',p_limit:=1)),'{"before":1,"after":2}'::jsonb,'diff distinct du contexte');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_limit:=50)),50,'première page bornée');
-  SELECT created_at::text || '|' || id INTO v_cursor FROM get_activity_logs_v1(p_entity_id:=v_entity,p_limit:=50)
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_action:='test.activity',p_limit:=200)),55,'tous les audits sont consultables');
+  RETURN NEXT is((SELECT actor_name FROM get_activity_logs_v2(p_action:='test.activity',p_limit:=1)),v_name,'nom résolu par identifiant de profil');
+  RETURN NEXT is((SELECT payload FROM get_activity_logs_v2(p_action:='test.activity',p_limit:=1)),'{"before":1,"after":2}'::jsonb,'diff distinct du contexte');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_limit:=50)),50,'première page bornée');
+  SELECT created_at::text || '|' || id INTO v_cursor FROM get_activity_logs_v2(p_entity_id:=v_entity,p_limit:=50)
   ORDER BY created_at,id LIMIT 1;
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_limit:=50,p_cursor:=v_cursor)),6,'curseur commun sans perte aux timestamps identiques');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_action:='pos.item_added')),1,'gestes POS visibles avec filtre action');
-  RETURN NEXT is((SELECT source FROM get_activity_logs_v1(p_entity_id:=v_entity,p_action:='pos.item_added')),'pos','source client explicitement distincte');
-  RETURN NEXT is((SELECT metadata->>'order_number' FROM get_activity_logs_v1(p_entity_id:=v_entity,p_action:='pos.item_added')),'TEST-ACTIVITY','numéro de commande POS conservé');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_actor_id:=gen_random_uuid())),0,'filtre auteur appliqué');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_date_end:='2026-11-03')),0,'bornes métier sur les deux sources');
-  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v1(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon exclu');
-  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v1(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'RLS conservée par SECURITY INVOKER');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_limit:=50,p_cursor:=v_cursor)),6,'curseur commun sans perte aux timestamps identiques');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_action:='pos.item_added')),1,'gestes POS visibles avec filtre action');
+  RETURN NEXT is((SELECT source FROM get_activity_logs_v2(p_entity_id:=v_entity,p_action:='pos.item_added')),'pos','source client explicitement distincte');
+  RETURN NEXT is((SELECT metadata->>'order_number' FROM get_activity_logs_v2(p_entity_id:=v_entity,p_action:='pos.item_added')),'TEST-ACTIVITY','numéro de commande POS conservé');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_actor_id:=gen_random_uuid())),0,'filtre auteur appliqué');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_date_end:='2026-11-03')),0,'bornes métier sur les deux sources');
+  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v2(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon exclu');
+  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v2(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'RLS conservée par SECURITY INVOKER');
 
   INSERT INTO suppliers(id,code,name) VALUES(v_supplier,'AUDIT-' || v_supplier,'Audit supplier');
   UPDATE suppliers SET name='Audit supplier updated' WHERE id=v_supplier;
@@ -109,10 +109,10 @@ BEGIN
   VALUES(v_actor,0,'closed',now(),v_actor,0) RETURNING id INTO v_id;
   RETURN NEXT ok(EXISTS(SELECT 1 FROM audit_logs WHERE entity_id=v_id AND action='shift.open'),'ouverture caisse tracée côté serveur');
   EXECUTE 'SET LOCAL ROLE authenticated';
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_limit:=200)),56,'administrateur connecté consulte les deux sources sous RLS');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_limit:=200)),56,'administrateur connecté consulte les deux sources sous RLS');
   PERFORM set_config('request.jwt.claims','{}',true);
   PERFORM set_config('request.jwt.claim.sub','',true);
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v1(p_entity_id:=v_entity,p_limit:=200)),0,'session absente sans accès aux traces');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity,p_limit:=200)),0,'session absente sans accès aux traces');
   EXECUTE 'RESET ROLE';
 END;
 $$;

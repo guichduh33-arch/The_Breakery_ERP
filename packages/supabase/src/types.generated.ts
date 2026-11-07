@@ -9998,7 +9998,7 @@ export type Database = {
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
       format_type_string: { Args: { "": string }; Returns: string }
-      get_activity_logs_v1: {
+      get_activity_logs_v2: {
         Args: {
           p_action?: string
           p_actor_id?: string
