@@ -194,7 +194,8 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   uniques avant de proposer un nettoyage. Un squash ou cherry-pick peut intégrer
   le code sans fusionner la branche. Conserver les artefacts nécessaires au retour ;
   ni l’âge, ni l’équivalence Git ne donne l’autorisation de supprimer.
-- Procédure et format des preuves : [outillage agents](docs/runbooks/agent-tooling.md).
+- Procédure commune : [modification et livraison](docs/runbooks/delivery-standard.md).
+  Formats des preuves : [outillage agents](docs/runbooks/agent-tooling.md).
   Les plans restent en conversation ; aucun hook n’enregistre de plan ni de mémoire.
 
 ## Commandes
@@ -231,7 +232,9 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   Le contrôle `db-gate` exige soit cette preuve réussie, soit une non-applicabilité
   justifiée ; un test applicable ignoré ne suffit pas, même pour Dependabot.
   Une PR front-only n'exécute pas de tests DB. Le lancement manuel exige toujours
-  pgTAP ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
+  pgTAP ; `pgtap-nightly.yml` contient une programmation périodique dont l’activation
+  effective se vérifie sur GitHub. Un horaire déclaré ne prouve pas une exécution.
+  Les gardes gouvernance
   (`scripts/ci/`) passent avant le build ; leur liste courante est dans le job
   `governance-guards` de `ci.yml`, sans compteur dupliqué ici. Plusieurs utilisent
   `_guard-lib.mjs` ; les gardes à baseline appliquent la règle : plafond, jamais
@@ -423,4 +426,6 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 
 ## MCP
 
-- Préfixe Supabase : `mcp__claude_ai_Supabase__` (jamais l'ancien plugin désactivé).
+- Utiliser les outils du connecteur Supabase actif dans le client courant.
+  Vérifier leurs noms réellement exposés ; ne pas déduire un préfixe depuis un
+  ancien client ou une ancienne session. Leur présence ne prouve pas l’accès à la cible.

@@ -25,7 +25,9 @@ Aucune adaptation métier implicite n'est permise.
 
 ## Boucle de travail
 
-Depuis la racine, avec Node installé :
+Le parcours courant et les conditions de réutilisation des contrôles sont dans la
+[procédure commune de livraison](delivery-standard.md). Ce document décrit les
+commandes et les preuves qu’elle utilise. Depuis la racine, avec Node installé :
 
 Pour une reprise de livraison ou d'environnement, commencer aussi par
 l'[état des environnements](etat-environnements.md) et ses preuves datées.
@@ -84,6 +86,11 @@ Une équivalence de patch ne prouve ni livraison, ni absence de modifications lo
 Les chemins du parent non suivi d’un stash sont aussi listés. Les fichiers ignorés
 et le contenu fonctionnel des stashes exigent un examen séparé.
 L’outil ne propose aucune suppression automatique.
+
+La [réconciliation et le nettoyage](delivery-standard.md#clore-réconcilier-et-nettoyer)
+exigent en plus une comparaison fonctionnelle : un snapshot ou une égalité de patch
+ne suffit pas à qualifier un chantier de terminé. Les corrections réellement
+manquantes sont vérifiées et livrées avant le retrait des références nécessaires.
 
 ### Vérification des preuves enregistrées
 

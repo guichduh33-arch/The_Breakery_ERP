@@ -1,7 +1,7 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate, Outlet, NavLink, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MapPin, Wifi, ClipboardList, History } from 'lucide-react';
+import { ArrowLeft, MapPin, Wifi, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
@@ -19,6 +19,7 @@ import { useKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { PrintJobsPanel } from '@/features/cart/PrintJobsPanel';
 import { TabletUserMenu } from '@/features/tablet/components/TabletUserMenu';
 import { DeviceSyncButton } from '@/features/sync/DeviceSyncButton';
+import { useOrderingOnlyTerminal } from '@/features/lan/terminalPaymentAccess';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
@@ -33,6 +34,7 @@ function TabletAccessDenied(): JSX.Element {
 
 export default function TabletLayout(): JSX.Element {
   const location = useLocation();
+  const orderingOnly = useOrderingOnlyTerminal();
   useRestoreTabletMenuCache();
   useTabletMenuCacheWriter();
   // Charger les destinations avant la coupure, comme le catalogue.
@@ -142,6 +144,12 @@ export default function TabletLayout(): JSX.Element {
       {/* Audit 2026-08-24 (responsive P1) — pb-safe-area : sur l'APK Capacitor
           la nav basse était collée sous la barre gestuelle Android. */}
       <nav className="min-h-14 border-t border-border-subtle bg-bg-elevated flex shrink-0 pb-safe-bottom">
+        {!orderingOnly && (
+          <NavLink to="/pos" className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-text-secondary hover:text-text-primary">
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            Back to POS
+          </NavLink>
+        )}
         <NavLink
           to="/tablet/order"
           className={({ isActive }) =>

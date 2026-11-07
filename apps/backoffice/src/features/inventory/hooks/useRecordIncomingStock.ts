@@ -18,6 +18,10 @@ import type { StockMovementRpcResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
+export interface IncomingStockResult extends Omit<StockMovementRpcResult, 'new_current_stock'> {
+  new_current_stock: number | null;
+}
+
 export type RecordIncomingStockErrorCode =
   | 'idempotency_conflict'
   | 'invalid_quantity'
@@ -56,7 +60,7 @@ function classify(message: string): RecordIncomingStockErrorCode {
 
 export function useRecordIncomingStock() {
   const qc = useQueryClient();
-  return useMutation<StockMovementRpcResult, RecordIncomingStockError, RecordIncomingStockArgs>({
+  return useMutation<IncomingStockResult, RecordIncomingStockError, RecordIncomingStockArgs>({
     mutationFn: async (args) => {
       const rpcArgs: {
         p_product_id:       string;
@@ -77,7 +81,7 @@ export function useRecordIncomingStock() {
       const { data, error } = await supabase.rpc('record_incoming_stock_v5', rpcArgs);
       if (error) throw new RecordIncomingStockError(classify(error.message), error.message);
       if (data === null) throw new RecordIncomingStockError('unknown', 'Empty RPC response');
-      return data as unknown as StockMovementRpcResult;
+      return data as unknown as IncomingStockResult;
     },
     onSuccess: () => invalidateStockQueries(qc),
   });

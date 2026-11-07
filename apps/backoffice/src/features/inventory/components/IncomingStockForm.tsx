@@ -129,7 +129,8 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         idempotencyKey,
       });
       resetForm();
-      setSuccessMsg(`${result.idempotent_replay === true ? 'Receipt already recorded' : 'Receipt recorded'} for ${productName}. On hand after receipt: ${formatQuantity(result.new_current_stock, product.unit)}.`);
+      const stockAfterReceipt = result.new_current_stock === null ? 'Hidden' : formatQuantity(result.new_current_stock, product.unit);
+      setSuccessMsg(`${result.idempotent_replay === true ? 'Receipt already recorded' : 'Receipt recorded'} for ${productName}. On hand after receipt: ${stockAfterReceipt}.`);
       if (successTimerRef.current !== null) clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => setSuccessMsg(null), 3000);
       onSuccess?.();
