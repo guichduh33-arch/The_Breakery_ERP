@@ -190,7 +190,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/daily-sales', label: 'Daily sales', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-hour', label: 'Sales by hour', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-category', label: 'Sales by category', permission: 'reports.sales.read' },
-          { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', anyPermission: ['reports.sales.read', 'reports.product_sales.read'] },
+          { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-customer', label: 'Sales by customer', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-origin', label: 'Sales by origin', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/combo-sales', label: 'Combo sales', permission: 'reports.sales.read' },
@@ -200,8 +200,8 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/basket-analysis', label: 'Basket analysis', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/refunds-voids', label: 'Refunds & voids', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/discounts-loyalty', label: 'Discounts & loyalty', permission: 'reports.sales.read' },
-          { to: '/backoffice/reports/cashier-variance', label: 'Cashier variance', permission: 'reports.read' },
-          { to: '/backoffice/reports/off-hours-sales', label: 'Off-hours sales', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/cashier-variance', label: 'Cashier variance', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/off-hours-sales', label: 'Off-hours sales', permission: 'reports.audit.read' },
         ],
       },
       {
@@ -225,7 +225,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           // Cette ligne est là pour que la prochaine comparaison mécanique des
           // deux listes trouve la réponse avant de « corriger » la décision.
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe cost', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'inventory.read' },
+          { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production report', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-efficiency', label: 'Production efficiency', permission: 'reports.inventory.read' },
         ],

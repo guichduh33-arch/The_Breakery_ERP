@@ -112,7 +112,7 @@ serve(withPermissionErrors(async (req) => {
   }
 
   // SEC-07 — check fail bucket before attempting PIN verification.
-  if (await isManagerPinBlocked(ip)) {
+  if (await isManagerPinBlocked(ip, actingAuthUserId)) {
     return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
   }
 
@@ -120,7 +120,7 @@ serve(withPermissionErrors(async (req) => {
   if (!mgr.ok) {
     if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
     if (mgr.reason === 'no_match') {
-      const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'verify-manager-pin');
+      const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'verify-manager-pin', actingAuthUserId);
       if (blocked) return rateLimitedResponse(retryAfterSec);
       return jsonResponse({ error: 'wrong_pin' }, 401);
     }

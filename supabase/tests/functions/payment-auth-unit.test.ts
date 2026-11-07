@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), sessionRpc: vi.fn(), admin: vi.fn(), pin: vi.fn(), verify: vi.fn() }));
+const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), sessionRpc: vi.fn(), admin: vi.fn(), pin: vi.fn(), verify: vi.fn(),
+  blocked: vi.fn(), failure: vi.fn(), from: vi.fn() }));
 vi.mock('https://deno.land/std@0.224.0/http/server.ts', () => ({ serve: mocks.serve }));
 vi.mock('https://deno.land/x/djwt@v3.0.2/mod.ts', () => ({ verify: mocks.verify }));
 vi.mock('https://esm.sh/@supabase/supabase-js@2.47.10', () => ({ createClient: () => ({ rpc: mocks.rpc }) }));
@@ -9,10 +10,10 @@ vi.mock('../../functions/_shared/rate-limit.ts', () => ({
 }));
 vi.mock('../../functions/_shared/supabase-admin.ts', () => ({ getAdminClient: mocks.admin }));
 vi.mock('../../functions/_shared/manager-pin.ts', () => ({
-  verifyManagerPin: mocks.pin, isManagerPinBlocked: vi.fn(), recordManagerPinFailure: vi.fn(), MANAGER_PIN_FAIL_WINDOW_SEC: 900,
+  verifyManagerPin: mocks.pin, isManagerPinBlocked: mocks.blocked, recordManagerPinFailure: mocks.failure, MANAGER_PIN_FAIL_WINDOW_SEC: 900,
 }));
-vi.mock('../../functions/_shared/permissions.ts', () => ({
-  withPermissionErrors: (handler: unknown) => handler, checkPermissionForRole: vi.fn(),
+vi.mock('../../functions/_shared/permissions.ts', async (original) => ({
+  ...await original<typeof import('../../functions/_shared/permissions.ts')>(), checkPermissionForRole: vi.fn(),
 }));
 
 describe('paiement — identité vérifiée avant les accès métier', () => {
@@ -21,7 +22,13 @@ describe('paiement — identité vérifiée avant les accès métier', () => {
     mocks.verify.mockResolvedValue({ role: 'authenticated', sub: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       session_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', exp: Date.now() / 1000 + 60, app_metadata: { provider: 'pin' } });
     mocks.sessionRpc.mockResolvedValue({ data: true, error: null });
-    mocks.admin.mockReturnValue({ rpc: mocks.sessionRpc });
+    const query = { select: () => query, eq: () => query,
+      maybeSingle: () => Promise.resolve({ data: null, error: null }) };
+    mocks.from.mockReturnValue(query);
+    mocks.admin.mockReturnValue({ rpc: mocks.sessionRpc, from: mocks.from });
+    mocks.blocked.mockResolvedValue(false);
+    mocks.failure.mockResolvedValue({ blocked: false, retryAfterSec: 0 });
+    mocks.pin.mockResolvedValue({ ok: false, reason: 'no_match' });
     vi.stubGlobal('Deno', { env: { get: (name: string) => ({
       JWT_SECRET: 'test-only-signing-secret', SUPABASE_URL: 'https://example.test', SUPABASE_ANON_KEY: 'test-only',
     })[name] } });
@@ -78,5 +85,21 @@ describe('paiement — identité vérifiée avant les accès métier', () => {
     expect(response.status).toBe(200);
     expect(mocks.verify).toHaveBeenCalledOnce();
     expect(mocks.rpc).toHaveBeenCalledWith('complete_order_with_payment_v32', expect.any(Object));
+  });
+  it('lie les compteurs PIN au caissier vérifié', async () => {
+    expect((await invoke()).status).toBe(401);
+    expect(mocks.blocked).toHaveBeenCalledWith('127.0.0.1', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+    expect(mocks.failure).toHaveBeenCalledWith('127.0.0.1', 'process-payment', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.from.mock.calls.map(([table]) => table)).not.toContain('discount_authorizations');
+  });
+  it.each(['read', 'write'])('refuse une remise sans mutation si le compteur PIN échoue en %s', async (stage) => {
+    const { PermissionsUnavailableError } = await import('../../functions/_shared/permissions.ts');
+    (stage === 'read' ? mocks.blocked : mocks.failure).mockRejectedValue(new PermissionsUnavailableError());
+    const response = await invoke();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'authorization_unavailable' });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.from.mock.calls.map(([table]) => table)).not.toContain('discount_authorizations');
   });
 });
