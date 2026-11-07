@@ -8319,11 +8319,11 @@ export type Database = {
       }
       get_operational_products_v2: { Args: never; Returns: Json }
       get_opname_items_v1: { Args: { p_count_id: string }; Returns: Json }
-      get_orders_counters_v4: {
+      get_orders_counters_v5: {
         Args: { p_end: string; p_filters?: Json; p_start: string }
         Returns: Json
       }
-      get_orders_list_v6: {
+      get_orders_list_v7: {
         Args: {
           p_cursor_id?: string
           p_cursor_val?: string
