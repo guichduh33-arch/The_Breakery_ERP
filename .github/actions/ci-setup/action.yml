@@ -1,0 +1,25 @@
+name: CI dependencies and task cache
+description: Install the locked workspace and restore a cache isolated by CI lane.
+inputs:
+  cache-scope:
+    description: Stable name of the CI lane
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+    # Une clé par voie évite que des écritures simultanées se remplacent.
+    # Turbo reste responsable de l'empreinte des entrées de chaque tâche.
+    - uses: actions/cache@v6
+      with:
+        path: .turbo/cache
+        key: turbo-v2-${{ runner.os }}-${{ inputs.cache-scope }}-${{ github.sha }}
+        restore-keys: |
+          turbo-v2-${{ runner.os }}-${{ inputs.cache-scope }}-
+          turbo-${{ runner.os }}-
