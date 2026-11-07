@@ -1,7 +1,6 @@
-// supabase/functions/_shared/pdf-templates/audit.ts
-// S29 Wave 3.A.2 — Audit Log PDF template
-// Table: Timestamp | Action | Entity | Actor   (multi-page, ~30 rows/page)
-import { rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+// Journal de contrôle : heure métier, descriptions complètes et provenance.
+// La pagination suit la hauteur réelle des entrées, sans couper les motifs.
+import { rgb, type PDFPage } from 'https://esm.sh/pdf-lib@1.17.1';
 import { drawFooter, drawHeader, type LayoutContext } from '../pdf-layout.ts';
 
 export interface AuditRow {
@@ -12,29 +11,29 @@ export interface AuditRow {
   actor_id:    string | null;
   actor_name?: string | null;
   description?: string;
+  entity_label?: string;
+  entity_id?: string | null;
+  source_label?: string;
+  actor_context?: string;
+  review_cue?: string | null;
 }
 
 export type AuditData = AuditRow[];
 
 const COL_TS     = 40;
-const COL_ACTION = 160;
-const COL_ENTITY = 310;
-const COL_ACTOR  = 420;
-const ROWS_PER_PAGE = 30;
-const ROW_H     = 15;
+const COL_ACTION = 150;
+const COL_ENTITY = 405;
+const COL_ACTOR  = 475;
+const LINE_H = 11;
 
-function drawTableHeader(page: ReturnType<typeof Object.assign>, ctx: LayoutContext, y: number): number {
-  page.drawText('Timestamp', { x: COL_TS,     y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Action',    { x: COL_ACTION, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Entity',    { x: COL_ENTITY, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Actor',     { x: COL_ACTOR,  y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+function drawTableHeader(page: PDFPage, ctx: LayoutContext, y: number): number {
+  page.drawText('Time (WITA)', { x: COL_TS, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Event / review cue', { x: COL_ACTION, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Record', { x: COL_ENTITY, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Account', { x: COL_ACTOR, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
   y -= 4;
   page.drawLine({ start: { x: 40, y }, end: { x: 555, y }, thickness: 0.3, color: rgb(0.7, 0.7, 0.7) });
   return y - 10;
-}
-
-function truncate(text: string, maxLen: number): string {
-  return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text;
 }
 
 /** Shorten UUID to last 8 chars for display readability. */
@@ -55,44 +54,76 @@ export async function render(
     const code = character.codePointAt(0)!;
     return characters.has(code) ? character : `[U+${code.toString(16).toUpperCase()}]`;
   }).join('');
-  const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
-  let pageNum  = 0;
+  const pages: PDFPage[] = [];
   let rowIndex = 0;
-  // deno-lint-ignore no-explicit-any
-  let page: any;
+  let page!: PDFPage;
   let y = 0;
 
+  // Mesurer le texte au lieu de couper la raison ou le montant après 30 caractères.
+  const wrap = (text: string, width: number): string[] => {
+    const lines: string[] = [];
+    for (const paragraph of pdfText(text).split(/\r?\n/)) {
+      let line = '';
+      for (const character of paragraph) {
+        if (line && ctx.font.widthOfTextAtSize(line + character, 8) > width) {
+          const space = line.lastIndexOf(' ');
+          if (space > 0) { lines.push(line.slice(0, space)); line = line.slice(space + 1); }
+          else { lines.push(line); line = ''; }
+        }
+        line += character;
+      }
+      lines.push(line);
+    }
+    return lines;
+  };
+
+  const timestamp = (value: string): string => {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return value;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Makassar', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(date).map(part => [part.type, part.value]));
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+  };
+
   const newPage = (): void => {
-    pageNum++;
     page = ctx.doc.addPage([595, 842]);
-    y = drawHeader(page, ctx, 'Audit Log', period ?? undefined);
+    pages.push(page);
+    y = drawHeader(page, ctx, 'Activity & Control Log', period ?? undefined);
+    page.drawText('Loaded entries only. Review cues prompt checks; they do not prove fraud.', {
+      x: 40, y, size: 8, font: ctx.font, color: rgb(0.3, 0.3, 0.3),
+    });
+    y -= 16;
     y = drawTableHeader(page, ctx, y);
   };
 
   newPage();
 
   for (const row of data) {
-    if (y < 80) {
-      drawFooter(page, ctx, pageNum, totalPages);
-      newPage();
+    const columns = [
+      { x: COL_TS, lines: wrap(timestamp(row.created_at), 100) },
+      { x: COL_ACTION, lines: wrap([row.description ?? row.action, row.source_label, `Event: ${row.id}`,
+        row.review_cue ? `Review: ${row.review_cue}` : null].filter(Boolean).join('\n'), 245) },
+      { x: COL_ENTITY, lines: wrap([row.entity_label ?? row.entity_type,
+        row.entity_id ? shortId(row.entity_id) : null].filter(Boolean).join('\n'), 60) },
+      { x: COL_ACTOR, lines: wrap([row.actor_name ?? shortId(row.actor_id), row.actor_context].filter(Boolean).join('\n'), 80) },
+    ];
+    const lineCount = Math.max(...columns.map(column => column.lines.length));
+    // Une entrée exceptionnellement longue peut continuer sur la page suivante.
+    for (let lineIndex = 0; lineIndex < lineCount; lineIndex++) {
+      if (y < 80) newPage();
+      const bg = rowIndex % 2 === 0 ? rgb(0.97, 0.97, 0.97) : rgb(1, 1, 1);
+      page.drawRectangle({ x: 40, y: y - 2, width: 515, height: LINE_H, color: bg });
+      for (const column of columns) {
+        const line = column.lines[lineIndex];
+        if (line) page.drawText(line, { x: column.x, y, size: 8, font: ctx.font, color: rgb(0.2, 0.2, 0.2) });
+      }
+      y -= LINE_H;
     }
-
-    const bg = rowIndex % 2 === 0 ? rgb(0.97, 0.97, 0.97) : rgb(1, 1, 1);
-    page.drawRectangle({ x: 40, y: y - 2, width: 515, height: ROW_H, color: bg });
-
-    // Format timestamp: "2026-05-24 14:35" — drop seconds + T
-    const ts = row.created_at.length >= 16
-      ? row.created_at.slice(0, 16).replace('T', ' ')
-      : row.created_at;
-
-    page.drawText(ts,                              { x: COL_TS,     y, size: 8, font: ctx.font, color: rgb(0.3, 0.3, 0.3) });
-    page.drawText(truncate(pdfText(row.description ?? row.action), 30), { x: COL_ACTION, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(truncate(row.entity_type, 15),   { x: COL_ENTITY, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(truncate(pdfText(row.actor_name ?? shortId(row.actor_id)), 24), { x: COL_ACTOR, y, size: 8, font: ctx.font, color: rgb(0.4, 0.4, 0.4) });
-
-    y -= ROW_H;
+    y -= 5;
     rowIndex++;
   }
 
-  drawFooter(page, ctx, pageNum, totalPages);
+  pages.forEach((item, index) => drawFooter(item, ctx, index + 1, pages.length));
 }

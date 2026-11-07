@@ -19,6 +19,7 @@ const ROWS = [
 ];
 
 const mockUseAuditLogs = vi.fn();
+const exportSpy = vi.hoisted(() => vi.fn());
 vi.mock('@/features/reports/hooks/useAuditLogs.js', () => ({
   useAuditLogs: (filters: unknown) => mockUseAuditLogs(filters) as unknown,
 }));
@@ -35,7 +36,7 @@ vi.mock('@/features/auth/hooks/useLoginUsers.js', () => ({
 // ExportMenu monte useGeneratePdf (useMutation) : hors QueryClientProvider, il
 // faut le neutraliser. Ce test porte sur les filtres, pas sur l'export.
 vi.mock('@/features/reports/components/ExportMenu.js', () => ({
-  ExportMenu: () => <div data-testid="export-menu" />,
+  ExportMenu: (props: unknown) => { exportSpy(props); return <div data-testid="export-menu" />; },
 }));
 
 function renderPage(entry = '/reports/audit'): ReturnType<typeof render> {
@@ -58,6 +59,7 @@ describe('AuditPage — filtres + contexte déplié', () => {
   beforeEach(() => {
     sessionStorage.clear();
     mockUseAuditLogs.mockReset();
+    exportSpy.mockClear();
     mockUseAuditLogs.mockReturnValue({
       data: { pages: [ROWS] },
       isLoading: false,
@@ -78,7 +80,7 @@ describe('AuditPage — filtres + contexte déplié', () => {
     renderPage();
     const row = within(screen.getByTestId('audit-row-2'));
     expect(row.getByRole('link', { name: 'Made' })).toBeInTheDocument();
-    expect(row.getByText('Expense approved')).toBeInTheDocument();
+    expect(row.getByText(/Expense approved/)).toBeInTheDocument();
     expect(row.getByText('expense.approve')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('audit-row-2'));
     expect(screen.getByTestId('audit-detail-2')).toHaveTextContent('Changes / event details');
@@ -205,9 +207,9 @@ describe('AuditPage — filtres + contexte déplié', () => {
   describe('tri de colonne (lot G)', () => {
     it('les en-têtes triables sont des BOUTONS focusables portant aria-sort', () => {
       renderPage();
-      const header = screen.getByRole('columnheader', { name: 'Action' });
+      const header = screen.getByRole('columnheader', { name: 'Event & context' });
       expect(header).toHaveAttribute('aria-sort', 'none');
-      expect(within(header).getByRole('button', { name: 'Action' })).toBeInTheDocument();
+      expect(within(header).getByRole('button', { name: 'Event & context' })).toBeInTheDocument();
     });
 
     it('trie les lignes chargées sans toucher à l\'ordre serveur par défaut', () => {
@@ -221,19 +223,45 @@ describe('AuditPage — filtres + contexte déplié', () => {
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
 
       // Tri ascendant par action : « expense.approve » avant « product.update ».
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
-      expect(screen.getByRole('columnheader', { name: 'Action' })).toHaveAttribute('aria-sort', 'ascending');
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
+      expect(screen.getByRole('columnheader', { name: 'Event & context' })).toHaveAttribute('aria-sort', 'ascending');
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
 
       // Descendant : l'inverse.
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
       expect(bodyIds()).toEqual(['audit-row-1', 'audit-row-2']);
 
       // Troisième clic : retour à l'ordre serveur.
-      fireEvent.click(screen.getByRole('button', { name: 'Action' }));
-      expect(screen.getByRole('columnheader', { name: 'Action' })).toHaveAttribute('aria-sort', 'none');
+      fireEvent.click(screen.getByRole('button', { name: 'Event & context' }));
+      expect(screen.getByRole('columnheader', { name: 'Event & context' })).toHaveAttribute('aria-sort', 'none');
       expect(bodyIds()).toEqual(['audit-row-2', 'audit-row-1']);
     });
+  });
+
+  it('identifies a targeted account and explains a review cue without calling it fraud', () => {
+    mockUseAuditLogs.mockReturnValue({ data: { pages: [[{ ...ROWS[0], action: 'login.failed', metadata: { attempts: 3 } }]] },
+      isLoading: false, error: null, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'Activity & Control Log' })).toBeInTheDocument();
+    const row = within(screen.getByTestId('audit-row-2'));
+    expect(row.getByText('Target account')).toBeInTheDocument();
+    expect(row.getByText(/Review cue:.*Verify repeated attempts/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('audit-toggle-2'));
+    expect(screen.getByTestId('audit-detail-2')).toHaveTextContent('does not identify the person');
+  });
+
+  it('keeps secrets out of visible details and out of the PDF request body', () => {
+    mockUseAuditLogs.mockReturnValue({ data: { pages: [[{ ...ROWS[0],
+      metadata: { pin_hash: 'never-export-this', reason: 'Review' }, payload: { access_token: 'never-send-this' } }]] },
+      isLoading: false, error: null, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: vi.fn() });
+    renderPage();
+    fireEvent.click(screen.getByTestId('audit-toggle-2'));
+    expect(screen.getByTestId('audit-detail-2')).not.toHaveTextContent('never-export-this');
+    expect(screen.getByTestId('audit-detail-2')).not.toHaveTextContent('never-send-this');
+    const props = exportSpy.mock.calls.at(-1)?.[0] as { pdf: { data: unknown[] } };
+    expect(JSON.stringify(props.pdf.data)).not.toContain('never-');
+    expect(props.pdf.data[0]).not.toHaveProperty('metadata');
+    expect(props.pdf.data[0]).not.toHaveProperty('payload');
   });
 
   it('rend la bannière d\'erreur unifiée du socle quand la requête échoue', () => {

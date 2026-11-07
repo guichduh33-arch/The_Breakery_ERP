@@ -255,7 +255,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Audit',
         links: [
-          { to: '/backoffice/reports/audit', label: 'Audit log', permission: 'reports.audit.read' },
+          { to: '/backoffice/reports/audit', label: 'Activity & control log', permission: 'reports.audit.read' },
           { to: '/backoffice/reports/price-changes', label: 'Price changes', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/permission-changes', label: 'Permission change log', permission: 'reports.audit.read' },
         ],
