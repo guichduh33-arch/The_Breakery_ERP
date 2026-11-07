@@ -79,7 +79,7 @@ test('CI : diagnostic horodaté, lien direct et étape en échec, sans additionn
 });
 
 test('CI : contrôle final inconditionnel, voies obligatoires, caches séparés et contrat de release conservé', () => {
-  const workflow = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const workflow = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
   const section = (name) => workflow.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]*:\n/)[0];
   const final = section('lint-typecheck-test-build');
   assert.match(final, /if: \$\{\{ always\(\) \}\}/);
@@ -96,7 +96,7 @@ test('CI : contrôle final inconditionnel, voies obligatoires, caches séparés 
   assert.match(section('governance-guards'), /ci-\*\.test\.mjs/);
   assert.match(section('lint'), /xargs -0 -r -n 40/);
   assert.match(section('lint-advisory'), /continue-on-error: true/);
-  const setup = readFileSync(new URL('../../.github/actions/ci-setup/action.yml', import.meta.url), 'utf8');
+  const setup = readFileSync(new URL('../../.github/actions/ci-setup/action.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
   assert.match(setup, /inputs.cache-scope/);
   assert.match(setup, /pnpm install --frozen-lockfile/);
   assert.match(setup, /uses: pnpm\/action-setup@v6\n\s+- uses:/);
