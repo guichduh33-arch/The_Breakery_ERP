@@ -78,13 +78,13 @@ SELECT lives_ok(format($q$SELECT pay_existing_order_v25(p_order_id:=%L::uuid,p_i
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.bo_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.bo_claims'),true);
-SELECT ok(NOT EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v6(
+SELECT ok(NOT EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v7(
   (current_date-1)::text,(current_date+1)::text,'{}'::jsonb,200)->'lines') row
   WHERE row->>'id'=current_setting('wa.order')),'vente POS du shift ouvert masquée au back-office');
 RESET ROLE;
 SELECT pg_temp.fixture_released_days(current_date,current_date);
 SET LOCAL ROLE authenticated;
-SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v6(
+SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v7(
   (current_date-1)::text,(current_date+1)::text,'{}'::jsonb,200)->'lines') row
   WHERE row->>'id'=current_setting('wa.order')),'commande accessible par la RPC de liste du back-office');
 SELECT ok((SELECT o.status='paid' AND o.total=(SELECT sum(amount) FROM order_payments WHERE order_id=o.id)
