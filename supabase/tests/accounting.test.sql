@@ -344,14 +344,15 @@ DECLARE v_auth UUID;
 BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND up.role_code='SUPER_ADMIN' AND up.is_active
      AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $$;
 SELECT ok(
-  (SELECT (calculate_pb1_payable_v4(DATE '2026-01-01', DATE '2026-12-31'))
+  (SELECT (calculate_pb1_payable_v5(DATE '2026-01-01', DATE '2026-12-31'))
           ? 'pb1_payable'),
-  'T28: calculate_pb1_payable_v4 returns object with pb1_payable key (VAT→PB1, ADR-005)'
+  'T28: calculate_pb1_payable_v5 returns object with pb1_payable key (VAT→PB1, ADR-005)'
 );
 
 -- ---------------------------------------------------------------------------

@@ -59,9 +59,9 @@ SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'calculate_pb1_payable_v4'
+    WHERE n.nspname = 'public' AND p.proname = 'calculate_pb1_payable_v5'
   ),
-  'T5: calculate_pb1_payable_v4 exists'
+  'T5: calculate_pb1_payable_v5 exists'
 );
 
 -- Lot D1 : _v1 → _v2 (gate reports.financial.read ajouté) — poser un contexte
@@ -71,6 +71,7 @@ DECLARE v_auth UUID;
 BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND up.role_code='SUPER_ADMIN' AND up.is_active
      AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
@@ -78,8 +79,8 @@ END $$;
 
 -- ADR-005 : Lombok/NTB (PBJT), remplace le résidu ADR-003 NON_PKP_BALI_PB1.
 SELECT ok(
-  (calculate_pb1_payable_v4(DATE '2026-01-01', DATE '2026-12-31'))->>'tax_regime' = 'NON_PKP_LOMBOK_PBJT',
-  'T6: calculate_pb1_payable_v4 returns NON_PKP_LOMBOK_PBJT tax_regime (ADR-005)'
+  (calculate_pb1_payable_v5(DATE '2026-01-01', DATE '2026-12-31'))->>'tax_regime' = 'NON_PKP_LOMBOK_PBJT',
+  'T6: calculate_pb1_payable_v5 returns NON_PKP_LOMBOK_PBJT tax_regime (ADR-005)'
 );
 
 -- ============================================================================

@@ -8070,7 +8070,7 @@ export type Database = {
         Returns: undefined
       }
       assert_stock_owner_v1: { Args: never; Returns: undefined }
-      calculate_pb1_payable_v4: {
+      calculate_pb1_payable_v5: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
@@ -8283,7 +8283,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_gross_margin_by_product_v4: {
+      get_gross_margin_by_product_v5: {
         Args: {
           p_category_id?: string
           p_end_date: string
@@ -8336,11 +8336,11 @@ export type Database = {
         }
         Returns: Json
       }
-      get_payments_by_method_v4: {
+      get_payments_by_method_v5: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pb1_report_v5: {
+      get_pb1_report_v6: {
         Args: { p_period_month: number; p_period_year: number }
         Returns: Json
       }

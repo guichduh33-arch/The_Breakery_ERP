@@ -65,7 +65,7 @@ BEGIN
     (v_ord, 'qris', 30,  '2026-06-02 09:10:00+00'),
     (v_ord, 'gopay', 20, '2026-06-02 09:15:00+00');
 
-  v_res := get_payments_by_method_v4('2026-06-02','2026-06-02');
+  v_res := get_payments_by_method_v5('2026-06-02','2026-06-02');
   v_day := v_res->'by_day'->0;
   v_recon := (v_day->>'cash')::numeric + (v_day->>'card')::numeric + (v_day->>'qris')::numeric
            + (v_day->>'edc')::numeric + (v_day->>'transfer')::numeric
@@ -78,7 +78,7 @@ BEGIN
      AND v_recon = v_total AND v_total = 200)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.m9_t2')::boolean,
-  'T2: get_payments_by_method_v4 by_day reconciles — 9 named methods (incl. gopay column) + other = total');
+  'T2: get_payments_by_method_v5 by_day reconciles — 9 named methods (incl. gopay column) + other = total');
 
 SELECT * FROM finish();
 ROLLBACK;

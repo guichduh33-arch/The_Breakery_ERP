@@ -94,7 +94,8 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
-  const ownerTemplates = ['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover'];
+  const ownerTemplates = ['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover',
+    'payment_by_method', 'pb1'];
   if (ownerTemplates.includes(body.template)) {
     const { data: owner, error: ownerError } = await userClient.rpc('can_view_stock_v1');
     if (ownerError) return jsonResponse({ error: 'permission_check_failed' }, 500);
