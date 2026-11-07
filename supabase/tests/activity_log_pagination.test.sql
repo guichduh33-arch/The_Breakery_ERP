@@ -105,7 +105,7 @@ BEGIN
       p_actor_id:=(v_cfg->>'actor')::uuid,p_action:=v_cfg->>'action',p_entity_type:=v_cfg->>'type',
       p_entity_id:=(v_cfg->>'entity')::uuid,p_date_start:=v_cfg->>'start',p_date_end:=v_cfg->>'end') r;
     SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.created_at DESC,r.id DESC),'[]') INTO v_actual
-    FROM get_activity_logs_v2(p_cursor:=v_cfg->>'cursor',p_limit:=(v_cfg->>'limit')::integer,
+    FROM get_activity_logs_v3(p_cursor:=v_cfg->>'cursor',p_limit:=(v_cfg->>'limit')::integer,
       p_actor_id:=(v_cfg->>'actor')::uuid,p_action:=v_cfg->>'action',p_entity_type:=v_cfg->>'type',
       p_entity_id:=(v_cfg->>'entity')::uuid,p_date_start:=v_cfg->>'start',p_date_end:=v_cfg->>'end') r;
     RETURN NEXT is(v_actual,v_expected,'contrat complet identique : ' || v_cfg::text);
@@ -114,21 +114,21 @@ BEGIN
   LOOP
     SELECT array_agg(r.id ORDER BY r.created_at DESC,r.id DESC),
       (array_agg(r.created_at::text || '|' || r.id ORDER BY r.created_at,r.id))[1]
-    INTO v_page,v_last FROM get_activity_logs_v2(p_cursor:=v_cursor,p_limit:=37,p_entity_id:=v_entity) r;
+    INTO v_page,v_last FROM get_activity_logs_v3(p_cursor:=v_cursor,p_limit:=37,p_entity_id:=v_entity) r;
     EXIT WHEN v_page IS NULL;
     v_ids := v_ids || v_page; v_cursor := v_last; v_round := v_round+1;
     IF v_round > 20 THEN RAISE EXCEPTION 'pagination_not_terminating'; END IF;
   END LOOP;
   RETURN NEXT is(cardinality(v_ids),527,'toutes les lignes des deux sources sont paginées');
   RETURN NEXT is((SELECT count(DISTINCT id)::integer FROM unnest(v_ids) id),527,'aucun doublon aux horodatages identiques');
-  RETURN NEXT ok(to_regprocedure('public.get_activity_logs_v1(text,integer,uuid,text,text,uuid,text,text)') IS NULL,'ancien endpoint retiré');
-  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v2(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon et PUBLIC exclus');
-  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v2(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'SECURITY INVOKER conservé');
+  RETURN NEXT ok(to_regprocedure('public.get_activity_logs_v2(text,integer,uuid,text,text,uuid,text,text)') IS NULL,'ancien endpoint retiré');
+  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v3(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon et PUBLIC exclus');
+  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v3(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'SECURITY INVOKER conservé');
   RETURN NEXT ok(EXISTS(SELECT 1 FROM pg_indexes WHERE indexname='audit_logs_activity_cursor_idx'),'index du curseur audit présent');
   RETURN NEXT ok(EXISTS(SELECT 1 FROM pg_indexes WHERE indexname='pos_events_activity_cursor_idx'),'index du curseur POS présent');
   EXECUTE 'SET LOCAL ROLE authenticated';
   v_started := clock_timestamp();
-  SELECT count(*)::integer INTO v_rows FROM get_activity_logs_v2(p_date_start:='2026-11-07',p_date_end:='2026-11-07');
+  SELECT count(*)::integer INTO v_rows FROM get_activity_logs_v3(p_date_start:='2026-11-07',p_date_end:='2026-11-07');
   v_elapsed := clock_timestamp()-v_started;
   RETURN NEXT is(v_rows,50,'lecture non filtrée authentifiée bornée');
   RETURN NEXT ok(v_elapsed < interval '8 seconds','lecture dans le budget PostgREST : ' || v_elapsed::text);
@@ -137,10 +137,10 @@ BEGIN
   WHERE role_code='ADMIN' AND is_active AND deleted_at IS NULL LIMIT 1;
   PERFORM pg_temp.authenticate_pin(v_low_auth);
   EXECUTE 'SET LOCAL ROLE authenticated';
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity)),0,'confidentialité non-Owner conservée');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity)),0,'confidentialité non-Owner conservée');
   PERFORM set_config('request.jwt.claims','{}',true);
   PERFORM set_config('request.jwt.claim.sub','',true);
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v2(p_entity_id:=v_entity)),0,'session absente sans accès');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity)),0,'session absente sans accès');
   EXECUTE 'RESET ROLE';
 END;
 $$;

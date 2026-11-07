@@ -34,7 +34,7 @@ describe('audit RPC callers', () => {
     const { result } = renderHook(() => useAuditLogs({ pageSize: 2 }), { wrapper });
     await waitFor(() => expect(result.current.data?.pages[0]).toHaveLength(2));
     await act(async () => { await result.current.fetchNextPage(); });
-    expect(rpc).toHaveBeenNthCalledWith(2, 'get_activity_logs_v2', {
+    expect(rpc).toHaveBeenNthCalledWith(2, 'get_activity_logs_v3', {
       p_limit: 2, p_cursor: date + '|2',
     });
     await waitFor(() => expect(result.current.data?.pages.flat().map(r => r.id)).toEqual([3, 2, 1]));

@@ -27,7 +27,7 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v2'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v3'] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 export function useAuditLogs(filters: AuditLogFilters = {}) {
@@ -59,7 +59,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
       if (filters.dateStart)  args.p_date_start  = filters.dateStart;
       if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
 
-      const { data, error } = await supabase.rpc('get_activity_logs_v2', args);
+      const { data, error } = await supabase.rpc('get_activity_logs_v3', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         id:          r.id,
