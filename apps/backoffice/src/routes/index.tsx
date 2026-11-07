@@ -829,7 +829,7 @@ export function AppRoutes() {
           path="reports/gross-margin"
           element={
             <PermissionGate required="reports.financial.read">
-              <GrossMarginPage />
+              <SuperAdminGate><GrossMarginPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -895,7 +895,7 @@ export function AppRoutes() {
           path="reports/payment-by-method"
           element={
             <PermissionGate required="reports.financial.read">
-              <PaymentByMethodPage />
+              <SuperAdminGate><PaymentByMethodPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -903,7 +903,7 @@ export function AppRoutes() {
           path="reports/pb1"
           element={
             <PermissionGate required="reports.financial.read">
-              <Pb1ReportPage />
+              <SuperAdminGate><Pb1ReportPage /></SuperAdminGate>
             </PermissionGate>
           }
         />

@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_payments_by_method_v4') {
+      if (fn === 'get_payments_by_method_v5') {
         // Real RPC shape: { period, summary, by_method, by_day }.
         return Promise.resolve({
           data: {
@@ -84,10 +84,10 @@ describe('PaymentByMethodPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Payment by Method/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_payments_by_method_v4 with p_date_start and p_date_end', async () => {
+  it('calls get_payments_by_method_v5 with p_date_start and p_date_end', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_payments_by_method_v4');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_payments_by_method_v5');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
       expect(args.p_date_start).toBe('2026-06-01');

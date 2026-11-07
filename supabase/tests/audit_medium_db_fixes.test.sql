@@ -29,8 +29,8 @@ SELECT is(
 -- pg_get_functiondef introspecte la définition sans l'exécuter — aucun contexte
 -- auth requis même si _v2 est désormais gatée reports.financial.read.
 SELECT ok(
-  pg_get_functiondef('calculate_pb1_payable_v4(date,date)'::regprocedure) LIKE '%''posted'', ''locked''%',
-  'M2 : calculate_pb1_payable_v4 sums status IN (posted, locked)'
+  pg_get_functiondef('calculate_pb1_payable_v5(date,date)'::regprocedure) LIKE '%''posted'', ''locked''%',
+  'M2 : calculate_pb1_payable_v5 sums status IN (posted, locked)'
 );
 
 -- M8: duplicate SKU on create_variant_v2 raises sku_taken (P0004)

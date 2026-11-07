@@ -14,7 +14,7 @@ vi.mock('../../functions/_shared/pdf-layout.ts', () => ({
 }));
 vi.mock('../../functions/_shared/pdf-templates/index.ts', () => ({
   TEMPLATES: Object.fromEntries(['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage',
-    'perishable_turnover', 'daily_sales'].map((name) => [name, { permission: 'reports.read', render: state.render }])),
+    'perishable_turnover', 'payment_by_method', 'pb1', 'daily_sales'].map((name) => [name, { permission: 'reports.read', render: state.render }])),
 }));
 
 beforeEach(() => {
@@ -40,7 +40,8 @@ async function invoke(template: string) {
 }
 
 describe('Confidential stock PDF exports', () => {
-  it.each(['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover'])(
+  it.each(['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover',
+    'payment_by_method', 'pb1'])(
     'refuses %s for an ADMIN with export permissions', async (template) => {
       const response = await invoke(template);
       expect(response.status).toBe(403);
@@ -53,9 +54,9 @@ describe('Confidential stock PDF exports', () => {
     expect((await invoke('daily_sales')).status).toBe(200);
     expect(state.rpc).not.toHaveBeenCalledWith('can_view_stock_v1');
   });
-  it('allows an Owner to export the financial report', async () => {
+  it.each(['pnl', 'payment_by_method', 'pb1'])('allows an Owner to export %s', async (template) => {
     state.owner = true;
-    expect((await invoke('pnl')).status).toBe(200);
+    expect((await invoke(template)).status).toBe(200);
     expect(state.render).toHaveBeenCalledOnce();
   });
 });
