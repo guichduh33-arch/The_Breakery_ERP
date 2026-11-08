@@ -1,13 +1,24 @@
 import { beforeEach, expect, it, vi, type Mock } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { StockDeclarationsPanel } from '../components/StockDeclarationsPanel.js';
 type Rpc = (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 const mocks = vi.hoisted((): { rpc: Mock<Rpc>; user: { id: string; role_code: string } | null } => ({ rpc: vi.fn<Rpc>(), user: { id: 'owner', role_code: 'SUPER_ADMIN' } }));
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ user: mocks.user }) }));
-const declaration = { id: 'd', operation: 'waste', product_name: 'Flour', product_sku: 'FLOUR', quantity: 1.25,
-  reason: 'Damaged bag', unit: 'kg', declared_by: 'cashier', declared_by_name: 'Cashier', status: 'pending', created_at: '2026-10-30T15:00:00Z' };
+type DeclarationPayload = Omit<Database['public']['Tables']['stock_declarations']['Row'], 'baseline_quantity' | 'result'> & {
+  product_name: string; product_sku: string; unit: string;
+  declared_by_name: string; reviewed_by_name: string | null;
+};
+// Contrat du RPC : les colonnes de la déclaration et les noms joints, sans created_at.
+const declaration = {
+  id: 'd', operation: 'waste', product_id: 'flour', product_name: 'Flour', product_sku: 'FLOUR', quantity: 1.25,
+  reason: 'Damaged bag', unit: 'kg', declared_by: 'cashier', declared_by_name: 'Cashier', status: 'pending',
+  declared_at: '2026-11-06T18:30:33.80305+08:00', idempotency_key: 'declaration-key',
+  reviewed_by: null, reviewed_by_name: null, reviewed_at: null, rejection_reason: null,
+  display_withdrawal_applied: false,
+} satisfies DeclarationPayload;
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   render(<QueryClientProvider client={client}><StockDeclarationsPanel /></QueryClientProvider>);
@@ -17,6 +28,15 @@ beforeEach(() => {
   mocks.user = { id: 'owner', role_code: 'SUPER_ADMIN' };
   mocks.rpc.mockReset();
   mocks.rpc.mockImplementation((fn: string) => Promise.resolve({ data: fn === 'get_stock_declarations_v1' ? [declaration] : {}, error: null }));
+});
+it('renders the RPC declaration date in WITA without a created_at alias', async () => {
+  expect(declaration).not.toHaveProperty('created_at');
+  mount();
+  const time = await screen.findByText('06 Nov 2026, 18:30');
+  expect(time.tagName).toBe('TIME');
+  expect(time).toHaveAttribute('dateTime', declaration.declared_at);
+  expect(screen.getByText('Cashier — Damaged bag')).toBeInTheDocument();
+  expect(mocks.rpc.mock.calls.every(([fn]) => fn === 'get_stock_declarations_v1')).toBe(true);
 });
 it('shows declared quantity and unit without a baseline or resulting stock', async () => {
   mocks.user = { id: 'cashier', role_code: 'CASHIER' };

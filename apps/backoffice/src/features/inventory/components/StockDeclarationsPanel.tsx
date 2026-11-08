@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { Button } from '@/components/BackofficeUi.js';
 import { supabase } from '@/lib/supabase.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -7,20 +8,13 @@ import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
-interface Declaration {
-  id: string;
-  operation: string;
+type Declaration = Pick<Database['public']['Tables']['stock_declarations']['Row'],
+  'id' | 'operation' | 'quantity' | 'reason' | 'declared_by' | 'status' | 'declared_at' | 'display_withdrawal_applied'> & {
   product_name: string;
   product_sku: string;
-  quantity: number;
-  reason: string;
-  declared_by: string;
   declared_by_name: string;
-  status: string;
   unit: string;
-  created_at: string;
-  display_withdrawal_applied: boolean;
-}
+};
 
 const OPERATION_LABELS: Record<string, string> = { adjust: 'Physical stock count', waste: 'Stock loss', display_adjust: 'Display count', display_waste: 'Display loss' };
 
@@ -73,7 +67,7 @@ export function StockDeclarationsPanel() {
             </p>
           )}
           <p className="text-sm text-text-secondary">{row.declared_by_name} — {row.reason}</p>
-          <time className="block text-xs text-text-muted" dateTime={row.created_at}>{formatDateTimeShortWita(row.created_at)}</time>
+          <time className="block text-xs text-text-muted" dateTime={row.declared_at}>{formatDateTimeShortWita(row.declared_at)}</time>
           {owner && row.status === 'pending' && row.declared_by !== user?.id && (
             <div className="flex flex-wrap items-end gap-2">
               <Button variant="secondary" disabled={review.isPending} onClick={() => { review.mutate({ id: row.id, reject: false }); }}>
