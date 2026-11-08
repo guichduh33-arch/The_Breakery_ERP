@@ -266,8 +266,8 @@ BEGIN
 END $chk_entree$;
 
 SELECT is(
-  current_setting('breakery.entree_err') || '|' || current_setting('breakery.entree_stock'),
-  'REVERT ACCEPTE|7.000',
+  current_setting('breakery.entree_err') || '|' || trim_scale(current_setting('breakery.entree_stock')::numeric)::text,
+  'REVERT ACCEPTE|7',
   'T11: a later INCOMING movement does not block the revert — only the first batch is removed, 7 remain');
 
 -- ===========================================================================
