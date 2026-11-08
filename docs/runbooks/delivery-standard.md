@@ -134,6 +134,34 @@ Cela n’autorise ni à passer une PR rouge, ni à utiliser une preuve d’un au
 - Contrôler après livraison le parcours réel et les données attendues. Distinguer
   lecture d’API, navigateur, téléchargement récupéré, appareil observé et papier.
 
+### Préparer le BO avant une migration incompatible avec ses anciens appels
+
+Le workflow de publication BO accepte `stage_only: true` pour construire avec la
+configuration de production et préparer le déploiement sans basculer les domaines.
+Les configurations Vercel désactivent les déploiements Git automatiques de
+`master` ; la publication passe par ce workflow. Les previews des autres branches
+restent actives. Ce réglage Git ne désactive pas les déploiements CLI du workflow.
+Il conserve les mêmes contrôles du SHA exact, pgTAP, approbation Production et
+manifeste. Le mode par défaut publie directement comme auparavant. Le jeton Vercel
+reste dans l'environnement du processus, sans argument de ligne de commande.
+
+Avant la migration, constater `READY` et conserver une preuve liant le run et sa
+tentative, l'empreinte du manifeste, le SHA, le projet, la cible et l'identifiant du
+déploiement ; vérifier que le domaine dessert toujours la version précédente.
+Maintenir le gel des fusions, migrations et publications jusqu'à la fin de la
+bascule : la concurrence du workflow ne couvre pas la phase qui suit sa fin.
+Après les preuves SQL, recontrôler le candidat et promouvoir cet identifiant précis,
+sans reconstruction. Vérifier ensuite les alias, les fichiers servis et le parcours
+réel. Une réponse de promotion incertaine se résout par lecture des alias avant
+toute nouvelle action. Les onglets déjà ouverts gardent leur ancien code ; ne pas
+les recharger au prix d'une saisie en cours sans l'avoir préservée.
+
+Les gestes de retour dépendent de la compatibilité effectivement prouvée. Après de
+nouveaux mouvements fractionnaires, ne pas réduire automatiquement la précision du
+stockage ni remettre un BO dont les appels ne sont plus disponibles. Préserver ces
+écritures et corriger en avant ; un ancien déploiement n'est un recours que si sa
+compatibilité avec le schéma courant est vérifiée.
+
 ## Clore, réconcilier et nettoyer
 
 La clôture restitue résultat, commits/PR, cibles, contrôles et limites. Un snapshot

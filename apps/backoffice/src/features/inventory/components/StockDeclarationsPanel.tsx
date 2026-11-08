@@ -38,7 +38,7 @@ export function StockDeclarationsPanel() {
     mutationFn: async ({ id, reject }: { id: string; reject: boolean }) => {
       const response = reject
         ? await supabase.rpc('reject_stock_declaration_v1', { p_declaration_id: id, p_reason: reasons[id] ?? '' })
-        : await supabase.rpc('approve_stock_declaration_v3', { p_declaration_id: id });
+        : await supabase.rpc('approve_stock_declaration_v4', { p_declaration_id: id });
       if (response.error) throw new Error(response.error.message);
     },
     onSuccess: async () => {

@@ -8039,7 +8039,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_opname_item_v3: {
+      add_opname_item_v4: {
         Args: { p_count_id: string; p_notes?: string; p_product_id: string }
         Returns: Json
       }
@@ -8061,7 +8061,7 @@ export type Database = {
         }
         Returns: Json
       }
-      approve_stock_declaration_v3: {
+      approve_stock_declaration_v4: {
         Args: { p_declaration_id: string }
         Returns: Json
       }
@@ -8146,7 +8146,7 @@ export type Database = {
         }
         Returns: Json
       }
-      finalize_opname_v5: {
+      finalize_opname_v6: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
@@ -8671,11 +8671,11 @@ export type Database = {
           recipe_unit: string
         }[]
       }
-      record_batch_production_v13: {
+      record_batch_production_v14: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
-      record_incoming_stock_v5: {
+      record_incoming_stock_v6: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8686,8 +8686,8 @@ export type Database = {
         }
         Returns: Json
       }
-      record_kitchen_production_v6: { Args: { p_request: Json }; Returns: Json }
-      record_production_v11: {
+      record_kitchen_production_v7: { Args: { p_request: Json }; Returns: Json }
+      record_production_v12: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -9311,7 +9311,7 @@ export type Database = {
         Args: { p_manager_pin: string; p_payload: Json; p_preview_hash: string }
         Returns: Json
       }
-      apply_historical_import_v4: {
+      apply_historical_import_v5: {
         Args: { p_client_key: string; p_payload: Json; p_preview_hash: string }
         Returns: Json
       }
@@ -10627,7 +10627,7 @@ export type Database = {
         Returns: Json
       }
       preview_historical_import_v4: { Args: { p_payload: Json }; Returns: Json }
-      receive_purchase_order_v5: {
+      receive_purchase_order_v6: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
@@ -10760,7 +10760,7 @@ export type Database = {
           retry_after_sec: number
         }[]
       }
-      record_stock_movement_v1: {
+      record_stock_movement_v2: {
         Args: {
           p_allow_negative?: boolean
           p_from_section_id?: string
@@ -10928,7 +10928,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
-      revert_production_v3: {
+      revert_production_v4: {
         Args: { p_production_id: string; p_reason: string }
         Returns: Json
       }

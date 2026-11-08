@@ -10,8 +10,8 @@ INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'two 
 INSERT INTO historical_tap(result) SELECT is(preview->'customer_advance_count','2'::jsonb,'preview counts two advances') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'customer_advance_amount','200000'::jsonb,'preview preserves actual advance total') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'stock_effects','[]'::jsonb,'preview plans no stock') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
-INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v4(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'replay reuses original result') FROM historical_fixture;
+UPDATE historical_fixture SET result=apply_historical_import_v5(payload,preview->>'preview_hash',client_key);
+INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v5(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'replay reuses original result') FROM historical_fixture;
 RESET ROLE;
 CREATE TEMP VIEW ca_lines AS SELECT j.entry_date,j.reference_type,j.reference_id,j.id journal_id,a.code,l.debit,l.credit
  FROM journal_entries j JOIN journal_entry_lines l ON l.journal_entry_id=j.id JOIN accounts a ON a.id=l.account_id

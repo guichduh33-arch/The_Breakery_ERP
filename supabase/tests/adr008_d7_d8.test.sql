@@ -122,7 +122,7 @@ BEGIN
 
   -- 10 produits, 2 ratés : la charge de raté ADR-008 D2 est émise, donc le
   -- revert doit aussi la défaire.
-  v_res := record_production_v11(
+  v_res := record_production_v12(
     p_product_id := v_finA, p_quantity_produced := 10, p_section_id := v_section,
     p_quantity_waste := 2, p_waste_reason := 'mis_baked');
   v_pid := (v_res->>'production_id')::uuid;
@@ -131,7 +131,7 @@ BEGIN
   PERFORM set_config('breakery.fin_after_prod',
     (SELECT current_stock FROM products WHERE id = v_finA)::text, false);
 
-  PERFORM revert_production_v3(v_pid, 'annulation nominale, rien nest sorti');
+  PERFORM revert_production_v4(v_pid, 'annulation nominale, rien nest sorti');
 END $chk_nominal$;
 
 SELECT is(current_setting('breakery.fin_after_prod')::numeric, 10::numeric,
@@ -168,7 +168,7 @@ SELECT is(
     WHERE metadata->>'production_id' = current_setting('breakery.pid_nominal')
       AND metadata->>'reverse_of_production' = 'true'),
   'admin_action',
-  'T5: the counter-movements went through record_stock_movement_v1, not a direct INSERT');
+  'T5: the counter-movements went through record_stock_movement_v2, not a direct INSERT');
 
 SELECT is(
   (SELECT COALESCE(SUM(l.debit - l.credit), 0)
@@ -195,18 +195,18 @@ DECLARE
   v_hint    TEXT := '';
   v_detail  TEXT := '';
 BEGIN
-  v_res := record_production_v11(
+  v_res := record_production_v12(
     p_product_id := v_finB, p_quantity_produced := 10, p_section_id := v_section);
   v_pid := (v_res->>'production_id')::uuid;
   PERFORM set_config('breakery.pid_consumed', v_pid::text, false);
 
   -- Une sortie quelconque du produit fini : ici une perte déclarée.
-  PERFORM record_stock_movement_v1(
+  PERFORM record_stock_movement_v2(
     p_product_id := v_finB, p_movement_type := 'waste', p_quantity := -4,
     p_reason := 'sortie de stock apres production', p_from_section_id := v_section);
 
   BEGIN
-    PERFORM revert_production_v3(v_pid, 'tentative dannulation apres sortie');
+    PERFORM revert_production_v4(v_pid, 'tentative dannulation apres sortie');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
     GET STACKED DIAGNOSTICS v_hint = PG_EXCEPTION_HINT, v_detail = PG_EXCEPTION_DETAIL;
@@ -246,16 +246,16 @@ DECLARE
   v_pid     UUID;
   v_errmsg  TEXT := 'REVERT ACCEPTE';
 BEGIN
-  v_res := record_production_v11(
+  v_res := record_production_v12(
     p_product_id := v_finC, p_quantity_produced := 10, p_section_id := v_section);
   v_pid := (v_res->>'production_id')::uuid;
 
   -- Deuxième fournée du même produit : c'est une entrée, pas une sortie.
-  PERFORM record_production_v11(
+  PERFORM record_production_v12(
     p_product_id := v_finC, p_quantity_produced := 7, p_section_id := v_section);
 
   BEGIN
-    PERFORM revert_production_v3(v_pid, 'annulation de la premiere fournee');
+    PERFORM revert_production_v4(v_pid, 'annulation de la premiere fournee');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
   END;
@@ -266,16 +266,16 @@ BEGIN
 END $chk_entree$;
 
 SELECT is(
-  current_setting('breakery.entree_err') || '|' || current_setting('breakery.entree_stock'),
-  'REVERT ACCEPTE|7.000',
+  current_setting('breakery.entree_err') || '|' || trim_scale(current_setting('breakery.entree_stock')::numeric)::text,
+  'REVERT ACCEPTE|7',
   'T11: a later INCOMING movement does not block the revert — only the first batch is removed, 7 remain');
 
 -- ===========================================================================
 -- Bloc 4 — droits, versioning, gardes conservées.
 -- ===========================================================================
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.revert_production_v3(uuid, text)', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.revert_production_v3(uuid, text)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.revert_production_v4(uuid, text)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.revert_production_v4(uuid, text)', 'EXECUTE')
   AND to_regprocedure('public.revert_production_v1(uuid, text)') IS NULL,
   'T12: anon revoked / authenticated retained on _v2, and the superseded _v1 is gone from pg_proc');
 
@@ -284,7 +284,7 @@ SELECT ok(
 SELECT ok(
   (SELECT prosrc LIKE '%check_fiscal_period_open%' FROM pg_proc p
      JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'revert_production_v3'),
+    WHERE n.nspname = 'public' AND p.proname = 'revert_production_v4'),
   'T13: ADR-008 D7 — the counter-entries are guarded by check_fiscal_period_open');
 
 DO $chk_gardes$
@@ -293,7 +293,7 @@ DECLARE
 BEGIN
   -- La production annulée au bloc 1 ne peut pas l'être deux fois.
   BEGIN
-    PERFORM revert_production_v3(current_setting('breakery.pid_nominal')::uuid, 'seconde tentative');
+    PERFORM revert_production_v4(current_setting('breakery.pid_nominal')::uuid, 'seconde tentative');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
   END;

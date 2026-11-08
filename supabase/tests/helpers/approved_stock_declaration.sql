@@ -43,7 +43,7 @@ BEGIN
    END IF;
  END IF;
  PERFORM pg_temp.authenticate_pin(v_owner);
- v_result:=approve_stock_declaration_v3((v_declaration->>'declaration_id')::uuid);
+ v_result:=approve_stock_declaration_v4((v_declaration->>'declaration_id')::uuid);
  PERFORM set_config('request.jwt.claim.sub',COALESCE(v_original_sub,''),true);
  PERFORM set_config('request.jwt.claims',COALESCE(v_original_claims,''),true);
  RETURN v_result;

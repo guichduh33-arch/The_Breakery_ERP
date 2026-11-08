@@ -33,7 +33,7 @@ export async function importCountRows(countId: string, rows: readonly CountImpor
   for (const row of rows) {
     let itemId = existing.get(row.productId)?.id;
     if (!itemId) {
-      const result = await supabase.rpc('add_opname_item_v3', { p_count_id: countId, p_product_id: row.productId });
+      const result = await supabase.rpc('add_opname_item_v4', { p_count_id: countId, p_product_id: row.productId });
       if (result.error) throw new Error(`${row.sku}: ${result.error.message}`);
       const payload = result.data as { item_id?: string } | null;
       if (!payload?.item_id) throw new Error(`${row.sku}: No count item returned.`);

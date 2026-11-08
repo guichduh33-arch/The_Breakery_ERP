@@ -59,6 +59,17 @@ describe('kitchen entry recovery', () => {
     expect(readDraft('chef', 'station').rows[0]?.quantity).toBe('12');
     expect(readDraft('chef', 'station').pending).toBeNull();
   });
+  it('preserves the draft and directs a masked business rejection to an administrator without resubmitting', async () => {
+    api.submit.mockRejectedValueOnce({ code: 'P0001', message: 'stock_operation_rejected', details: null, hint: null });
+    mount(); await enterBread();
+    fireEvent.click(screen.getByRole('button', { name: 'Record production' }));
+    await screen.findByText('This production was rejected. Ask an administrator to review it.');
+    expect(screen.getByLabelText('Produced Bread')).toBeEnabled();
+    expect(readDraft('chef', 'station').rows[0]?.quantity).toBe('12');
+    expect(readDraft('chef', 'station').pending).toBeNull();
+    expect(api.submit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Check your connection and try again/)).not.toBeInTheDocument();
+  });
   it('keeps an uncertain payload locked when permission prevents receipt lookup', async () => {
     api.submit.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     mount(); await enterBread();

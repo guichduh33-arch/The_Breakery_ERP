@@ -4,6 +4,14 @@ import { test, expect } from '@playwright/test';
 test('kitchen tablet: touch, scroll, draft recovery and shared-user isolation', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
+  const appOrigin = new URL(String(info.project.use.baseURL)).origin;
+  // Les routes simulées ci-dessous priment ; toute autre requête externe échoue fermée.
+  await page.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin === appOrigin) return route.continue();
+    errors.push('Unexpected external request ' + url.origin + url.pathname);
+    await route.abort('blockedbyclient');
+  });
   const users = [
     { id: '11111111-1111-4111-8111-111111111111', full_name: 'Chef Pastry', role_code: 'CHEF', employee_code: 'TEST-A' },
     { id: '22222222-2222-4222-8222-222222222222', full_name: 'Chef Bakery', role_code: 'CHEF', employee_code: 'TEST-B' },
@@ -13,8 +21,14 @@ test('kitchen tablet: touch, scroll, draft recovery and shared-user isolation', 
   const permissions = ['inventory.production.kitchen'];
   const stations = [{ id: '33333333-3333-4333-8333-333333333333', name: 'Pastry' }];
   let writes = 0;
+  const recordedRequests: unknown[] = [];
   await page.route('**/functions/v1/**', async route => {
     const name = route.request().url().split('/').pop() ?? '';
+    if (!['auth-verify-pin', 'auth-get-session', 'auth-logout', 'auth-session-activity'].includes(name)) {
+      errors.push('Unexpected function ' + name);
+      await route.abort('blockedbyclient');
+      return;
+    }
     if(name === 'auth-verify-pin') active = users.find(u => u.id === (route.request().postDataJSON() as { user_id: string }).user_id) ?? users[0]!;
     await route.fulfill({ json: { user: active, permissions, auth, session_timeout_minutes: 30,
       session: { token: 'fixture-session', session_id: 'fixture-session', created_at: new Date().toISOString() } } });
@@ -26,9 +40,12 @@ test('kitchen tablet: touch, scroll, draft recovery and shared-user isolation', 
       get_kitchen_stations_v1: stations,
       get_kitchen_products_v1: [{ id:'44444444-4444-4444-8444-444444444444',name:'Butter croissant',unit:'pcs',units:[{code:'pcs',factor:1}] }],
       get_kitchen_history_v1: [], get_kitchen_submission_v1: null,
-      record_kitchen_production_v6: { batch_id:'fixture-batch',batch_number:'BATCH-DEMO',idempotent_replay:false },
+      record_kitchen_production_v7: { batch_id:'fixture-batch',batch_number:'BATCH-DEMO',idempotent_replay:false },
     };
-    if(name==='record_kitchen_production_v6') writes++;
+    if(name==='record_kitchen_production_v7') {
+      writes++;
+      recordedRequests.push(route.request().postDataJSON() as unknown);
+    }
     if(!(name in responses)) throw new Error('Unexpected API '+name);
     await route.fulfill({json:responses[name]});
   });
@@ -74,5 +91,11 @@ test('kitchen tablet: touch, scroll, draft recovery and shared-user isolation', 
   await page.getByText('Production recorded: BATCH-DEMO.').waitFor();
   if(writes!==1 || errors.length) throw new Error(JSON.stringify({writes,errors}));
   expect(writes).toBe(1);
+  expect(recordedRequests).toEqual([{ p_request: expect.objectContaining({
+    section_id: stations[0]!.id,
+    idempotency_key: expect.any(String),
+    items: [expect.objectContaining({ product_id: '44444444-4444-4444-8444-444444444444',
+      unit: 'pcs', quantity_produced: 24, quantity_waste: 2, waste_reason: 'mis_baked' }) as unknown],
+  }) as unknown }]);
   expect(errors).toEqual([]);
 });

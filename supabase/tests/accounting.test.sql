@@ -386,19 +386,19 @@ SELECT ok(
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
-      WHERE p.proname = 'record_stock_movement_v1'
+      WHERE p.proname = 'record_stock_movement_v2'
         AND pg_get_function_arguments(p.oid) ILIKE '%p_lot_id%'
   ),
-  'T31: record_stock_movement_v1 accepts p_lot_id parameter (B1 pattern a)'
+  'T31: record_stock_movement_v2 accepts p_lot_id parameter (B1 pattern a)'
 );
 
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
-      WHERE p.proname = 'record_stock_movement_v1'
+      WHERE p.proname = 'record_stock_movement_v2'
         AND pg_get_function_arguments(p.oid) ILIKE '%DEFAULT NULL%'
   ),
-  'T32: record_stock_movement_v1 lot_id is DEFAULT NULL (backward-compat)'
+  'T32: record_stock_movement_v2 lot_id is DEFAULT NULL (backward-compat)'
 );
 
 -- ---------------------------------------------------------------------------

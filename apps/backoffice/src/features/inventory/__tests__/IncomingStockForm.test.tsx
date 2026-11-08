@@ -166,7 +166,7 @@ describe('IncomingStockForm', () => {
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
 
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('record_incoming_stock_v5');
+    expect(call[0]).toBe('record_incoming_stock_v6');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   5,

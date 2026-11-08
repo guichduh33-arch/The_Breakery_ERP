@@ -21,9 +21,9 @@ SET LOCAL ROLE authenticated;
 UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'explicit financial purchase accepts real advance date') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'supplier_prepayment_count','1'::jsonb,'preview counts one actual advance') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v5(payload,preview->>'preview_hash',client_key);
 INSERT INTO historical_tap(result) SELECT is(result->'supplier_prepayment_count','1'::jsonb,'result retains advance count') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v4(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'advance replay returns original result') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v5(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'advance replay returns original result') FROM historical_fixture;
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT paid_at FROM purchase_payments WHERE purchase_order_id=(SELECT entity_id FROM historical_import_documents WHERE run_id=(f.result->>'run_id')::uuid)),
  timestamptz '2097-01-09 17:18:19+08','native payment retains actual advance timestamp') FROM historical_fixture f;

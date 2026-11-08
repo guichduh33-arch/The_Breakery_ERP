@@ -96,11 +96,11 @@ SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM day_actors WHERE role_
 SET LOCAL ROLE authenticated;
 INSERT INTO day_payload SELECT 'owner_read',public.get_display_day_closing_v1(current_date);
 INSERT INTO day_results(tap) SELECT ok((value->>'is_owner')::boolean AND (value->'items'->0) ? 'expected_qty','Owner sees the frozen theoretical count') FROM day_payload WHERE name='owner_read';
-INSERT INTO day_payload SELECT 'approval',public.approve_stock_declaration_v3(i.waste_declaration_id)
+INSERT INTO day_payload SELECT 'approval',public.approve_stock_declaration_v4(i.waste_declaration_id)
  FROM public.get_display_day_closing_v1(current_date) r,
  LATERAL jsonb_to_recordset(r->'items') i(product_id uuid,waste_declaration_id uuid)
  WHERE i.product_id=(SELECT general_id FROM day_ids);
-INSERT INTO day_results(tap) SELECT ok((public.approve_stock_declaration_v3((value->>'declaration_id')::uuid)->>'idempotent_replay')::boolean,
+INSERT INTO day_results(tap) SELECT ok((public.approve_stock_declaration_v4((value->>'declaration_id')::uuid)->>'idempotent_replay')::boolean,
  'Owner approval replay produces one global deduction') FROM day_payload WHERE name='approval';
 RESET ROLE;
 INSERT INTO day_results(tap) SELECT is((SELECT current_stock FROM public.products WHERE id=general_id),18::numeric,'Owner approval applies declared waste to general stock') FROM day_ids;

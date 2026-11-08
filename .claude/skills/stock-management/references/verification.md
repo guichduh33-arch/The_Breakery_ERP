@@ -85,7 +85,12 @@ pnpm --filter @breakery/app-pos test stock
 Après tout changement de schéma : **régénérer les types** (`generate_typescript_types` →
 `packages/supabase/src/types.generated.ts`) et les commiter. C'est la cause n°1 de CI cassée.
 
-If you're auditing prod data, work against V3 dev cloud `ikcyvlovptebroadgtvd` via the Supabase MCP, never against prod (V2 monolith `abjabuniwkqpfsenxljp` is incompatible with V3 migration lineage).
+Un diagnostic de données de production se vérifie en lecture seule sur la
+production V3 lorsque le mandat le demande ; un résultat DEV ne prouve pas son
+état. Les fixtures, essais mutatifs et migrations de validation utilisent DEV V3.
+Toute écriture de production suit le mandat et la procédure de livraison, sur une
+cible revérifiée. L'ancienne V2 conserve une lignée de migrations incompatible
+avec V3 : ne pas y rejouer ce lot.
 
 ## When to escalate
 

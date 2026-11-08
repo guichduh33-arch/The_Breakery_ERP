@@ -12,7 +12,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   BEGIN
-    PERFORM revert_production_v3(v_dummy, 'test reason');
+    PERFORM revert_production_v4(v_dummy, 'test reason');
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -21,7 +21,7 @@ BEGIN
     CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_13_pass') = 'yes',
-  'T_PROD_13: MANAGER → forbidden on revert_production_v3');
+  'T_PROD_13: MANAGER → forbidden on revert_production_v4');
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_14 — ADMIN reverts → stock restored + balanced ledger
@@ -58,12 +58,12 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
-  v_result := record_production_v11(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  v_result := record_production_v12(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   PERFORM set_config('role','postgres',true);
   PERFORM pg_temp.authenticate_pin(v_adm);
   PERFORM set_config('role','authenticated',true);
-  v_revert := revert_production_v3(v_pid, 'pgTAP test reversal');
+  v_revert := revert_production_v4(v_pid, 'pgTAP test reversal');
   PERFORM set_config('role','postgres',true);
 
   SELECT current_stock INTO v_bag_after FROM products WHERE id=v_bag;

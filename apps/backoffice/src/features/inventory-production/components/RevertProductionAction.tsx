@@ -3,7 +3,7 @@
 // L'AFFORDANCE DE CONTRE-ÉCRITURE d'une ligne du journal de production.
 //
 // POURQUOI ELLE EXISTE (2026-08-21). Tout était construit — la RPC
-// `revert_production_v3`, le hook `useRevertProduction`, le dialogue
+// `revert_production`, le hook `useRevertProduction`, le dialogue
 // `RevertProductionDialog` avec ses messages de blocage — et RIEN n'était
 // branché : le seul composant qui montait le dialogue,
 // `ProductionRecordList.tsx`, n'a aucun importeur dans `apps/backoffice/src`,
