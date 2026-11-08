@@ -1,8 +1,8 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionForm.tsx
 //
-// Records a production batch via record_production_v10. Live feasibility
-// preview powered by @breakery/domain's checkFeasibility() against the
-// currently-fetched recipe + per-material current_stock from useFinishedProducts.
+// Enregistre une production via la famille `record_production`. L'aperçu de
+// faisabilité utilise checkFeasibility() de @breakery/domain avec la recette
+// chargée et le current_stock de chaque matière fourni par useFinishedProducts.
 //
 // Session 15 / Phase 2.B: split "quantity_produced" into expected vs actual
 // yield. On submit, if |actual-expected|/expected*100 > business_config

@@ -30,7 +30,7 @@ BEGIN
     (v_short_product,v_material,10,'kg',true);
 
   -- Le manager a create sans force_negative. Le produit reste négatif après +15.
-  v_result := public.record_batch_production_v12(
+  v_result := public.record_batch_production_v13(
     jsonb_build_object('section_id',v_section,'idempotency_key',v_key,
       'production_date','2026-11-03T06:30:00+08:00'),
     jsonb_build_array(jsonb_build_object('product_id',v_product,'quantity_produced',15)));
@@ -45,7 +45,7 @@ BEGIN
     ('ledger_in',(SELECT quantity::text FROM stock_movements WHERE product_id=v_product AND movement_type='production_in')),
     ('ledger_out',(SELECT quantity::text FROM stock_movements WHERE product_id=v_material AND movement_type='production_out'));
 
-  v_replay := public.record_batch_production_v12(
+  v_replay := public.record_batch_production_v13(
     jsonb_build_object('section_id',v_section,'idempotency_key',v_key),
     jsonb_build_array(jsonb_build_object('product_id',v_product,'quantity_produced',15)));
   INSERT INTO _recovery_results VALUES
@@ -55,7 +55,7 @@ BEGIN
 
   v_before := (SELECT current_stock FROM products WHERE id=v_material);
   BEGIN
-    PERFORM public.record_batch_production_v12(
+    PERFORM public.record_batch_production_v13(
       jsonb_build_object('section_id',v_section,'idempotency_key',gen_random_uuid()),
       jsonb_build_array(jsonb_build_object('product_id',v_short_product,'quantity_produced',1)));
   EXCEPTION WHEN SQLSTATE 'P0002' THEN

@@ -26,9 +26,9 @@ test('kitchen tablet: touch, scroll, draft recovery and shared-user isolation', 
       get_kitchen_stations_v1: stations,
       get_kitchen_products_v1: [{ id:'44444444-4444-4444-8444-444444444444',name:'Butter croissant',unit:'pcs',units:[{code:'pcs',factor:1}] }],
       get_kitchen_history_v1: [], get_kitchen_submission_v1: null,
-      record_kitchen_production_v1: { batch_id:'fixture-batch',batch_number:'BATCH-DEMO',idempotent_replay:false },
+      record_kitchen_production_v6: { batch_id:'fixture-batch',batch_number:'BATCH-DEMO',idempotent_replay:false },
     };
-    if(name==='record_kitchen_production_v1') writes++;
+    if(name==='record_kitchen_production_v6') writes++;
     if(!(name in responses)) throw new Error('Unexpected API '+name);
     await route.fulfill({json:responses[name]});
   });
