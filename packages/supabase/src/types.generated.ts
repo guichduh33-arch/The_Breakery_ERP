@@ -8671,7 +8671,7 @@ export type Database = {
           recipe_unit: string
         }[]
       }
-      record_batch_production_v12: {
+      record_batch_production_v13: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8686,8 +8686,8 @@ export type Database = {
         }
         Returns: Json
       }
-      record_kitchen_production_v5: { Args: { p_request: Json }; Returns: Json }
-      record_production_v10: {
+      record_kitchen_production_v6: { Args: { p_request: Json }; Returns: Json }
+      record_production_v11: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string

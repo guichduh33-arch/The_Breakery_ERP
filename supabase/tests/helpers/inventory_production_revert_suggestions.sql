@@ -58,7 +58,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
-  v_result := record_production_v10(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  v_result := record_production_v11(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   PERFORM set_config('role','postgres',true);
   PERFORM pg_temp.authenticate_pin(v_adm);
