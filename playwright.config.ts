@@ -27,17 +27,21 @@ export default defineConfig({
   // Lot 1.B — le gate PR ne joue que les specs money-path (projet `pos`).
   // Playwright démarre TOUS les webServers déclarés, quel que soit le projet
   // sélectionné : sans ce drapeau, une PR money-path paierait le build complet
-  // du back-office pour rien. Non posé = comportement d'origine (les deux).
+  // du back-office pour rien. La recette factures BO peut symétriquement omettre
+  // le serveur POS. Aucun drapeau = comportement d'origine (les deux).
   webServer: [
-    {
-      command:
-        'pnpm --filter @breakery/app-pos build && pnpm --filter @breakery/app-pos preview --port 5173 --strictPort',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      // 5 min: the two servers' cold `tsc -b && vite build` run concurrently on
-      // a 2-core CI runner; 180s risked a webServer timeout → whole-suite fail.
-      timeout: 300_000,
-    },
+    ...(process.env.E2E_SKIP_POS_SERVER === '1'
+      ? []
+      : [
+          {
+            command:
+              'pnpm --filter @breakery/app-pos build && pnpm --filter @breakery/app-pos preview --port 5173 --strictPort',
+            url: 'http://localhost:5173',
+            reuseExistingServer: !process.env.CI,
+            // Marge existante pour les deux builds concurrents sur un runner froid.
+            timeout: 300_000,
+          },
+        ]),
     ...(process.env.E2E_SKIP_BO_SERVER === '1'
       ? []
       : [

@@ -47,6 +47,14 @@ Les suites BO, POS et partagées sont indépendantes ; un échec ne masque pas l
 résultats des autres voies. Une modification de cet outillage force sa propre
 validation complète sur PR. Les push master gardent la suite complète.
 
+Le workflow manuel `playwright-e2e.yml` propose `suite=all` par défaut et
+`suite=purchase-invoices` pour le parcours facture fournisseur. Ce dernier
+construit seulement le BO et exécute les scénarios crédit sans facture et cash
+avec dépôt puis téléchargement de la pièce. Le lancement exige
+`allow_dev_mutations=true` et un créneau DEV réservé : ces scénarios créent des
+achats, une réception, un règlement cash et une pièce synthétique sur DEV V3.
+Son rapport reste ciblé ; les suites CI et pgTAP applicables restent requises.
+
 ## Corriger sans multiplier les suites complètes
 
 - Pendant l’édition, exécuter le test qui reproduit le défaut et les tests voisins
