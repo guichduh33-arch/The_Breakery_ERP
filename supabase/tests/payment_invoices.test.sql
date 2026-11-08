@@ -40,25 +40,25 @@ SET LOCAL ROLE authenticated;
 SELECT throws_ok($q$SELECT submit_expense_v3((SELECT id FROM iv_vars WHERE k='cash'))$q$,'22023','invoice_required_before_approval',
  'cash auto-approval refuses missing invoice');
 SELECT is((SELECT status FROM expenses WHERE id=(SELECT id FROM iv_vars WHERE k='cash')),'draft','failed cash validation leaves draft');
-SELECT throws_ok($q$SELECT set_po_invoice_v1((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
+SELECT throws_ok($q$SELECT set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))$q$,'P0002','invoice_object_not_found','attachment requires existing object');
 SELECT throws_ok($q$SELECT record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),10,'cash',NULL,gen_random_uuid())$q$,
  '22023','invoice_required_before_payment','PO payment refuses missing invoice');
 SELECT lives_ok($q$INSERT INTO storage.objects(bucket_id,name,owner_id,metadata)
  SELECT 'purchase-invoices',path,auth.uid()::text,'{"mimetype":"application/pdf","size":7}' FROM iv_vars WHERE k='attach'$q$,
  'active authorized owner can create immutable PO object metadata');
-SELECT ok((set_po_invoice_v1((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
+SELECT ok((set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))->>'applied')::boolean,'PO invoice association succeeds');
-SELECT ok((set_po_invoice_v1((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
+SELECT ok((set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))->>'idempotent_replay')::boolean,'invoice retry returns durable first result');
-SELECT throws_ok($q$SELECT set_po_invoice_v1((SELECT id FROM iv_vars WHERE k='po'),NULL,NULL,
+SELECT throws_ok($q$SELECT set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),NULL,NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))$q$,'22023','po_invoice_key_conflict','changed payload cannot reuse association key');
 SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='purchase-invoices'),0::bigint,'PO bytes are inaccessible through direct Storage SELECT');
 INSERT INTO iv_vars(k,id) SELECT 'payment',(record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
  (SELECT id FROM iv_vars WHERE k='pay-key'))->>'payment_id')::uuid;
 SELECT ok((record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
  (SELECT id FROM iv_vars WHERE k='pay-key'))->>'idempotent_replay')::boolean,'payment replay remains possible');
-SELECT is(set_po_invoice_v1((SELECT id FROM iv_vars WHERE k='po'),NULL,(SELECT path FROM iv_vars WHERE k='attach'),gen_random_uuid())->>'reason',
+SELECT is(set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),NULL,(SELECT path FROM iv_vars WHERE k='attach'),gen_random_uuid())->>'reason',
  'invoice_requires_unpaid_order','invoice cannot be removed after first payment');
 RESET ROLE;
 SELECT is((SELECT count(*) FROM purchase_payments WHERE purchase_order_id=(SELECT id FROM iv_vars WHERE k='po')),1::bigint,'replay creates no duplicate ledger row');
@@ -86,20 +86,20 @@ SELECT lives_ok($q$SELECT submit_expense_v3((SELECT id FROM iv_vars WHERE k='tra
 RESET ROLE;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM iv_actor WHERE kind='payer')); END $$;
 SET LOCAL ROLE authenticated;
-SELECT throws_ok($q$SELECT pay_expense_v5((SELECT id FROM iv_vars WHERE k='transfer'))$q$,
+SELECT throws_ok($q$SELECT pay_expense_v6((SELECT id FROM iv_vars WHERE k='transfer'))$q$,
  '22023','invoice_required_before_payment','non-cash payment also requires invoice');
 INSERT INTO iv_vars(k,id,path) SELECT 'transfer-key',gen_random_uuid(),NULL;
 UPDATE iv_vars SET path='expenses/'||(SELECT id FROM iv_vars WHERE k='transfer')||'/'||id||'.pdf' WHERE k='transfer-key';
 SELECT lives_ok($q$INSERT INTO storage.objects(bucket_id,name,owner_id,metadata)
  SELECT 'expense-receipts',path,auth.uid()::text,'{"mimetype":"application/pdf","size":7}' FROM iv_vars WHERE k='transfer-key'$q$,
  'payer can upload missing invoice on already approved expense');
-SELECT ok((set_expense_receipt_v2((SELECT id FROM iv_vars WHERE k='transfer'),(SELECT path FROM iv_vars WHERE k='transfer-key'),NULL,
+SELECT ok((set_expense_receipt_v3((SELECT id FROM iv_vars WHERE k='transfer'),(SELECT path FROM iv_vars WHERE k='transfer-key'),NULL,
  (SELECT id FROM iv_vars WHERE k='transfer-key'))->>'applied')::boolean,'payer can associate missing approved invoice');
-SELECT lives_ok($q$SELECT pay_expense_v5((SELECT id FROM iv_vars WHERE k='transfer'))$q$,'invoice permits expense payment');
+SELECT lives_ok($q$SELECT pay_expense_v6((SELECT id FROM iv_vars WHERE k='transfer'))$q$,'invoice permits expense payment');
 RESET ROLE;
 SELECT is((SELECT status FROM expenses WHERE id=(SELECT id FROM iv_vars WHERE k='transfer')),'paid','expense is paid after justified settlement');
 SELECT ok((SELECT bool_and(NOT public) FROM storage.buckets WHERE id IN ('expense-receipts','purchase-invoices')),'both invoice buckets remain private');
-SELECT ok(NOT has_function_privilege('anon','public.set_po_invoice_v1(uuid,text,text,uuid)','EXECUTE')
+SELECT ok(NOT has_function_privilege('anon','public.set_po_invoice_v2(uuid,text,text,uuid)','EXECUTE')
  AND NOT has_function_privilege('authenticated','public.authorize_po_invoice_download_v1(uuid,uuid)','EXECUTE')
  AND has_function_privilege('service_role','public.authorize_po_invoice_download_v1(uuid,uuid)','EXECUTE'),'association and download RPC ACLs are distinct');
 SELECT ok(to_regprocedure('public.set_expense_receipt_v1(uuid,text,text,uuid)') IS NULL

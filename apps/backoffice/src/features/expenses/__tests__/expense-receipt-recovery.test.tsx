@@ -71,7 +71,7 @@ describe('expense receipt durable recovery',()=>{
  it('removes only the expense reference through RPC',async()=>{
   mountUploader(true,'expenses/historical/receipt.pdf');fireEvent.click(screen.getByRole('button',{name:'Remove receipt'}));
   expect(await screen.findByText('Receipt change confirmed.')).toBeInTheDocument();
-  expect(rpc).toHaveBeenCalledWith('set_expense_receipt_v2',expect.objectContaining({p_expense_id:expenseId,p_expected_path:'expenses/historical/receipt.pdf'}));expect(upload).not.toHaveBeenCalled();
+  expect(rpc).toHaveBeenCalledWith('set_expense_receipt_v3',expect.objectContaining({p_expense_id:expenseId,p_expected_path:'expenses/historical/receipt.pdf'}));expect(upload).not.toHaveBeenCalled();
  });
  it('resolves a retained attempt after submission, without offering a new upload',async()=>{
   rpc.mockRejectedValueOnce(new Error('Response lost'));const input=await snapshot(file());

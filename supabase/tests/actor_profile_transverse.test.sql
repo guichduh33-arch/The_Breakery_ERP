@@ -49,6 +49,7 @@
 -- Run via MCP execute_sql, wrappé BEGIN ... ROLLBACK (aucune trace ne persiste).
 
 BEGIN;
+\ir helpers/payment_invoice.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

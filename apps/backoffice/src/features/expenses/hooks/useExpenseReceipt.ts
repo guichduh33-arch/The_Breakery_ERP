@@ -25,7 +25,7 @@ export function useExpenseReceipt(expenseId:string) {
     }
    }
    const path=snapshot.kind==='attach'?receiptPath(snapshot,key):null;
-   const apply=()=>supabase.rpc('set_expense_receipt_v2' as never,{
+   const apply=()=>supabase.rpc('set_expense_receipt_v3' as never,{
     p_expense_id:snapshot.expenseId,p_idempotency_key:key,
     ...(path!==null?{p_storage_path:path}:{}),
     ...(snapshot.expectedPath!==null?{p_expected_path:snapshot.expectedPath}:{}),

@@ -24,7 +24,7 @@ async function attachInvoice(client: ReturnType<typeof jwtClient>, expenseId: st
   const { error: uploadError } = await client.storage.from('expense-receipts')
     .upload(path, file, { contentType: 'application/pdf', upsert: false });
   expect(uploadError).toBeNull();
-  const { data, error } = await client.rpc('set_expense_receipt_v2', {
+  const { data, error } = await client.rpc('set_expense_receipt_v3', {
     p_expense_id: expenseId, p_storage_path: path, p_expected_path: null, p_idempotency_key: key,
   });
   expect(error).toBeNull();
@@ -132,7 +132,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(lines?.length).toBe(2);  // cash path : 2 lines.
 
     // 6. Pay (no extra JE since not credit).
-    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v5', {
+    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v6', {
       p_expense_id: expenseId,
       p_payment_method: 'cash',
     });
@@ -196,7 +196,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(totalDebit).toBe(totalCredit);
 
     // Pay → expects 2nd JE.
-    const { data: payData } = await sbAdm.rpc('pay_expense_v5', {
+    const { data: payData } = await sbAdm.rpc('pay_expense_v6', {
       p_expense_id: expenseId,
       p_payment_method: 'transfer',
     });

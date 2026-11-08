@@ -33,7 +33,7 @@ export function PoInvoicePanel({ po, hasPayments, fullyPaid, paymentsKnown, onBu
       const allowed = () => session.current() && (useAuthStore.getState().hasPermission('purchasing.po.create')
         || useAuthStore.getState().hasPermission('purchasing.po.pay'));
       if (!allowed()) throw new Error('Your session or permissions changed. Reopen this purchase order.');
-      const { data, error: accessError } = await supabase.rpc('can_upload_po_invoice_v1' as never, { p_po_id: po.id } as never);
+      const { data, error: accessError } = await supabase.rpc('can_upload_po_invoice_v2' as never, { p_po_id: po.id } as never);
       if (!allowed()) throw new Error('Your session or permissions changed. Reopen this purchase order.');
       if (accessError || typeof data !== 'boolean') throw new Error('Invoice upload availability could not be checked.');
       return data;

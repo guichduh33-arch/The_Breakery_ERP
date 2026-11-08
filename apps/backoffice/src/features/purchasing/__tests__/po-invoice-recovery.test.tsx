@@ -33,7 +33,7 @@ describe('purchase invoice durable recovery', () => {
     vi.restoreAllMocks(); installFinancialBrowser(); resetFinancialSession(); rpc.mockReset(); upload.mockReset(); download.mockReset();
     access.allowed = false;
     vi.stubGlobal('crypto', webcrypto);
-    rpc.mockImplementation((name: string, args: Record<string, unknown>) => Promise.resolve(name === 'can_upload_po_invoice_v1'
+    rpc.mockImplementation((name: string, args: Record<string, unknown>) => Promise.resolve(name === 'can_upload_po_invoice_v2'
       ? { data: access.allowed, error: null }
       : { data: { po_id: args.p_po_id, invoice_path: args.p_storage_path ?? null, applied: true, idempotent_replay: false }, error: null }));
     upload.mockResolvedValue({ data: {}, error: null });
@@ -70,7 +70,7 @@ describe('purchase invoice durable recovery', () => {
   });
   it('keeps an existing invoice locked when the server denies replacement', async () => {
     const view = render(<PoInvoicePanel po={po} hasPayments fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
-    await waitFor(() => expect(rpc).toHaveBeenCalledWith('can_upload_po_invoice_v1', { p_po_id: poId }));
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith('can_upload_po_invoice_v2', { p_po_id: poId }));
     expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument(); expect(screen.queryByText('Remove invoice')).not.toBeInTheDocument();
     view.rerender(<PoInvoicePanel po={{ ...po, invoice_path: null }} hasPayments fullyPaid paymentsKnown onBusyChange={vi.fn()} />);
     expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();

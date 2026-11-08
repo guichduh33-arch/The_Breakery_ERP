@@ -75,16 +75,16 @@ SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='expense-receipt
  'historical receipt requires the authenticated proxy too');
 SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='expense-receipts' AND name=(SELECT path FROM er_vars WHERE name='attach-key')),
  0::bigint,'an unattached object cannot be read through the private bucket');
-SELECT throws_ok($q$SELECT public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),
+SELECT throws_ok($q$SELECT public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),
  (SELECT path FROM er_vars WHERE name='missing-key'),NULL,(SELECT v FROM er_vars WHERE name='missing-key'))$q$,
  'P0002','receipt_object_not_found','missing object leaves attachment unresolved');
-SELECT ok((public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
+SELECT ok((public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
  NULL,(SELECT v FROM er_vars WHERE name='attach-key'))->>'applied')::boolean,'saved draft attaches an owned immutable object');
-SELECT ok((public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
+SELECT ok((public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
  NULL,(SELECT v FROM er_vars WHERE name='attach-key'))->>'idempotent_replay')::boolean,'attachment replay returns its first result');
-SELECT throws_ok($q$SELECT public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),NULL,NULL,
+SELECT throws_ok($q$SELECT public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),NULL,NULL,
  (SELECT v FROM er_vars WHERE name='attach-key'))$q$,'22023','expense_receipt_key_conflict','a receipt key cannot be reused for a different payload');
-SELECT ok((public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='second-key'),
+SELECT ok((public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='second-key'),
  (SELECT path FROM er_vars WHERE name='attach-key'),(SELECT v FROM er_vars WHERE name='second-key'))->>'applied')::boolean,
  'draft may replace its reference with another immutable object');
 SELECT lives_ok($q$INSERT INTO storage.objects(bucket_id,name,owner_id,metadata)
@@ -102,10 +102,10 @@ WITH changed AS (UPDATE storage.objects SET metadata='{}'::jsonb
  SELECT is(count(*),0::bigint,'referenced object cannot be overwritten') FROM changed;
 SELECT throws_ok($q$DELETE FROM storage.objects WHERE name=(SELECT path FROM er_vars WHERE name='second-key')$q$,
  '42501',NULL,'platform refuses direct Storage deletion; HTTP Storage delete requires its own test');
-SELECT is(public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),NULL,
+SELECT is(public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),NULL,
  (SELECT path FROM er_vars WHERE name='attach-key'),(SELECT v FROM er_vars WHERE name='stale-key'))->>'reason',
  'receipt_changed','stale compare-and-set produces a persisted explicit refusal');
-SELECT is(public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
+SELECT is(public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
  NULL,(SELECT v FROM er_vars WHERE name='attach-key'))->>'receipt_path',(SELECT path FROM er_vars WHERE name='attach-key'),
  'old successful replay retains its original response after a later replacement');
 SELECT is((SELECT receipt_url FROM expenses WHERE id=(SELECT v FROM er_vars WHERE name='main')),
@@ -122,10 +122,10 @@ SELECT is(public.create_expense_v4((SELECT v FROM er_vars WHERE name='category')
  p_idempotency_key=>(SELECT v FROM er_vars WHERE name='creation-key'), p_expense_term_id => pg_temp.expense_term_fixture((SELECT v FROM er_vars WHERE name='category'), 'Retry after submit')),(SELECT v FROM er_vars WHERE name='main'),
  'creation replay survives replacement of the expense idempotency column at submit');
 SELECT is((SELECT status FROM expenses WHERE id=(SELECT v FROM er_vars WHERE name='main')),'submitted','creation replay never resets the submitted status');
-SELECT is(public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),NULL,
+SELECT is(public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),NULL,
  (SELECT path FROM er_vars WHERE name='second-key'),(SELECT v FROM er_vars WHERE name='draft-only-key'))->>'reason',
  'receipt_requires_draft','submitted expense rejects a new receipt change explicitly');
-SELECT ok((public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
+SELECT ok((public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),(SELECT path FROM er_vars WHERE name='attach-key'),
  NULL,(SELECT v FROM er_vars WHERE name='attach-key'))->>'applied')::boolean,'a confirmed historical attempt can resolve after submission');
 SELECT is((SELECT receipt_url FROM expenses WHERE id=(SELECT v FROM er_vars WHERE name='main')),
  (SELECT path FROM er_vars WHERE name='second-key'),'replay after submit leaves the actual reference untouched');
@@ -138,14 +138,14 @@ SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='expense-receipt
  SELECT v FROM er_vars WHERE name IN ('main','legacy')))),0::bigint,'reader cannot bypass the authenticated download proxy');
 SELECT is((SELECT count(*) FROM expense_approvals WHERE expense_id IN (SELECT v FROM er_vars WHERE name IN ('main','other','legacy'))),
  3::bigint,'reader sees the approvals of every visible fixture expense');
-SELECT throws_ok($q$SELECT public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),NULL,NULL,gen_random_uuid())$q$,
+SELECT throws_ok($q$SELECT public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),NULL,NULL,gen_random_uuid())$q$,
  '42501','permission_denied','reader cannot change a receipt');
 RESET ROLE;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM er_actors WHERE kind='manager')); END $$;
 SET LOCAL ROLE authenticated;
 SELECT is((SELECT count(*) FROM expenses WHERE id IN (SELECT v FROM er_vars WHERE name IN ('main','other','legacy'))),3::bigint,
  'manage permission sees every fixture expense without requiring read');
-SELECT is(public.set_expense_receipt_v2((SELECT v FROM er_vars WHERE name='main'),NULL,
+SELECT is(public.set_expense_receipt_v3((SELECT v FROM er_vars WHERE name='main'),NULL,
  (SELECT path FROM er_vars WHERE name='second-key'),gen_random_uuid())->>'reason',
  'receipt_requires_draft','manager cannot change a submitted receipt either');
 RESET ROLE;
@@ -159,7 +159,7 @@ SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='expense-receipt
  'unrelated authenticated operator cannot read the receipt objects');
 RESET ROLE;
 SELECT ok(NOT has_function_privilege('anon','public.create_expense_v4(uuid,numeric,text,text,date,numeric,text,text,uuid,uuid,text)','EXECUTE')
- AND NOT has_function_privilege('anon','public.set_expense_receipt_v2(uuid,text,text,uuid)','EXECUTE'),'anon has no inherited PUBLIC execute');
+ AND NOT has_function_privilege('anon','public.set_expense_receipt_v3(uuid,text,text,uuid)','EXECUTE'),'anon has no inherited PUBLIC execute');
 SELECT ok(NOT has_function_privilege('authenticated','public._read_expense_creation_v1(uuid,uuid)','EXECUTE')
  AND NOT has_function_privilege('authenticated','public._read_expense_receipt_v1(uuid,uuid,uuid,jsonb)','EXECUTE'),'idempotency helpers are private');
 SELECT ok(NOT has_table_privilege('authenticated','public.expense_creation_results','SELECT')

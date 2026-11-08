@@ -1,5 +1,6 @@
 -- Contrat catégories, préparé localement ; exécution dev autorisée séparément.
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT no_plan();

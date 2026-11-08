@@ -31,7 +31,7 @@ export function usePoInvoice(poId: string) {
       }
       const path = snapshot.kind === 'attach'
         ? 'purchase-orders/' + snapshot.poId + '/' + key + (snapshot.mime === 'image/jpeg' ? '.jpg' : '.pdf') : null;
-      const apply = () => supabase.rpc('set_po_invoice_v1' as never, {
+      const apply = () => supabase.rpc('set_po_invoice_v2' as never, {
         p_po_id: snapshot.poId, p_idempotency_key: key,
         ...(path !== null ? { p_storage_path: path } : {}),
         ...(snapshot.expectedPath !== null ? { p_expected_path: snapshot.expectedPath } : {}),
