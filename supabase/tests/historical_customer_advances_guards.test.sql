@@ -13,7 +13,7 @@ INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload 
 INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(jsonb_set(payload,'{payments,0,allocations,0,application_date}','"2097-01-25"'))->'errors' @> '[{"code":"customer_advance_application_date_invalid"}]','application before invoice refused') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(jsonb_set(payload,'{payments,0,amount}','100001'))->'errors' @> '[{"code":"allocation_total_mismatch"}]','unallocated remainder refused') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','preview_historical_import_v4(jsonb)','EXECUTE'),'anon cannot preview');
-INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','apply_historical_import_v4(jsonb,text,uuid)','EXECUTE'),'anon cannot apply');
+INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','apply_historical_import_v5(jsonb,text,uuid)','EXECUTE'),'anon cannot apply');
 INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('authenticated','_historical_import_payment_v2(uuid,jsonb,jsonb)','EXECUTE'),'payment helper remains private');
 UPDATE fiscal_periods SET status='closed' WHERE period_start=date '2097-01-01';
 INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload)->'errors' @> '[{"code":"customer_advance_application_period_closed"}]','closed application period refused') FROM historical_fixture;

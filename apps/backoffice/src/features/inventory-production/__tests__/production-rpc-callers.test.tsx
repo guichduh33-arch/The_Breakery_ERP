@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRecordProduction } from '../hooks/useRecordProduction.js';
 import { useRecordBatchProduction } from '../hooks/useRecordBatchProduction.js';
-import { submitProduction, type KitchenRequest } from '../../kitchen/api.js';
+import { submitProduction, kitchenError, type KitchenRequest } from '../../kitchen/api.js';
 
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc } }));
@@ -43,7 +43,7 @@ describe('published production RPC callers', () => {
         forceNegative: true,
       })).resolves.toBe(receipt);
     });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_production_v11', {
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_production_v12', {
       p_product_id: 'bread', p_quantity_produced: 12, p_section_id: 'bakery',
       p_idempotency_key: 'unit-key', p_batch_number: 'manual-batch', p_quantity_waste: 2,
       p_waste_reason: 'mis_baked', p_notes: 'Oven stopped', p_expected_yield_qty: 14,
@@ -57,7 +57,7 @@ describe('published production RPC callers', () => {
     await act(async () => {
       await result.current.mutateAsync({ ...unitInput, ...(forceNegative === undefined ? {} : { forceNegative }) });
     });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_production_v11', {
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_production_v12', {
       p_product_id: 'bread', p_quantity_produced: 12, p_section_id: 'bakery',
       p_quantity_waste: 0, p_idempotency_key: 'unit-key',
     });
@@ -72,7 +72,7 @@ describe('published production RPC callers', () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it.each(['insufficient_stock', 'force_negative_forbidden'])(
+  it.each(['insufficient_stock', 'force_negative_forbidden', 'quantity_below_stock_precision'])(
     'propagates the unit %s rejection and shortage details without retrying', async code => {
       rpc.mockResolvedValue({ data: null, error: { message: code, details: JSON.stringify(shortages) } });
       const { result } = renderHook(() => useRecordProduction(), { wrapper });
@@ -98,7 +98,7 @@ describe('published production RPC callers', () => {
         { productId: 'cake', quantityProduced: 3, quantityWaste: 0 }],
       })).resolves.toBe(receipt);
     });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_batch_production_v13', {
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_batch_production_v14', {
       p_batch: { section_id: 'bakery', idempotency_key: 'batch-key', notes: 'Late entry',
         production_date: '2026-11-07T06:00:00+08:00', force_negative: true },
       p_items: [{ product_id: 'bread', quantity_produced: 12, quantity_waste: 2,
@@ -115,13 +115,13 @@ describe('published production RPC callers', () => {
       await result.current.mutateAsync({ ...batchInput, productionDate: '',
         ...(forceNegative === undefined ? {} : { forceNegative }) });
     });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_batch_production_v13', {
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_batch_production_v14', {
       p_batch: { section_id: 'bakery', idempotency_key: 'batch-key' },
       p_items: [{ product_id: 'bread', quantity_produced: 12 }],
     });
   });
 
-  it.each(['insufficient_stock', 'force_negative_forbidden'])(
+  it.each(['insufficient_stock', 'force_negative_forbidden', 'quantity_below_stock_precision'])(
     'propagates the batch %s rejection and shortage details without retrying', async code => {
       rpc.mockResolvedValue({ data: null, error: { message: code, details: JSON.stringify(shortages) } });
       const { result } = renderHook(() => useRecordBatchProduction(), { wrapper });
@@ -142,7 +142,7 @@ describe('published production RPC callers', () => {
     const receipt = { batch_id: 'batch', batch_number: 'BATCH-20261108-10012', idempotent_replay: true };
     rpc.mockResolvedValue({ data: receipt, error: null });
     await expect(submitProduction(kitchenRequest)).resolves.toBe(receipt);
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_kitchen_production_v6', { p_request: kitchenRequest });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_kitchen_production_v7', { p_request: kitchenRequest });
     const args = rpc.mock.calls[0]?.[1] as { p_request: KitchenRequest };
     expect(args.p_request).toBe(kitchenRequest);
   });
@@ -154,5 +154,20 @@ describe('published production RPC callers', () => {
     await expect(submitProduction(kitchenRequest)).rejects.toBe(error);
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(kitchenRequest).toEqual(savedRequest);
+  });
+  it('explains an untraceable kitchen requirement without retrying or allowing an override', async () => {
+    const error = { code: 'P0001', message: 'quantity_below_stock_precision' };
+    rpc.mockResolvedValue({ data: null, error });
+    await expect(submitProduction(kitchenRequest)).rejects.toBe(error);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(kitchenError(error)).toBe('An ingredient requirement is below the supported stock precision. Check the production quantity and recipe units.');
+  });
+  it('explains the masked kitchen business rejection without exposing stock or suggesting a network retry', async () => {
+    const error = { code: 'P0001', message: 'stock_operation_rejected', details: null, hint: null };
+    rpc.mockResolvedValue({ data: null, error });
+    await expect(submitProduction(kitchenRequest)).rejects.toBe(error);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('record_kitchen_production_v7', { p_request: kitchenRequest });
+    expect(kitchenError(error)).toBe('This production was rejected. Ask an administrator to review it.');
+    expect(kitchenError(error)).not.toMatch(/connection|try again|quantity_below_stock_precision|required|available|shortfall/);
   });
 });

@@ -82,26 +82,26 @@ GRANT EXECUTE ON FUNCTION pg_temp.set_jwt_uid(UUID) TO PUBLIC;
 -- T1 — record_stock_movement_v1 rejects sale movement_type
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_stock_movement_v1(
+  $$ SELECT record_stock_movement_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        'sale'::movement_type, 1, 'attempt'
      ) $$,
   NULL,
-  'record_stock_movement_v1 cannot be called with movement_type=sale',
-  'T1: record_stock_movement_v1 rejects sale movement_type'
+  'record_stock_movement_v2 cannot be called with movement_type=sale',
+  'T1: record_stock_movement_v2 rejects sale movement_type'
 );
 
 -- =========================================================================
 -- T2 — record_stock_movement_v1 rejects quantity = 0
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_stock_movement_v1(
+  $$ SELECT record_stock_movement_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        'adjustment'::movement_type, 0, 'zero quantity attempt'
      ) $$,
   NULL,
   'quantity_must_be_nonzero',
-  'T2: record_stock_movement_v1 rejects quantity = 0'
+  'T2: record_stock_movement_v2 rejects quantity = 0'
 );
 
 -- =========================================================================
@@ -236,9 +236,9 @@ SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v5'
+    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v6'
   ),
-  'T8: record_incoming_stock_v5 still exists (non-purchase entries kept)');
+  'T8: record_incoming_stock_v6 still exists (non-purchase entries kept)');
 
 -- =========================================================================
 -- T9 — waste_stock_v4 with qty > on-hand -> insufficient_stock P0002

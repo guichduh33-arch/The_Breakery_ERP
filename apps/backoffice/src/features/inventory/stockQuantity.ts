@@ -1,9 +1,9 @@
 import { formatQuantity } from '@breakery/utils';
 
-/** Le ledger accepte trois décimales, y compris pour les articles à la pièce. */
+/** Affiche les fractions calculées du ledger ; la saisie reste limitée à trois décimales. */
 export function formatStockQuantity(value: number, unit?: string | null): string {
   const suffix = unit?.trim();
-  return `${formatQuantity(value, null)}${suffix ? ` ${suffix}` : ''}`;
+  return `${formatQuantity(value, null, { maximumFractionDigits: 9 })}${suffix ? ` ${suffix}` : ''}`;
 }
 
 /** Une valeur vide n'est jamais un comptage à zéro. Aucune troncature silencieuse. */

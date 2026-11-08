@@ -75,7 +75,7 @@ BEGIN
     RAISE EXCEPTION 'T5 precondition: no section found';
   END IF;
 
-  SELECT record_stock_movement_v1(
+  SELECT record_stock_movement_v2(
     p_product_id := v_product, p_movement_type := 'adjustment_in',
     p_quantity := 1, p_reason := 'S56 audit_consolidation T5',
     p_unit_cost := NULL, p_supplier_id := NULL,
@@ -94,7 +94,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.s56_t5_pass')::boolean,
-  'T5 — record_stock_movement_v1 (réécrit _087) audite dans audit_logs (entity_type/entity_id/metadata)'
+  'T5 — record_stock_movement_v2 (réécrit _087) audite dans audit_logs (entity_type/entity_id/metadata)'
 );
 
 -- T6 : seule policy permissive = admin_read SELECT ; une garde restrictive

@@ -74,7 +74,7 @@ made:=create_product_v5(jsonb_build_object(
 'track_inventory',true,'deduct_stock',false,'is_display_item',false,
 'is_active',true,'available_for_sale',true,'visible_on_pos',true));
 c.product_id:=(made#>>'{product,id}')::uuid;
-PERFORM record_stock_movement_v1(c.product_id,'adjustment_in',10,
+PERFORM record_stock_movement_v2(c.product_id,'adjustment_in',10,
 'Replay stock',p_unit_cost:=5000,
 p_idempotency_key:=gen_random_uuid(),p_unit:='pcs',
 p_metadata:=jsonb_build_object('reference_type','test_fixture','reference_id',c.product_id));

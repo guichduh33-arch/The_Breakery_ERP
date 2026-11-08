@@ -57,7 +57,7 @@ const SHORTAGE_ERROR = {
  */
 function batchCalls(): [string, { p_batch: Record<string, unknown> }][] {
   return mockRpc.mock.calls.filter(
-    (c) => c[0] === 'record_batch_production_v13',
+    (c) => c[0] === 'record_batch_production_v14',
   ) as [string, { p_batch: Record<string, unknown> }][];
 }
 
@@ -113,6 +113,26 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     });
     expect(screen.getByTestId('force-negative-toggle')).toBeInTheDocument();
   });
+  it('explains stock precision rejection without offering a force override', async () => {
+    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v5'
+      ? { data: [], error: null } : { data: null, error: { message: 'quantity_below_stock_precision' } });
+    renderCard();
+    await addBaguetteRow();
+    fireEvent.click(screen.getByTestId('submit-production'));
+    await screen.findByText('An ingredient requirement is below the supported stock precision. Check the production quantity and recipe units.');
+    expect(screen.queryByTestId('force-negative-toggle')).not.toBeInTheDocument();
+    expect(batchCalls()).toHaveLength(1);
+  });
+  it('formats tiny server shortages without scientific notation', async () => {
+    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v5'
+      ? { data: [], error: null } : { data: null, error: { message: 'insufficient_stock', details: JSON.stringify([
+        { material_name: 'Yeast', required: 1e-7, available: 1e-8, shortfall: 9e-8, unit: 'kg' },
+      ]) } });
+    renderCard();
+    await addBaguetteRow();
+    fireEvent.click(screen.getByTestId('submit-production'));
+    expect(await screen.findByTestId('production-shortages')).toHaveTextContent('Yeast short 0,00000009 kg');
+  });
 
   it('never offers the force toggle without inventory.production.force_negative', async () => {
     currentPerms = new Set(['inventory.read', 'inventory.production.create']);
@@ -148,7 +168,7 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     const lastCall = calls[calls.length - 1]!;
     // Le hook soumet le lot à la famille `record_batch_production` ;
     // le forçage reste porté par son enveloppe atomique.
-    expect(lastCall[0]).toBe('record_batch_production_v13');
+    expect(lastCall[0]).toBe('record_batch_production_v14');
     expect(lastCall[1].p_batch.force_negative).toBe(true);
   });
 });

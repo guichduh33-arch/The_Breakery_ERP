@@ -56,7 +56,7 @@ BEGIN
     RETURNING id INTO v_prod;
 
   -- Avec référence en métadonnée.
-  v_res := record_stock_movement_v1(
+  v_res := record_stock_movement_v2(
     p_product_id    := v_prod,
     p_movement_type := 'adjustment_in'::movement_type,
     p_quantity      := 5,
@@ -66,7 +66,7 @@ BEGIN
   PERFORM set_config('breakery.f2_ref',  v_ref::text, true);
 
   -- Sans référence : compatibilité des huit appelants qui n'en passent aucune.
-  v_res := record_stock_movement_v1(
+  v_res := record_stock_movement_v2(
     p_product_id    := v_prod,
     p_movement_type := 'adjustment_in'::movement_type,
     p_quantity      := 3,
@@ -89,7 +89,7 @@ SELECT is(
   'admin_action', 'T5 sans métadonnée, reference_type reste admin_action');
 
 SELECT throws_ok(
-  format($q$ SELECT record_stock_movement_v1(%L::uuid, 'adjustment_in'::movement_type, 1,
+  format($q$ SELECT record_stock_movement_v2(%L::uuid, 'adjustment_in'::movement_type, 1,
               'F2 reference invalide', p_metadata := '{"reference_id":"pas-un-uuid"}'::jsonb) $q$,
          current_setting('breakery.f2_prod')),
   'P0002', NULL, 'T6 une reference_id mal formée échoue au lieu d''être avalée');

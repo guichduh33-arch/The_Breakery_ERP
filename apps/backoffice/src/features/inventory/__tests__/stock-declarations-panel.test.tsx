@@ -57,7 +57,7 @@ it('approves a different declarant and invalidates stock and declaration caches'
   const client = mount();
   const invalidate = vi.spyOn(client, 'invalidateQueries');
   fireEvent.click(await screen.findByRole('button', { name: 'Approve Flour' }));
-  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith('approve_stock_declaration_v3', { p_declaration_id: 'd' }));
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith('approve_stock_declaration_v4', { p_declaration_id: 'd' }));
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['stock-declarations'] }));
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ['stock-levels'] });
 });
