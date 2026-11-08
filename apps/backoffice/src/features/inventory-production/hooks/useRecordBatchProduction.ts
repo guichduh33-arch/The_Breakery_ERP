@@ -12,7 +12,7 @@
 // DETAIL nomme l'item fautif. ADR-008 D5 — un intermédiaire non déplié restant
 // à la profondeur maximale fait échouer le lot entier.
 //
-// v5 is the single entry point: elle absorbe l'ancien wrapper de date et
+// La famille `record_batch_production` absorbe l'ancien wrapper de date et
 // l'implémentation interne, fusionnés par ADR-016. Elle parse l'optionnel
 // p_batch.production_date (antidatable) ; quand il est absent le ledger et les
 // écritures restent à now() — seule production_records.production_date est
@@ -175,7 +175,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v12', {
+      const { data, error } = await supabase.rpc('record_batch_production_v13', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

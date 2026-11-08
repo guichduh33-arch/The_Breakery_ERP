@@ -69,7 +69,7 @@ export class RecordProductionError extends Error {
 export interface RecordProductionArgs {
   productId:         string;
   quantityProduced:  number;
-  /** UUID de section — REQUIS (CHECK chk_stock_movements_section_required côté DB). */
+  /** UUID de station requis par la RPC de production (`section_required`). */
   sectionId:         string;
   batchNumber?:      string;
   quantityWaste?:    number;
@@ -143,8 +143,8 @@ export function useRecordProduction() {
   const qc = useQueryClient();
   return useMutation<RecordProductionResult, RecordProductionError, RecordProductionArgs>({
     mutationFn: async (args) => {
-      // Defense-in-depth: section is required by DB CHECK chk_stock_movements_section_required.
-      // The UI enforces this via canSubmit, but guard here to prevent a cryptic 23514.
+      // La RPC exige une station (`section_required`) ; ce contrôle complète
+      // le bouton de soumission pour refuser une station vide avant l'appel.
       if (args.sectionId === '') {
         throw new RecordProductionError('section_required', 'Section is required');
       }
@@ -175,7 +175,7 @@ export function useRecordProduction() {
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v10', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v11', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;
