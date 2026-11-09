@@ -34,11 +34,14 @@ projet) avant toute installation de tâche planifiée.
 
 | Sprint | Tâches | Dont 🔴 |
 |---|---|---|
-| Sprint 1 — Stabilisation et ambiguïtés critiques | 20 | 15 |
+| Sprint 1 — Stabilisation et ambiguïtés critiques | 22 | 15 |
 | Sprint 2 — Nettoyage du code abandonné | 13 | 3 |
 | Sprint 3 — Features manquantes validées | 18 | 6 |
 | Sprint 4 — Optimisation et clôture | 11 | 1 |
-| **Total** | **62** | **25** |
+| **Total** | **64** | **25** |
+
+*(Décompte du 2026-11-09, après l'ajout de `S1-21` et `S1-22` sur demande de
+Mamat.)*
 
 ---
 
@@ -580,6 +583,82 @@ invisibles à tout contrôle, perdues au premier bump.
 **Preuve** — Les 3 ADR sont rédigés, relus en contexte vierge, et référencés
 depuis `../SPECS_OFFICIELS_ERP_POS.md`. Les 3 déclarations en attente sont
 traitées. `node scripts/ci/relative-links.mjs` vert.
+
+---
+
+### `[S1-21]` Imprimer une addition chiffrée avant paiement, sur l'imprimante choisie
+
+**Risque prod** 🟠 — écran et ticket en service, aucune écriture d'argent.
+**Source** — Demande de Mamat du 2026-11-09, **à prioriser** : présenter
+l'addition au client avant qu'il paie. Règle et intention dans
+`../SPECS_OFFICIELS_ERP_POS.md`, section 7.
+
+**Constat** (code de `master`, 2026-11-09)
+- Le bouton d'addition de la caisse choisit l'imprimante **tout seul** : une
+  commande de table ou reprise part sur l'imprimante des serveurs, les autres sur
+  celle de la caisse. Personne ne peut choisir.
+- Les lignes envoyées à l'impression ne portent **aucun prix**. Les totaux
+  (sous-total, taxe, total) sont envoyés, mais le rendu du pont d'impression
+  **ne les imprime pas** : l'addition sort comme un ticket serveur, avec le nom
+  du rôle en titre, et « Table N » ou « Walk-in » à la place d'un numéro de
+  commande.
+- La tablette des serveurs n'a **aucun** bouton d'addition.
+
+**Fichiers**
+- `apps/pos/src/features/cart/hooks/usePrintBill.ts` et `PrintBillButton.tsx` —
+  contenu de l'addition et choix de l'imprimante
+- `apps/print-bridge/src/render/stationTicket.ts` — rendu, qui ignore les prix
+  et les totaux
+- `packages/domain/src/printing/payloads.ts` — format du ticket
+- `apps/pos/src/features/tablet/` — seulement si l'addition doit aussi partir de
+  la tablette (**à demander à Mamat**, non tranché)
+
+**Travail** — Ajouter le prix de chaque ligne et les totaux à l'addition, avec
+un titre d'addition et la mention qu'elle ne vaut pas reçu. Laisser choisir
+l'imprimante, caisse ou serveurs, au moment d'imprimer. Les montants doivent
+être **ceux que la caisse encaissera** : réutiliser le calcul de ligne du
+domaine, jamais une recomposition locale (garde `line-total-formula`).
+
+**Preuve** — Tests du rendu et du contenu de l'addition. Une addition imprimée
+**sur papier** depuis chacune des deux imprimantes, comparée au total encaissé
+de la même commande.
+
+**Dépend de** — rien.
+
+---
+
+### `[S1-22]` Régler le nombre d'exemplaires du ticket serveur
+
+**Risque prod** 🟠 — ticket en service, aucune écriture d'argent.
+**Source** — Demande de Mamat du 2026-11-09, **à prioriser**. Règle et intention
+dans `../SPECS_OFFICIELS_ERP_POS.md`, section 7.
+
+**Constat** (code de `master`, 2026-11-09) — Le nombre d'exemplaires se règle
+déjà **par poste de préparation** (cuisine, barista, vitrine), dans les réglages
+d'impression du back-office. Le ticket récapitulatif envoyé à l'imprimante des
+serveurs sort, lui, en **un seul exemplaire**, écrit en dur — que la commande
+parte de la tablette ou de la caisse.
+
+**Fichiers**
+- `apps/pos/src/features/tablet/hooks/printTabletTickets.ts` et
+  `apps/pos/src/features/cart/hooks/useFireToStations.ts` — les deux envois de
+  l'exemplaire unique du ticket serveur
+- `apps/pos/src/features/settings/hooks/useKotCopies.ts` — lecture des réglages
+- `apps/backoffice/src/pages/settings/SettingsPrintingPage.tsx` — l'écran de
+  réglage
+- `supabase/migrations/<nouveau>` — une colonne de réglage, sur le modèle des
+  copies par poste, et la version suivante des familles `set_setting` (qui
+  valide chaque clé de copies) et `get_settings` (qui l'expose), bâtie sur leur
+  corps live
+
+**Travail** — Ajouter le réglage, sur le modèle exact des copies par poste
+(valeur par défaut 1, zéro autorisé ou non : **à demander à Mamat**), et
+l'appliquer aux deux envois.
+
+**Preuve** — pgTAP sur la colonne et ses bornes. Tests du nombre de tickets
+émis. Types régénérés. Deux exemplaires constatés **sur papier** après réglage.
+
+**Dépend de** — rien.
 
 ---
 
