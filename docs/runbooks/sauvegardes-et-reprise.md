@@ -92,10 +92,23 @@ clé ci-dessus. Arrêtez et comparez avant de produire des sauvegardes.
 > **Il faut une seconde copie, hors du VPS, détenue par Mamat.** Tant qu'elle
 > n'existe pas, la décision n'est qu'à moitié prise.
 >
-> **Cette copie, l'agent ne doit pas la faire.** Récupérer la clé privée la
-> ferait transiter par la sortie d'un outil, donc par le journal de la
-> conversation, en clair — ce que les règles du dépôt interdisent. La commande
-> est donc à lancer **par Mamat lui-même**, depuis son poste :
+> **Cette copie, l'agent ne doit pas la faire — pour une question de garde, pas
+> de fuite.** Soyons précis, parce qu'une justification approximative se fait
+> « corriger » par la session suivante :
+>
+> - **Afficher** la clé privée — `cat`, `base64`, l'ouvrir dans un éditeur — la
+>   ferait entrer dans le journal de la conversation, en clair. **Interdit, sans
+>   exception.** Comparer deux clés se fait par **dérivation** ou par empreinte,
+>   jamais en les lisant.
+> - Un `scp`, lui, transfère les octets sans rien afficher : il **ne fuite pas**.
+>   Ce n'est donc pas la raison.
+>
+> La vraie raison est la **garde** : la copie de secours n'a de valeur que si
+> elle est détenue par Mamat, sur un support qu'il contrôle — un support chiffré
+> qu'il range lui-même, un gestionnaire de mots de passe où un agent n'a pas
+> accès. Une copie posée par un agent dans un dossier quelconque est une copie
+> de plus à surveiller, pas une sauvegarde de la clé. La commande est donc à
+> lancer **par Mamat lui-même**, depuis son poste :
 >
 > ```bash
 > scp root@srv1753453.hstgr.cloud:/root/cles-reprise-breakery/recovery-private.pem <destination-hors-ligne>
@@ -429,7 +442,7 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | # | Décision | État | Pourquoi elle compte |
 |---|---|---|---|
 | 1 | Où vit `recovery-private.pem` | ✅ **tranchée le 2026-11-09** | VPS Hostinger, voir la décision plus haut |
-| 1 bis | **Seconde copie de la clé, hors du VPS** | ⏳ **à faire par Mamat** | Une clé unique sur un serveur loué qu'un *recreate* efface ; sa perte rend toutes les sauvegardes illisibles. L'agent ne doit pas faire cette copie. |
+| 1 bis | **Seconde copie de la clé, hors du VPS** | ⏳ **à faire par Mamat** | Une clé unique sur un serveur loué qu'un *recreate* efface ; sa perte rend toutes les sauvegardes illisibles. À faire par Mamat : la copie de secours n'a de valeur que détenue par lui, sur un support qu'il contrôle. |
 | 2 | Compte Drive, dossier et poste détenant `rclone.conf` | ⏳ | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
 | 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
 | 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
