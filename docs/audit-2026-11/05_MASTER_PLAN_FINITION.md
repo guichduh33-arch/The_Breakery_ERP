@@ -663,21 +663,23 @@ serveurs sort, lui, en **un seul exemplaire**, écrit en dur — que la commande
 parte de la tablette ou de la caisse.
 
 **Fichiers**
-- `apps/pos/src/features/tablet/hooks/printTabletTickets.ts` et
-  `apps/pos/src/features/cart/hooks/useFireToStations.ts` — les deux envois de
-  l'exemplaire unique du ticket serveur
+- `apps/pos/src/features/tablet/hooks/printTabletTickets.ts`,
+  `apps/pos/src/features/cart/hooks/useFireToStations.ts` et
+  `apps/pos/src/features/cart/hooks/printPaidSnapshot.ts` — les trois envois de
+  l'exemplaire unique du ticket serveur *(le troisième relevé le 2026-11-09)*
 - `apps/pos/src/features/settings/hooks/useKotCopies.ts` — lecture des réglages
 - `apps/backoffice/src/pages/settings/SettingsPrintingPage.tsx` — l'écran de
   réglage
 - `supabase/migrations/<nouveau>` — une colonne de réglage, sur le modèle des
-  copies par poste, et la version suivante des familles `set_setting` (qui
-  valide chaque clé de copies) et `get_settings` (qui l'expose), bâtie sur leur
-  corps live
+  copies par poste, et une fonction d'écriture **dédiée**. *(Corrigé le
+  2026-11-09 : la version suivante des familles `set_setting` et `get_settings`
+  devait supprimer les versions en service, que le POS de la boutique appelle
+  encore ; l'ajout dédié ne retire rien.)*
 
 **Travail** — Ajouter le réglage, sur le modèle exact des copies par poste
 (valeur par défaut 1, zéro autorisé pour couper le papier : tranché par Mamat
-le 2026-11-09), et
-l'appliquer aux deux envois.
+le 2026-11-09), et l'appliquer aux **trois** envois : depuis la tablette,
+depuis la caisse, et à l'impression d'une commande payée avant tout envoi.
 
 **Preuve** — pgTAP sur la colonne et ses bornes. Tests du nombre de tickets
 émis. Types régénérés. Deux exemplaires constatés **sur papier** après réglage.

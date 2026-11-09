@@ -10,6 +10,7 @@ import { Input } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { useSetWaiterTicketCopies, useWaiterTicketCopies } from '@/features/settings/hooks/useWaiterTicketCopies.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -39,8 +40,17 @@ export default function SettingsPrintingPage() {
   const canUpdate = useAuthStore((s) => s.hasPermission('settings.update'));
   const { data, isLoading, error } = useSettings('printing');
   const setSetting = useSetSetting();
+  // S1-22 — copies du ticket serveur : colonne lue à part (voir le hook).
+  const waiterCopies = useWaiterTicketCopies();
+  const setWaiterCopies = useSetWaiterTicketCopies();
   const [draft, setDraft] = useState<Record<string, DraftValue>>({});
+  const [waiterDraft, setWaiterDraft] = useState<number | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (waiterCopies.data !== undefined) setWaiterDraft(waiterCopies.data);
+  }, [waiterCopies.data]);
+  const waiterDirty = waiterDraft !== null && waiterCopies.data !== undefined && waiterDraft !== waiterCopies.data;
 
   useEffect(() => {
     if (!data) return;
@@ -62,7 +72,8 @@ export default function SettingsPrintingPage() {
   const dirtyCopies = KOT_FIELDS.filter(
     (f) => draft[f.key] !== Number(data?.settings[f.key] ?? 1),
   );
-  const dirty = [...dirtyToggles, ...dirtyCopies];
+  const dirtyCount = dirtyToggles.length + dirtyCopies.length + (waiterDirty ? 1 : 0);
+  const saving = setSetting.isPending || setWaiterCopies.isPending;
 
   async function handleSave() {
     setServerError(null);
@@ -73,6 +84,7 @@ export default function SettingsPrintingPage() {
       for (const f of dirtyCopies) {
         await setSetting.mutateAsync({ key: f.key, value: Number(draft[f.key] ?? 1), category: 'printing' });
       }
+      if (waiterDirty && waiterDraft !== null) await setWaiterCopies.mutateAsync(waiterDraft);
     } catch (e) {
       setServerError(e instanceof Error ? e.message : 'Save failed');
     }
@@ -120,10 +132,31 @@ export default function SettingsPrintingPage() {
             ))}
           </div>
 
+          <div className="space-y-3 pt-2 border-t border-border-subtle">
+            <div>
+              <h2 className="text-sm font-medium">Waiter ticket</h2>
+              <p className="text-xs text-text-secondary">
+                Paper copies of the order summary printed on the waiter printer on every Send to Kitchen.
+                0 = no waiter ticket.
+              </p>
+            </div>
+            {waiterCopies.error && (
+              <p className="text-red text-sm" role="alert">Failed to load: {waiterCopies.error.message}</p>
+            )}
+            <div className="flex items-center gap-3">
+              <label htmlFor="kot_copies_waiter" className="text-sm font-medium w-40">Waiter printer</label>
+              <Input id="kot_copies_waiter" type="number" min={0} max={5} step={1}
+                className="w-24" disabled={!canUpdate || waiterDraft === null}
+                value={waiterDraft === null ? '' : String(waiterDraft)}
+                onChange={(e) => setWaiterDraft(clampCopies(e.target.valueAsNumber))} />
+              <span className="text-xs text-text-muted">copies (0–5)</span>
+            </div>
+          </div>
+
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {canUpdate && (
-            <button type="submit" disabled={dirty.length === 0 || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
-              {setSetting.isPending ? 'Saving…' : dirty.length === 0 ? 'No changes' : `Save ${dirty.length} change${dirty.length === 1 ? '' : 's'}`}
+            <button type="submit" disabled={dirtyCount === 0 || saving} className={TOOLBAR_BTN_PRIMARY}>
+              {saving ? 'Saving…' : dirtyCount === 0 ? 'No changes' : `Save ${dirtyCount} change${dirtyCount === 1 ? '' : 's'}`}
             </button>
           )}
         </form>
