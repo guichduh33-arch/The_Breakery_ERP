@@ -594,6 +594,61 @@ d'exécution maximum et trois reprises espacées de quinze minutes.
 > [l'état des environnements](etat-environnements.md) — jamais un drapeau de
 > reçu.
 
+#### Ce qui a été fait le 2026-11-09, et la dérogation assumée
+
+Tâche **`Breakery V3 Daily Backup`** enregistrée sur le PC boutique, déclenchée
+**tous les jours à 03h30** heure de Lombok — après le renouvellement TLS de
+03h00, boutique fermée.
+
+**Le type d'ouverture de session dévie du script, sur décision de Mamat.**
+
+Le script construit un principal `S4U` (« tourne que l'utilisateur soit connecté
+ou non, sans mot de passe stocké »). **L'enregistrement a échoué** avec
+`Access is denied` : le compte `SYSTEM` sous lequel tourne l'agent de gestion
+n'a pas le droit de créer une ouverture de session S4U **pour un autre compte**.
+
+Trois voies existaient : garder `Cashier` en mode **Interactive**, basculer sur
+**SYSTEM**, ou faire enregistrer la tâche par Mamat depuis une invite
+administrateur interactive. **Interactive a été retenu** parce qu'il garde le
+même compte et le même privilège limité que le script voulait — seul le type
+d'ouverture change — et parce que c'est déjà ce que font les deux autres tâches
+Breakery de ce poste.
+
+| | Valeur |
+|---|---|
+| Compte | `Pos\Cashier` |
+| Ouverture de session | **`Interactive`** (le script voulait `S4U`) |
+| Niveau | `Limited`, comme prévu |
+
+**Le risque de ce choix, et pourquoi il a été jugé acceptable :** en mode
+Interactive, la tâche **ne part pas si personne n'est connecté**, et elle ne le
+dit pas. Relevé du 2026-11-09 : le poste était allumé **depuis 6,8 jours sans
+interruption**, avec une seule extinction en sept jours, et `Cashier` y est
+connecté en permanence — c'est lui qui fait tourner le POS. **Si l'habitude
+change et que la caisse est éteinte ou déconnectée la nuit, les sauvegardes
+s'arrêtent en silence.**
+
+> **⚠️ Ce qui n'est PAS prouvé.** La tâche est enregistrée et sa définition a
+> été relue, mais **elle n'a jamais été exécutée**. Le canal terminal de la
+> console de gestion est devenu instable juste après l'enregistrement, et le
+> lancement manuel n'a pas pu aboutir.
+>
+> **La première exécution réelle sera celle de 03h30.** Le lendemain matin,
+> vérifier qu'une archive du jour existe dans le dossier de sortie, et que
+> `LastTaskResult` de la tâche vaut `0`. Tant que ce contrôle n'est pas fait,
+> l'automatisation est **installée mais non éprouvée**.
+
+**État du dossier de sortie au 2026-11-09 :** vidé de ses fichiers pour laisser
+la place à la première exécution automatique. L'archive produite et vérifiée à
+la main a été déplacée dans le sous-dossier `verifiee-manuelle` ; elle est
+conservée, c'est la pièce qui prouve le déchiffrement.
+
+**Un piège d'outil rencontré :** `Register-ScheduledTask` émet une erreur **non
+bloquante**. Un premier essai a affiché un message de succès **juste après**
+`Access is denied`, alors que rien n'avait été créé. **Toujours passer
+`-ErrorAction Stop`**, et toujours vérifier l'existence de la tâche après coup
+plutôt que de croire le message.
+
 ### 7. La copie hors site
 
 **Une archive qui ne vit que sur le PC boutique n'est pas une sauvegarde.** Si ce
