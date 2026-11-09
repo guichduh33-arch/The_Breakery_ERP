@@ -228,11 +228,41 @@ Fait depuis la console MeshCentral de la boutique, onglet **Terminal** du nœud
 | `rclone` | **ABSENT** ❌ | bloque la copie hors site |
 | Les 5 fichiers de la chaîne | **ABSENTS** ❌ | à porter |
 
-**Ce que ce relevé change.** Sans `pg_dump`, la sauvegarde quotidienne ne peut
+**Ce que ce relevé a changé.** Sans `pg_dump`, la sauvegarde quotidienne ne peut
 pas tourner **du tout** : la chaîne exige un export natif frais pour le projet
-exact et refuse de s'exécuter sans lui. Trois installations sont donc
-nécessaires sur ce poste — les outils clients PostgreSQL, `rclone`, et les cinq
-fichiers — avant que quoi que ce soit puisse produire une archive.
+exact et refuse de s'exécuter sans lui.
+
+### Installé le 2026-11-09, et vérifié
+
+Tout est rangé sous `C:\Breakery\`, un arbre neuf qui ne touche rien
+d'existant.
+
+| Composant | Emplacement | Vérification |
+|---|---|---|
+| Client PostgreSQL | `C:\Breakery\pgsql\bin\` | `pg_dump` et `pg_restore` répondent **17.6** |
+| `rclone` | `C:\Breakery\rclone\rclone.exe` | version **1.76.0** |
+| Les 5 fichiers de la chaîne | `C:\Breakery\chaine\` | **empreintes SHA-256 identiques** aux originaux du dépôt, les 5 |
+
+**Pourquoi la version du client compte.** La production tourne en
+**PostgreSQL 17.6** (relevé le 2026-11-09). Un `pg_dump` plus ancien que le
+serveur **refuse de travailler**. C'est pourquoi la version a été relevée sur la
+base *avant* de choisir quoi installer, et non l'inverse.
+
+**Test de chargement réussi** : `node daily-backup.mjs` sans argument rend le
+message d'erreur prévu par le script lui-même. C'est la preuve que Node charge
+les cinq fichiers et que **tous leurs imports croisés se résolvent** — sans ce
+test, un fichier manquant ne se verrait qu'à la première sauvegarde réelle.
+
+**Les empreintes des binaires ne sont pas consignées ici**, et c'est
+volontaire : elles changent à chaque mise à jour de PostgreSQL ou de `rclone`.
+Les fichiers de configuration les font **calculer par la machine** au moment où
+ils sont écrits ; une valeur recopiée à la main serait fausse au premier
+correctif de sécurité.
+
+**Ce qui reste sur le poste** : l'archive `C:\Temp\pg17.zip` (314 Mo) est
+**gardée volontairement** jusqu'à la première sauvegarde réussie — si un pilote
+manquait, elle évite de retélécharger. À supprimer ensuite. Tout le reste des
+fichiers temporaires a été nettoyé.
 
 **Observation faite en passant, hors périmètre de ce runbook :** la console
 signale le **pare-feu Windows désactivé** sur ce poste, et `xampp` y est
@@ -617,8 +647,11 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 1 quater | ~~Retirer la copie du disque principal~~ | ✅ **fait le 2026-11-09** | Contenu écrasé par des octets aléatoires, puis fichier supprimé ; absence confirmée sur le disque et dans la corbeille, après avoir revérifié que la copie du SSD était conforme. **Limite** : sur un disque à mémoire flash, l'écrasement n'atteint pas forcément les blocs d'origine — le contrôleur peut écrire ailleurs. Ce n'est donc pas un effacement sécurisé prouvé. |
 | 2 | Où vont les archives | ✅ **tranchée le 2026-11-09 : Google Drive** | Le VPS a été écarté : la clé privée y vit, et une clé à côté de l'archive annule le chiffrement. Dossier existant et vérifié, aucun *Shared Drive* sur le compte. C'est aussi le seul transport que le code sait faire. |
 | 2 bis | **Installer `rclone` et l'autoriser sur Drive** | ⏳ | Sur le **PC boutique**, qui n'est pas le poste de développement. L'autorisation Google est à donner par Mamat : un agent n'accorde pas d'accès OAuth. Tant que ce n'est pas fait, une archive ne vivrait que sur le PC boutique. |
-| 2 ter | **Porter la chaîne sur le PC boutique** | ⏳ | Les 5 fichiers de `scripts/release/`, la clé publique, le certificat racine. Node est déjà là en v24.13.1, et aucune dépendance n'est à installer : la chaîne n'utilise que des modules internes de Node. |
-| 2 quater | **Installer les outils clients PostgreSQL** | ⏳ **bloquant** | `pg_dump` et `pg_restore` sont **absents** du PC boutique (relevé du 2026-11-09). Sans eux la sauvegarde ne tourne pas du tout : la chaîne exige un export natif et refuse de s'exécuter sans. |
+| 2 ter | Porter la chaîne sur le PC boutique | ✅ **fait le 2026-11-09** | Les 5 fichiers sont dans `C:\Breakery\chaine\`, empreintes vérifiées identiques, et Node charge toute la chaîne. Restent la clé publique et le certificat racine. |
+| 2 quater | Installer les outils clients PostgreSQL | ✅ **fait le 2026-11-09** | `pg_dump` et `pg_restore` **17.6**, alignés sur la production. C'était le blocage principal. |
+| 2 quinquies | Installer `rclone` | ✅ **fait le 2026-11-09** | version 1.76.0. Son **autorisation Google** reste à donner par Mamat (`2 bis`). |
+| 2 sexies | **Porter la clé publique et le certificat racine** | ⏳ | `backup-public.pem` depuis le VPS, et le certificat racine depuis le panneau *Connect* du projet Supabase. |
+| 2 septies | **Écrire `config.json` et `transport.json`** | ⏳ | Les empreintes des binaires s'y font **calculer par la machine**, jamais recopiées à la main. |
 
 **Accès établi le 2026-11-09** : le PC boutique est pilotable par la console
 MeshCentral de la boutique, onglet **Terminal** du nœud `Pos`, avec un shell
