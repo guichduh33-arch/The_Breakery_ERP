@@ -26,6 +26,22 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
+
+Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| BO production | Vercel READY sur `e204d57a` (PR #662) ; à ce SHA, la source appelle les 4 RPC du rattrapage | Source relue, pas le bundle compilé |
+| Sauvegarde | Tâche « Breakery V3 Daily Backup » lancée à la main sur `Pos` à 16 h 42, résultat 0 ; archive de production de 59 830 263 octets et son reçu, listage vérifié | Déchiffrement de cette archive non refait ; déclenchement de 03 h 30 non constaté |
+| Backend | Migration `prod_catchup_cash_import_bank_clearing` appliquée à 17 h 10 ; texte reçu identique au fichier (md5) | — |
+| Backend | 5 fonctions et table `cash_journal_import_rows` : corps, droits et politiques égaux au dev ; `post_v4` et `clearing_v2` retirées | — |
+| API | Les 4 RPC répondent `42501` à un appel anonyme ; `clearing_v2` répond `PGRST202` | Aucun appel authentifié |
+
+Retour préparé hors Git, sous `.release-manifests/s1-02-prod-catchup-20261109/` :
+corps exacts de production des deux versions retirées, empreintes vérifiées.
+
 ## Complément du 29 octobre 2026 — mise en service V3
 
 Statut documentaire : contenu validé par Mamat le 29 octobre 2026.
