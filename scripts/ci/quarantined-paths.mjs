@@ -222,7 +222,8 @@ console.error(`     uniquement dans le tag historique « ${TAG} ». AGENTS.md en
 console.error('     Vérifie les sources vivantes ; ne consulte pas ces contenus historiques.');
 console.error('');
 console.error('  2. Réécris la ligne pour qu\'elle désigne quelque chose de VIVANT :');
-console.error('     docs/adr/ pour une décision, docs/objectifs/ pour une intention,');
+console.error('     docs/adr/ pour une décision, docs/SPECS_OFFICIELS_ERP_POS.md pour un fait');
+console.error('     ou une intention validée,');
 console.error('     le code lui-même pour un fait. Une ligne réécrite sort conforme ET vraie.');
 console.error('');
 console.error('  3. Si la référence est morte sans remplaçant, RETIRE-la. Un pointeur vers');

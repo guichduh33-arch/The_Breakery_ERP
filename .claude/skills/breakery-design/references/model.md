@@ -13,7 +13,8 @@ Sélection : ce skill mène la direction transverse et le back-office. Pour les 
 
 # Breakery Design — direction artistique + ergonomie
 
-> **Re-vérifié le 2026-08-31** contre le code et `docs/objectifs/` : job des 5 surfaces,
+> **Re-vérifié le 2026-08-31** contre le code et les fiches d'objectifs d'alors
+> (archivées le 2026-11-09 ; la cible vivante est `docs/SPECS_OFFICIELS_ERP_POS.md`) : job des 5 surfaces,
 > doctrine or/vert, tokens du thème back-office. Les valeurs de tokens citées ici sont
 > des **repères de lecture** ; la source est `packages/ui/src/tokens/colors.css`, et une
 > valeur qui diverge se corrige contre elle. Les énoncés d'**intention** de direction
@@ -58,7 +59,7 @@ L'esthétique n'est jamais décorative : chaque surface a un **job** et son desi
 - **Pratique** : aucune interaction ; toute l'attention sur total → paiement → merci/monnaie (broadcast `payment_complete`, maintenu le temps de `PAYMENT_COMPLETE_DISPLAY_MS` — lire la constante dans `apps/pos/src/features/display/hooks/useCartBroadcast.ts`, ne jamais graver la durée dans une maquette). Pas de carrousel anxiogène pendant l'encaissement.
 
 ### Tablette de salle — outil SERVEUR (`/tablet`, luxe-dark)
-- **Utilisateur** : un **serveur formé**, debout, en plein service, une main sur la tablette. Ce n'est **pas** une borne self-service : le client n'y touche pas (donner la tablette au client est un item de backlog du module, pas l'existant). Le job de la surface se lit dans `docs/objectifs/TABLET_ORDERING.md`.
+- **Utilisateur** : un **serveur formé**, debout, en plein service, une main sur la tablette. Ce n'est **pas** une borne self-service : le client n'y touche pas (donner la tablette au client est un item de backlog du module, pas l'existant). Le job de la surface se lit dans `docs/SPECS_OFFICIELS_ERP_POS.md` §7.
 - **Job** : transformer un serveur en salle en **noyau mobile du POS** — saisir la commande à la table et l'envoyer en cuisine avant de quitter la table, plutôt que quatre allers-retours au comptoir avec un carnet.
 - **Esthétique** : mêmes tokens que le POS, **volontairement épurée** — la tablette est délibérément plus pauvre que la caisse, pas une caisse rétrécie qu'on aurait le devoir de compléter. Ce qu'elle n'a pas (pas d'encaissement, pas de modifier complexe, pas de promo manuelle, pas de combo) est du design, pas un manque à combler par l'UI.
 - **Pratique** : le **plan de salle** est le point d'entrée du geste (une commande sur place a toujours une table, et c'est par la table qu'on complète une tournée) ; grille produits avec recherche, panier en rail latéral repliable en portrait, bouton d'envoi toujours visible ; cibles tactiles généreuses (≥ 44 px), textes courts.

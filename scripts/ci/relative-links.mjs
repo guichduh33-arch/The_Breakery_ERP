@@ -6,16 +6,31 @@
 // liste à maintenir — là où une liste de noms legacy pourrit dès qu'un
 // nouveau nom apparaît.
 //
-// Elle aurait attrapé les 4 liens morts de docs/README.md et celui de
-// docs/objectifs/PRODUCTION.md, trouvés à la main pendant l'audit.
+// Elle aurait attrapé les 4 liens morts de docs/README.md et celui d'une fiche
+// d'objectifs, trouvés à la main pendant l'audit de 2026-08 — fait daté ; ces
+// fiches ont été archivées le 2026-11-09.
 //
 // PÉRIMÈTRE — inclusion : les .md TRACKÉS. Un fichier supprimé disparaît de
 // lui-même de git ls-files ; rien n'est exclu nommément, aucune zone morte
 // n'est citée.
 //
-// EXEMPTION, une seule : docs/adr/** — un ADR est immuable. Il a le droit de
-// pointer vers un document sorti du dépôt depuis ; la résolution passe par
-//   git show quarantine/2026-07-27:<chemin>
+// EXEMPTIONS, deux :
+//
+//   1. docs/adr/** — un ADR est immuable. Il a le droit de pointer vers un
+//      document sorti du dépôt depuis ; la résolution passe par
+//        git show quarantine/2026-07-27:<chemin>
+//
+//   2. docs/_archive_obsolete/** — documents périmés, déplacés le 2026-11-09,
+//      conservés tels quels pour l'historique. Leurs liens relatifs ont été
+//      écrits depuis leur emplacement d'origine et ne résolvent plus depuis
+//      l'archive. Les corriger reviendrait à réécrire des documents MORTS, ce
+//      que l'archivage interdit : un document archivé se lit comme un fait
+//      daté, pas comme une consigne à jour. L'archive est aussi listée dans
+//      `.claudeignore` pour que les agents ne la lisent plus.
+//
+//      Cette exemption est un PLAFOND, jamais un plancher : elle couvre
+//      l'archive existante, elle n'autorise pas à y pousser de nouveaux
+//      documents pour contourner la garde.
 //
 // Ce qui n'est PAS vérifié, volontairement : les URL absolues (http, https,
 // mailto, tel) — la CI n'a pas à dépendre du réseau, et un lien externe mort
@@ -29,7 +44,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
-const EXEMPT = ['docs/adr/'];
+const EXEMPT = ['docs/adr/', 'docs/_archive_obsolete/'];
 const TAG = 'quarantine/2026-07-27';
 
 const git = (...args) =>
@@ -115,8 +130,9 @@ console.error('');
 console.error('  2. La cible est-elle sortie du dépôt ? Elle vit alors dans le tag :');
 console.error(`       git show ${TAG}:docs/_quarantine/<chemin>`);
 console.error('     Un lien ne peut pas pointer vers le tag. Réécris la ligne pour');
-console.error('     désigner ce qui vit — docs/adr/ pour une décision, docs/objectifs/');
-console.error('     pour une intention, le code pour un fait.');
+console.error('     désigner ce qui vit — docs/adr/ pour une décision,');
+console.error('     docs/SPECS_OFFICIELS_ERP_POS.md pour un fait ou une intention');
+console.error('     validée, le code pour un fait.');
 console.error('');
 console.error('  3. Plus de remplaçant ? RETIRE le lien et garde le texte nu. Un lien');
 console.error('     qui ne mène nulle part vaut moins qu\'une phrase honnête.');

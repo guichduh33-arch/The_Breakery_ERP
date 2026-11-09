@@ -3,7 +3,9 @@
 > **Daté : 2026-07-06** (sources web du jour — cf. bas de page). Protocole refresh dans `SKILL.md` : si ce fichier a > ~6 mois lors d'une décision esthétique structurante, re-vérifier par WebSearch et mettre à jour la date.
 >
 > **Colonne « application Breakery » re-vérifiée le 2026-08-31** contre le code et
-> `docs/objectifs/` : les verdicts de trend n'ont pas bougé, les surfaces qu'ils citent si.
+> les fiches d'objectifs d'alors (archivées le 2026-11-09 ; cible vivante :
+> `docs/SPECS_OFFICIELS_ERP_POS.md`) : les verdicts de trend n'ont pas bougé, les
+> surfaces qu'ils citent si.
 > Un verdict est une **intention** de direction artistique et ne se réaligne pas sur le
 > code ; la surface, la route ou le module qu'il nomme est un **fait** et se corrige.
 

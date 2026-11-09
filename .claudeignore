@@ -1,0 +1,19 @@
+# .claudeignore — zones que les agents ne doivent PAS lire.
+#
+# Ce fichier ne remplace ni `.gitignore` ni la garde CI
+# `scripts/ci/quarantined-paths.mjs`. Il dit seulement : « n'ouvre pas ça ».
+
+# Documentation périmée, archivée le 2026-11-09.
+#
+# Ces documents décrivaient des intentions abandonnées, des plans morts et des
+# faits devenus faux. Les lire ferait croire à un agent que des features
+# existent, ou qu'une règle métier est encore en vigueur. Ils sont conservés —
+# et suivis par git — uniquement pour l'historique.
+#
+# La vérité fonctionnelle vit dans :
+#   AGENTS.md                        la loi du dépôt
+#   docs/adr/                        les décisions, immuables
+#   docs/SPECS_OFFICIELS_ERP_POS.md  la synthèse de ce qui est
+#   docs/audit-2026-11/              le relevé d'audit du 2026-11-09
+#   docs/runbooks/                   les procédures d'exploitation
+docs/_archive_obsolete/

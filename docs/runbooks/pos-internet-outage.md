@@ -129,8 +129,12 @@ le poste boutique pendant cette livraison. Le cas C2 de
   d'envoi lorsque le routage cuisine manque.
 - `apps/pos/vite.config.ts` : configuration de l'application web.
 
-Le scénario de perte de connexion du [guide d'incident](disaster-recovery.md)
-renvoie à cette conduite de caisse. Ses autres scénarios restent historiques
-et exigent une vérification avant action. Les installations et essais datés
+Le guide de reprise après incident qui renvoyait ici a été **archivé le
+2026-11-09** : il prescrivait cinq objets SQL qui n'existent pas. Il n'existe
+donc à ce jour **aucune procédure de reprise vérifiée**, et la restauration n'a
+jamais été éprouvée. Sa réécriture est la tâche `S1-01` de
+[`../audit-2026-11/05_MASTER_PLAN_FINITION.md`](../audit-2026-11/05_MASTER_PLAN_FINITION.md).
+La conduite de caisse ci-dessus reste valable et se suffit à elle-même pour une
+coupure Internet. Les installations et essais datés
 se trouvent dans l'[état des environnements](etat-environnements.md) ; aucune
 de ces procédures ne certifie une recette physique actuelle.

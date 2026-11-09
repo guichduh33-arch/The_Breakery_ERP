@@ -21,7 +21,7 @@ restent obligatoires dans leur périmètre ; ce déplacement ne les rend pas opt
 ## Sources de vérité (pointers)
 
 Hiérarchie de vérité (CLAUDE.md) : **le code et le schéma DB** d'abord, puis `docs/adr/`,
-puis `docs/objectifs/`, puis `docs/product/` + `docs/runbooks/`.
+puis `docs/SPECS_OFFICIELS_ERP_POS.md`, puis `docs/runbooks/`.
 
 ```
 Décisions qui gouvernent ce domaine (immuables)
@@ -35,8 +35,12 @@ Décisions qui gouvernent ce domaine (immuables)
 
 Documentation vivante — les seules arborescences à consulter
   docs/adr/                                              # décisions actées, immuables
-  docs/objectifs/                                        # intention métier (dont INVENTORY, PRODUCTION)
-  docs/product/ · docs/runbooks/                         # opérationnel
+  docs/SPECS_OFFICIELS_ERP_POS.md                        # §8 Stock, inventaire, vitrine
+                                                         # §9 Production et recettes
+  docs/runbooks/                                         # opérationnel, daté
+
+  docs/_archive_obsolete/ est MORTE (archivée le 2026-11-09) : ne pas la lire.
+  Les anciennes fiches INVENTORY / PRODUCTION / docs/product/ y vivent.
 
 Vérité live (à préférer à tout fichier)
   MCP execute_sql : pg_get_functiondef, pg_trigger, cron.job, information_schema

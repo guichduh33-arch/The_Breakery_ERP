@@ -21,6 +21,6 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Les **dérives de la carte des écrans** rencontrées pendant l'audit sont signalées en fin de rapport (chemin annoncé → chemin réel), pour recorrection hors session.
 - Chaque écran du périmètre a un score de maturité et au moins un constat ou un « RAS ».
 - Le rapport est rendu **en conversation**, en entier — aucun fichier créé, aucun chemin annoncé.
-- Le **résidu durable est proposé** (Étape 6) : lignes de backlog + fiche `docs/objectifs/` cible, et le cas échéant la décision qui mérite un ADR.
+- Le **résidu durable est proposé** (Étape 6) : lignes de backlog + section cible de `docs/SPECS_OFFICIELS_ERP_POS.md` et marque (`À LIVRER` si Mamat l'a validé, `OUVERT` sinon), et le cas échéant la décision qui mérite un ADR.
 - Les propositions CAISSE et WAITER sont séparées et au format ticket.
 - Rien dans le rapport n'empiète sur `pos-flow-audit` (plomberie) ou `security-fraud-guard` (RBAC) sans renvoi explicite.

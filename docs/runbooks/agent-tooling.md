@@ -56,8 +56,10 @@ Un worktree inaccessible est signalé comme tel, jamais déclaré propre.
 
 La génération refuse les fichiers miroirs devenus orphelins : leur suppression
 doit être examinée et autorisée, jamais automatique. Le contrôle CI échoue
-sur toute divergence. Les profils de contexte restent des inventaires :
-[recherche ciblée et profils](../context-profiles.md).
+sur toute divergence. Les profils de contexte restent des inventaires : les
+commandes `pnpm context:snapshot:*` les produisent, et leur définition vit dans
+`scripts/agents/context.mjs`. La fiche qui les décrivait a été archivée le
+2026-11-09 ; les commandes, elles, font foi.
 
 ## Preuves de test
 
