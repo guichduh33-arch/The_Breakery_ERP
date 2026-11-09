@@ -24,13 +24,22 @@ bundles, files d'attente de terminaux.
 - la **restauration d'une application** : lister une archive ne prouve pas
   qu'elle se réinjecte dans Supabase.
 
-Chaque résultat porte `recoveryVerified: false`, `cloudCopyVerified: false` et
-`applicationRecoveryVerified: false`. **Ces drapeaux restent faux jusqu'à une
-répétition réelle.** Ne les lisez pas comme un défaut : ils disent la vérité.
+Chaque résultat porte des drapeaux de preuve. **Ne les lisez pas comme des
+défauts : ils disent la vérité.**
 
-**La rétention ne supprime rien.** `retentionReview` signale ce qui dépasse
-trente jours et renvoie toujours `deletionAuthorized: false`. L'espace disque
-croît donc indéfiniment : c'est un choix, la purge reste un geste humain.
+| Drapeau | Devient vrai | Quand |
+|---|---|---|
+| `cloudCopyVerified` | **oui** | après un transfert hors site **relu** depuis le Drive et comparé (étape 7) |
+| `recoveryVerified` | non | reste faux : aucun code ne le passe à vrai |
+| `applicationRecoveryVerified` | non | reste faux : c'est la répétition humaine qui l'établit |
+| `dailyAutomationInstalled` | non | reste faux : le script ne voit pas le planificateur Windows |
+
+**La rétention locale ne supprime rien.** `retentionReview` signale ce qui
+dépasse trente jours et renvoie toujours `deletionAuthorized: false`. L'espace
+disque du PC boutique croît donc indéfiniment : c'est un choix, la purge reste
+un geste humain. La rotation **distante**, elle, peut supprimer — mais seulement
+sur une copie neuve entièrement vérifiée, et elle conserve tout fichier distant
+qu'elle ne reconnaît pas.
 
 ## Le principe de la clé
 
@@ -73,8 +82,8 @@ Copiez **uniquement** `backup-public.pem` vers le PC boutique.
 La chaîne refuse un `pg_dump` ou un `pg_restore` dont l'empreinte ne correspond
 pas à celle déclarée. Relevez-la pour les deux binaires :
 
-```bash
-sha256sum "/chemin/absolu/vers/pg_dump" "/chemin/absolu/vers/pg_restore"
+```powershell
+Get-FileHash -Algorithm SHA256 "C:\chemin\pg_dump.exe", "C:\chemin\pg_restore.exe" | Format-List Path, Hash
 ```
 
 Les deux doivent être des fichiers réguliers, en chemin absolu, jamais des liens
@@ -185,7 +194,63 @@ d'exécution maximum et trois reprises espacées de quinze minutes.
 > [l'état des environnements](etat-environnements.md) — jamais un drapeau de
 > reçu.
 
-### 7. Activer le PITR
+### 7. La copie hors site
+
+**Une archive qui ne vit que sur le PC boutique n'est pas une sauvegarde.** Si ce
+poste brûle ou se fait voler, les données et leur copie partent ensemble.
+
+La chaîne sait transférer vers un Drive privé, via `rclone`, et **vérifie le
+transfert en relisant l'archive** — c'est la seule étape de toute la chaîne qui
+passe un drapeau à `true`.
+
+Le transport se décrit dans un second fichier JSON :
+
+```json
+{
+  "version": 1,
+  "remote": "<nom du remote rclone>",
+  "folderId": "<le dossier approuve, code en dur dans backup-drive.mjs>",
+  "executable": "C:\\chemin\\rclone.exe",
+  "executableSha256": "<64 hex>",
+  "configPath": "C:\\chemin\\rclone.conf"
+}
+```
+
+Contrôles appliqués, qui font tous échouer le transfert :
+
+- `folderId` doit être **exactement** le dossier approuvé inscrit dans
+  `backup-drive.mjs`. Ne pas le recopier d'ici : le lire dans le code.
+- `rclone` est **épinglé** par son empreinte, comme les outils PostgreSQL.
+- Le fichier `rclone.conf` reste **hors du dépôt** — il porte l'authentification.
+  Sa section doit déclarer `type = drive` et `root_folder_id` égal au dossier
+  approuvé. Un *Shared Drive* (`team_drive`), un `shared_with_me = true` ou un
+  `trashed_only = true` sont **refusés**. Une section en double aussi.
+
+Pour que la tâche quotidienne transfère, ajoutez `-DriveConfigPath` à l'appel de
+`prepare-backup-task.ps1` : il insère alors le chemin du transport et le drapeau
+`--upload` dans les arguments de la tâche.
+
+À la main :
+
+```bash
+node scripts/release/backup-drive.mjs /chemin/sortie/breakery-<ref>-<date>.receipt.json /chemin/transport.json --execute
+```
+
+**Sans `--execute`, rien n'est transféré** : vous obtenez le plan, à inspecter.
+
+Après transfert, l'archive est relue depuis le Drive et comparée. Si la
+comparaison réussit, un fichier de preuve séparé est écrit à côté du reçu, avec
+`cloudCopyVerified: true` et l'horodatage de la vérification. **En cas d'échec,
+l'archive locale est préservée.**
+
+La rotation s'exécute ensuite, et ne supprime une copie distante **que** sur une
+copie neuve entièrement vérifiée. Les fichiers distants inconnus sont conservés.
+
+> **Décision en attente.** Le compte Drive, son dossier et le poste qui détient
+> `rclone.conf` ne sont pas établis. Sans copie hors site vérifiée, la chaîne ne
+> protège de rien d'autre qu'une erreur logicielle.
+
+### 8. Activer le PITR
 
 La récupération à un instant donné se règle **dans la console Supabase**, sur le
 projet de production, et elle est facturée. Aucun outil du dépôt ne l'active.
@@ -280,6 +345,10 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | # | Décision | Pourquoi elle bloque |
 |---|---|---|
 | 1 | Où vit `recovery-private.pem` | Sans elle, les archives sont illisibles ; à côté d'elles, le chiffrement ne sert à rien |
-| 2 | Activer le PITR en production | Réglage facturé, console Supabase, aucun outil du dépôt |
-| 3 | Cible de la répétition de restauration | Créer un projet jetable a un coût |
-| 4 | Compte Windows et heure de la tâche | Le script exige un compte nommé ; le choix est d'exploitation |
+| 2 | Compte Drive, dossier et poste détenant `rclone.conf` | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
+| 3 | Activer le PITR en production | Réglage facturé, console Supabase, aucun outil du dépôt |
+| 4 | Cible de la répétition de restauration | Créer un projet jetable a un coût |
+| 5 | Compte Windows et heure de la tâche | Le script exige un compte nommé ; le choix est d'exploitation |
+
+Les décisions **1 et 2** sont les deux qui font la différence entre une
+sauvegarde et un fichier chiffré sans intérêt. Les trois autres peuvent attendre.
