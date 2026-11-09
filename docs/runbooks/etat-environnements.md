@@ -43,6 +43,48 @@ Aucun essai créant une écriture, une commande ou un paiement n'a été effectu
 Retour préparé hors Git, sous `.release-manifests/s1-02-prod-catchup-20261109/` :
 corps exacts de production des deux versions retirées, empreintes vérifiées.
 
+### Même jour — copies du ticket serveur (`S1-22`, PR #670)
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend | Migration `kot_copies_waiter` appliquée en production (version enregistrée `20261109232338`) après fusion de la PR #670 ; texte reçu identique au fichier de `master` (md5) | Additive : rien de retiré, pas de geste de retour nécessaire |
+| Backend | Colonne `business_config.kot_copies_waiter` NOT NULL DEFAULT 1, CHECK 0..5, valeur 1 ; fonction `set_kot_copies_waiter_v1` : corps et droits égaux au dev, `anon` sans EXECUTE ; copies par poste inchangées (1/1/1) | — |
+| API | `set_kot_copies_waiter_v1` répond `42501` à un appel anonyme | Aucun appel authentifié |
+| BO production, avant publication | `e204d57a` (PR #662) : les fusions du jour (#668, #669, #670) n'étaient pas publiées ; la publication est un geste distinct de la fusion | — |
+
+### 10 novembre 2026 — publications et installations
+
+Relevé du 10 novembre 2026 peu après minuit, UTC+8, candidat `a35fd5f5`
+(fusions #668, #669, #670). Preuves de ce SHA : CI `ci.yml` run 42637243405 et
+pgTAP lancé à la main run 42644979774, tous deux réussis.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| BO production | Workflow « Publish Backoffice Production » run 42651670138 réussi, approuvé par Mamat ; `backoffice.the-breakery.com` aliasé sur le déploiement de `a35fd5f5` | — |
+| BO, compte connecté | Settings → Printing affiche la section « Waiter ticket » sans erreur console ; Mamat y a réglé **2** copies à 00 h 16 : ligne d'audit `setting.update` (1 → 2, acteur `mamat`) | Premier appel authentifié réel de `set_kot_copies_waiter_v1` |
+| Tablette Samsung SM-X205 | APK 1.21 / code 22 installée par ADB (`install -r`), signature identique (`100d48b8…`), APK relue sur l'appareil identique à l'APK fabriquée (SHA-256 `c413df1a…`) ; avant : 1.20 / code 21 du 2026-11-08 | Aucune impression ni connexion constatées après mise à jour |
+| CS30 | Même APK 1.21 / code 22, même vérification ; date de première installation conservée (2026-10-08) ; avant : APK identique à celle de la Samsung | Idem |
+| Bundle des APK | Cible production seule (`yjhhhmjgsmyzyymvixot`), aucune référence dev ni V2 ; aucun texte d'interface de la 1.20 absent de la 1.21 | Comparaison de textes, pas de recette fonctionnelle |
+| Paquet PC boutique | Workflow « Package Shop Production » run 42651675723 réussi ; `shop-release.zip`, SHA-256 `1cc5d1ad…` conforme au fichier `.sha256` ; `release.json` : SHA `a35fd5f5`, projet production ; rendu de l'addition et copies du ticket serveur présents | Voir la ligne d'installation ci-dessous |
+| Installation PC boutique `Pos` | Vers 00 h 34, depuis le terminal MeshCentral, par la procédure adaptée « imported-bridge-launcher » (scripts de la livraison du 2026-11-06, seuls SHA attendu et empreinte d'archive changés) : étape *stage* (6 901 fichiers vérifiés), bascule du lanceur, redémarrage de la tâche « Breakery V3 Production », vérification sur les deux origines ; marqueur `CASHIER_RELEASE_VERIFIED_a35fd5f5`, code de sortie 0. Release précédente `ce1d4a39` conservée ; lanceur sauvegardé (`start.cjs.rollback-a35fd5f5…`) | — |
+| Service boutique | `https://pos.the-breakery.com:3001/health` : `ok`, `release_sha` `a35fd5f5` ; page servie : `index-QRgUTh-Z.js`, identique au paquet ; fenêtre du pont : « POS SPA: …\releases\a35fd5f5… », synchronisation de 5 appareils | Rechargement de la page POS de la caisse non confirmé ; aucune impression ni vente constatée |
+
+Le paquet ne s'extrait pas avec `Expand-Archive` (chemins trop longs dans
+`node_modules`) : `tar -xf` l'extrait correctement. L'installeur générique du
+paquet (`install-shop.ps1`) ne reconnaît pas le lanceur actuel, dont les chemins
+sont échappés à la manière de JavaScript : la procédure adaptée reste
+nécessaire tant que l'installeur du dépôt n'est pas corrigé.
+
+Numéro de version des APK : les fabrications antérieures portaient un numéro
+jamais commité (1.20 / code 21 sur les appareils, 1.13 / code 14 au dépôt). La
+1.21 / code 22 est commitée (branche `chore/tablet-apk-1.21`).
+
+APK et paquet conservés hors Git, sous `.release-manifests/tablet-apk-1.21-20261109/`
+(nouvelle APK et ancienne 1.20 relue sur la Samsung) et
+`.release-manifests/shop-release-a35fd5f5-20261110/`. Un retour à la 1.20 sur
+les tablettes exigerait une désinstallation, donc la perte de leurs données :
+l'ancienne APK est une trace, pas un retour prêt à l'emploi.
+
 ## Complément du 29 octobre 2026 — mise en service V3
 
 Statut documentaire : contenu validé par Mamat le 29 octobre 2026.
