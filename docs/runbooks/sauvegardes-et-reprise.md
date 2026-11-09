@@ -110,9 +110,29 @@ clé ci-dessus. Arrêtez et comparez avant de produire des sauvegardes.
 > de plus à surveiller, pas une sauvegarde de la clé. La commande est donc à
 > lancer **par Mamat lui-même**, depuis son poste :
 >
-> ```bash
-> scp root@srv1753453.hstgr.cloud:/root/cles-reprise-breakery/recovery-private.pem <destination-hors-ligne>
+> ```powershell
+> scp root@srv1753453.hstgr.cloud:/root/cles-reprise-breakery/recovery-private.pem "$HOME\recovery-private.pem"
 > ```
+>
+> **Piège, rencontré le 2026-11-09 :** le `scp` de Windows **ne comprend pas
+> `~/`** pour la destination locale — il répond `No such file or directory`.
+> Donner un chemin Windows, ou `$HOME\…` en PowerShell. De façon générale, les
+> commandes de ce runbook qui tournent sur un poste Windows sont en PowerShell ;
+> celles en `bash` s'exécutent sur le VPS ou dans Git Bash.
+>
+> Vérifier que la copie est intacte, **sans jamais ouvrir le fichier** :
+>
+> ```powershell
+> Get-FileHash -Algorithm SHA256 "$HOME\recovery-private.pem" | Format-List Hash
+> ```
+>
+> Comparer à l'empreinte relevée sur le VPS par `sha256sum`. `Get-FileHash`
+> répond en **majuscules** et `sha256sum` en minuscules : la casse ne compte
+> pas. La taille attendue se relève de la même façon des deux côtés.
+>
+> **Ne pas ouvrir le fichier pour copier-coller son texte** : sous Windows, le
+> collage ajoute des retours chariot et casse la clé **en silence**. `scp`
+> transfère les octets tels quels.
 >
 > Destination recommandée : un support chiffré gardé **hors de la boutique**, et
 > une seconde copie dans un gestionnaire de mots de passe. Deux copies au même
