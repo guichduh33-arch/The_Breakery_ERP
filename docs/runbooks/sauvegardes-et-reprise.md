@@ -311,7 +311,51 @@ La chaîne sait transférer vers un Drive privé, via `rclone`, et **vérifie le
 transfert en relisant l'archive** — c'est la seule étape de toute la chaîne qui
 passe un drapeau à `true`.
 
-Le transport se décrit dans un second fichier JSON :
+> **Décision de Mamat, 2026-11-09 : Google Drive, pas le VPS.**
+>
+> Stocker les archives sur le VPS a été envisagé puis écarté : la clé privée y
+> vit déjà, et **une clé posée à côté de l'archive annule le chiffrement** — une
+> seule intrusion donnerait les deux. Drive garde la séparation naturellement,
+> et c'est le seul transport que le code sait faire. Ne pas rouvrir ce point
+> sans traiter d'abord l'emplacement de la clé.
+
+#### Ce qui est déjà vérifié
+
+Relevé du **2026-11-09**, sur le compte Drive de Mamat :
+
+| Contrôle | Résultat |
+|---|---|
+| Le dossier codé en dur dans `backup-drive.mjs` existe | **oui** |
+| Son nom | « Breakery — Sauvegardes privées », créé le 2026-10-16 |
+| Propriétaire | le compte de Mamat |
+| Peut recevoir des fichiers | **oui** |
+| Est-ce un *Shared Drive* ? | **non** — le compte n'en a aucun |
+
+Ce dernier point compte : le transport **refuse** un `team_drive`. Le dossier
+étant dans le Drive personnel, la contrainte est satisfaite sans rien faire.
+
+#### Ce qui reste à faire, sur le PC boutique
+
+**Sur le PC boutique**, pas sur le VPS : c'est là que tourne la tâche
+quotidienne, et `rclone` n'est installé ni sur l'un ni sur l'autre.
+
+1. **Installer `rclone`** et noter le chemin absolu de `rclone.exe`.
+2. **Relever son empreinte**, pour l'épingler :
+
+   ```powershell
+   Get-FileHash -Algorithm SHA256 "C:\chemin\rclone.exe" | Format-List Hash
+   ```
+
+3. **Créer le remote** avec `rclone config` : type `drive`, puis l'autorisation
+   Google dans le navigateur. **Cette autorisation est à donner par Mamat
+   lui-même** — un agent n'accorde pas d'accès OAuth à un compte.
+4. **Ajouter `root_folder_id`** à la section du remote, égal au dossier
+   approuvé. `rclone config` ne le propose pas toujours : éditer `rclone.conf`
+   à la main si besoin.
+5. **Ne jamais mettre `rclone.conf` dans le dépôt** : il porte le jeton
+   d'authentification. Le laisser hors de l'arbre, en lecture restreinte.
+
+Le transport se décrit ensuite dans un second fichier JSON :
 
 ```json
 {
@@ -354,9 +398,13 @@ l'archive locale est préservée.**
 La rotation s'exécute ensuite, et ne supprime une copie distante **que** sur une
 copie neuve entièrement vérifiée. Les fichiers distants inconnus sont conservés.
 
-> **Décision en attente.** Le compte Drive, son dossier et le poste qui détient
-> `rclone.conf` ne sont pas établis. Sans copie hors site vérifiée, la chaîne ne
-> protège de rien d'autre qu'une erreur logicielle.
+> **Décidé** : le compte et le dossier Drive sont établis et vérifiés, et
+> `rclone.conf` vivra sur le **PC boutique**, hors du dépôt.
+>
+> **Reste à faire** : installer `rclone`, donner l'autorisation Google et écrire
+> les deux fichiers. Tant que ce n'est pas fait, **une sauvegarde ne vivrait que
+> sur le PC boutique** : la chaîne ne protégerait alors que d'une erreur
+> logicielle, pas d'un vol ni d'un incendie.
 
 ### 8. Activer le PITR
 
@@ -481,7 +529,8 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 1 bis | **Seconde copie de la clé, hors du VPS** | ✅ **faite le 2026-11-09** | SSD externe détenu par Mamat. Copie **vérifiée conforme** : 2484 octets et empreinte SHA-256 identiques à l'original du VPS. Le support exact n'est pas consigné ici — il est connu de Mamat, et un dépôt n'a pas à décrire où trouver la clé maîtresse. |
 | 1 ter | Chiffrer le support de la seconde copie | ✅ **tranchée le 2026-11-09 : non** | **Limite assumée par Mamat.** Le SSD reste en **exFAT**, sans chiffrement vérifié. Conséquence, écrite pour être connue et non pour être rouverte : ce système de fichiers ne porte **aucune permission**, donc la clé privée y est lisible par quiconque branche le disque — là où elle est en `600` dans un dossier `700` sur le VPS. La protection de cette copie est donc **physique** : elle vaut ce que vaut la garde du support. Ne pas re-signaler ce point comme un défaut. |
 | 1 quater | ~~Retirer la copie du disque principal~~ | ✅ **fait le 2026-11-09** | Contenu écrasé par des octets aléatoires, puis fichier supprimé ; absence confirmée sur le disque et dans la corbeille, après avoir revérifié que la copie du SSD était conforme. **Limite** : sur un disque à mémoire flash, l'écrasement n'atteint pas forcément les blocs d'origine — le contrôleur peut écrire ailleurs. Ce n'est donc pas un effacement sécurisé prouvé. |
-| 2 | Compte Drive, dossier et poste détenant `rclone.conf` | ⏳ | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
+| 2 | Où vont les archives | ✅ **tranchée le 2026-11-09 : Google Drive** | Le VPS a été écarté : la clé privée y vit, et une clé à côté de l'archive annule le chiffrement. Dossier existant et vérifié, aucun *Shared Drive* sur le compte. C'est aussi le seul transport que le code sait faire. |
+| 2 bis | **Installer `rclone` et l'autoriser sur Drive** | ⏳ | Sur le **PC boutique**. L'autorisation Google est à donner par Mamat : un agent n'accorde pas d'accès OAuth. Tant que ce n'est pas fait, une archive ne vivrait que sur le PC boutique. |
 | 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
 | 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
 | 5 | Compte Windows et heure de la tâche | ⏳ | Le script exige un compte nommé ; le choix est d'exploitation |
