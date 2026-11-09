@@ -65,7 +65,15 @@ pgTAP lancé à la main run 42644979774, tous deux réussis.
 | Tablette Samsung SM-X205 | APK 1.21 / code 22 installée par ADB (`install -r`), signature identique (`100d48b8…`), APK relue sur l'appareil identique à l'APK fabriquée (SHA-256 `c413df1a…`) ; avant : 1.20 / code 21 du 2026-11-08 | Aucune impression ni connexion constatées après mise à jour |
 | CS30 | Même APK 1.21 / code 22, même vérification ; date de première installation conservée (2026-10-08) ; avant : APK identique à celle de la Samsung | Idem |
 | Bundle des APK | Cible production seule (`yjhhhmjgsmyzyymvixot`), aucune référence dev ni V2 ; aucun texte d'interface de la 1.20 absent de la 1.21 | Comparaison de textes, pas de recette fonctionnelle |
-| Paquet PC boutique | Workflow « Package Shop Production » run 42651675723 réussi ; `shop-release.zip`, SHA-256 `1cc5d1ad…` conforme au fichier `.sha256` ; `release.json` : SHA `a35fd5f5`, projet production ; rendu de l'addition et copies du ticket serveur présents | **Fabriqué, non installé** sur le PC boutique |
+| Paquet PC boutique | Workflow « Package Shop Production » run 42651675723 réussi ; `shop-release.zip`, SHA-256 `1cc5d1ad…` conforme au fichier `.sha256` ; `release.json` : SHA `a35fd5f5`, projet production ; rendu de l'addition et copies du ticket serveur présents | Voir la ligne d'installation ci-dessous |
+| Installation PC boutique `Pos` | Vers 00 h 34, depuis le terminal MeshCentral, par la procédure adaptée « imported-bridge-launcher » (scripts de la livraison du 2026-11-06, seuls SHA attendu et empreinte d'archive changés) : étape *stage* (6 901 fichiers vérifiés), bascule du lanceur, redémarrage de la tâche « Breakery V3 Production », vérification sur les deux origines ; marqueur `CASHIER_RELEASE_VERIFIED_a35fd5f5`, code de sortie 0. Release précédente `ce1d4a39` conservée ; lanceur sauvegardé (`start.cjs.rollback-a35fd5f5…`) | — |
+| Service boutique | `https://pos.the-breakery.com:3001/health` : `ok`, `release_sha` `a35fd5f5` ; page servie : `index-QRgUTh-Z.js`, identique au paquet ; fenêtre du pont : « POS SPA: …\releases\a35fd5f5… », synchronisation de 5 appareils | Rechargement de la page POS de la caisse non confirmé ; aucune impression ni vente constatée |
+
+Le paquet ne s'extrait pas avec `Expand-Archive` (chemins trop longs dans
+`node_modules`) : `tar -xf` l'extrait correctement. L'installeur générique du
+paquet (`install-shop.ps1`) ne reconnaît pas le lanceur actuel, dont les chemins
+sont échappés à la manière de JavaScript : la procédure adaptée reste
+nécessaire tant que l'installeur du dépôt n'est pas corrigé.
 
 Numéro de version des APK : les fabrications antérieures portaient un numéro
 jamais commité (1.20 / code 21 sur les appareils, 1.13 / code 14 au dépôt). La
