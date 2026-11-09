@@ -470,13 +470,65 @@ la valeur du mot de passe**, pas le fichier.
 > après la création du projet : il ne peut être que **réinitialisé**, depuis
 > *Database → Settings*, ou depuis la boîte *Connect*.
 >
-> **Ce qu'une réinitialisation casse ici : presque rien.** Relevé du
-> 2026-11-09 — un seul endroit du dépôt utilise une chaîne de connexion
-> directe, le script de développement `db:types` dans `package.json`, et
-> `AGENTS.md` prescrit de toute façon de régénérer les types par le connecteur
-> plutôt que par lui. **Aucune application, aucune Edge Function et aucun
-> workflow d'intégration continue** n'emploie de chaîne de connexion
-> Postgres : le POS et le back-office passent par l'API.
+#### Ce qu'une réinitialisation du mot de passe `postgres` affecte
+
+La fenêtre de réinitialisation avertit qu'elle « déconnectera le pooler, les
+réplicas de lecture et toute application encore sur l'ancien mot de passe ».
+Cet avertissement est générique. Vérifié sur la production le **2026-11-09**,
+en deux temps.
+
+**1. Qui est connecté, et sous quel rôle** — relevé sur `pg_stat_activity` :
+
+| Rôle | Ce que c'est | Touché par la remise à zéro ? |
+|---|---|---|
+| `authenticator` ×21 | PostgREST, c'est-à-dire **l'API** dont vivent le POS et le back-office | **non** — identifiants internes Supabase |
+| `supabase_admin` ×7 | Realtime, métriques | **non** |
+| `supabase_storage_admin` | Stockage | **non** |
+| `pgbouncer` ×2 | Supavisor, authentification du pooler | **non** |
+| `postgres` ×1 | l'API de gestion de Supabase elle-même | **non** — la plateforme gère sa propre rotation |
+| `rekana_app` ×1 | l'application de **ressources humaines**, qui partage ce projet Supabase | **non** — **rôle distinct, mot de passe distinct** |
+
+La règle qui rend la réponse simple : la remise à zéro ne change que le mot de
+passe du **rôle `postgres`**. Tous les autres rôles gardent le leur.
+
+**2. Ce qui, dans le dépôt, utiliserait ce mot de passe** :
+
+| Trouvé | Cible réelle |
+|---|---|
+| `db:types` dans `package.json` | script local, **jamais appelé en intégration continue** ; `AGENTS.md` prescrit de passer par le connecteur |
+| `SUPABASE_DB_PASSWORD_STAGING` | le projet **de préproduction**, pas la production |
+| `scripts/release/rehearsal-pgtap.mjs` | le projet **de répétition** : le script refuse tout autre hôte, en dur |
+
+**Conclusion : rien en service ne dépend de ce mot de passe.** Le POS et le
+back-office passent par l'API ; aucune Edge Function et aucun workflow n'emploie
+de chaîne de connexion Postgres.
+
+> Au passage, un rôle temporaire `cli_login_postgres` créé par l'outil en ligne
+> de commande Supabase a **expiré le 2026-11-08** ; il est inerte.
+
+#### Ce projet Supabase n'héberge pas que l'ERP
+
+Constat du **2026-11-09**, confirmé par Mamat : une **application de ressources
+humaines** partage ce projet, et s'y connecte par le pooler sous le rôle
+`rekana_app`. C'est délibéré, et c'est sans effet sur la remise à zéro du mot
+de passe `postgres` — un rôle distinct a un mot de passe distinct.
+
+**Mais cela change le périmètre de la sauvegarde, et il faut le savoir :**
+
+- L'export est un `pg_dump` **sans filtre de schéma**. Il emporte donc **tout ce
+  que le rôle peut lire** — les données de l'ERP **et celles des ressources
+  humaines**. L'archive n'est pas une sauvegarde « de l'ERP », c'est une
+  sauvegarde **du projet**.
+- Les données de ressources humaines sont des **données de personnel**. Qui tient
+  la clé privée de reprise peut les lire. C'est un argument de plus pour la garde
+  du support, et cela mérite d'être pesé si la sauvegarde devait un jour être
+  confiée à un tiers.
+- Une **restauration** ramènerait les deux applications à l'état de l'archive.
+  Restaurer « juste l'ERP » demanderait une restauration sélective, table par
+  table, qui n'est pas la procédure décrite ici.
+
+Aucune de ces trois conséquences n'est un défaut. Elles sont écrites pour qu'on
+ne les découvre pas le jour d'un incident.
 
 #### Les paramètres de connexion font foi, et ils ont été vérifiés
 
