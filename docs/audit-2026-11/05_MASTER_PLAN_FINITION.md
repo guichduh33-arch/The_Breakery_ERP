@@ -34,11 +34,14 @@ projet) avant toute installation de tâche planifiée.
 
 | Sprint | Tâches | Dont 🔴 |
 |---|---|---|
-| Sprint 1 — Stabilisation et ambiguïtés critiques | 20 | 15 |
+| Sprint 1 — Stabilisation et ambiguïtés critiques | 22 | 15 |
 | Sprint 2 — Nettoyage du code abandonné | 13 | 3 |
 | Sprint 3 — Features manquantes validées | 18 | 6 |
 | Sprint 4 — Optimisation et clôture | 11 | 1 |
-| **Total** | **62** | **25** |
+| **Total** | **64** | **25** |
+
+*(Décompte du 2026-11-09, après l'ajout de `S1-21` et `S1-22` sur demande de
+Mamat.)*
 
 ---
 
@@ -85,20 +88,26 @@ ses propres tests, mais **rien ne la déclenche** :
    décision de Mamat : VPS Hostinger, RSA 3072, empreinte de la clé publique
    consignée au runbook. **Aller-retour chiffrer/déchiffrer prouvé avec cette
    paire**, plus trois refus vérifiés (mauvaise référence de projet, mauvaise
-   clé, archive altérée). **Reste à faire par Mamat : une seconde copie de la
-   clé privée hors du VPS** — l'agent ne doit pas la faire, elle transiterait en
-   clair par le journal de conversation.
+   clé, archive altérée). Seconde copie de la clé privée hors du VPS **faite
+   par Mamat le 2026-11-09**, sur un SSD externe, vérifiée conforme à l'original
+   (voir le runbook, décision `1 bis`).
 4. ✅ **Fait le 2026-11-09** — Installer la chaîne sur le PC boutique et
    **produire une première sauvegarde réelle, déchiffrement prouvé** : client
    PostgreSQL 17.6 aligné sur la production, `rclone`, les 5 fichiers, le
    certificat racine, la clé publique, la configuration. Export de 61,7 Mo,
    archive de 56,4 Mo, **déchiffrée avec la clé privée du SSD** et dump restitué
    **identique au bit près**.
-5. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
-   décider).
+5. 🟡 **Installée le 2026-11-09** — Tâche « Breakery V3 Daily Backup » sur le
+   PC boutique, compte `Cashier`, chaque jour à 03 h 30. **Lancée une fois à la
+   main** le même jour à 16 h 42 : résultat 0, archive de production produite.
+   Reste à constater le **déclenchement** de 03 h 30 (contrôle du lendemain,
+   décrit au runbook).
 6. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
    Supabase, aucun outil du dépôt ne le fait).
 7. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
+8. ⏳ **Copie hors site vers Google Drive** (décision de Mamat du 2026-11-09,
+   consignée au runbook). `rclone` est installé ; manque l'autorisation Google,
+   que seul Mamat peut donner.
 
 **Preuve** — La tâche apparaît dans le planificateur Windows. Une sauvegarde du
 jour existe sur disque. Une restauration complète a été menée à son terme sur un
@@ -108,9 +117,9 @@ peut pas constater l'état du planificateur, donc il ne l'annonce pas. Ne pas
 « corriger » ce drapeau ; la preuve d'installation est une observation datée.
 
 **Note** — Une sauvegarde chiffrée dont la clé se perd n'est pas une sauvegarde.
-Cette tâche n'est pas finie tant que l'emplacement de la clé n'est pas écrit. Le
-code refuse déjà de sauvegarder sa propre clé privée ; reste à décider *où* elle
-vit.
+L'emplacement de la clé est **écrit** depuis le 2026-11-09 : VPS Hostinger et SSD
+externe de Mamat (runbook, décisions `1` et `1 bis`). Le code refuse de
+sauvegarder sa propre clé privée.
 
 ---
 
@@ -131,6 +140,10 @@ refusent l'appel anonyme. pgTAP : 345 fichiers verts sur la PR. Les deux écrans
 s'ouvrent sans erreur console pour un compte connecté. **Non exercé** : un appel
 authentifié réel des 4 fonctions, qui exige d'importer un relevé bancaire ou un
 journal de caisse, donc d'écrire en production — premier usage métier à observer.
+Essayé le 2026-11-09 avec le relevé bancaire d'octobre : l'aperçu refusait toutes
+les lignes, la banque écrivant l'année sur deux chiffres. Corrigé par la PR #668,
+fusionnée le même jour ; l'aperçu de ce relevé reste à refaire sur le back-office
+republié.
 
 **Fichiers**
 - `apps/backoffice/src/features/accounting/bank-reconciliation/api.ts` — nomme
@@ -592,6 +605,84 @@ invisibles à tout contrôle, perdues au premier bump.
 **Preuve** — Les 3 ADR sont rédigés, relus en contexte vierge, et référencés
 depuis `../SPECS_OFFICIELS_ERP_POS.md`. Les 3 déclarations en attente sont
 traitées. `node scripts/ci/relative-links.mjs` vert.
+
+---
+
+### `[S1-21]` Imprimer une addition chiffrée avant paiement, sur l'imprimante choisie
+
+**Risque prod** 🟠 — écran et ticket en service, aucune écriture d'argent.
+**Source** — Demande de Mamat du 2026-11-09, **à prioriser** : présenter
+l'addition au client avant qu'il paie. Règle et intention dans
+`../SPECS_OFFICIELS_ERP_POS.md`, section 7.
+
+**Constat** (code de `master`, 2026-11-09)
+- Le bouton d'addition de la caisse choisit l'imprimante **tout seul** : une
+  commande de table ou reprise part sur l'imprimante des serveurs, les autres sur
+  celle de la caisse. Personne ne peut choisir.
+- Les lignes envoyées à l'impression ne portent **aucun prix**. Les totaux
+  (sous-total, taxe, total) sont envoyés, mais le rendu du pont d'impression
+  **ne les imprime pas** : l'addition sort comme un ticket serveur, avec le nom
+  du rôle en titre, et « Table N » ou « Walk-in » à la place d'un numéro de
+  commande.
+- La tablette des serveurs n'a **aucun** bouton d'addition.
+
+**Fichiers**
+- `apps/pos/src/features/cart/hooks/usePrintBill.ts` et `PrintBillButton.tsx` —
+  contenu de l'addition et choix de l'imprimante
+- `apps/print-bridge/src/render/stationTicket.ts` — rendu, qui ignore les prix
+  et les totaux
+- `packages/domain/src/printing/payloads.ts` — format du ticket
+- `apps/pos/src/features/tablet/` — l'addition part **aussi** de la tablette des
+  serveurs (tranché par Mamat le 2026-11-09)
+
+**Travail** — Ajouter le prix de chaque ligne et les totaux à l'addition, avec
+un titre d'addition et la mention qu'elle ne vaut pas reçu. Laisser choisir
+l'imprimante, caisse ou serveurs, au moment d'imprimer. Offrir la même action
+sur la tablette des serveurs. Les montants doivent
+être **ceux que la caisse encaissera** : réutiliser le calcul de ligne du
+domaine, jamais une recomposition locale (garde `line-total-formula`).
+
+**Preuve** — Tests du rendu et du contenu de l'addition. Une addition imprimée
+**sur papier** depuis chacune des deux imprimantes, comparée au total encaissé
+de la même commande.
+
+**Dépend de** — rien.
+
+---
+
+### `[S1-22]` Régler le nombre d'exemplaires du ticket serveur
+
+**Risque prod** 🟠 — ticket en service, aucune écriture d'argent.
+**Source** — Demande de Mamat du 2026-11-09, **à prioriser**. Règle et intention
+dans `../SPECS_OFFICIELS_ERP_POS.md`, section 7.
+
+**Constat** (code de `master`, 2026-11-09) — Le nombre d'exemplaires se règle
+déjà **par poste de préparation** (cuisine, barista, vitrine), dans les réglages
+d'impression du back-office. Le ticket récapitulatif envoyé à l'imprimante des
+serveurs sort, lui, en **un seul exemplaire**, écrit en dur — que la commande
+parte de la tablette ou de la caisse.
+
+**Fichiers**
+- `apps/pos/src/features/tablet/hooks/printTabletTickets.ts` et
+  `apps/pos/src/features/cart/hooks/useFireToStations.ts` — les deux envois de
+  l'exemplaire unique du ticket serveur
+- `apps/pos/src/features/settings/hooks/useKotCopies.ts` — lecture des réglages
+- `apps/backoffice/src/pages/settings/SettingsPrintingPage.tsx` — l'écran de
+  réglage
+- `supabase/migrations/<nouveau>` — une colonne de réglage, sur le modèle des
+  copies par poste, et la version suivante des familles `set_setting` (qui
+  valide chaque clé de copies) et `get_settings` (qui l'expose), bâtie sur leur
+  corps live
+
+**Travail** — Ajouter le réglage, sur le modèle exact des copies par poste
+(valeur par défaut 1, zéro autorisé pour couper le papier : tranché par Mamat
+le 2026-11-09), et
+l'appliquer aux deux envois.
+
+**Preuve** — pgTAP sur la colonne et ses bornes. Tests du nombre de tickets
+émis. Types régénérés. Deux exemplaires constatés **sur papier** après réglage.
+
+**Dépend de** — rien.
 
 ---
 
