@@ -25,14 +25,36 @@ Une ancienne consigne demandant une validation procédurale s’interprète selo
 ```
 1. Le CODE et le SCHÉMA DB        ← ce qui EST. Vérité factuelle.
 2. docs/adr/                      ← ce qui DOIT ÊTRE. Décisions de Mamat, immuables.
-3. docs/objectifs/                ← ce qui est VOULU. Écrit par Mamat.
-4. docs/product/, docs/runbooks/  ← opérationnel.
-5. quarantaine (hors dépôt)       ← MORTE. Sortie de l'arbre (lot Q) : elle vit dans
+3. docs/SPECS_OFFICIELS_ERP_POS.md ← la synthèse : ce qui EST, et ce qui est VOULU
+                                     et validé par Mamat. Chaque énoncé porte sa
+                                     marque (FAIT, RÈGLE, À LIVRER, ABANDONNÉ,
+                                     OUVERT). Un énoncé non marqué n'autorise rien.
+4. docs/runbooks/                 ← opérationnel, daté.
+5. docs/_archive_obsolete/        ← MORTE, mais DANS le dépôt. 43 documents périmés
+                                     archivés le 2026-11-09 : fiches d'objectifs
+                                     décrivant au présent des features inexistantes,
+                                     audits datés, specs livrées. Interdiction de
+                                     lire/citer — c'est une règle de CONDUITE, et
+                                     c'est elle qui tient. Un refus `Read` dans
+                                     `.claude/settings.json` l'épaule sans couvrir
+                                     un grep de shell ; `.claudeignore` ne bloque
+                                     RIEN (sans effet, par conception du client).
+                                     Exemptée de la garde des liens relatifs.
+6. quarantaine (hors dépôt)       ← MORTE. Sortie de l'arbre (lot Q) : elle vit dans
                                      le tag `quarantine/2026-07-27`, pas dans docs/.
                                      Interdiction de lire/citer/grep. La garde CI
                                      `scripts/ci/quarantined-paths.mjs` refuse toute
                                      référence neuve (baseline = plafond, jamais plancher).
 ```
+
+Les anciennes fiches `docs/objectifs/` et `docs/product/` n'existent plus comme
+zones vivantes. Un skill, un agent ou un document qui les cite encore cite
+l'archive : la bonne cible est `docs/SPECS_OFFICIELS_ERP_POS.md`. Ce qu'une
+fiche portait comme **intention non livrée** vit désormais sous la marque
+`À LIVRER`, et le plan d'exécution dans
+`docs/audit-2026-11/05_MASTER_PLAN_FINITION.md`. Le nom de ce dossier est **daté
+à dessein** : le même nom sans date est un chemin **quarantainé** (lot Q) que la
+garde 1 refuse dans tout fichier tracké. Ne pas le « simplifier ».
 
 Si une affirmation **factuelle** d'un document contredit le code ou le schéma,
 **signale l'écart avant toute correction**. Une décision ou une intention non
@@ -80,7 +102,8 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 - **Aucun `Sxx` de plan.** Même test : « planifié pour S28 » est mort et se retire ; un
   identifiant (`DEV-S25-2.A-01`) ou un fait daté (« droppés S56 ») est un nom propre ou un
   événement — on garde.
-- **Aucun composant de code dans une fiche `docs/objectifs/`.** Un identifiant PascalCase y
+- **Aucun composant de code dans un énoncé d'intention** (une ligne `À LIVRER` ou `RÈGLE`
+  de `docs/SPECS_OFFICIELS_ERP_POS.md`). Un identifiant PascalCase y
   est une affirmation sur le code : il pourrit au premier renommage et contraint
   l'implémentation sans y être autorisé. On désigne l'écran, la fonction, le parcours. Les
   **routes** et les **familles de RPC** restent citables ; un **nom de fichier** est un fait.
