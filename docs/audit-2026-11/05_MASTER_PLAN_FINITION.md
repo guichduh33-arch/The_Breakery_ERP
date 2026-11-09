@@ -88,20 +88,26 @@ ses propres tests, mais **rien ne la déclenche** :
    décision de Mamat : VPS Hostinger, RSA 3072, empreinte de la clé publique
    consignée au runbook. **Aller-retour chiffrer/déchiffrer prouvé avec cette
    paire**, plus trois refus vérifiés (mauvaise référence de projet, mauvaise
-   clé, archive altérée). **Reste à faire par Mamat : une seconde copie de la
-   clé privée hors du VPS** — l'agent ne doit pas la faire, elle transiterait en
-   clair par le journal de conversation.
+   clé, archive altérée). Seconde copie de la clé privée hors du VPS **faite
+   par Mamat le 2026-11-09**, sur un SSD externe, vérifiée conforme à l'original
+   (voir le runbook, décision `1 bis`).
 4. ✅ **Fait le 2026-11-09** — Installer la chaîne sur le PC boutique et
    **produire une première sauvegarde réelle, déchiffrement prouvé** : client
    PostgreSQL 17.6 aligné sur la production, `rclone`, les 5 fichiers, le
    certificat racine, la clé publique, la configuration. Export de 61,7 Mo,
    archive de 56,4 Mo, **déchiffrée avec la clé privée du SSD** et dump restitué
    **identique au bit près**.
-5. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
-   décider).
+5. 🟡 **Installée le 2026-11-09** — Tâche « Breakery V3 Daily Backup » sur le
+   PC boutique, compte `Cashier`, chaque jour à 03 h 30. **Lancée une fois à la
+   main** le même jour à 16 h 42 : résultat 0, archive de production produite.
+   Reste à constater le **déclenchement** de 03 h 30 (contrôle du lendemain,
+   décrit au runbook).
 6. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
    Supabase, aucun outil du dépôt ne le fait).
 7. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
+8. ⏳ **Copie hors site vers Google Drive** (décision de Mamat du 2026-11-09,
+   consignée au runbook). `rclone` est installé ; manque l'autorisation Google,
+   que seul Mamat peut donner.
 
 **Preuve** — La tâche apparaît dans le planificateur Windows. Une sauvegarde du
 jour existe sur disque. Une restauration complète a été menée à son terme sur un
@@ -111,9 +117,9 @@ peut pas constater l'état du planificateur, donc il ne l'annonce pas. Ne pas
 « corriger » ce drapeau ; la preuve d'installation est une observation datée.
 
 **Note** — Une sauvegarde chiffrée dont la clé se perd n'est pas une sauvegarde.
-Cette tâche n'est pas finie tant que l'emplacement de la clé n'est pas écrit. Le
-code refuse déjà de sauvegarder sa propre clé privée ; reste à décider *où* elle
-vit.
+L'emplacement de la clé est **écrit** depuis le 2026-11-09 : VPS Hostinger et SSD
+externe de Mamat (runbook, décisions `1` et `1 bis`). Le code refuse de
+sauvegarder sa propre clé privée.
 
 ---
 
@@ -134,6 +140,10 @@ refusent l'appel anonyme. pgTAP : 345 fichiers verts sur la PR. Les deux écrans
 s'ouvrent sans erreur console pour un compte connecté. **Non exercé** : un appel
 authentifié réel des 4 fonctions, qui exige d'importer un relevé bancaire ou un
 journal de caisse, donc d'écrire en production — premier usage métier à observer.
+Essayé le 2026-11-09 avec le relevé bancaire d'octobre : l'aperçu refusait toutes
+les lignes, la banque écrivant l'année sur deux chiffres. Corrigé par la PR #668,
+fusionnée le même jour ; l'aperçu de ce relevé reste à refaire sur le back-office
+republié.
 
 **Fichiers**
 - `apps/backoffice/src/features/accounting/bank-reconciliation/api.ts` — nomme
