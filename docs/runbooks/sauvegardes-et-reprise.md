@@ -84,10 +84,14 @@ clé ci-dessus. Arrêtez et comparez avant de produire des sauvegardes.
 > du VPS. Conformité contrôlée par taille et empreinte SHA-256, sans jamais
 > ouvrir le fichier. Le VPS n'est donc plus un point de défaillance unique.
 >
-> **Deux réserves subsistent**, suivies en `1 ter` au tableau des décisions :
-> le SSD est en **exFAT**, qui ne porte aucune permission — la clé est lisible
-> par quiconque le branche — et son chiffrement n'a pas pu être vérifié. Une
-> copie traîne par ailleurs sur le disque principal du poste, à retirer.
+> **Une réserve subsiste**, suivie en `1 ter` : le SSD est en **exFAT**, qui ne
+> porte aucune permission — la clé y est lisible par quiconque branche le
+> disque — et son chiffrement n'a pas pu être vérifié. Le support doit être
+> chiffré.
+>
+> La copie qui traînait sur le disque principal du poste a été **retirée le
+> 2026-11-09** (`1 quater`), après vérification que la copie du SSD était
+> conforme.
 >
 > ### ⚠️ Pourquoi la copie hors VPS était nécessaire
 >
@@ -474,7 +478,8 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 |---|---|---|---|
 | 1 | Où vit `recovery-private.pem` | ✅ **tranchée le 2026-11-09** | VPS Hostinger, voir la décision plus haut |
 | 1 bis | **Seconde copie de la clé, hors du VPS** | ✅ **faite le 2026-11-09** | SSD externe détenu par Mamat. Copie **vérifiée conforme** : 2484 octets et empreinte SHA-256 identiques à l'original du VPS. Le support exact n'est pas consigné ici — il est connu de Mamat, et un dépôt n'a pas à décrire où trouver la clé maîtresse. |
-| 1 ter | **Chiffrer ce support, et retirer la copie du disque principal** | ⏳ | Le SSD est en **exFAT** : aucune permission de fichier, donc la clé est lisible par quiconque le branche. Son chiffrement n'a pas pu être vérifié (droits administrateur requis). Une copie subsiste aussi sur le disque principal du poste. |
+| 1 ter | **Chiffrer le support de la seconde copie** | ⏳ | Le SSD est en **exFAT** : ce système de fichiers ne porte **aucune permission**, donc la clé est lisible par quiconque branche le disque. Sur le VPS elle est en `600` dans un dossier `700`. Son chiffrement n'a pas pu être vérifié — `Get-BitLockerVolume` exige des droits administrateur, et *non vérifié* ne veut pas dire *non chiffré*. |
+| 1 quater | ~~Retirer la copie du disque principal~~ | ✅ **fait le 2026-11-09** | Contenu écrasé par des octets aléatoires, puis fichier supprimé ; absence confirmée sur le disque et dans la corbeille, après avoir revérifié que la copie du SSD était conforme. **Limite** : sur un disque à mémoire flash, l'écrasement n'atteint pas forcément les blocs d'origine — le contrôleur peut écrire ailleurs. Ce n'est donc pas un effacement sécurisé prouvé. |
 | 2 | Compte Drive, dossier et poste détenant `rclone.conf` | ⏳ | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
 | 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
 | 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
