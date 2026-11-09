@@ -202,13 +202,47 @@ Plus, sur le même poste :
 | `config.json` et `transport.json` | décrits plus bas |
 | un dossier de sortie dédié | ni lien symbolique, ni partagé |
 
-**À vérifier d'abord**, avant tout le reste :
+### Relevé réel du PC boutique — 2026-11-09
 
-```powershell
-node --version
-```
+Fait depuis la console MeshCentral de la boutique, onglet **Terminal** du nœud
+`Pos` (groupe `POS-Caisses`), en lecture seule.
 
-Si Node est absent ou sous 22.12, rien de ce qui suit ne tournera.
+**Identité prouvée avant toute lecture**, comme l'exige `AGENTS.md` :
+
+| | |
+|---|---|
+| Nom d'hôte | `Pos` |
+| Adresse IPv4 | **192.168.1.92** — la même que le hub autorisé dans la configuration réseau Android |
+| Système | Windows 11 Pro 24H2, build 26100 |
+| Shell obtenu | `cmd.exe`, **en Administrateur** |
+
+**État des prérequis :**
+
+| Prérequis | État | Conséquence |
+|---|---|---|
+| Node | **v24.13.1** ✅ | au-dessus du minimum 22.12 |
+| Espace libre sur `C:` | **165 Go** ✅ | large |
+| `pg_dump` | **ABSENT** ❌ | **bloquant** |
+| `pg_restore` | **ABSENT** ❌ | **bloquant** |
+| PostgreSQL (dossier d'installation) | **ABSENT** ❌ | aucun client installé |
+| `rclone` | **ABSENT** ❌ | bloque la copie hors site |
+| Les 5 fichiers de la chaîne | **ABSENTS** ❌ | à porter |
+
+**Ce que ce relevé change.** Sans `pg_dump`, la sauvegarde quotidienne ne peut
+pas tourner **du tout** : la chaîne exige un export natif frais pour le projet
+exact et refuse de s'exécuter sans lui. Trois installations sont donc
+nécessaires sur ce poste — les outils clients PostgreSQL, `rclone`, et les cinq
+fichiers — avant que quoi que ce soit puisse produire une archive.
+
+**Observation faite en passant, hors périmètre de ce runbook :** la console
+signale le **pare-feu Windows désactivé** sur ce poste, et `xampp` y est
+installé. Ni l'un ni l'autre ne concerne les sauvegardes ; c'est noté pour qui
+auditera la sécurité du poste.
+
+> **Avant de refaire ces contrôles** sur un autre poste : commencer toujours par
+> `hostname` et l'adresse IPv4, et les comparer à la cible attendue. Une console
+> de gestion affiche plusieurs machines ; se tromper de nœud et installer sur la
+> mauvaise est une erreur silencieuse.
 
 ## Mise en place
 
@@ -583,7 +617,14 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 1 quater | ~~Retirer la copie du disque principal~~ | ✅ **fait le 2026-11-09** | Contenu écrasé par des octets aléatoires, puis fichier supprimé ; absence confirmée sur le disque et dans la corbeille, après avoir revérifié que la copie du SSD était conforme. **Limite** : sur un disque à mémoire flash, l'écrasement n'atteint pas forcément les blocs d'origine — le contrôleur peut écrire ailleurs. Ce n'est donc pas un effacement sécurisé prouvé. |
 | 2 | Où vont les archives | ✅ **tranchée le 2026-11-09 : Google Drive** | Le VPS a été écarté : la clé privée y vit, et une clé à côté de l'archive annule le chiffrement. Dossier existant et vérifié, aucun *Shared Drive* sur le compte. C'est aussi le seul transport que le code sait faire. |
 | 2 bis | **Installer `rclone` et l'autoriser sur Drive** | ⏳ | Sur le **PC boutique**, qui n'est pas le poste de développement. L'autorisation Google est à donner par Mamat : un agent n'accorde pas d'accès OAuth. Tant que ce n'est pas fait, une archive ne vivrait que sur le PC boutique. |
-| 2 ter | **Porter la chaîne sur le PC boutique** | ⏳ | Les 5 fichiers de `scripts/release/`, Node ≥ 22.12, la clé publique, `pg_dump`/`pg_restore`, le certificat racine. Aucune dépendance à installer : la chaîne n'utilise que des modules internes de Node. **Tout le reste de ce runbook s'exécute là-bas** — un agent travaillant depuis le dépôt ne peut ni le faire ni le vérifier. |
+| 2 ter | **Porter la chaîne sur le PC boutique** | ⏳ | Les 5 fichiers de `scripts/release/`, la clé publique, le certificat racine. Node est déjà là en v24.13.1, et aucune dépendance n'est à installer : la chaîne n'utilise que des modules internes de Node. |
+| 2 quater | **Installer les outils clients PostgreSQL** | ⏳ **bloquant** | `pg_dump` et `pg_restore` sont **absents** du PC boutique (relevé du 2026-11-09). Sans eux la sauvegarde ne tourne pas du tout : la chaîne exige un export natif et refuse de s'exécuter sans. |
+
+**Accès établi le 2026-11-09** : le PC boutique est pilotable par la console
+MeshCentral de la boutique, onglet **Terminal** du nœud `Pos`, avec un shell
+Administrateur. Les installations restantes peuvent donc se faire à distance,
+sans déplacement — mais ce sont des **changements sur une caisse en service**,
+dont le créneau se choisit.
 | 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
 | 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
 | 5 | Compte Windows et heure de la tâche | ⏳ | Le script exige un compte nommé ; le choix est d'exploitation |
