@@ -313,11 +313,44 @@ Get-FileHash -Algorithm SHA256 "C:\chemin\pg_dump.exe", "C:\chemin\pg_restore.ex
 Les deux doivent être des fichiers réguliers, en chemin absolu, jamais des liens
 symboliques.
 
-### 3. Récupérer le certificat racine
+### 3. Récupérer le certificat racine — ✅ fait le 2026-11-09
 
 L'export se connecte en `verify-full` : un certificat racine de confiance est
-**obligatoire**. Téléchargez-le depuis le panneau *Connect* du projet Supabase
-visé, et posez-le en chemin absolu sur le PC boutique.
+**obligatoire**.
+
+Le lien de téléchargement se lit dans le tableau de bord Supabase, page
+**Database → Settings**, bouton *Download certificate*. **Ne pas deviner
+l'URL** : une adresse inventée rend une page HTML que `openssl` refuse, et le
+piège est silencieux si on ne vérifie pas.
+
+Vérifier que le fichier est bien un certificat avant de s'en servir :
+
+```bash
+openssl x509 -in <fichier> -noout -subject -issuer -dates
+```
+
+| Relevé du 2026-11-09 | |
+|---|---|
+| Autorité | `Supabase Root 2021 CA`, Supabase Inc — auto-signée, c'est normal pour une racine |
+| Validité | 2021-04-28 → **2031-04-26** |
+| Déposé sur le PC boutique | `C:\Breakery\cles\supabase-root.crt` |
+
+### 3 bis. Le mode de connexion : **`session`**, pas `direct`
+
+Vérifié le 2026-11-09, et ce n'est pas un détail de confort :
+
+| Point d'entrée | Résultat |
+|---|---|
+| Connexion **directe** `db.<ref>.supabase.co` | **ne résout pas** — ce point d'entrée est en IPv6, et le projet n'a pas l'option IPv4 |
+| **Pooler session**, port 5432 | **fonctionne** : TLS 1.3, certificat du serveur **validé** par la racine ci-dessus |
+
+La configuration doit donc déclarer `connectionMode: "session"`, l'hôte du
+*pooler* de la région, et un utilisateur **suffixé par la référence du projet**.
+C'est exactement ce que la chaîne contrôle en mode session : son hôte attendu
+est celui qui répond.
+
+**Si vous écrivez `direct` par habitude**, le lancement échouera sur un défaut
+de résolution de nom, sans rapport apparent avec la sauvegarde.
 
 ### 4. Écrire le fichier de configuration
 
@@ -650,7 +683,8 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 2 ter | Porter la chaîne sur le PC boutique | ✅ **fait le 2026-11-09** | Les 5 fichiers sont dans `C:\Breakery\chaine\`, empreintes vérifiées identiques, et Node charge toute la chaîne. Restent la clé publique et le certificat racine. |
 | 2 quater | Installer les outils clients PostgreSQL | ✅ **fait le 2026-11-09** | `pg_dump` et `pg_restore` **17.6**, alignés sur la production. C'était le blocage principal. |
 | 2 quinquies | Installer `rclone` | ✅ **fait le 2026-11-09** | version 1.76.0. Son **autorisation Google** reste à donner par Mamat (`2 bis`). |
-| 2 sexies | **Porter la clé publique et le certificat racine** | ⏳ | `backup-public.pem` depuis le VPS, et le certificat racine depuis le panneau *Connect* du projet Supabase. |
+| 2 sexies | Porter le **certificat racine** | ✅ **fait le 2026-11-09** | `C:\Breakery\cles\supabase-root.crt`, vérifié comme un vrai certificat avant dépôt. |
+| 2 septies bis | **Porter `backup-public.pem` sur le PC boutique** | ⏳ **à faire par Mamat** | Le téléversement a été **refusé par un garde-fou** : un fichier `.pem` n'est pas copié sur la seule parole d'un agent, quel que soit son contenu. Le garde ne distingue pas une clé publique d'une clé privée, et c'est voulu. Ce fichier-ci est **public** — il chiffre, il ne déchiffre rien — donc le copier ne présente aucun risque. Le prendre sur le VPS, dans le dossier des clés, et le déposer à côté du certificat. Vérifier ensuite que son empreinte vaut bien celle consignée plus haut. |
 | 2 septies | **Écrire `config.json` et `transport.json`** | ⏳ | Les empreintes des binaires s'y font **calculer par la machine**, jamais recopiées à la main. |
 
 **Accès établi le 2026-11-09** : le PC boutique est pilotable par la console
