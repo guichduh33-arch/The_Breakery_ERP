@@ -88,11 +88,17 @@ ses propres tests, mais **rien ne la déclenche** :
    clé, archive altérée). **Reste à faire par Mamat : une seconde copie de la
    clé privée hors du VPS** — l'agent ne doit pas la faire, elle transiterait en
    clair par le journal de conversation.
-4. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
+4. ✅ **Fait le 2026-11-09** — Installer la chaîne sur le PC boutique et
+   **produire une première sauvegarde réelle, déchiffrement prouvé** : client
+   PostgreSQL 17.6 aligné sur la production, `rclone`, les 5 fichiers, le
+   certificat racine, la clé publique, la configuration. Export de 61,7 Mo,
+   archive de 56,4 Mo, **déchiffrée avec la clé privée du SSD** et dump restitué
+   **identique au bit près**.
+5. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
    décider).
-5. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
+6. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
    Supabase, aucun outil du dépôt ne le fait).
-6. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
+7. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
 
 **Preuve** — La tâche apparaît dans le planificateur Windows. Une sauvegarde du
 jour existe sur disque. Une restauration complète a été menée à son terme sur un

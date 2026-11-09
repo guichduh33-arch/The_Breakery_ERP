@@ -799,9 +799,41 @@ La comparaison des clés a été faite **par dérivation sur le VPS** : la clé 
 n'a jamais quitté la machine ni traversé un outil. Le fichier témoin et l'archive
 d'essai ont été supprimés ; seules les deux clés subsistent.
 
-**Ce que cela ne prouve toujours pas** : ni la connexion à Supabase, ni
-l'export d'une vraie base, ni la réinjection dans un projet. La répétition
-ci-dessous reste entière.
+**Ce que cela ne prouve pas** : la réinjection dans un projet Supabase. La
+répétition ci-dessous reste entière.
+
+### ✅ Première sauvegarde réelle, bout en bout — 2026-11-09
+
+Exécutée depuis le PC boutique, sur la **production**.
+
+| Étape | Résultat |
+|---|---|
+| Connexion au pooler en `verify-full` | **réussie** |
+| Export natif `pg_dump`, format `custom` | **61 722 214 octets** |
+| Durée de l'export | 87 secondes |
+| Archive listée par `pg_restore --list` au moment du dump | **oui** |
+| Archive chiffrée produite | **56,38 Mo** |
+| **Déchiffrement avec la clé privée du SSD** | **réussi** |
+| Empreinte SHA-256 du dump restitué | **identique** à celle attestée dans l'archive |
+| Taille du dump restitué | **identique**, 61 722 214 octets |
+| En-tête du fichier restitué | `PGDMP` — un vrai dump PostgreSQL |
+
+**Ce que cette preuve établit, et qui n'était établi par rien d'autre :** la
+clé publique posée sur le PC boutique et la clé privée gardée sur le SSD
+**fonctionnent ensemble sur une archive réelle**. Les deux copies de la clé ne
+sont plus une hypothèse.
+
+> **Un piège rencontré, à ne pas refaire.** La première comparaison a semblé
+> échouer sur un caractère. L'empreinte « attendue » avait été **recopiée à
+> l'œil depuis une capture d'écran de terminal**, où `c` et `e` se ressemblent.
+> La bonne méthode est celle qui a tranché : l'archive contient sa propre
+> attestation, `database/export-evidence.json`, écrite au moment du dump.
+> **Comparer programme contre programme, jamais contre une lecture visuelle.**
+
+**Données effacées après la vérification.** L'archive téléchargée et son
+contenu déchiffré — qui comprend les données de personnel de l'application de
+ressources humaines — ont été supprimés du poste de développement, absence
+vérifiée. Ils n'avaient de raison d'être que pour cette preuve.
 
 ## Garde-fou avant toute planification
 
@@ -829,8 +861,9 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 2 sexies | Porter le **certificat racine** | ✅ **fait le 2026-11-09** | `C:\Breakery\cles\supabase-root.crt`, vérifié comme un vrai certificat avant dépôt. |
 | 2 septies bis | Porter `backup-public.pem` sur le PC boutique | ✅ **fait le 2026-11-09** | Le téléversement par le gestionnaire de fichiers a été **refusé par un garde-fou** : un `.pem` n'est pas copié sur la seule parole d'un agent, et le garde ne distingue pas une clé publique d'une clé privée. Le fichier a donc été **écrit par le terminal**, puis **prouvé par empreinte** : 625 octets et SHA-256 identiques à l'original du VPS. Renommer le fichier pour contourner le garde aurait été un détournement ; écrire par un autre moyen et prouver le résultat n'en est pas un. |
 | 2 septies | Écrire `config.json` | ✅ **fait le 2026-11-09** | `C:\Breakery\config.json`. Les empreintes des binaires y ont été **injectées par la machine**, jamais recopiées. Vérifié : plus aucun marqueur de remplacement, et tous les champs relus correctement. |
-| 2 octies | Créer `C:\Breakery\cles\pgpass.conf` | ✅ **créé le 2026-11-09**, mais **mot de passe refusé** | Le fichier est **parfaitement formé** : une ligne, cinq champs, bon hôte, pas de BOM, pas d'espace, rien à échapper. La connexion aboutit, le TLS est validé, le fichier est bien lu — seule l'authentification échoue. C'est donc la **valeur** du mot de passe. |
-| 2 nonies | **Obtenir le bon mot de passe de la base** | ⏳ **à faire par Mamat** | Supabase ne l'affiche plus après la création du projet : il faut soit le retrouver là où il a été conservé, soit le **réinitialiser** depuis *Database → Settings*. Une réinitialisation coupe toute connexion directe existante ; les applications du projet passant par l'API, l'impact attendu est nul, mais cela se vérifie avant. Un agent ne doit ni demander ce mot de passe en conversation ni l'écrire. |
+| 2 octies | Créer `C:\Breakery\cles\pgpass.conf` | ✅ **fait le 2026-11-09** | |
+| 2 nonies | Obtenir le bon mot de passe de la base | ✅ **fait le 2026-11-09, par réinitialisation** | Trois valeurs retrouvées ont été refusées, chaque fois avec un fichier parfaitement formé et un adressage confirmé contre le tableau de bord. La réinitialisation a résolu le problème au premier essai. **Leçon : devant trois refus avec une forme correcte, réinitialiser plutôt que chercher une quatrième valeur.** |
+| **—** | **Première sauvegarde réelle, déchiffrement prouvé** | ✅ **2026-11-09** | Voir le relevé plus haut. La chaîne fonctionne de bout en bout. |
 | 2 septies | **Écrire `config.json` et `transport.json`** | ⏳ | Les empreintes des binaires s'y font **calculer par la machine**, jamais recopiées à la main. |
 
 **Accès établi le 2026-11-09** : le PC boutique est pilotable par la console
