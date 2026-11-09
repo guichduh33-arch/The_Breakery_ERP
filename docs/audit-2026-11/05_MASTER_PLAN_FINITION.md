@@ -611,6 +611,12 @@ traitées. `node scripts/ci/relative-links.mjs` vert.
 ### `[S1-21]` Imprimer une addition chiffrée avant paiement, sur l'imprimante choisie
 
 **Risque prod** 🟠 — écran et ticket en service, aucune écriture d'argent.
+
+**État — code fusionné le 2026-11-09** (PR #669), **non installé** : il faut
+reconstruire et déposer le paquet du PC boutique (pont d'impression et POS).
+Tant que le pont n'est pas remplacé, l'addition sort encore sans prix. La preuve
+sur papier reste à faire.
+
 **Source** — Demande de Mamat du 2026-11-09, **à prioriser** : présenter
 l'addition au client avant qu'il paie. Règle et intention dans
 `../SPECS_OFFICIELS_ERP_POS.md`, section 7.
@@ -653,6 +659,12 @@ de la même commande.
 ### `[S1-22]` Régler le nombre d'exemplaires du ticket serveur
 
 **Risque prod** 🟠 — ticket en service, aucune écriture d'argent.
+
+**État — fusionné et base de production à jour le 2026-11-09** (PR #670) :
+colonne et fonction présentes en production, égales au dev. **Non installé**
+côté écrans : le back-office n'est pas republié, et le paquet POS du PC boutique
+n'est pas reconstruit. La preuve sur papier reste à faire.
+
 **Source** — Demande de Mamat du 2026-11-09, **à prioriser**. Règle et intention
 dans `../SPECS_OFFICIELS_ERP_POS.md`, section 7.
 
