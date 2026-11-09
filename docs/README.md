@@ -1,6 +1,6 @@
 # Documentation de The Breakery ERP
 
-Réorganisée le **9 novembre 2026**, à la clôture de l'audit intégral. 41
+Réorganisée le **9 novembre 2026**, à la clôture de l'audit intégral. 43
 documents périmés ont été déplacés dans `_archive_obsolete/` ; ils ne doivent
 plus être lus.
 
@@ -55,6 +55,7 @@ urgente du projet.
 | `adr/` | Décisions arbitrées | Texte **immuable**. Changement d'avis = nouvel ADR qui supersede |
 | `SPECS_OFFICIELS_ERP_POS.md` | Vérité fonctionnelle | Vivant. Se met à jour avec les faits et les décisions |
 | `audit-2026-11/` | Relevé du 2026-11-09 et plan | Meurt à la livraison des 4 sprints (tâche `S4-11`) |
+| `specs/` | Exécution exigée par un ADR | Meurt à la livraison de son chantier. Jamais plus de 3 vivantes |
 | `runbooks/` | Procédures et relevés datés | Vivant, mais une observation datée ne prouve pas l'état courant |
 | `_archive_obsolete/` | Documents périmés | **Mort. Ne pas lire.** |
 
@@ -64,7 +65,7 @@ périmètre.
 
 ## L'archive
 
-`_archive_obsolete/` contient 41 documents déplacés le 2026-11-09 :
+`_archive_obsolete/` contient 43 documents déplacés le 2026-11-09 :
 
 | Contenu | Nombre | Pourquoi |
 |---|---|---|
@@ -75,13 +76,30 @@ périmètre.
 | `runbooks/disaster-recovery.md` | 1 | Prescrit 5 objets SQL qui n'existent pas |
 | `runbooks/context-tools.md` | 1 | Relevés de preuves datés, non revérifiés |
 | `context-profiles.md` | 1 | Les commandes `pnpm context:snapshot:*` font foi |
-| `specs/` | 1 | Chantier livré ; une spec meurt à la livraison |
+
+`docs/specs/006x-lan-device-security.md` **n'est pas archivée** : elle avait été
+déplacée par erreur, puis rendue vivante le 2026-11-09. L'ADR-034 la désigne
+comme sa spécification d'exécution et porte le statut **projet** — le chantier
+n'est donc pas livré, et une spec ne meurt qu'à la livraison du sien. Elle est
+la **seule** spec vivante ; le plafond est de trois.
 
 Ils sont **conservés et suivis par git** : rien n'a été supprimé. Ils sont
-listés dans [`.claudeignore`](../.claudeignore) pour que les agents ne les
-ouvrent plus, et exemptés de la garde CI des liens relatifs — leurs liens ont
-été écrits depuis leur emplacement d'origine et ne résolvent plus. Les corriger
-reviendrait à réécrire des documents morts.
+exemptés de la garde CI des liens relatifs — leurs liens ont été écrits depuis
+leur emplacement d'origine et ne résolvent plus. Les corriger reviendrait à
+réécrire des documents morts.
+
+Trois choses les tiennent fermés, par ordre de solidité :
+
+1. **La règle de conduite** d'[AGENTS.md](../AGENTS.md), hiérarchie de vérité,
+   entrée 5 : interdiction de lire et de citer. C'est elle qui tient vraiment.
+2. **Un refus de lecture** dans `.claude/settings.json`
+   (`Read(./docs/_archive_obsolete/**)`), versionné. Il s'applique aux outils de
+   lecture de fichiers. **Limite** : il ne couvre pas un `grep -r` lancé par le
+   shell sur `docs/`, et le dossier reste listable.
+3. [`.claudeignore`](../.claudeignore), **déclaratif seulement** : la
+   documentation du client énonce qu'un tel fichier est sans effet. Il est gardé
+   parce qu'un lecteur humain y cherche cette intention, pas parce qu'il bloque
+   quoi que ce soit.
 
 **Ne pas réintroduire une ancienne architecture depuis un document archivé.** Ne
 pas citer l'archive comme source. Si un fait n'est nulle part dans les zones

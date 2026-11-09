@@ -25,8 +25,9 @@
 //      écrits depuis leur emplacement d'origine et ne résolvent plus depuis
 //      l'archive. Les corriger reviendrait à réécrire des documents MORTS, ce
 //      que l'archivage interdit : un document archivé se lit comme un fait
-//      daté, pas comme une consigne à jour. L'archive est aussi listée dans
-//      `.claudeignore` pour que les agents ne la lisent plus.
+//      daté, pas comme une consigne à jour. Sa fermeture repose sur la règle
+//      de conduite d'AGENTS.md, épaulée par un refus `Read` dans
+//      `.claude/settings.json` ; `.claudeignore` est déclaratif et ne bloque rien.
 //
 //      Cette exemption est un PLAFOND, jamais un plancher : elle couvre
 //      l'archive existante, elle n'autorise pas à y pousser de nouveaux

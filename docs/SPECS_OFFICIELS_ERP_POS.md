@@ -385,8 +385,23 @@ unique, secret individuel, permissions par sujet, comparaison en temps constant
 plus. TLS obligatoire au démarrage.
 **À LIVRER** — Le runbook de mise en service du hub, dû et jamais écrit.
 
-**FAIT** — Écart connu et non corrigé : la coquille Android autorise encore le
-trafic en clair vers `192.168.1.92`, alors que l'ADR-034 impose HTTPS et WSS.
+**FAIT** — La coquille Android **refuse le trafic en clair par défaut** et
+n'autorise qu'une liste d'hôtes nommés : les trois adresses de développement et
+le seul hub de la boutique. C'est exactement ce que demande l'**ADR-029, ACTÉ**,
+dont la conséquence 1 exige que cette autorisation reste étroite. Le schéma
+`http` de la coquille est ce qui permet au bus LAN en `ws://` de passer : une
+page servie en `https` ne peut pas l'ouvrir.
+
+**RÈGLE** — Le LAN doit passer en HTTPS et WSS (**ADR-034**). Mais cet ADR porte
+le statut **projet**, et il subordonne lui-même sa mise en production à un
+certificat accepté par les terminaux, un compte de service, des ACL système et
+une mise à jour coordonnée des terminaux. Il écrit qu'il n'autorise aucun
+déploiement production ni installation boutique.
+**À LIVRER** — Ce chantier entier, gouverné par l'ADR-034 et sa spécification
+d'exécution `docs/specs/006x-lan-device-security.md`.
+**Ne jamais retirer l'autorisation en clair seule** : la cuisine cesserait de
+recevoir dès la première coupure d'internet, c'est-à-dire la panne même que
+l'ADR-029 corrige.
 
 ---
 

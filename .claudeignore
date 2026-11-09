@@ -1,8 +1,24 @@
-# .claudeignore — zones que les agents ne doivent PAS lire.
+# .claudeignore — DÉCLARATIF SEULEMENT. N'a aucun effet technique.
 #
-# Ce fichier ne remplace ni `.gitignore` ni la garde CI
-# `scripts/ci/quarantined-paths.mjs`. Il dit seulement : « n'ouvre pas ça ».
-
+# À lire avant de s'y fier : la documentation de Claude Code énonce qu'un
+# `.claudeignore` présent dans un projet est SANS EFFET, et que ses entrées
+# doivent vivre dans des règles `Read` de refus. Ce fichier ne bloque donc
+# RIEN par lui-même. Il est conservé parce qu'il est le premier endroit où
+# un lecteur humain cherche cette intention.
+#
+# Les deux mécanismes qui, eux, agissent :
+#
+#   1. `.claude/settings.json` → permissions.deny → `Read(./docs/_archive_obsolete/**)`
+#      C'est le refus réel, versionné, appliqué aux outils de lecture de fichiers.
+#      LIMITE : il ne couvre pas un `grep -r` ou un `find` lancé via le shell sur
+#      `docs/`, et le dossier reste listable. Ce n'est pas une isolation, c'est
+#      un garde-fou d'outillage.
+#
+#   2. `AGENTS.md`, hiérarchie de vérité, entrée 5 : l'interdiction de lire et de
+#      citer l'archive est une règle de CONDUITE. C'est elle qui tient quand la
+#      technique ne tient pas.
+#
+# ---------------------------------------------------------------------------
 # Documentation périmée, archivée le 2026-11-09.
 #
 # Ces documents décrivaient des intentions abandonnées, des plans morts et des
@@ -16,4 +32,5 @@
 #   docs/SPECS_OFFICIELS_ERP_POS.md  la synthèse de ce qui est
 #   docs/audit-2026-11/              le relevé d'audit du 2026-11-09
 #   docs/runbooks/                   les procédures d'exploitation
+#   docs/specs/                      l'exécution exigée par un ADR
 docs/_archive_obsolete/

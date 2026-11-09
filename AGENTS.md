@@ -30,12 +30,16 @@ Une ancienne consigne demandant une validation procédurale s’interprète selo
                                      marque (FAIT, RÈGLE, À LIVRER, ABANDONNÉ,
                                      OUVERT). Un énoncé non marqué n'autorise rien.
 4. docs/runbooks/                 ← opérationnel, daté.
-5. docs/_archive_obsolete/        ← MORTE, mais DANS le dépôt. 41 documents périmés
+5. docs/_archive_obsolete/        ← MORTE, mais DANS le dépôt. 43 documents périmés
                                      archivés le 2026-11-09 : fiches d'objectifs
                                      décrivant au présent des features inexistantes,
                                      audits datés, specs livrées. Interdiction de
-                                     lire/citer. Listée dans `.claudeignore` et
-                                     exemptée de la garde des liens relatifs.
+                                     lire/citer — c'est une règle de CONDUITE, et
+                                     c'est elle qui tient. Un refus `Read` dans
+                                     `.claude/settings.json` l'épaule sans couvrir
+                                     un grep de shell ; `.claudeignore` ne bloque
+                                     RIEN (sans effet, par conception du client).
+                                     Exemptée de la garde des liens relatifs.
 6. quarantaine (hors dépôt)       ← MORTE. Sortie de l'arbre (lot Q) : elle vit dans
                                      le tag `quarantine/2026-07-27`, pas dans docs/.
                                      Interdiction de lire/citer/grep. La garde CI

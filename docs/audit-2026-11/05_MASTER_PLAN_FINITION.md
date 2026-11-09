@@ -56,10 +56,13 @@ urgente du plan.**
 **Source** — Audit 01 §5.5 et 02 lot 9 : aucune tâche planifiée en production,
 PITR désactivé, restauration jamais éprouvée. 11 jours d'argent réel.
 
-**Fichiers**
-- `scripts/backup/` (chaîne existante, chiffrée, testée, non branchée)
-- le script d'installation de tâche Windows du même dossier — il n'enregistre
-  en réalité **aucune** tâche : corriger
+**Fichiers** — la chaîne existe dans `scripts/release/`, chiffrée et couverte par
+ses propres tests, mais **rien ne la déclenche** :
+- `scripts/release/daily-backup.mjs` · `database-backup.mjs` ·
+  `encrypted-backup.mjs` · `shop-config-backup.mjs` · `backup-drive.mjs` ·
+  `backup-retention.mjs`, et leurs `*.test.mjs`
+- `scripts/release/prepare-backup-task.ps1` — le script d'installation de tâche
+  Windows ; il n'enregistre en réalité **aucune** tâche : corriger
 - `docs/runbooks/<nouveau>-reprise-et-sauvegardes.md` — **à écrire de zéro** :
   l'ancien guide prescrivait 5 objets SQL qui n'existent pas et a été archivé le
   2026-11-09. Ne pas le reprendre comme base.
@@ -484,20 +487,45 @@ documentée.
 
 ---
 
-### `[S1-19]` Fermer la faille HTTP en clair de la coquille Android
+### `[S1-19]` ~~Fermer la faille HTTP en clair de la coquille Android~~ — **RETIRÉE**
 
-**Risque prod** 🔴
-**Source** — Audit 01 §5.12. La coquille Capacitor autorise encore le trafic en
-clair vers `192.168.1.92`, alors que l'ADR-034 impose HTTPS et WSS.
+**Cette tâche décrivait un défaut qui n'existe pas.** Retirée le 2026-11-09, à
+l'audit agents précédant l'ouverture de la PR. Conservée ici pour que personne ne
+la réintroduise.
 
-**Fichiers**
-- `apps/pos/android/app/src/main/res/xml/network_security_config.xml`
-- `apps/pos/capacitor.config.ts`
-- `docs/runbooks/tablet-capacitor-build.md` — à mettre à jour
+**Ce que j'avais écrit** — « la coquille Capacitor autorise encore le trafic en
+clair vers `192.168.1.92`, alors que l'ADR-034 impose HTTPS et WSS », classé
+🔴 à corriger en sprint 1.
 
-**Preuve** — Aucune exception de trafic en clair dans la configuration. La
-tablette se connecte au hub en HTTPS et WSS. Un appel en clair est refusé par le
-système.
+**Ce que disent les sources**
+- `apps/pos/android/app/src/main/res/xml/network_security_config.xml` refuse le
+  trafic en clair **par défaut** et n'autorise qu'une **liste d'hôtes nommés** :
+  `localhost`, `127.0.0.1`, `10.0.2.2` (développement) et le seul hub de la
+  boutique. Aucun `cleartextTrafficPermitted="true"` global, aucune plage.
+- `apps/pos/capacitor.config.ts` **ne pose pas** `cleartext` et explique
+  pourquoi : ce réglage est celui du rechargement à chaud et la doc Capacitor le
+  déconseille en production.
+- L'**ADR-029 est ACTÉ** (2026-08-22) et cette autorisation étroite est
+  exactement ce qu'il demande, sa conséquence 1 exigeant qu'elle reste étroite.
+  `androidScheme: 'http'` est là pour que le bus LAN en `ws://` passe : une page
+  servie en `https` ne peut pas l'ouvrir. Le retirer recréerait la panne que
+  l'ADR-029 cite comme argument décisif du passage au natif — **la cuisine ne
+  reçoit plus rien dès qu'internet tombe**.
+- L'**ADR-034 porte le statut « projet, texte à valider »**, et non « acté ». Il
+  prévoit bien HTTPS/WSS sur le LAN, mais subordonne sa mise en production à un
+  certificat accepté par les terminaux, un compte de service, des ACL système et
+  **une mise à jour coordonnée des terminaux**. Il écrit lui-même qu'il
+  n'autorise « aucun déploiement production ni installation boutique ».
+
+**Conclusion** — Il n'y a pas d'écart à corriger, et surtout pas en sprint 1. Le
+passage du LAN en HTTPS/WSS est un **chantier entier**, gouverné par l'ADR-034 et
+sa spécification d'exécution `docs/specs/006x-lan-device-security.md` (vivante).
+Retirer l'autorisation en clair **seule** casserait la cuisine en coupure.
+
+**Leçon** — Un titre d'ADR n'est pas un périmètre, et un ADR en statut *projet*
+n'impose rien. `AGENTS.md` le dit : « On ne déclare pas un ADR applicable sans
+avoir lu son corps. » J'avais opposé l'ADR-034 au code sans lire ni son statut
+ni ses conditions.
 
 ---
 
