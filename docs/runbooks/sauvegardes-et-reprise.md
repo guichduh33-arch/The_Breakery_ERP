@@ -3,7 +3,9 @@
 > Écrit le **2026-11-09** (tâche `S1-01`). Remplace le guide archivé, qui
 > prescrivait cinq objets SQL inexistants.
 >
-> **État au 2026-11-09 : aucune sauvegarde autonome n'est installée, le PITR est
+> **État au 2026-11-09, fin de journée : la tâche quotidienne est installée sur le
+> PC boutique et a réussi une exécution lancée à la main, mais son déclenchement
+> automatique n'est pas encore constaté. Aucune copie hors site, le PITR est
 > désactivé, et aucune restauration n'a jamais été éprouvée.** Ce document donne
 > la procédure ; l'exécuter est un geste à part, dont la preuve se consigne dans
 > [l'état des environnements](etat-environnements.md).
@@ -636,6 +638,16 @@ s'arrêtent en silence.**
 > **La première exécution réelle sera celle de 03h30.** Tant que le contrôle
 > ci-dessous n'est pas fait, l'automatisation est **installée mais non
 > éprouvée**.
+>
+> **Complément du 2026-11-09, 16h42 heure de Lombok.** La tâche a été lancée à
+> la main par `schtasks /run`, depuis le terminal de la console de gestion, avant
+> l'application de la migration `S1-02` en production. `Last Result` : **0**.
+> Elle a produit `breakery-yjhhhmjgsmyzyymvixot-2026-11-09.bkb` (59 830 263
+> octets) et son reçu, dont `projectRef` vaut la production et
+> `archiveListingVerified` vaut `true`. **Ce que cela prouve** : la définition
+> de la tâche, son compte `Cashier` et la chaîne fonctionnent ensemble.
+> **Ce que cela ne prouve pas** : le **déclenchement** de 03h30 ni le
+> déchiffrement de cette archive. Le contrôle du lendemain reste à faire.
 
 #### Le contrôle du lendemain matin
 
@@ -955,7 +967,7 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | ✅ | Paire de clés générée, deux copies, aller-retour chiffrer/déchiffrer prouvé |
 | ✅ | Installation complète sur le PC boutique |
 | ✅ | **Première sauvegarde réelle produite et déchiffrement prouvé** |
-| 🟡 | Tâche quotidienne **installée, jamais exécutée** — voir le contrôle du lendemain |
+| 🟡 | Tâche quotidienne **installée, exécutée une fois à la main le 2026-11-09 (résultat 0)** ; le déclenchement de 03h30 reste à constater — voir le contrôle du lendemain |
 | ⏳ | **Copie hors site vers Drive** — c'est la prochaine étape, et la plus utile |
 | ⏳ | PITR, et répétition d'une restauration dans un projet Supabase |
 

@@ -120,8 +120,20 @@ vit.
 ### `[S1-02]` Livrer les 4 fonctions appelées mais absentes de la production
 
 **Risque prod** 🔴
-**Source** — Audit 01 §5.4. C'est la **seule panne active** : 4 écrans du
-back-office déployé lèvent une erreur serveur dès maintenant.
+**Source** — Audit 01 §5.4. C'est la **seule panne active** : 4 fonctions
+appelées par le back-office déployé manquent en production. *(Correction du
+2026-11-09 : elles servent **deux** écrans, le rapprochement bancaire et l'import
+du journal de caisse, et non quatre.)*
+
+**État — appliqué en production le 2026-11-09** (PR #666). Migration
+`20261109000001_prod_catchup_cash_import_bank_clearing.sql`, appliquée après une
+sauvegarde fraîche de la production prise le même jour. Constaté en production :
+les 5 corps égaux au dev (md5), droits et politiques identiques au dev,
+`post_v4` / `clearing_v2` retirées. Les 4 fonctions sont exposées par l'API et
+refusent l'appel anonyme. pgTAP : 345 fichiers verts sur la PR. Les deux écrans
+s'ouvrent sans erreur console pour un compte connecté. **Non exercé** : un appel
+authentifié réel des 4 fonctions, qui exige d'importer un relevé bancaire ou un
+journal de caisse, donc d'écrire en production — premier usage métier à observer.
 
 **Fichiers**
 - `apps/backoffice/src/features/accounting/bank-reconciliation/api.ts` — nomme
