@@ -39,14 +39,19 @@ ligne : ne pas toucher, demander.
 | Reprendre un chantier et rattacher ses preuves | [Outillage agents et bilans](runbooks/agent-tooling.md) |
 | Retrouver les observations d'environnement | [État des environnements](runbooks/etat-environnements.md) |
 | Préparer une bascule V3 | [Procédure et bilans de bascule](runbooks/production-v3-cutover.md) |
+| **Sauvegarder, ou restaurer après incident** | [Sauvegardes et reprise](runbooks/sauvegardes-et-reprise.md) |
 | Comprendre une coupure Internet en caisse | [Guide de caisse](runbooks/pos-internet-outage.md) |
 | Vérifier un règlement différé et ses sessions | [Règlements différés](runbooks/pos-outstanding-shifts.md) |
 | Fabriquer ou installer la tablette Android | [Guide tablette](runbooks/tablet-capacitor-build.md) |
 
-**Il n'existe à ce jour aucune procédure de reprise après incident vérifiée.**
-Celle qui existait a été archivée : elle prescrivait cinq objets SQL
-inexistants. Sa réécriture est la tâche `S1-01` du master plan, et c'est la plus
-urgente du projet.
+**La procédure de reprise existe depuis le 2026-11-09, mais elle n'est pas
+éprouvée.** Celle d'avant a été archivée — elle prescrivait cinq objets SQL
+inexistants. La nouvelle décrit la chaîne réelle, dont les 24 tests passent.
+
+Deux choses manquent encore, et elles sont la priorité du projet : **aucune
+sauvegarde autonome n'est installée**, et **aucune restauration n'a jamais été
+menée à son terme**. Tant que la seconde n'a pas eu lieu, nous ne savons pas si
+nous pouvons restaurer. Reste de la tâche `S1-01` du master plan.
 
 ## Zones et durée de vie
 

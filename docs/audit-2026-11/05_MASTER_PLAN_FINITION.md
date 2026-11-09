@@ -61,26 +61,56 @@ ses propres tests, mais **rien ne la déclenche** :
 - `scripts/release/daily-backup.mjs` · `database-backup.mjs` ·
   `encrypted-backup.mjs` · `shop-config-backup.mjs` · `backup-drive.mjs` ·
   `backup-retention.mjs`, et leurs `*.test.mjs`
-- `scripts/release/prepare-backup-task.ps1` — le script d'installation de tâche
-  Windows ; il n'enregistre en réalité **aucune** tâche : corriger
+- `scripts/release/prepare-backup-task.ps1` — **aucune correction à faire.** Ce
+  script n'enregistre volontairement aucune tâche : il valide les chemins,
+  construit la définition et la rend en mémoire pour inspection, ce que son
+  en-tête et sa dernière ligne énoncent. L'installation est en deux temps, par
+  `Register-ScheduledTask -InputObject`, documentée dans le runbook. *(Mon
+  relevé initial, « il n'enregistre aucune tâche : corriger », prenait une
+  conception pour un défaut — même erreur que `S1-19`. Corrigé le 2026-11-09.)*
 - `docs/runbooks/<nouveau>-reprise-et-sauvegardes.md` — **à écrire de zéro** :
   l'ancien guide prescrivait 5 objets SQL qui n'existent pas et a été archivé le
   2026-11-09. Ne pas le reprendre comme base.
 - décider et écrire **où vit la clé privée de reprise**
 
 **Travail**
-1. Corriger le script d'installation pour qu'il enregistre vraiment la tâche.
-2. Installer la tâche quotidienne sur le PC boutique.
-3. Activer PITR sur le projet de production.
-4. Écrire le runbook de restauration contre les objets qui **existent**.
-5. **Éprouver une restauration réelle, une fois**, sur un projet jetable.
+1. ✅ **Fait le 2026-11-09** — Écrire le runbook contre les objets qui
+   **existent** : `docs/runbooks/sauvegardes-et-reprise.md`. Aucun changement de
+   code n'a été nécessaire ; la chaîne est complète, c'est la procédure qui
+   manquait.
+2. ✅ **Fait le 2026-11-09** — Prouver la chaîne par ses tests : **24 réussis,
+   0 échec**. Ils couvrent le chiffrement et le format, **pas** la connexion à
+   Supabase ni la restauration d'une application.
+3. ✅ **Fait le 2026-11-09** — Générer la paire de clés de reprise, sur
+   décision de Mamat : VPS Hostinger, RSA 3072, empreinte de la clé publique
+   consignée au runbook. **Aller-retour chiffrer/déchiffrer prouvé avec cette
+   paire**, plus trois refus vérifiés (mauvaise référence de projet, mauvaise
+   clé, archive altérée). **Reste à faire par Mamat : une seconde copie de la
+   clé privée hors du VPS** — l'agent ne doit pas la faire, elle transiterait en
+   clair par le journal de conversation.
+4. ✅ **Fait le 2026-11-09** — Installer la chaîne sur le PC boutique et
+   **produire une première sauvegarde réelle, déchiffrement prouvé** : client
+   PostgreSQL 17.6 aligné sur la production, `rclone`, les 5 fichiers, le
+   certificat racine, la clé publique, la configuration. Export de 61,7 Mo,
+   archive de 56,4 Mo, **déchiffrée avec la clé privée du SSD** et dump restitué
+   **identique au bit près**.
+5. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
+   décider).
+6. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
+   Supabase, aucun outil du dépôt ne le fait).
+7. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
 
 **Preuve** — La tâche apparaît dans le planificateur Windows. Une sauvegarde du
 jour existe sur disque. Une restauration complète a été menée à son terme sur un
 projet jetable, et le relevé est daté dans `docs/runbooks/etat-environnements.md`.
+**Le reçu continuera d'écrire `dailyAutomationInstalled: false`** : le script ne
+peut pas constater l'état du planificateur, donc il ne l'annonce pas. Ne pas
+« corriger » ce drapeau ; la preuve d'installation est une observation datée.
 
 **Note** — Une sauvegarde chiffrée dont la clé se perd n'est pas une sauvegarde.
-Cette tâche n'est pas finie tant que l'emplacement de la clé n'est pas écrit.
+Cette tâche n'est pas finie tant que l'emplacement de la clé n'est pas écrit. Le
+code refuse déjà de sauvegarder sa propre clé privée ; reste à décider *où* elle
+vit.
 
 ---
 
