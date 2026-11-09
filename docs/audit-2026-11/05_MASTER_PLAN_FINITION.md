@@ -610,12 +610,13 @@ l'addition au client avant qu'il paie. Règle et intention dans
 - `apps/print-bridge/src/render/stationTicket.ts` — rendu, qui ignore les prix
   et les totaux
 - `packages/domain/src/printing/payloads.ts` — format du ticket
-- `apps/pos/src/features/tablet/` — seulement si l'addition doit aussi partir de
-  la tablette (**à demander à Mamat**, non tranché)
+- `apps/pos/src/features/tablet/` — l'addition part **aussi** de la tablette des
+  serveurs (tranché par Mamat le 2026-11-09)
 
 **Travail** — Ajouter le prix de chaque ligne et les totaux à l'addition, avec
 un titre d'addition et la mention qu'elle ne vaut pas reçu. Laisser choisir
-l'imprimante, caisse ou serveurs, au moment d'imprimer. Les montants doivent
+l'imprimante, caisse ou serveurs, au moment d'imprimer. Offrir la même action
+sur la tablette des serveurs. Les montants doivent
 être **ceux que la caisse encaissera** : réutiliser le calcul de ligne du
 domaine, jamais une recomposition locale (garde `line-total-formula`).
 

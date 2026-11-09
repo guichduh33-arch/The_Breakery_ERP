@@ -382,7 +382,8 @@ relance pas.
 **RÈGLE** — *(Demande de Mamat, 2026-11-09.)* Avant le paiement, on peut
 imprimer une **addition chiffrée** à présenter au client : le prix de chaque
 ligne et les totaux. Celui qui l'imprime choisit l'imprimante : celle de la
-caisse ou celle des serveurs.
+caisse ou celle des serveurs. Elle s'imprime depuis la caisse **et** depuis la
+tablette des serveurs *(précision de Mamat, 2026-11-09)*.
 **À LIVRER** — Cette addition. Aujourd'hui elle n'affiche aucun prix, et pour
 une commande de table elle sort toujours sur l'imprimante des serveurs.
 
