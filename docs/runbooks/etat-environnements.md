@@ -43,6 +43,15 @@ Aucun essai créant une écriture, une commande ou un paiement n'a été effectu
 Retour préparé hors Git, sous `.release-manifests/s1-02-prod-catchup-20261109/` :
 corps exacts de production des deux versions retirées, empreintes vérifiées.
 
+### Même jour — copies du ticket serveur (`S1-22`, PR #670)
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend | Migration `kot_copies_waiter` appliquée en production (version enregistrée `20261109232338`) après fusion de la PR #670 ; texte reçu identique au fichier de `master` (md5) | Additive : rien de retiré, pas de geste de retour nécessaire |
+| Backend | Colonne `business_config.kot_copies_waiter` NOT NULL DEFAULT 1, CHECK 0..5, valeur 1 ; fonction `set_kot_copies_waiter_v1` : corps et droits égaux au dev, `anon` sans EXECUTE ; copies par poste inchangées (1/1/1) | — |
+| API | `set_kot_copies_waiter_v1` répond `42501` à un appel anonyme | Aucun appel authentifié |
+| BO production | Toujours `e204d57a` (PR #662) : les fusions du jour (#668, #669, #670) **ne sont pas publiées** ; la publication est un geste distinct de la fusion | Rien de neuf à constater côté écran avant publication |
+
 ## Complément du 29 octobre 2026 — mise en service V3
 
 Statut documentaire : contenu validé par Mamat le 29 octobre 2026.
