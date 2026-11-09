@@ -419,6 +419,59 @@ Vous obtenez deux fichiers dans le répertoire de sortie :
 la sortie du jour. Si cela arrive, inspectez ce qui existe avant d'agir — ne
 supprimez rien par réflexe.
 
+#### Quand la sauvegarde échoue : comment diagnostiquer
+
+Le lanceur rend **toujours** le même message, sans détail :
+
+```
+Daily backup failed. Inspect local inputs and existing outputs; no secrets logged.
+```
+
+**C'est voulu** : les messages natifs de PostgreSQL peuvent contenir des
+identifiants, et la chaîne refuse de les journaliser. Ne cherchez pas à la
+rendre bavarde — appelez `pg_dump` **directement**, à la main, avec les mêmes
+variables d'environnement. Lui affiche la vraie erreur :
+
+```powershell
+$env:PGPASSFILE    = "C:\Breakery\cles\pgpass.conf"
+$env:PGSSLMODE     = "verify-full"
+$env:PGSSLROOTCERT = "C:\Breakery\cles\supabase-root.crt"
+& "C:\Breakery\pgsql\bin\pg_dump.exe" --host=<hote> --port=5432 --username=<user> --dbname=postgres --schema-only --no-password -f NUL
+```
+
+Les trois familles d'erreur se distinguent nettement :
+
+| Message | Cause |
+|---|---|
+| `could not translate host name` | le **mode de connexion** — `direct` au lieu de `session` |
+| erreur de certificat ou de vérification | le **certificat racine**, chemin ou contenu |
+| `password authentication failed` | le **mot de passe**, et la connexion elle-même est bonne |
+
+Ce dernier cas est une bonne nouvelle déguisée : il prouve que l'hôte, le port,
+le TLS et le certificat sont corrects.
+
+#### Vérifier la forme du fichier de mot de passe, sans le lire
+
+Avant de soupçonner la valeur, écartez les défauts de forme — ils sont plus
+fréquents. Tout cela se contrôle **sans afficher le mot de passe** :
+
+| Contrôle | Pourquoi |
+|---|---|
+| Un **BOM UTF-8** en tête | trois octets invisibles qui cassent la lecture |
+| Une fin de ligne dans le champ | elle ferait partie du mot de passe |
+| Un espace en début ou fin | idem |
+| Un `:` ou un `\` non échappés | ils découpent la ligne au mauvais endroit |
+| Des caractères non ASCII | source d'encodage ambigu |
+
+Si tous ces contrôles passent et que l'authentification échoue encore, **c'est
+la valeur du mot de passe**, pas le fichier.
+
+> **Le mot de passe de la base ne se consulte pas.** Supabase ne l'affiche plus
+> après la création du projet : il ne peut être que **réinitialisé**, depuis
+> *Database → Settings*. Une réinitialisation **coupe toute connexion directe
+> existante** : vérifier ce qui s'en sert avant, et noter que les applications
+> du projet passent par l'API, pas par une chaîne de connexion Postgres.
+
 ### 6. Installer la tâche quotidienne
 
 `scripts/release/prepare-backup-task.ps1` **n'installe rien, par conception** :
@@ -686,7 +739,8 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 2 sexies | Porter le **certificat racine** | ✅ **fait le 2026-11-09** | `C:\Breakery\cles\supabase-root.crt`, vérifié comme un vrai certificat avant dépôt. |
 | 2 septies bis | Porter `backup-public.pem` sur le PC boutique | ✅ **fait le 2026-11-09** | Le téléversement par le gestionnaire de fichiers a été **refusé par un garde-fou** : un `.pem` n'est pas copié sur la seule parole d'un agent, et le garde ne distingue pas une clé publique d'une clé privée. Le fichier a donc été **écrit par le terminal**, puis **prouvé par empreinte** : 625 octets et SHA-256 identiques à l'original du VPS. Renommer le fichier pour contourner le garde aurait été un détournement ; écrire par un autre moyen et prouver le résultat n'en est pas un. |
 | 2 septies | Écrire `config.json` | ✅ **fait le 2026-11-09** | `C:\Breakery\config.json`. Les empreintes des binaires y ont été **injectées par la machine**, jamais recopiées. Vérifié : plus aucun marqueur de remplacement, et tous les champs relus correctement. |
-| 2 octies | **Créer `C:\Breakery\cles\pgpass.conf`** | ⏳ **à faire par Mamat** | Dernier élément manquant pour une première sauvegarde. Il contient le **mot de passe de la base de production** : un agent ne doit ni le demander en conversation ni l'écrire. Format PostgreSQL : `hote:port:base:utilisateur:motdepasse`, une ligne, avec les valeurs de `config.json`. |
+| 2 octies | Créer `C:\Breakery\cles\pgpass.conf` | ✅ **créé le 2026-11-09**, mais **mot de passe refusé** | Le fichier est **parfaitement formé** : une ligne, cinq champs, bon hôte, pas de BOM, pas d'espace, rien à échapper. La connexion aboutit, le TLS est validé, le fichier est bien lu — seule l'authentification échoue. C'est donc la **valeur** du mot de passe. |
+| 2 nonies | **Obtenir le bon mot de passe de la base** | ⏳ **à faire par Mamat** | Supabase ne l'affiche plus après la création du projet : il faut soit le retrouver là où il a été conservé, soit le **réinitialiser** depuis *Database → Settings*. Une réinitialisation coupe toute connexion directe existante ; les applications du projet passant par l'API, l'impact attendu est nul, mais cela se vérifie avant. Un agent ne doit ni demander ce mot de passe en conversation ni l'écrire. |
 | 2 septies | **Écrire `config.json` et `transport.json`** | ⏳ | Les empreintes des binaires s'y font **calculer par la machine**, jamais recopiées à la main. |
 
 **Accès établi le 2026-11-09** : le PC boutique est pilotable par la console
