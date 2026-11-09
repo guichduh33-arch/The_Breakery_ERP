@@ -68,6 +68,17 @@ describe('bank statement import UI',() => {
     expect(ready).toHaveBeenCalledWith(expect.objectContaining({ opening_balance: '100.00',closing_balance: '1379998.62',
       rows: [expect.objectContaining({ amount: '1379998.62',source_row: 2 })] }));
   });
+  it('validates a bank export whose dates carry a two-digit year once DD/MM is chosen',async () => {
+    mocks.read.mockResolvedValue({ ...file,sheets: [{ ...file.sheets[0]!,rows: [['Date','Description','Amount'],['01/10/26','Opening transfer','250000.00'],['31/10/26','Card settlement','-1379998.62']] }] });
+    render(<BankImportDialog accounts={bankCatalogFixture.bank_accounts} onClose={() => undefined} onReady={() => undefined} />);
+    await fill();
+    expect(screen.getByText(/0 valid rows · 3 issues/)).toBeInTheDocument();
+    expect(screen.getByRole('option',{ name: 'DD/MM/YYYY or DD/MM/YY' })).toBeInTheDocument();
+    expect(screen.getByRole('option',{ name: 'MM/DD/YYYY or MM/DD/YY' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Date format'),{ target: { value: 'dmy' } });
+    expect(screen.getByText(/2 valid rows · 0 issues/)).toBeInTheDocument();
+    expect(screen.getByRole('button',{ name: 'Validate preview' })).toBeEnabled();
+  });
   it('ignores a preview response after the operator changes the mapping',async () => {
     const pending = deferred<{ count: number; total: string; warnings: unknown[]; alreadyImported: boolean; balanceCheck: string }>(); mocks.preview.mockReturnValue(pending.promise);
     render(<BankImportDialog accounts={bankCatalogFixture.bank_accounts} onClose={() => undefined} onReady={() => undefined} />);

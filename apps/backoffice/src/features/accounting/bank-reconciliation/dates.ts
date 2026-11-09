@@ -13,9 +13,15 @@ export function bankDate(raw: unknown, style: 'iso' | 'dmy' | 'mdy', date1904 = 
   const iso=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if(iso){y=Number(iso[1]);m=Number(iso[2]);d=Number(iso[3]);}
   else {
-   const local=/^(\d{1,2})([/.\-])(\d{1,2})\2(\d{4})$/.exec(value);
+   // Année sur 4 chiffres, ou sur 2 chiffres comme dans l'export de la banque
+   // (`01/10/26`). Règle de siècle unique et fixe : YY = 20YY, jamais de pivot
+   // glissant. Un relevé du siècle précédent n'existe pas ici ; un mauvais siècle
+   // serait de toute façon refusé par le contrôle de période de l'import.
+   // Toute autre longueur d'année (1 ou 3 chiffres) est refusée, pas devinée.
+   const local=/^(\d{1,2})([/.\-])(\d{1,2})\2(\d{2}|\d{4})$/.exec(value);
    if(!local || style==="iso") throw new Error("Date does not match the selected format.");
-   y=Number(local[4]);m=Number(style==="dmy"?local[3]:local[1]);d=Number(style==="dmy"?local[1]:local[3]);
+   const year=local[4] ?? "";
+   y=year.length===2 ? 2000+Number(year) : Number(year);m=Number(style==="dmy"?local[3]:local[1]);d=Number(style==="dmy"?local[1]:local[3]);
   }
  } else throw new Error("A date is required.");
  if(!Number.isInteger(y)||y<1900||y>9999||!Number.isInteger(m)||!Number.isInteger(d)) throw new Error("Invalid date.");
