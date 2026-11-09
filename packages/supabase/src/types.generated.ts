@@ -1305,6 +1305,7 @@ export type Database = {
           kot_copies_barista: number
           kot_copies_display: number
           kot_copies_kitchen: number
+          kot_copies_waiter: number
           logo_url: string | null
           name: string
           npwp: string | null
@@ -1350,6 +1351,7 @@ export type Database = {
           kot_copies_barista?: number
           kot_copies_display?: number
           kot_copies_kitchen?: number
+          kot_copies_waiter?: number
           logo_url?: string | null
           name?: string
           npwp?: string | null
@@ -1395,6 +1397,7 @@ export type Database = {
           kot_copies_barista?: number
           kot_copies_display?: number
           kot_copies_kitchen?: number
+          kot_copies_waiter?: number
           logo_url?: string | null
           name?: string
           npwp?: string | null
@@ -8763,6 +8766,10 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           total: number
         }[]
+      }
+      set_kot_copies_waiter_v1: {
+        Args: { p_copies: number }
+        Returns: undefined
       }
       set_opname_count_v3: {
         Args: {

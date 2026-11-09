@@ -451,8 +451,10 @@ export function useFireToStations(): UseFireToStationsResult {
       // Spec B-1 Ph1 Bloc 1.4 — un ticket waiter consolidé par fire (best
       // effort, comme les KOT station). Récapitule TOUS les items non annulés
       // (y compris dispatch 'none') pour la distribution table + take-away.
+      // S1-22 — nombre de copies réglable ; 0 = pas de ticket serveur papier.
       const waiterPrinter = printersMap?.get('waiter');
-      if (waiterPrinter) {
+      const waiterCopies = kotCopies.waiter ?? 1;
+      if (waiterPrinter && waiterCopies > 0) {
         const waiterItems = unprinted
           .filter((i) => !i.is_cancelled)
           .map((item) => ({
@@ -472,7 +474,7 @@ export function useFireToStations(): UseFireToStationsResult {
             ...(isAdditional ? { additional: true } : {}),
           };
           // Best effort : un échec n'affecte ni la commande ni les results KOT.
-          await runPrintJob(waiterPayload, waiterPrinter);
+          await runPrintJob(waiterPayload, waiterPrinter, waiterCopies);
         }
       }
 

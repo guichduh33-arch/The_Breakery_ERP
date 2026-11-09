@@ -44,7 +44,7 @@ export async function printTabletTickets(qc: QueryClient, cart: TabletCart, clie
     // Un récapitulatif par envoi, indépendant des copies de préparation.
     const waiterItems = cart.items.filter((item) => !item.is_cancelled);
     if (printers.has('waiter') && waiterItems.length > 0) {
-      results.push(await print('waiter', waiterItems, 1));
+      results.push(await print('waiter', waiterItems, copies.waiter ?? 1));
     }
     return results.every(Boolean) || failed('Check the saved print job in Printing');
   } catch { return failed(stage); }
