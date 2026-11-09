@@ -1,0 +1,285 @@
+# Sauvegardes et reprise
+
+> Écrit le **2026-11-09** (tâche `S1-01`). Remplace le guide archivé, qui
+> prescrivait cinq objets SQL inexistants.
+>
+> **État au 2026-11-09 : aucune sauvegarde autonome n'est installée, le PITR est
+> désactivé, et aucune restauration n'a jamais été éprouvée.** Ce document donne
+> la procédure ; l'exécuter est un geste à part, dont la preuve se consigne dans
+> [l'état des environnements](etat-environnements.md).
+
+## Ce que cette chaîne fait, et ne fait pas
+
+Le dépôt porte une chaîne de sauvegarde **chiffrée et testée** dans
+`scripts/release/`. Elle produit une archive locale `.bkb` et un reçu JSON.
+
+**Elle couvre** l'export logique de la base (format `custom` de PostgreSQL),
+plus tout fichier que vous lui désignez explicitement : configuration boutique,
+bundles, files d'attente de terminaux.
+
+**Elle ne couvre pas**, et le code le déclare lui-même dans chaque reçu :
+
+- les **rôles de cluster** et la configuration de plateforme Supabase ;
+- les **octets des objets de stockage** — un export séparé est nécessaire ;
+- la **restauration d'une application** : lister une archive ne prouve pas
+  qu'elle se réinjecte dans Supabase.
+
+Chaque résultat porte `recoveryVerified: false`, `cloudCopyVerified: false` et
+`applicationRecoveryVerified: false`. **Ces drapeaux restent faux jusqu'à une
+répétition réelle.** Ne les lisez pas comme un défaut : ils disent la vérité.
+
+**La rétention ne supprime rien.** `retentionReview` signale ce qui dépasse
+trente jours et renvoie toujours `deletionAuthorized: false`. L'espace disque
+croît donc indéfiniment : c'est un choix, la purge reste un geste humain.
+
+## Le principe de la clé
+
+Deux clés RSA 3072 sont générées ensemble :
+
+| Fichier | Où il vit | Rôle |
+|---|---|---|
+| `backup-public.pem` | **sur le PC boutique** | chiffre les sauvegardes |
+| `recovery-private.pem` | **jamais sur le PC boutique** | déchiffre, donc restaure |
+
+Ce n'est pas une recommandation : la chaîne **refuse** de sauvegarder sa propre
+clé privée si elle la rencontre dans une source. Elle inspecte le contenu de
+chaque fichier contenant un bloc de clé privée et compare la clé publique
+dérivée à son destinataire.
+
+> **Décision en attente.** *Où* vit `recovery-private.pem` n'est pas tranché.
+> Une sauvegarde chiffrée dont la clé se perd **n'est pas une sauvegarde**, et
+> une clé posée à côté de l'archive annule le chiffrement. Cette décision
+> appartient à Mamat et doit être écrite ici avant que la chaîne compte comme
+> installée.
+
+## Mise en place
+
+### 1. Générer les clés, sur la machine de récupération
+
+**Pas sur le PC boutique.** Le répertoire cible ne doit pas exister.
+
+```bash
+node scripts/release/encrypted-backup.mjs keys /chemin/absolu/vers/cles-reprise
+```
+
+Le répertoire est créé en `0700`, les deux fichiers en `0600`. La commande
+renvoie l'empreinte SHA-256 de la clé publique : **notez-la**, elle permet de
+vérifier plus tard que le PC boutique porte bien la bonne.
+
+Copiez **uniquement** `backup-public.pem` vers le PC boutique.
+
+### 2. Épingler les outils natifs
+
+La chaîne refuse un `pg_dump` ou un `pg_restore` dont l'empreinte ne correspond
+pas à celle déclarée. Relevez-la pour les deux binaires :
+
+```bash
+sha256sum "/chemin/absolu/vers/pg_dump" "/chemin/absolu/vers/pg_restore"
+```
+
+Les deux doivent être des fichiers réguliers, en chemin absolu, jamais des liens
+symboliques.
+
+### 3. Récupérer le certificat racine
+
+L'export se connecte en `verify-full` : un certificat racine de confiance est
+**obligatoire**. Téléchargez-le depuis le panneau *Connect* du projet Supabase
+visé, et posez-le en chemin absolu sur le PC boutique.
+
+### 4. Écrire le fichier de configuration
+
+Un seul fichier JSON décrit la cible et ce qui est couvert. Toutes les valeurs
+ci-dessous sont **contrôlées par le code** : une faute fait échouer le lancement
+sans rien écrire.
+
+```json
+{
+  "version": 1,
+  "projectRef": "<20 caracteres minuscules ou chiffres>",
+  "retentionDays": 30,
+  "coverage": {
+    "database": "provided",
+    "storage": "missing",
+    "shop-config": "provided",
+    "bundles": "missing",
+    "terminal-outboxes": "missing"
+  },
+  "sources": [
+    { "name": "shop-config", "area": "shop-config", "path": "/chemin/absolu" }
+  ],
+  "database": {
+    "version": 1,
+    "projectRef": "<le meme que ci-dessus>",
+    "connectionMode": "direct",
+    "host": "db.<projectRef>.supabase.co",
+    "port": 5432,
+    "database": "postgres",
+    "user": "<utilisateur>",
+    "passwordFile": "/chemin/absolu/vers/pgpass",
+    "rootCertificate": "/chemin/absolu/vers/root.crt",
+    "pgDump":    { "path": "/chemin/absolu/vers/pg_dump",    "sha256": "<64 hex>" },
+    "pgRestore": { "path": "/chemin/absolu/vers/pg_restore", "sha256": "<64 hex>" }
+  }
+}
+```
+
+Points qui font échouer le plus souvent :
+
+- `retentionDays` doit valoir **exactement 30**.
+- `database.projectRef` doit être **identique** à `projectRef`. C'est le
+  garde-fou qui empêche de sauvegarder dev en croyant sauvegarder la production.
+- Toute zone déclarée `provided` exige une source correspondante — **sauf
+  `database`**, que l'export natif couvre à lui seul. N'écrivez jamais de source
+  de zone `database` : le lancement quotidien la refuse.
+- Chaque `path` de source doit être **absolu** et exister.
+- `connectionMode` vaut `direct` (hôte `db.<ref>.supabase.co`, utilisateur
+  simple) ou `session` (hôte du *pooler*, utilisateur suffixé `.<projectRef>`).
+- Un accès temporaire éventuel se configure **ailleurs** : `temporaryAccess` ne
+  fait que le déclarer, la chaîne ne l'active jamais.
+
+### 5. Faire une sauvegarde à la main, une fois
+
+Avant toute planification. Le répertoire de sortie doit exister, être un vrai
+répertoire dédié, et ne pas être un lien symbolique.
+
+```bash
+node scripts/release/daily-backup.mjs /chemin/config.json /chemin/backup-public.pem /chemin/sortie
+```
+
+Vous obtenez deux fichiers dans le répertoire de sortie :
+`breakery-<projectRef>-<AAAA-MM-JJ>.bkb` et le reçu `.receipt.json`.
+
+**Une relance le même jour échoue volontairement** : la chaîne refuse d'écraser
+la sortie du jour. Si cela arrive, inspectez ce qui existe avant d'agir — ne
+supprimez rien par réflexe.
+
+### 6. Installer la tâche quotidienne
+
+`scripts/release/prepare-backup-task.ps1` **n'installe rien, par conception** :
+il valide les chemins, construit une définition de tâche et vous la rend en
+mémoire pour inspection. Son en-tête et sa dernière ligne le disent. Ce n'est
+pas un défaut — c'est ce qui vous laisse relire le compte, l'heure et les
+chemins avant qu'une tâche existe.
+
+L'installation est donc en deux temps. D'abord, inspecter :
+
+```powershell
+$tache = & scripts\release\prepare-backup-task.ps1 -NodeExecutable "C:\chemin\node.exe" -DailyScript "C:\chemin\daily-backup.mjs" -ConfigPath "C:\chemin\config.json" -PublicKeyPath "C:\chemin\backup-public.pem" -OutputDirectory "C:\chemin\sortie" -WindowsAccount "DOMAINE\compte" -DailyTime "03:30"
+```
+
+Relisez `$tache.Actions`, `$tache.Triggers` et `$tache.Principal`. **Puis**
+seulement, enregistrer :
+
+```powershell
+Register-ScheduledTask -TaskName "Breakery-Sauvegarde-Quotidienne" -InputObject $tache
+```
+
+La définition tourne sous le compte nommé, au niveau de privilège **limité**,
+avec rattrapage si le poste était éteint, une instance à la fois, une heure
+d'exécution maximum et trois reprises espacées de quinze minutes.
+
+> Le reçu continuera d'écrire `dailyAutomationInstalled: false`. **C'est
+> correct** : le script ne peut pas vérifier l'état du planificateur Windows, et
+> il n'annonce donc pas une installation qu'il ne constate pas. La preuve de
+> l'installation est une observation datée, à consigner dans
+> [l'état des environnements](etat-environnements.md) — jamais un drapeau de
+> reçu.
+
+### 7. Activer le PITR
+
+La récupération à un instant donné se règle **dans la console Supabase**, sur le
+projet de production, et elle est facturée. Aucun outil du dépôt ne l'active.
+
+> **Décision en attente.** L'activation du PITR et son coût appartiennent à
+> Mamat. Au 2026-11-09, il est **désactivé** : seule la sauvegarde physique
+> quotidienne de Supabase existe côté plateforme.
+
+## Restaurer
+
+Le déchiffrement exige la clé privée **et** la référence exacte du projet
+d'origine : une archive de dev ne se restaure pas en annonçant la production.
+
+```bash
+node scripts/release/encrypted-backup.mjs restore /chemin/archive.bkb /chemin/recovery-private.pem /chemin/nouveau-repertoire <projectRef>
+```
+
+Le répertoire de destination **ne doit pas exister**. La commande n'écrit rien
+avant d'avoir tout authentifié : magie d'en-tête, enveloppe de clé, intégrité
+AES-GCM, et l'empreinte SHA-256 de **chaque** fichier. Une archive tronquée ou
+altérée ne produit aucune extraction.
+
+Vous obtenez un arbre de fichiers isolé, en `0700`/`0600`, contenant notamment
+`database/database.dump` (format `custom`) et `database/export-evidence.json`.
+
+**Si la restauration échoue en cours d'écriture, rien n'est effacé
+automatiquement.** Conservez le répertoire et diagnostiquez : c'est une pièce.
+
+### Ce que « restaurer » ne veut pas dire ici
+
+Vous avez récupéré **des fichiers**. Réinjecter `database.dump` dans un projet
+Supabase est une **étape suivante, non éprouvée à ce jour**, qui utilise
+`pg_restore` et dépend des rôles du projet cible. Le résultat porte
+`scope: 'isolated-files-only'` et `applicationRecoveryVerified: false`
+précisément pour empêcher de confondre les deux.
+
+## La répétition, qui reste à faire
+
+Tant qu'elle n'a pas eu lieu, **nous ne savons pas si nous pouvons restaurer**.
+
+1. Créer un projet Supabase jetable.
+2. Restaurer l'archive la plus récente avec la commande ci-dessus.
+3. Réinjecter `database/database.dump` dans le projet jetable avec le
+   `pg_restore` épinglé.
+4. Vérifier des faits métier simples et comptables : nombre de commandes,
+   somme des règlements, zéro écriture déséquilibrée.
+5. Consigner la date, la cible, l'empreinte de l'archive et le résultat dans
+   [l'état des environnements](etat-environnements.md).
+6. Détruire le projet jetable.
+
+> **Décision en attente.** Créer un projet jetable a un coût. La cible de la
+> répétition appartient à Mamat.
+
+## Preuves de la chaîne, au 2026-11-09
+
+Tests unitaires exécutés sur la branche `fix/s1-01-sauvegardes` :
+
+| Fichier | Tests |
+|---|---|
+| `encrypted-backup.test.mjs` | 9 |
+| `backup-drive.test.mjs` | 8 |
+| `database-backup.test.mjs` | 4 |
+| `shop-config-backup.test.mjs` | 2 |
+| `daily-backup.test.mjs` | 1 |
+| **Total** | **24 réussis, 0 échec** |
+
+Ils couvrent la récupération exacte d'un binaire, le refus d'une archive
+altérée ou tronquée, le refus d'un base64 non canonique, le refus d'une mauvaise
+clé, le refus d'un nom ambigu sous Windows, le refus d'une jonction de source,
+le refus de sauvegarder la clé privée, et le fait que trente ans de rétention ne
+déclenchent jamais une suppression.
+
+**`backup-retention.mjs` n'a aucun test.** Sa seule fonction publique ne
+supprimant rien, le risque est faible ; c'est noté, pas corrigé.
+
+Ces tests prouvent le **chiffrement et le format**. Ils n'utilisent qu'un faux
+outil natif et un faux dump : **ils ne prouvent ni la connexion à Supabase, ni
+la restauration d'une application.**
+
+## Garde-fou avant toute planification
+
+Trois migrations du dépôt planifient des tâches dont l'adresse de projet est
+**écrite en dur sur le projet de développement**. Elles sont inertes uniquement
+parce qu'aucune tâche n'est installée en production.
+
+**Ne planifiez rien côté base avant la tâche `S1-14`** du
+[master plan](../audit-2026-11/05_MASTER_PLAN_FINITION.md). La tâche Windows
+décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
+
+## Ce qui reste à décider
+
+| # | Décision | Pourquoi elle bloque |
+|---|---|---|
+| 1 | Où vit `recovery-private.pem` | Sans elle, les archives sont illisibles ; à côté d'elles, le chiffrement ne sert à rien |
+| 2 | Activer le PITR en production | Réglage facturé, console Supabase, aucun outil du dépôt |
+| 3 | Cible de la répétition de restauration | Créer un projet jetable a un coût |
+| 4 | Compte Windows et heure de la tâche | Le script exige un compte nommé ; le choix est d'exploitation |

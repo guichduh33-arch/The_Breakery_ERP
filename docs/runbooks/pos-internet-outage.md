@@ -130,11 +130,11 @@ le poste boutique pendant cette livraison. Le cas C2 de
 - `apps/pos/vite.config.ts` : configuration de l'application web.
 
 Le guide de reprise après incident qui renvoyait ici a été **archivé le
-2026-11-09** : il prescrivait cinq objets SQL qui n'existent pas. Il n'existe
-donc à ce jour **aucune procédure de reprise vérifiée**, et la restauration n'a
-jamais été éprouvée. Sa réécriture est la tâche `S1-01` de
-[`../audit-2026-11/05_MASTER_PLAN_FINITION.md`](../audit-2026-11/05_MASTER_PLAN_FINITION.md).
+2026-11-09** : il prescrivait cinq objets SQL qui n'existent pas. Il est remplacé
+par [sauvegardes et reprise](sauvegardes-et-reprise.md), écrit le même jour
+contre la chaîne réelle. **Attention** : cette procédure n'a **jamais été
+éprouvée**, aucune sauvegarde autonome n'est installée et le PITR est désactivé.
 La conduite de caisse ci-dessus reste valable et se suffit à elle-même pour une
-coupure Internet. Les installations et essais datés
+coupure Internet — elle ne dépend d'aucune sauvegarde. Les installations et essais datés
 se trouvent dans l'[état des environnements](etat-environnements.md) ; aucune
 de ces procédures ne certifie une recette physique actuelle.
