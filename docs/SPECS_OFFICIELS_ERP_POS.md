@@ -389,7 +389,8 @@ une commande de table elle sort toujours sur l'imprimante des serveurs.
 
 **RÈGLE** — *(Demande de Mamat, 2026-11-09.)* Le nombre d'exemplaires du ticket
 de commande imprimé sur l'imprimante des serveurs se règle, comme celui des
-postes de préparation.
+postes de préparation : un exemplaire par défaut, zéro pour ne pas imprimer
+*(précision de Mamat, 2026-11-09)*.
 **À LIVRER** — Ce réglage. Aujourd'hui ce ticket sort toujours en un seul
 exemplaire.
 

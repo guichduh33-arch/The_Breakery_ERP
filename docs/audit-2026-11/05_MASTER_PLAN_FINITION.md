@@ -665,7 +665,8 @@ parte de la tablette ou de la caisse.
   corps live
 
 **Travail** — Ajouter le réglage, sur le modèle exact des copies par poste
-(valeur par défaut 1, zéro autorisé ou non : **à demander à Mamat**), et
+(valeur par défaut 1, zéro autorisé pour couper le papier : tranché par Mamat
+le 2026-11-09), et
 l'appliquer aux deux envois.
 
 **Preuve** — pgTAP sur la colonne et ses bornes. Tests du nombre de tickets
