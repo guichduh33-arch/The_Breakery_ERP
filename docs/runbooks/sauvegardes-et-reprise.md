@@ -929,6 +929,57 @@ parce qu'aucune tâche n'est installée en production.
 [master plan](../audit-2026-11/05_MASTER_PLAN_FINITION.md). La tâche Windows
 décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 
+## Reprendre ce chantier depuis un autre poste
+
+Écrit le **2026-11-09**, à la clôture de la session d'installation.
+
+### Ce qui vit où — à lire en premier
+
+| Élément | Emplacement | Conséquence si on change de poste |
+|---|---|---|
+| La chaîne, les clés publiques, la config, les archives | **PC boutique** `Pos` | rien à faire, tout y reste |
+| `recovery-private.pem`, copie n°1 | **VPS Hostinger**, dossier des clés | joignable par SSH depuis le poste qui porte la clé SSH autorisée |
+| `recovery-private.pem`, copie n°2 | **SSD externe de Mamat** | ⚠️ **ne suit pas la machine** — sans ce SSD branché, la seule copie accessible est celle du VPS |
+| Accès au PC boutique | console MeshCentral de la boutique, dans le navigateur de Mamat | marche depuis n'importe quel poste où il s'y connecte |
+
+> ⚠️ **Le point qui mord.** Déchiffrer une archive demande la clé privée. Depuis
+> un poste neuf, **ni le SSD ni la clé SSH du VPS ne sont là**. Avant toute
+> opération de restauration depuis une autre machine, s'assurer d'avoir au moins
+> un des deux accès.
+
+### Où en est le chantier
+
+| | |
+|---|---|
+| ✅ | Procédure écrite, autonome, et chaîne prouvée par ses 24 tests |
+| ✅ | Paire de clés générée, deux copies, aller-retour chiffrer/déchiffrer prouvé |
+| ✅ | Installation complète sur le PC boutique |
+| ✅ | **Première sauvegarde réelle produite et déchiffrement prouvé** |
+| 🟡 | Tâche quotidienne **installée, jamais exécutée** — voir le contrôle du lendemain |
+| ⏳ | **Copie hors site vers Drive** — c'est la prochaine étape, et la plus utile |
+| ⏳ | PITR, et répétition d'une restauration dans un projet Supabase |
+
+### La prochaine étape, et ce qu'elle demande
+
+**La copie hors site.** Aujourd'hui les archives ne vivent **que** sur le PC
+boutique : si ce poste disparaît, la sauvegarde disparaît avec lui, ce qui vide
+tout le chantier de son sens.
+
+`rclone` est déjà installé et le dossier Drive est vérifié. Il manque
+**l'autorisation Google**, qui ne peut être donnée que par Mamat — un agent
+n'accorde pas d'accès OAuth. Tout le reste est décrit à l'étape 7.
+
+### Trois pièges déjà payés, à ne pas repayer
+
+1. **Ne jamais recopier une empreinte depuis une capture d'écran de terminal.**
+   `c` et `e` s'y confondent. Comparer programme contre programme.
+2. **`Register-ScheduledTask` émet une erreur non bloquante.** Un message de
+   succès peut suivre un `Access is denied`. Toujours `-ErrorAction Stop`, et
+   vérifier l'existence de la tâche après coup.
+3. **Le canal terminal de la console de gestion devient instable** après un
+   usage prolongé : il se connecte et n'affiche plus rien. Le gestionnaire de
+   fichiers, lui, continue de fonctionner — s'en servir pour vérifier un état.
+
 ## Ce qui reste à décider
 
 | # | Décision | État | Pourquoi elle compte |
