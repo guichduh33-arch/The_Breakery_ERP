@@ -341,7 +341,7 @@ Vérifié le 2026-11-09, et ce n'est pas un détail de confort :
 
 | Point d'entrée | Résultat |
 |---|---|
-| Connexion **directe** `db.<ref>.supabase.co` | **ne résout pas** — ce point d'entrée est en IPv6, et le projet n'a pas l'option IPv4 |
+| Connexion **directe** `db.<ref>.supabase.co` | **inutilisable** — ce point d'entrée est en IPv6, et le projet n'a pas l'option IPv4 |
 | **Pooler session**, port 5432 | **fonctionne** : TLS 1.3, certificat du serveur **validé** par la racine ci-dessus |
 
 La configuration doit donc déclarer `connectionMode: "session"`, l'hôte du
@@ -351,6 +351,17 @@ est celui qui répond.
 
 **Si vous écrivez `direct` par habitude**, le lancement échouera sur un défaut
 de résolution de nom, sans rapport apparent avec la sauvegarde.
+
+**Vérifié depuis le PC boutique lui-même, le 2026-11-09**, et pas seulement
+depuis un poste de développement : Windows y trouve bien l'enregistrement IPv6
+du point d'entrée direct, mais `pg_dump` répond
+`could not translate host name ... Name or service not known`. La résolution
+n'est pas le routage : **la boutique n'a pas de route IPv6**. Le mode `session`
+n'est donc pas une préférence, c'est le seul chemin possible depuis ce poste.
+
+Conséquence pratique pour un diagnostic : **on ne peut pas départager « mot de
+passe faux » et « problème de pooler » en essayant la voie directe** depuis la
+caisse. Elle n'est pas disponible.
 
 ### 4. Écrire le fichier de configuration
 
