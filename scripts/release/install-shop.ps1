@@ -1,28 +1,43 @@
-# Bascule locale du seul lanceur validé ; configuration persistante hors releases.
+# Mise à jour du PC boutique : tâche, arrêt, bascule du lanceur réel, redémarrage, retour automatique.
+# Les contrôles de fichiers vivent dans install-shop.mjs ; ce script ne pilote que Windows.
 param([string]$ConfigPath)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = $PSScriptRoot
+$helper = Join-Path $root 'install-shop.mjs'
 $lock = $null
 $stopped = $false
-$changed = $false
-$original = $null
-function Find-Bridge($entry) {
-  return ,@(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $config.nodePath -and $_.CommandLine -and $_.CommandLine.Contains($entry) })
+$switched = $false
+$config = $null
+function Invoke-Helper($mode) {
+  & $config.nodePath $helper $mode $ConfigPath
+  return ($LASTEXITCODE -eq 0)
 }
-function Stop-BridgeTask($entry) {
+# Seuls les processus du Node vérifié qui exécutent le lanceur vérifié sont gérés.
+function Get-ManagedProcesses {
+  return ,@(Get-CimInstance Win32_Process | Where-Object {
+    $_.ExecutablePath -eq $config.nodePath -and $_.CommandLine -and $_.CommandLine.Contains($config.launcherPath)
+  })
+}
+function Stop-ManagedTask {
   Stop-ScheduledTask -TaskName $config.taskName -TaskPath $config.taskPath
-  for ($i=0; $i -lt 10; $i++) { if ((Find-Bridge $entry).Count -eq 0) { return }; Start-Sleep -Milliseconds 300 }
-  # Seulement les processus Node dont l'exécutable et l'entrée ont été vérifiés.
-  foreach ($process in (Find-Bridge $entry)) { Stop-Process -Id $process.ProcessId -ErrorAction Stop }
-  for ($i=0; $i -lt 10; $i++) { if ((Find-Bridge $entry).Count -eq 0) { return }; Start-Sleep -Milliseconds 300 }
-  throw 'Managed bridge process did not stop'
+  for ($i=0; $i -lt 10; $i++) { if ((Get-ManagedProcesses).Count -eq 0) { return }; Start-Sleep -Milliseconds 300 }
+  foreach ($item in (Get-ManagedProcesses)) { Stop-Process -Id $item.ProcessId -ErrorAction Stop }
+  for ($i=0; $i -lt 10; $i++) { if ((Get-ManagedProcesses).Count -eq 0) { return }; Start-Sleep -Milliseconds 300 }
+  throw 'Managed launcher process did not stop'
 }
-function Restore-Launcher {
-  $restore = $config.launcherPath + '.restore-' + $release.sha
-  [IO.File]::WriteAllText($restore,$original,(New-Object Text.UTF8Encoding($false)))
-  Set-Acl -LiteralPath $restore -AclObject (Get-Acl -LiteralPath $config.launcherPath)
-  [IO.File]::Replace($restore,$config.launcherPath,$null)
+# Recopie les seules règles d'accès : imposer le propriétaire échouerait sans élévation.
+function Copy-AccessRules($path) {
+  $target = Get-Acl -LiteralPath $path
+  $target.SetSecurityDescriptorSddlForm($accessRules, 'Access')
+  Set-Acl -LiteralPath $path -AclObject $target
+}
+function Wait-Helper($mode, $attempts) {
+  for ($attempt=0; $attempt -lt $attempts; $attempt++) {
+    Start-Sleep -Seconds 2
+    if ((Get-ManagedProcesses).Count -eq 1 -and (Invoke-Helper $mode)) { return $true }
+  }
+  return $false
 }
 try {
   if (!$ConfigPath) {
@@ -34,13 +49,12 @@ try {
     $ConfigPath = $dialog.FileName
   }
   $config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
-  if ($config.version -ne 1) { throw 'Unknown shop configuration' }
-  foreach ($field in @('nodePath','launcherPath','previousRelease','releasesDir','oldBridgeEntry','oldPosDist','caCertificate')) {
+  if ($config.version -ne 2) { throw 'Unknown shop configuration; version 2 required' }
+  $paths = @('nodePath','launcherPath','externalConfigPath','previousRelease','releasesDir','oldBridgeEntry','oldPosDist','caCertificate','archivePath')
+  foreach ($field in $paths) {
     $value = $config.$field
     if (!$value -or ![IO.Path]::IsPathRooted($value) -or $value -match '[\r\n]') { throw 'Explicit absolute paths required' }
-  }
-  foreach ($path in @($config.nodePath,$config.launcherPath,$config.previousRelease,$config.releasesDir,$config.oldBridgeEntry,$config.oldPosDist,$config.caCertificate) + @($config.persistentPaths)) {
-    $cursor = Get-Item -LiteralPath $path
+    $cursor = Get-Item -LiteralPath $value
     while ($null -ne $cursor) {
       if ($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Reparse points are forbidden' }
       $parentPath = [IO.Path]::GetDirectoryName($cursor.FullName.TrimEnd('\'))
@@ -48,79 +62,44 @@ try {
       $cursor = Get-Item -LiteralPath $parentPath
     }
   }
-  if (@($config.persistentPaths).Count -lt 4) { throw 'Registry, buffer and TLS paths must be confirmed' }
-  $previous = [IO.Path]::GetFullPath($config.previousRelease).TrimEnd('\') + '\'
-  foreach ($path in @($config.persistentPaths) + @($config.launcherPath)) {
-    if ([IO.Path]::GetFullPath($path).StartsWith($previous,[StringComparison]::OrdinalIgnoreCase)) { throw 'Persistent configuration must be outside releases' }
-  }
   $lock = [IO.File]::Open((Join-Path $config.releasesDir '.shop-update.lock'),'OpenOrCreate','ReadWrite','None')
   $env:NODE_EXTRA_CA_CERTS = $config.caCertificate
-  & $config.nodePath (Join-Path $root 'verify-shop.mjs') --install
-  if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
-  $release = Get-Content -LiteralPath (Join-Path $root 'release.json') -Raw | ConvertFrom-Json
-  $destination = Join-Path $config.releasesDir $release.sha
-  $newEntry = Join-Path $destination 'apps\print-bridge\dist\server.js'
-  if (Test-Path -LiteralPath $destination) { throw 'Release exists; verify its installation report before retrying' }
+  $accessRules = (Get-Acl -LiteralPath $config.launcherPath).GetSecurityDescriptorSddlForm('Access')
   $task = Get-ScheduledTask -TaskName $config.taskName -TaskPath $config.taskPath
-  if ($task.State -ne 'Running' -or @($task.Actions).Count -ne 1) { throw 'Expected one running cashier task' }
+  if ($task.State -ne 'Running' -or @($task.Actions).Count -ne 1 -or $task.Principal.UserId -ne $config.taskUser) { throw 'Expected one running cashier task with the verified account' }
   $action = $task.Actions[0]
-  if (!$action.Arguments.Contains($config.launcherPath) -and $action.Execute -ne $config.launcherPath) { throw 'Task does not reference the verified launcher' }
-  if ((Find-Bridge $config.oldBridgeEntry).Count -ne 1) { throw 'Expected exactly one verified previous bridge process' }
-  $previousHealth = Invoke-RestMethod -Uri ($config.origin.TrimEnd('/') + '/health') -TimeoutSec 10
-  if ($previousHealth.status -ne 'ok') { throw 'Previous service is not healthy' }
-  $bytes = [IO.File]::ReadAllBytes($config.launcherPath)
-  if ((Get-FileHash -LiteralPath $config.launcherPath -Algorithm SHA256).Hash -ne $config.launcherSha256) { throw 'Launcher changed; refresh the local configuration' }
-  if ($bytes -contains 0 -or ($bytes.Length -gt 2 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187)) { throw 'Launcher must be UTF-8 without BOM' }
-  $original = [Text.Encoding]::UTF8.GetString($bytes)
-  if (!$original.Contains($config.oldBridgeEntry) -or !$original.Contains($config.oldPosDist)) { throw 'Launcher layout is not verified' }
-  $updated = $original.Replace($config.oldBridgeEntry,(Join-Path $destination 'apps\print-bridge\dist\server.js')).Replace($config.oldPosDist,(Join-Path $destination 'apps\pos\dist'))
-  if ($updated.Contains($config.previousRelease)) { throw 'Other release-local configuration would be lost' }
-  Copy-Item -LiteralPath (Join-Path $root 'payload') -Destination $destination -Recurse
-  & $config.nodePath (Join-Path $root 'verify-shop.mjs') --installed $destination
-  if ($LASTEXITCODE -ne 0) { throw 'Installed payload verification failed before stopping service' }
-  $backup = $config.launcherPath + '.rollback-' + $release.sha
-  Copy-Item -LiteralPath $config.launcherPath -Destination $backup
-  Set-Acl -LiteralPath $backup -AclObject (Get-Acl -LiteralPath $config.launcherPath)
-  $journal = Join-Path $destination 'installation.json'
-  @{ state='staged'; sha=$release.sha; previousRelease=$config.previousRelease } | ConvertTo-Json | Set-Content -LiteralPath $journal
+  if (!($action.Arguments -and $action.Arguments.Contains($config.launcherPath)) -and $action.Execute -ne $config.launcherPath) { throw 'Task does not reference the verified launcher' }
+  if ((Get-ManagedProcesses).Count -ne 1) { throw 'Expected exactly one verified launcher process' }
+  # Archive, paquet, Node, configuration externe, lanceur et santé actuelle : tout est vérifié avant l'arrêt.
+  if (!(Invoke-Helper 'stage')) { throw 'Verified staging failed before service interruption' }
+  # Le helper a prouvé que ce SHA est celui du paquet (release.json) et de son archive CI.
+  # Le nouveau lanceur porte déjà les droits de l'ancien : le renommage les conserve.
+  Copy-AccessRules ($config.launcherPath + '.rollback-' + $config.sha)
+  Copy-AccessRules ($config.launcherPath + '.update-' + $config.sha)
   $stopped = $true
-  Stop-BridgeTask $config.oldBridgeEntry
-  $temp = $config.launcherPath + '.update-' + $release.sha
-  [IO.File]::WriteAllText($temp,$updated,(New-Object Text.UTF8Encoding($false)))
-  Set-Acl -LiteralPath $temp -AclObject (Get-Acl -LiteralPath $config.launcherPath)
-  [IO.File]::Replace($temp,$config.launcherPath,$null)
-  $changed = $true
+  Stop-ManagedTask
+  # Positionné AVANT l'appel : un échec après le renommage doit déclencher le retour.
+  $switched = $true
+  if (!(Invoke-Helper 'switch')) { throw 'Atomic launcher switch failed' }
   Start-ScheduledTask -TaskName $config.taskName -TaskPath $config.taskPath
-  $healthy = $false
-  for ($attempt=0; $attempt -lt 10; $attempt++) {
-    Start-Sleep -Seconds 2
-    & $config.nodePath (Join-Path $root 'verify-shop.mjs') --served $config.origin
-    if ($LASTEXITCODE -eq 0 -and (Find-Bridge $newEntry).Count -eq 1) { $healthy=$true; break }
-  }
-  if (!$healthy) { throw 'New release health or served assets could not be verified' }
-  @{ state='verified'; sha=$release.sha; previousRelease=$config.previousRelease; at=(Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath $journal
+  if (!(Wait-Helper 'verify' 10)) { throw 'New release could not be verified on every origin' }
+  Write-Host ('SHOP_RELEASE_VERIFIED ' + $config.sha)
   Write-Host 'POS and bridge updated. Reload the cashier POS and tablets. Check the cashier printer before service.'
 } catch {
-  if ($changed) {
+  $failure = $_
+  if ($switched) {
     try {
-      Stop-BridgeTask $newEntry
-      Restore-Launcher
+      Stop-ManagedTask
+      if (!(Invoke-Helper 'restore')) { throw 'Launcher restore failed' }
+      try { Copy-AccessRules $config.launcherPath } catch { Write-Host 'Launcher access rules could not be copied; check them after restart.' }
       Start-ScheduledTask -TaskName $config.taskName -TaskPath $config.taskPath
-      $restored = $false
-      for ($i=0; $i -lt 10; $i++) {
-        Start-Sleep -Seconds 2
-        try {
-          $health = Invoke-RestMethod -Uri ($config.origin.TrimEnd('/') + '/health') -TimeoutSec 5
-          if ($health.status -eq 'ok' -and (Find-Bridge $config.oldBridgeEntry).Count -eq 1) { $restored=$true; break }
-        } catch { }
-      }
-      if (!$restored) { throw 'Previous service restart could not be verified' }
-      @{ state='rolled-back'; sha=$release.sha; previousRelease=$config.previousRelease } | ConvertTo-Json | Set-Content -LiteralPath $journal
-      Write-Host 'Previous launcher and running bridge restored. Reload the POS before use.'
-    } catch { Write-Host 'Rollback incomplete. Keep the POS closed and restore the saved launcher.' }
+      if (!(Wait-Helper 'restored' 10)) { throw 'Previous service could not be verified' }
+      Write-Host 'Previous launcher restored and previous release served again. Reload the POS before use.'
+    } catch { Write-Host 'Rollback incomplete. Keep the POS closed; the saved launcher is next to the current one.' }
   } elseif ($stopped) {
     try { Start-ScheduledTask -TaskName $config.taskName -TaskPath $config.taskPath } catch { Write-Host 'Previous task restart failed.' }
   }
-  Write-Error 'Update not completed. No browser storage, registry, buffer or TLS files were changed.'
+  Write-Host ('Update not completed: ' + $failure.Exception.Message)
+  Write-Error 'No browser storage, external configuration, registry, buffer or TLS file was changed by the installer.'
   exit 1
 } finally { if ($null -ne $lock) { $lock.Dispose() } }

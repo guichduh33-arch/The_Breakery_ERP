@@ -1,20 +1,23 @@
 {
-  "version": 1,
+  "version": 2,
+  "sha": "REPLACE_WITH_RELEASE_SHA_FROM_RELEASE_JSON",
   "taskName": "REPLACE_WITH_VERIFIED_TASK_NAME",
   "taskPath": "\\",
+  "taskUser": "REPLACE_WITH_VERIFIED_TASK_ACCOUNT",
   "nodePath": "C:\\REPLACE_WITH_VERIFIED_NODE_PATH\\node.exe",
-  "launcherPath": "C:\\REPLACE_WITH_VERIFIED_LAUNCHER_PATH.cmd",
+  "nodeSha256": "REPLACE_WITH_SHA256_OF_NODE_EXE",
+  "launcherPath": "C:\\REPLACE_WITH_VERIFIED_LAUNCHER_PATH\\start.cjs",
   "launcherSha256": "REPLACE_WITH_SHA256_OF_CURRENT_LAUNCHER",
-  "previousRelease": "C:\\REPLACE_WITH_CURRENT_RELEASE",
+  "externalConfigPath": "C:\\REPLACE_WITH_EXTERNAL_BRIDGE_CONFIG\\config.json",
+  "externalConfigSha256": "REPLACE_WITH_SHA256_OF_EXTERNAL_CONFIG",
+  "previousRelease": "C:\\REPLACE_WITH_RELEASES_DIRECTORY\\REPLACE_WITH_CURRENT_RELEASE",
   "releasesDir": "C:\\REPLACE_WITH_RELEASES_DIRECTORY",
-  "oldBridgeEntry": "C:\\REPLACE_WITH_CURRENT_BRIDGE_ENTRY.js",
-  "oldPosDist": "C:\\REPLACE_WITH_CURRENT_POS_DIST",
-  "caCertificate": "C:\\REPLACE_WITH_TRUSTED_CA_CERTIFICATE.pem",
-  "origin": "https://REPLACE_WITH_CURRENT_SHOP_ORIGIN/",
-  "persistentPaths": [
-    "C:\\REPLACE_WITH_REGISTRY_PATH.json",
-    "C:\\REPLACE_WITH_BUFFER_PATH.jsonl",
-    "C:\\REPLACE_WITH_TLS_CERTIFICATE_PATH.pem",
-    "C:\\REPLACE_WITH_TLS_PRIVATE_KEY_PATH.pem"
+  "oldBridgeEntry": "C:\\REPLACE_WITH_RELEASES_DIRECTORY\\REPLACE_WITH_CURRENT_RELEASE\\apps\\print-bridge\\dist\\server.js",
+  "oldPosDist": "C:\\REPLACE_WITH_RELEASES_DIRECTORY\\REPLACE_WITH_CURRENT_RELEASE\\apps\\pos\\dist",
+  "caCertificate": "C:\\REPLACE_WITH_TRUSTED_CA_CERTIFICATE.crt",
+  "archivePath": "C:\\REPLACE_WITH_UPDATE_DIRECTORY\\shop-release.zip",
+  "origins": [
+    "https://REPLACE_WITH_BRIDGE_ORIGIN:3001/",
+    "https://REPLACE_WITH_PROXIED_ORIGIN/"
   ]
 }

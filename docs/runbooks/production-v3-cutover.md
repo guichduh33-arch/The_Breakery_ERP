@@ -284,5 +284,6 @@ réconciliation des transactions postérieures à la sauvegarde et des files off
 ne jamais les rejouer aveuglément ni effacer le stockage des navigateurs.
 
 La mise à jour boutique et son retour à la version précédente suivent
-[la procédure du bridge](../../apps/print-bridge/README.md). Une sauvegarde non
+[la procédure du bridge](../../apps/print-bridge/README.md) et
+[l'installation boutique](shop-install.md). Une sauvegarde non
 restaurée en répétition ne constitue pas une preuve de retour arrière.

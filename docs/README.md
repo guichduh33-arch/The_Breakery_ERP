@@ -43,6 +43,7 @@ ligne : ne pas toucher, demander.
 | Comprendre une coupure Internet en caisse | [Guide de caisse](runbooks/pos-internet-outage.md) |
 | Vérifier un règlement différé et ses sessions | [Règlements différés](runbooks/pos-outstanding-shifts.md) |
 | Fabriquer ou installer la tablette Android | [Guide tablette](runbooks/tablet-capacitor-build.md) |
+| Installer une release POS + bridge sur le PC boutique | [Installation boutique](runbooks/shop-install.md) |
 
 **La procédure de reprise existe depuis le 2026-11-09, mais elle n'est pas
 éprouvée.** Celle d'avant a été archivée — elle prescrivait cinq objets SQL
