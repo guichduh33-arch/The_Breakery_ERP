@@ -127,8 +127,10 @@ du journal de caisse, et non quatre.)*
 sauvegarde fraîche de la production prise le même jour. Constaté en production :
 les 5 corps égaux au dev (md5), droits et politiques identiques au dev,
 `post_v4` / `clearing_v2` retirées. Les 4 fonctions sont exposées par l'API et
-refusent l'appel anonyme. pgTAP : 345 fichiers verts sur la PR. Reste à constater
-l'ouverture des deux écrans par un compte connecté.
+refusent l'appel anonyme. pgTAP : 345 fichiers verts sur la PR. Les deux écrans
+s'ouvrent sans erreur console pour un compte connecté. **Non exercé** : un appel
+authentifié réel des 4 fonctions, qui exige d'importer un relevé bancaire ou un
+journal de caisse, donc d'écrire en production — premier usage métier à observer.
 
 **Fichiers**
 - `apps/backoffice/src/features/accounting/bank-reconciliation/api.ts` — nomme

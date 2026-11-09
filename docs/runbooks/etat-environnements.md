@@ -38,6 +38,7 @@ Aucun essai créant une écriture, une commande ou un paiement n'a été effectu
 | Backend | Migration `prod_catchup_cash_import_bank_clearing` appliquée à 17 h 10 ; texte reçu identique au fichier (md5) | — |
 | Backend | 5 fonctions et table `cash_journal_import_rows` : corps, droits et politiques égaux au dev ; `post_v4` et `clearing_v2` retirées | — |
 | API | Les 4 RPC répondent `42501` à un appel anonyme ; `clearing_v2` répond `PGRST202` | Aucun appel authentifié |
+| BO, compte connecté | Rapprochement bancaire (« No bank statements ») et trésorerie de caisse, panneau d'import compris, ouverts sans erreur console | Les 4 RPC ne partent qu'avec un relevé ou un import : non exercées, faute d'écriture autorisée |
 
 Retour préparé hors Git, sous `.release-manifests/s1-02-prod-catchup-20261109/` :
 corps exacts de production des deux versions retirées, empreintes vérifiées.
