@@ -468,9 +468,36 @@ la valeur du mot de passe**, pas le fichier.
 
 > **Le mot de passe de la base ne se consulte pas.** Supabase ne l'affiche plus
 > après la création du projet : il ne peut être que **réinitialisé**, depuis
-> *Database → Settings*. Une réinitialisation **coupe toute connexion directe
-> existante** : vérifier ce qui s'en sert avant, et noter que les applications
-> du projet passent par l'API, pas par une chaîne de connexion Postgres.
+> *Database → Settings*, ou depuis la boîte *Connect*.
+>
+> **Ce qu'une réinitialisation casse ici : presque rien.** Relevé du
+> 2026-11-09 — un seul endroit du dépôt utilise une chaîne de connexion
+> directe, le script de développement `db:types` dans `package.json`, et
+> `AGENTS.md` prescrit de toute façon de régénérer les types par le connecteur
+> plutôt que par lui. **Aucune application, aucune Edge Function et aucun
+> workflow d'intégration continue** n'emploie de chaîne de connexion
+> Postgres : le POS et le back-office passent par l'API.
+
+#### Les paramètres de connexion font foi, et ils ont été vérifiés
+
+Relevés le 2026-11-09 dans la boîte *Connect* du tableau de bord, onglet
+*Direct*, mode *Session pooler* :
+
+| Paramètre | Valeur |
+|---|---|
+| `host` | `aws-0-ap-southeast-1.pooler.supabase.com` |
+| `port` | `5432` |
+| `database` | `postgres` |
+| `user` | `postgres.yjhhhmjgsmyzyymvixot` |
+
+Ils correspondent **exactement** à ce que `config.json` déclare et à ce que la
+chaîne attend en mode session. **Ne pas les remettre en cause** devant un échec
+d'authentification : c'est le mot de passe, pas l'adressage.
+
+> **Attention à un faux ami.** Le tableau de bord indique de *percent-encoder*
+> les caractères spéciaux. Cela vaut pour la **chaîne de connexion URI**, pas
+> pour `pgpass.conf`. Dans le fichier de mots de passe, seuls `:` et `\`
+> s'échappent, et avec un **antislash**.
 
 ### 6. Installer la tâche quotidienne
 
