@@ -158,6 +158,58 @@ clé ci-dessus. Arrêtez et comparez avant de produire des sauvegardes.
 > une clé perdue maintenant ne coûte rien — il suffirait d'en régénérer une.
 > **Cela cesse d'être vrai dès la première sauvegarde produite.**
 
+## Sur quelle machine
+
+**Le PC boutique n'est pas le poste de développement** (constat du 2026-11-09).
+Presque tout ce document s'exécute donc **sur le PC boutique**, pas là où vit le
+dépôt. Répartition :
+
+| Geste | Machine |
+|---|---|
+| Générer les clés | ✅ fait, sur le VPS |
+| Installer `rclone`, l'autoriser sur Drive | **PC boutique** |
+| Écrire la configuration et le transport | **PC boutique** |
+| Lancer une sauvegarde | **PC boutique** |
+| Installer la tâche quotidienne | **PC boutique** |
+| Activer le PITR | console Supabase, depuis n'importe où |
+| Restaurer | la machine qui détient la clé privée |
+
+### Ce qu'il faut sur le PC boutique
+
+Bonne nouvelle : **la chaîne est autonome**. Elle n'utilise que des modules
+internes de Node — aucune dépendance à installer, pas besoin de cloner le dépôt
+ni de lancer `pnpm install`.
+
+**Cinq fichiers** suffisent, tous dans **le même dossier** :
+
+```
+daily-backup.mjs
+encrypted-backup.mjs
+database-backup.mjs
+backup-drive.mjs
+backup-retention.mjs
+```
+
+Plus, sur le même poste :
+
+| Élément | Pourquoi |
+|---|---|
+| **Node ≥ 22.12** | version exigée par le dépôt ; vérifier avec `node --version` |
+| `backup-public.pem` | la clé qui chiffre — **jamais** la clé privée |
+| `pg_dump` et `pg_restore` | l'export de la base, épinglés par empreinte |
+| le certificat racine Supabase | la connexion se fait en `verify-full` |
+| `rclone.exe` | la copie hors site, épinglé par empreinte |
+| `config.json` et `transport.json` | décrits plus bas |
+| un dossier de sortie dédié | ni lien symbolique, ni partagé |
+
+**À vérifier d'abord**, avant tout le reste :
+
+```powershell
+node --version
+```
+
+Si Node est absent ou sous 22.12, rien de ce qui suit ne tournera.
+
 ## Mise en place
 
 ### 1. Générer les clés — ✅ fait le 2026-11-09
@@ -530,7 +582,8 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | 1 ter | Chiffrer le support de la seconde copie | ✅ **tranchée le 2026-11-09 : non** | **Limite assumée par Mamat.** Le SSD reste en **exFAT**, sans chiffrement vérifié. Conséquence, écrite pour être connue et non pour être rouverte : ce système de fichiers ne porte **aucune permission**, donc la clé privée y est lisible par quiconque branche le disque — là où elle est en `600` dans un dossier `700` sur le VPS. La protection de cette copie est donc **physique** : elle vaut ce que vaut la garde du support. Ne pas re-signaler ce point comme un défaut. |
 | 1 quater | ~~Retirer la copie du disque principal~~ | ✅ **fait le 2026-11-09** | Contenu écrasé par des octets aléatoires, puis fichier supprimé ; absence confirmée sur le disque et dans la corbeille, après avoir revérifié que la copie du SSD était conforme. **Limite** : sur un disque à mémoire flash, l'écrasement n'atteint pas forcément les blocs d'origine — le contrôleur peut écrire ailleurs. Ce n'est donc pas un effacement sécurisé prouvé. |
 | 2 | Où vont les archives | ✅ **tranchée le 2026-11-09 : Google Drive** | Le VPS a été écarté : la clé privée y vit, et une clé à côté de l'archive annule le chiffrement. Dossier existant et vérifié, aucun *Shared Drive* sur le compte. C'est aussi le seul transport que le code sait faire. |
-| 2 bis | **Installer `rclone` et l'autoriser sur Drive** | ⏳ | Sur le **PC boutique**. L'autorisation Google est à donner par Mamat : un agent n'accorde pas d'accès OAuth. Tant que ce n'est pas fait, une archive ne vivrait que sur le PC boutique. |
+| 2 bis | **Installer `rclone` et l'autoriser sur Drive** | ⏳ | Sur le **PC boutique**, qui n'est pas le poste de développement. L'autorisation Google est à donner par Mamat : un agent n'accorde pas d'accès OAuth. Tant que ce n'est pas fait, une archive ne vivrait que sur le PC boutique. |
+| 2 ter | **Porter la chaîne sur le PC boutique** | ⏳ | Les 5 fichiers de `scripts/release/`, Node ≥ 22.12, la clé publique, `pg_dump`/`pg_restore`, le certificat racine. Aucune dépendance à installer : la chaîne n'utilise que des modules internes de Node. **Tout le reste de ce runbook s'exécute là-bas** — un agent travaillant depuis le dépôt ne peut ni le faire ni le vérifier. |
 | 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
 | 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
 | 5 | Compte Windows et heure de la tâche | ⏳ | Le script exige un compte nommé ; le choix est d'exploitation |
