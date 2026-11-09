@@ -633,10 +633,39 @@ s'arrêtent en silence.**
 > console de gestion est devenu instable juste après l'enregistrement, et le
 > lancement manuel n'a pas pu aboutir.
 >
-> **La première exécution réelle sera celle de 03h30.** Le lendemain matin,
-> vérifier qu'une archive du jour existe dans le dossier de sortie, et que
-> `LastTaskResult` de la tâche vaut `0`. Tant que ce contrôle n'est pas fait,
-> l'automatisation est **installée mais non éprouvée**.
+> **La première exécution réelle sera celle de 03h30.** Tant que le contrôle
+> ci-dessous n'est pas fait, l'automatisation est **installée mais non
+> éprouvée**.
+
+#### Le contrôle du lendemain matin
+
+À faire **une fois**, le matin suivant l'installation — puis à refaire chaque
+fois qu'on touche à la tâche. Depuis le terminal de la console de gestion, sur
+le poste `Pos` :
+
+```powershell
+Get-ScheduledTaskInfo -TaskName "Breakery V3 Daily Backup" | Select-Object LastRunTime, LastTaskResult, NextRunTime
+```
+
+```powershell
+Get-ChildItem C:\Breakery\sorties -File | Select-Object Name, Length, LastWriteTime
+```
+
+**Ce qu'il faut voir :** `LastTaskResult` à **0**, et une archive portant la
+date du jour, accompagnée de son reçu.
+
+| Ce qu'on observe | Ce que cela veut dire |
+|---|---|
+| `LastTaskResult = 0` et une archive du jour | **l'automatisation fonctionne** |
+| `LastRunTime` absent ou très ancien | la tâche **n'a pas démarré** — en mode Interactive, cela arrive si personne n'était connecté, et rien ne le signale |
+| `LastTaskResult` non nul | la tâche a démarré mais la chaîne a échoué : diagnostiquer avec la méthode donnée plus haut, en appelant `pg_dump` directement |
+
+Si la tâche n'a pas démarré faute de session ouverte, la question se repose :
+basculer sur `SYSTEM`, au prix du privilège, ou garantir que la caisse reste
+connectée.
+
+**Consigner le résultat ici même**, daté, et retirer la mention « non
+éprouvée » seulement une fois le contrôle réussi.
 
 **État du dossier de sortie au 2026-11-09 :** vidé de ses fichiers pour laisser
 la place à la première exécution automatique. L'archive produite et vérifiée à
