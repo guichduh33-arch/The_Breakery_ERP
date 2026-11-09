@@ -55,27 +55,86 @@ clé privée si elle la rencontre dans une source. Elle inspecte le contenu de
 chaque fichier contenant un bloc de clé privée et compare la clé publique
 dérivée à son destinataire.
 
-> **Décision en attente.** *Où* vit `recovery-private.pem` n'est pas tranché.
-> Une sauvegarde chiffrée dont la clé se perd **n'est pas une sauvegarde**, et
-> une clé posée à côté de l'archive annule le chiffrement. Cette décision
-> appartient à Mamat et doit être écrite ici avant que la chaîne compte comme
-> installée.
+### Décision de Mamat, 2026-11-09 : la clé vit sur le VPS Hostinger
+
+La paire a été **générée le 2026-11-09** sur le VPS Hostinger, sur sa décision.
+
+| | |
+|---|---|
+| Machine | VPS Hostinger `srv1753453.hstgr.cloud`, Ubuntu 24.04 |
+| Dossier | `/root/cles-reprise-breakery`, mode `700` |
+| Fichiers | `recovery-private.pem` et `backup-public.pem`, mode `600` |
+| Taille de clé | RSA **3072 bits** |
+| Empreinte SHA-256 de `backup-public.pem` | `6e519ce086daf159fe3fcaac99805530ad931f1124d32bdf6f34b2727505a29d` |
+
+**À quoi sert cette empreinte.** C'est le moyen de vérifier, plus tard, que le PC
+boutique porte bien la bonne clé publique — donc que ses archives seront
+ouvrables par cette clé privée :
+
+```powershell
+Get-FileHash -Algorithm SHA256 "C:\chemin\backup-public.pem" | Format-List Hash
+```
+
+Si l'empreinte diffère, **les archives de ce poste ne s'ouvriront pas** avec la
+clé ci-dessus. Arrêtez et comparez avant de produire des sauvegardes.
+
+> ### ⚠️ Une seule copie, et elle est louée
+>
+> **Ce n'est pas suffisant.** Trois façons de perdre cette clé, donc de rendre
+> **toutes** les sauvegardes définitivement illisibles :
+>
+> 1. l'opération *recreate* de Hostinger réinstalle le système et **efface
+>    tout**, en un clic depuis hPanel ;
+> 2. un abonnement suspendu ou non renouvelé emporte le serveur ;
+> 3. c'est un disque unique, sur une machine à IP publique avec SSH ouvert, et
+>    partagée avec un autre projet.
+>
+> **Il faut une seconde copie, hors du VPS, détenue par Mamat.** Tant qu'elle
+> n'existe pas, la décision n'est qu'à moitié prise.
+>
+> **Cette copie, l'agent ne doit pas la faire.** Récupérer la clé privée la
+> ferait transiter par la sortie d'un outil, donc par le journal de la
+> conversation, en clair — ce que les règles du dépôt interdisent. La commande
+> est donc à lancer **par Mamat lui-même**, depuis son poste :
+>
+> ```bash
+> scp root@srv1753453.hstgr.cloud:/root/cles-reprise-breakery/recovery-private.pem <destination-hors-ligne>
+> ```
+>
+> Destination recommandée : un support chiffré gardé **hors de la boutique**, et
+> une seconde copie dans un gestionnaire de mots de passe. Deux copies au même
+> endroit n'en font qu'une.
+>
+> **Aujourd'hui le risque est faible** : aucune sauvegarde n'existe encore, donc
+> une clé perdue maintenant ne coûte rien — il suffirait d'en régénérer une.
+> **Cela cesse d'être vrai dès la première sauvegarde produite.**
 
 ## Mise en place
 
-### 1. Générer les clés, sur la machine de récupération
+### 1. Générer les clés — ✅ fait le 2026-11-09
 
-**Pas sur le PC boutique.** Le répertoire cible ne doit pas exister.
+**Cette étape est faite.** La paire vit sur le VPS Hostinger, voir la décision
+ci-dessus. Ne la refaites pas : régénérer une paire rend illisible toute archive
+déjà produite avec l'ancienne clé publique.
+
+Pour mémoire, et si une nouvelle paire devenait nécessaire — **pas sur le PC
+boutique**, et le répertoire cible ne doit pas exister :
 
 ```bash
 node scripts/release/encrypted-backup.mjs keys /chemin/absolu/vers/cles-reprise
 ```
 
 Le répertoire est créé en `0700`, les deux fichiers en `0600`. La commande
-renvoie l'empreinte SHA-256 de la clé publique : **notez-la**, elle permet de
-vérifier plus tard que le PC boutique porte bien la bonne.
+renvoie l'empreinte SHA-256 de la clé publique : **notez-la**.
 
-Copiez **uniquement** `backup-public.pem` vers le PC boutique.
+Il reste à copier **uniquement** `backup-public.pem` vers le PC boutique :
+
+```bash
+scp root@srv1753453.hstgr.cloud:/root/cles-reprise-breakery/backup-public.pem <destination>
+```
+
+Ce fichier est **public** : il ne chiffre, il ne déchiffre rien. Le copier ne
+présente aucun risque. C'est l'autre qu'il ne faut pas promener.
 
 ### 2. Épingler les outils natifs
 
@@ -330,6 +389,31 @@ Ces tests prouvent le **chiffrement et le format**. Ils n'utilisent qu'un faux
 outil natif et un faux dump : **ils ne prouvent ni la connexion à Supabase, ni
 la restauration d'une application.**
 
+### Aller-retour réel avec la paire de clés de production
+
+Exécuté le **2026-11-09 sur le VPS**, avec la paire décrite plus haut — et non
+avec une clé de test. C'est la première preuve que ces clés fonctionnent
+ensemble.
+
+| Contrôle | Résultat |
+|---|---|
+| La clé privée dérive exactement la clé publique stockée | **oui** (empreintes DER identiques) |
+| Taille de clé | RSA 3072 bits, conforme au minimum imposé |
+| Chiffrer un fichier témoin avec `backup-public.pem` | archive produite |
+| Déchiffrer avec `recovery-private.pem` | fichier restitué |
+| Empreinte SHA-256 du fichier restitué | **identique** à l'original |
+| Restaurer en annonçant une **autre** référence de projet | **refusé**, et aucun répertoire créé |
+| Restaurer avec une **autre** clé privée | **refusé** |
+| Restaurer une archive dont un octet a été modifié | **refusé** |
+
+La comparaison des clés a été faite **par dérivation sur le VPS** : la clé privée
+n'a jamais quitté la machine ni traversé un outil. Le fichier témoin et l'archive
+d'essai ont été supprimés ; seules les deux clés subsistent.
+
+**Ce que cela ne prouve toujours pas** : ni la connexion à Supabase, ni
+l'export d'une vraie base, ni la réinjection dans un projet. La répétition
+ci-dessous reste entière.
+
 ## Garde-fou avant toute planification
 
 Trois migrations du dépôt planifient des tâches dont l'adresse de projet est
@@ -342,13 +426,16 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 
 ## Ce qui reste à décider
 
-| # | Décision | Pourquoi elle bloque |
-|---|---|---|
-| 1 | Où vit `recovery-private.pem` | Sans elle, les archives sont illisibles ; à côté d'elles, le chiffrement ne sert à rien |
-| 2 | Compte Drive, dossier et poste détenant `rclone.conf` | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
-| 3 | Activer le PITR en production | Réglage facturé, console Supabase, aucun outil du dépôt |
-| 4 | Cible de la répétition de restauration | Créer un projet jetable a un coût |
-| 5 | Compte Windows et heure de la tâche | Le script exige un compte nommé ; le choix est d'exploitation |
+| # | Décision | État | Pourquoi elle compte |
+|---|---|---|---|
+| 1 | Où vit `recovery-private.pem` | ✅ **tranchée le 2026-11-09** | VPS Hostinger, voir la décision plus haut |
+| 1 bis | **Seconde copie de la clé, hors du VPS** | ⏳ **à faire par Mamat** | Une clé unique sur un serveur loué qu'un *recreate* efface ; sa perte rend toutes les sauvegardes illisibles. L'agent ne doit pas faire cette copie. |
+| 2 | Compte Drive, dossier et poste détenant `rclone.conf` | ⏳ | Sans copie hors site, une archive sur le seul PC boutique ne protège que d'une erreur logicielle |
+| 3 | Activer le PITR en production | ⏳ | Réglage facturé, console Supabase, aucun outil du dépôt |
+| 4 | Cible de la répétition de restauration | ⏳ | Créer un projet jetable a un coût |
+| 5 | Compte Windows et heure de la tâche | ⏳ | Le script exige un compte nommé ; le choix est d'exploitation |
 
-Les décisions **1 et 2** sont les deux qui font la différence entre une
-sauvegarde et un fichier chiffré sans intérêt. Les trois autres peuvent attendre.
+**`1 bis` et `2` sont les deux qui font la différence entre une sauvegarde et un
+fichier chiffré sans intérêt.** Les autres peuvent attendre. Tant que `1 bis`
+n'est pas faite, la clé n'existe qu'en un seul exemplaire, sur une machine
+louée.

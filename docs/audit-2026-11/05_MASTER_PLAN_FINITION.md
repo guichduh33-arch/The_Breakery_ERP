@@ -81,11 +81,18 @@ ses propres tests, mais **rien ne la déclenche** :
 2. ✅ **Fait le 2026-11-09** — Prouver la chaîne par ses tests : **24 réussis,
    0 échec**. Ils couvrent le chiffrement et le format, **pas** la connexion à
    Supabase ni la restauration d'une application.
-3. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
+3. ✅ **Fait le 2026-11-09** — Générer la paire de clés de reprise, sur
+   décision de Mamat : VPS Hostinger, RSA 3072, empreinte de la clé publique
+   consignée au runbook. **Aller-retour chiffrer/déchiffrer prouvé avec cette
+   paire**, plus trois refus vérifiés (mauvaise référence de projet, mauvaise
+   clé, archive altérée). **Reste à faire par Mamat : une seconde copie de la
+   clé privée hors du VPS** — l'agent ne doit pas la faire, elle transiterait en
+   clair par le journal de conversation.
+4. ⏳ Installer la tâche quotidienne sur le PC boutique (compte et heure à
    décider).
-4. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
+5. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
    Supabase, aucun outil du dépôt ne le fait).
-5. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
+6. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.
 
 **Preuve** — La tâche apparaît dans le planificateur Windows. Une sauvegarde du
 jour existe sur disque. Une restauration complète a été menée à son terme sur un
