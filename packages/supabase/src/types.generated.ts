@@ -8433,6 +8433,15 @@ export type Database = {
           suggested_quantity: number
         }[]
       }
+      get_production_vs_sales_v1: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_product_id?: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
       get_profit_loss_v4: {
         Args: {
           p_date_end: string

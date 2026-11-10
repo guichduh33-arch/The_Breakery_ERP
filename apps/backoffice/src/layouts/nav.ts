@@ -228,6 +228,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production report', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-efficiency', label: 'Production efficiency', permission: 'reports.inventory.read' },
+          { to: '/backoffice/reports/production-vs-sales', label: 'Production vs sales', permission: 'reports.inventory.read' },
         ],
       },
       {

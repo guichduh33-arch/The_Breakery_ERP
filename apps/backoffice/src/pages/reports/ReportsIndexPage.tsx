@@ -34,7 +34,7 @@ import {
   Calendar, CalendarClock, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
   Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp,
   GitCommitHorizontal, Undo2, BadgePercent,
-  LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
+  LineChart, Sparkles, Megaphone, Cake, History, SearchX, ArrowLeftRight, type LucideIcon,
 } from 'lucide-react';
 import { cardVariants, cn, Input } from '@breakery/ui';
 import { EmptyState } from '@/components/BackofficeUi.js';
@@ -134,6 +134,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'staff-performance',    title: 'Staff Performance',    blurb: 'Orders, revenue and performance per staff.',                       icon: Users },
       { to: 'production-report',    title: 'Production Report',    blurb: 'Production quantities, values and costs.',                          icon: BarChart3 },
       { to: 'production-efficiency', title: 'Production Efficiency', blurb: 'Waste rate by product and daily trend.',                            icon: TrendingUp },
+      { to: 'production-vs-sales',  title: 'Production vs Sales',  blurb: 'Daily output against counter and B2B sales and approved waste, per item and category.', icon: ArrowLeftRight },
     ],
   },
   {
