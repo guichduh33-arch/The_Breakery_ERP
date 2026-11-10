@@ -1343,6 +1343,19 @@ ses lignes de vente.
    Pastries, Buns et Bagel. Aucune autre catégorie n'entre dans le rapport.
 5. Accès : le **propriétaire seul**. L'ouverture à d'autres comptes pourra
    suivre `S1-08`.
+6. Ventes B2B (après publication, même jour) : une commande B2B compte **le
+   jour où elle est livrée**, payée ou à crédit. Non livrée, elle ne compte pas.
+7. Bilan complet (même jour) : les restes déclarés par la caisse en fin de
+   journée entrent dans le rapport. Par jour et par article : reste de la veille
+   + produit − vendu − pertes approuvées − reste du soir = non expliqué. La
+   dernière correction d'une déclaration compte. Un jour sans déclaration, ou
+   un article absent d'une déclaration, est **inconnu**, jamais zéro.
+
+**Choix technique de l'agent (2026-11-10), dans le cadre du point 7** — Une
+perte saisie dans la déclaration de fin de journée compte le jour de cette
+déclaration, et non le jour de son approbation : sans cela, une perte approuvée
+le lendemain fausse le bilan des deux jours. Les autres pertes approuvées
+restent datées de leur approbation.
 
 **Preuve** — pgTAP : sur un jeu fixe (une fournée de 20, 15 vendus, 2 perdus),
 la ligne rend 20 / 15 / 2 et l'écart 3 ; une fournée annulée et une ligne de
