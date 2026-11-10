@@ -5,8 +5,11 @@
 //
 // CE QUI NE CHANGE PAS : les lignes viennent de `get_purchase_by_supplier_v2` ;
 // la PART (`share_pct`) est celle du SERVEUR et non une part recalculée sur les
-// lignes affichées. Page terminale — il n'y a pas de drill-down fournisseur
-// (décision documentée : la Wave C possède ce routage).
+// lignes affichées.
+//
+// S3-22 (2026-11-10) — la page n'est plus terminale : chaque fournisseur de la
+// table ouvre « Purchase Items » filtré sur lui (`supplier_id`), sur la période
+// SERVIE (celle que les chiffres de l'écran portent, bornée par la RPC).
 //
 // Ce qui change :
 //  1. LE DONUT DEVIENT UNE CARTE DE VENTILATION à pistes. Un anneau force à
@@ -38,6 +41,7 @@ import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { BreakdownCard, type BreakdownRow } from '@/features/reports/components/BreakdownCard.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import { categoricalColor, formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
@@ -256,7 +260,18 @@ export default function PurchaseBySupplierPage(): JSX.Element {
             <tbody>
               {ranked.map((r) => (
                 <tr key={r.supplier_id} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium">{r.supplier_name}</td>
+                  <td className="py-2 font-medium">
+                    {/* Sans identifiant, le lien ouvrirait TOUS les fournisseurs
+                        sous le nom d'un seul : on laisse le texte nu. */}
+                    {r.supplier_id !== '' ? (
+                      <DrilldownLink
+                        entity="purchase_items"
+                        id=""
+                        filter={{ supplier_id: r.supplier_id, start: served.start, end: served.end }}
+                        label={r.supplier_name}
+                      />
+                    ) : r.supplier_name}
+                  </td>
                   <td className={NUM_CELL}>{formatCount(r.po_count)}</td>
                   <td className={NUM_CELL}>{formatIdrFull(r.total)}</td>
                   <td className={NUM_CELL}>{formatCount(r.received_count)}</td>

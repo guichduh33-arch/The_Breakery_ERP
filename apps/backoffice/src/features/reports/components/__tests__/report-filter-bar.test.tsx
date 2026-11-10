@@ -47,6 +47,25 @@ function HarnessExtra(): JSX.Element {
   );
 }
 
+// Liste non stricte (chargée à la volée dans les pages) : la valeur d'URL
+// s'applique même hors options.
+const LOOSE: readonly ReportFilterDef<'cat'>[] = [
+  { kind: 'select', key: 'cat', label: 'Category', allLabel: 'All categories',
+    options: [{ value: 'x', label: 'Xylo' }] },
+];
+
+function HarnessLoose(): JSX.Element {
+  const filters = useReportFilters(LOOSE);
+  const loc = useLocation();
+  return (
+    <>
+      <ReportFilterBar defs={LOOSE} filters={filters} />
+      <span data-testid="location">{loc.search}</span>
+      <span data-testid="active">{JSON.stringify(filters.active)}</span>
+    </>
+  );
+}
+
 function renderBar(search = '', extra = false) {
   return render(
     <MemoryRouter initialEntries={[`/r${search}`]}>
@@ -130,6 +149,38 @@ describe('ReportFilterBar', () => {
   it('an extra key without the option does not count as a filter', () => {
     renderBar('?q=bag');
     expect(screen.queryByTestId('filters-clear')).toBeNull();
+  });
+
+  it('a strict list shows no fallback option for a value outside its options', () => {
+    renderBar('?kind=zzz');
+    expect(screen.getByTestId('filter-kind')).toHaveValue('');
+    expect(screen.queryByTestId('filter-kind-unknown')).toBeNull();
+  });
+
+  it('a non-strict list keeps an unknown active value visible, and removable', () => {
+    render(
+      <MemoryRouter initialEntries={['/r?cat=gone&start=2026-06-01']}>
+        <HarnessLoose />
+      </MemoryRouter>,
+    );
+    const select = screen.getByTestId('filter-cat');
+    expect(select).toHaveValue('gone');
+    expect(screen.getByTestId('filter-cat-unknown')).toHaveTextContent('Unknown (not in list)');
+    expect(screen.getByTestId('active')).toHaveTextContent('{"cat":"gone"}');
+    fireEvent.click(screen.getByTestId('filters-clear'));
+    expect(screen.getByTestId('location')).toHaveTextContent('?start=2026-06-01');
+    expect(select).toHaveValue('');
+    expect(screen.queryByTestId('filter-cat-unknown')).toBeNull();
+  });
+
+  it('a non-strict list adds no fallback when the value is listed', () => {
+    render(
+      <MemoryRouter initialEntries={['/r?cat=x']}>
+        <HarnessLoose />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('filter-cat')).toHaveValue('x');
+    expect(screen.queryByTestId('filter-cat-unknown')).toBeNull();
   });
 
   it('clearing cancels a pending text commit', () => {

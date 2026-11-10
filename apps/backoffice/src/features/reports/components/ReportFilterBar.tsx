@@ -10,6 +10,10 @@
 // `htmlFor`, l'anneau de focus est celui des primitives. « Clear filters »
 // n'existe que si un filtre est actif ; comme il disparaît sous le doigt, le
 // focus est rendu au premier contrôle — sinon il tomberait sur `<body>`.
+//
+// Une liste NON stricte dont la valeur active manque aux options affiche une
+// option de repli « Unknown (not in list) » sélectionnée : sans elle, le select
+// montrerait « All … » sur un filtre qui s'applique pourtant.
 
 import { useId, useRef, useState, type JSX, type ReactNode } from 'react';
 import { X } from 'lucide-react';
@@ -27,6 +31,9 @@ export interface ReportFilterBarProps<K extends string> {
 }
 
 const LABEL = 'flex items-center gap-1.5 text-xs text-text-muted';
+
+/** Libellé de l'option de repli d'une valeur active hors liste. */
+const UNKNOWN_OPTION_LABEL = 'Unknown (not in list)';
 
 export function ReportFilterBar<K extends string>({
   defs, filters, note, testId = 'report-filter-bar',
@@ -68,6 +75,15 @@ export function ReportFilterBar<K extends string>({
                   data-testid={`filter-${def.key}`}
                 >
                   <option value="">{def.allLabel}</option>
+                  {/* Liste non stricte : une valeur active absente des options
+                      (élément supprimé, id inconnu, liste en chargement)
+                      s'appliquerait sous « All … ». Une option de repli la
+                      garde visible, et retirable. */}
+                  {value !== '' && !def.options.some((o) => o.value === value) && (
+                    <option value={value} data-testid={`filter-${def.key}-unknown`}>
+                      {UNKNOWN_OPTION_LABEL}
+                    </option>
+                  )}
                   {def.options.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
