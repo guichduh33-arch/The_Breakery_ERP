@@ -1326,16 +1326,18 @@ et par catégorie. Graphique : production et ventes côte à côte par jour, et
 classement des articles par écart. Descente d'un article vers ses fournées et
 ses lignes de vente.
 
-**À trancher par Mamat avant de coder** — l'agent ne choisit pas à sa place :
-1. « Produit » = quantité saisie à la fournée, ou rendement réel constaté ? Les
-   deux définitions coexistent aujourd'hui dans le code.
-2. Ventes B2B : incluses dans le vendu, ou dans une colonne séparée ?
-3. Pertes comptées : production seule, ou aussi pertes de stock approuvées et
-   pertes de vitrine ?
-4. Périmètre : tous les articles à recette, ou seulement les articles frais du
-   jour ?
-5. Qui voit ce rapport : le propriétaire seul, ou toute personne portant la
-   permission de rapport de stock ? (lié à `S1-08`)
+**Tranché par Mamat le 2026-11-10**
+1. « Produit » = la quantité **enregistrée en production**. Le rapport est
+   **informatif** : il ne modifie et n'écrit rien dans le stock.
+2. Ventes B2B : dans une **colonne séparée** des ventes au comptoir.
+3. Pertes : seules les pertes **enregistrées et approuvées** comptent. Une
+   déclaration en attente n'est pas une perte.
+4. Périmètre : les articles frais du jour, c'est-à-dire les catégories pains,
+   viennoiseries, autres viennoiseries, salé et pâtisserie. **À vérifier à
+   l'exécution** : le nom exact de ces cinq catégories en base, à confirmer avec
+   Mamat si l'une d'elles ne se retrouve pas.
+5. Accès : le **propriétaire seul**. L'ouverture à d'autres comptes pourra
+   suivre `S1-08`.
 
 **Preuve** — pgTAP : sur un jeu fixe (une fournée de 20, 15 vendus, 2 perdus),
 la ligne rend 20 / 15 / 2 et l'écart 3 ; une fournée annulée et une ligne de
