@@ -68,12 +68,17 @@ pgTAP lancé à la main run 42644979774, tous deux réussis.
 | Paquet PC boutique | Workflow « Package Shop Production » run 42651675723 réussi ; `shop-release.zip`, SHA-256 `1cc5d1ad…` conforme au fichier `.sha256` ; `release.json` : SHA `a35fd5f5`, projet production ; rendu de l'addition et copies du ticket serveur présents | Voir la ligne d'installation ci-dessous |
 | Installation PC boutique `Pos` | Vers 00 h 34, depuis le terminal MeshCentral, par la procédure adaptée « imported-bridge-launcher » (scripts de la livraison du 2026-11-06, seuls SHA attendu et empreinte d'archive changés) : étape *stage* (6 901 fichiers vérifiés), bascule du lanceur, redémarrage de la tâche « Breakery V3 Production », vérification sur les deux origines ; marqueur `CASHIER_RELEASE_VERIFIED_a35fd5f5`, code de sortie 0. Release précédente `ce1d4a39` conservée ; lanceur sauvegardé (`start.cjs.rollback-a35fd5f5…`) | — |
 | Service boutique | `https://pos.the-breakery.com:3001/health` : `ok`, `release_sha` `a35fd5f5` ; page servie : `index-QRgUTh-Z.js`, identique au paquet ; fenêtre du pont : « POS SPA: …\releases\a35fd5f5… », synchronisation de 5 appareils | Rechargement de la page POS de la caisse non confirmé ; aucune impression ni vente constatée |
+| Contrôle du service, 01 h 20 | Depuis le terminal MeshCentral du nœud `Pos`, en lecture seule : `/health` sur `https://pos.the-breakery.com/` **et** `:3001` rend `ok`, `release_sha` `a35fd5f5` ; page servie sur 443 : `index-QRgUTh-Z.js`. Depuis le LAN : les 92 fichiers POS servis sur 3001 sont identiques au paquet ; 443 répond 403 hors du PC lui-même | Écran de la caisse non regardé : rechargement de la page toujours non confirmé |
 
 Le paquet ne s'extrait pas avec `Expand-Archive` (chemins trop longs dans
 `node_modules`) : `tar -xf` l'extrait correctement. L'installeur générique du
 paquet (`install-shop.ps1`) ne reconnaît pas le lanceur actuel, dont les chemins
-sont échappés à la manière de JavaScript : la procédure adaptée reste
-nécessaire tant que l'installeur du dépôt n'est pas corrigé.
+sont échappés à la manière de JavaScript : la procédure adaptée a donc servi.
+L'installeur du dépôt est corrigé par la PR #673, fusionnée le 2026-11-10
+(`c173f9fb`) ; voir l'[installation boutique](shop-install.md). Il n'a pas
+encore servi en boutique. Il ne voyage que dans un paquet construit depuis un
+SHA qui contient cette fusion, et il exige une configuration version 2 : le
+paquet `a35fd5f5` porte encore l'ancien installeur.
 
 Numéro de version des APK : les fabrications antérieures portaient un numéro
 jamais commité (1.20 / code 21 sur les appareils, 1.13 / code 14 au dépôt). La

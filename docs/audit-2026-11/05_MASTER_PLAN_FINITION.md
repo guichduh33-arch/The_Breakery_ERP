@@ -612,10 +612,11 @@ traitées. `node scripts/ci/relative-links.mjs` vert.
 
 **Risque prod** 🟠 — écran et ticket en service, aucune écriture d'argent.
 
-**État — code fusionné le 2026-11-09** (PR #669), **non installé** : il faut
-reconstruire et déposer le paquet du PC boutique (pont d'impression et POS).
-Tant que le pont n'est pas remplacé, l'addition sort encore sans prix. La preuve
-sur papier reste à faire.
+**État — code fusionné le 2026-11-09** (PR #669), **installé le 2026-11-10** :
+paquet `a35fd5f5` en service sur le PC boutique (pont d'impression et POS,
+contrôlé sur les deux origines) et tablettes en 1.21. Relevés datés dans
+`../runbooks/etat-environnements.md`. Rechargement de la page de la caisse non
+confirmé. La preuve sur papier reste à faire.
 
 **Source** — Demande de Mamat du 2026-11-09, **à prioriser** : présenter
 l'addition au client avant qu'il paie. Règle et intention dans
@@ -661,9 +662,11 @@ de la même commande.
 **Risque prod** 🟠 — ticket en service, aucune écriture d'argent.
 
 **État — fusionné et base de production à jour le 2026-11-09** (PR #670) :
-colonne et fonction présentes en production, égales au dev. **Non installé**
-côté écrans : le back-office n'est pas republié, et le paquet POS du PC boutique
-n'est pas reconstruit. La preuve sur papier reste à faire.
+colonne et fonction présentes en production, égales au dev. **Écrans installés
+le 2026-11-10** : back-office publié sur `a35fd5f5` (réglage passé à 2 copies par
+Mamat), paquet `a35fd5f5` en service sur le PC boutique, tablettes en 1.21.
+Relevés datés dans `../runbooks/etat-environnements.md`. La preuve sur papier
+reste à faire.
 
 **Source** — Demande de Mamat du 2026-11-09, **à prioriser**. Règle et intention
 dans `../SPECS_OFFICIELS_ERP_POS.md`, section 7.
