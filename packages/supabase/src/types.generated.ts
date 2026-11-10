@@ -8433,7 +8433,7 @@ export type Database = {
           suggested_quantity: number
         }[]
       }
-      get_production_vs_sales_v3: {
+      get_production_vs_sales_v4: {
         Args: {
           p_category_id?: string
           p_end_date: string

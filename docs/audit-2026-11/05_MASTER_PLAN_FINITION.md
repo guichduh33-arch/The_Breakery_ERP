@@ -1350,6 +1350,12 @@ ses lignes de vente.
    + produit − vendu − pertes approuvées − reste du soir = non expliqué. La
    dernière correction d'une déclaration compte. Un jour sans déclaration, ou
    un article absent d'une déclaration, est **inconnu**, jamais zéro.
+8. Articles de combo (2026-11-11) : un article servi comme composant d'un
+   combo compte comme **vendu** dans ce rapport, en quantité seulement
+   (quantité de la ligne du combo × quantité du composant). La recette reste
+   sur le combo. Relevé de production du même jour, en lecture seule : 104
+   lignes de combo du 2026-09-01 au 2026-11-10, portant 254 articles.
+   **Développé le 2026-11-11, base de développement seulement, non publié.**
 
 **Choix technique de l'agent (2026-11-10), dans le cadre du point 7** — Une
 perte saisie dans la déclaration de fin de journée compte le jour de cette
@@ -1362,8 +1368,10 @@ la ligne rend 20 / 15 / 2 et l'écart 3 ; une fournée annulée et une ligne de
 vente annulée ne comptent pas ; le jour est le jour métier. Vitest de la page.
 Suite back-office complète verte. Comparaison à la main d'un jour réel en dev.
 
-**Dépend de** — `S3-22`. **Limite à écrire** — Un article vendu comme composant
-d'un combo n'a pas de ligne de vente propre : dire dans la page s'il est compté.
+**Dépend de** — `S3-22`. **Limite écrite** — Un article vendu comme composant
+d'un combo n'a pas de ligne de vente propre. La page dit s'il est compté :
+non jusqu'au point 8, oui depuis. Le rapport des ventes par article, lui, ne
+compte toujours pas les composants, et sa page le dit.
 
 ---
 

@@ -156,11 +156,14 @@ export default function ProductionVsSalesPage(): JSX.Element {
   );
   const dayColumns = useMemo(() => buildPvsDayColumns({ summary }), [summary]);
 
+  // Part combo : DÉJÀ comprise dans le total vendu, dite seulement si elle existe.
+  const soldInCombo = summary?.sold_in_combo ?? 0;
   const tiles = [
     { key: 'produced', label: 'Produced', value: formatCount(summary?.produced ?? 0), note: 'batches recorded' },
     {
       key: 'sold', label: 'Sold', value: formatCount(summary?.sold_total ?? 0),
-      note: `Counter ${formatCount(summary?.sold_counter ?? 0)} · B2B ${formatCount(summary?.sold_b2b ?? 0)}`,
+      note: `Counter ${formatCount(summary?.sold_counter ?? 0)} · B2B ${formatCount(summary?.sold_b2b ?? 0)}`
+        + (soldInCombo > 0 ? ` · of which ${formatCount(soldInCombo)} in combos` : ''),
     },
     { key: 'waste', label: 'Approved waste', value: formatCount(summary?.wasted ?? 0), note: 'approved losses only' },
     {
@@ -404,7 +407,11 @@ export default function ProductionVsSalesPage(): JSX.Element {
             other columns of that total. An item-day with no activity and nothing left is not listed.
           </li>
           <li>Counter sales count on the day they are recognised. B2B orders count on the day they are delivered, paid or on credit; an order not yet delivered does not count.</li>
-          <li>An item sold as part of a combo is not counted as sold here. Promotional gifts are not counted either.</li>
+          <li>
+            An item served in a combo counts as sold: the combo line quantity × the item quantity in the combo, on the
+            counter or B2B side of its order. When there is any, the Sold tile and the item drawer show that share
+            (&quot;in combos&quot;); it is already included in the totals. Promotional gifts are not counted as sold.
+          </li>
           <li>Only approved waste counts. Waste entered in an end-of-day count is dated on that day; other waste on the day it was approved.</li>
           <li>The gap (produced − sold − waste) ignores what was carried over from the day before.</li>
           <li>Items on an order line cancelled after preparation are neither sold nor approved waste, so they stay in the gap.</li>

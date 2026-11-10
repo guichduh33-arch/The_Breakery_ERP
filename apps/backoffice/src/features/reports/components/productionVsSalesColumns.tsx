@@ -273,6 +273,8 @@ function measureCsv<T extends PvsRow>(): CsvColumn<T>[] {
     { header: 'Sold counter',   accessor: (r) => r.sold_counter, format: 'number' },
     { header: 'Sold B2B',       accessor: (r) => r.sold_b2b,     format: 'number' },
     { header: 'Sold total',     accessor: (r) => r.sold_total,   format: 'number' },
+    // Part du total servie en combo : déjà comprise dans « Sold total ».
+    { header: 'Sold in combos', accessor: (r) => r.sold_in_combo, format: 'number' },
     { header: 'Approved waste', accessor: (r) => r.wasted,       format: 'number' },
     { header: 'Left at close',  accessor: (r) => r.closing,      format: 'number' },
     // Vide = inconnu : un 0 mentirait.
