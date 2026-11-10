@@ -893,6 +893,25 @@ tranché.
 **FAIT** — Quatre pages de marketing existent, routées et navigables : retour sur
 investissement par promotion, segments, cohortes, anniversaires.
 
+**FAIT** — Relevé du 2026-11-10 : aucun rapport ne compare la production aux
+ventes ; le rapport des lignes d'achat n'a que deux filtres, aucun tri, et
+calcule ses totaux sur un maximum de 1 000 lignes ; aucune liste ne montre
+ensemble l'heure de création, l'heure de paiement et la table d'une vente ;
+aucune page du dossier des rapports de vente ne filtre par type de commande,
+moyen de paiement ou table (la liste des commandes filtre déjà par type et par
+moyen de paiement, pas par table).
+**À LIVRER** — Demande de Mamat du 2026-11-10 :
+- un rapport qui compare la production quotidienne aux ventes, par article et
+  par catégorie ;
+- des achats par article aussi détaillés et filtrables que les ventes par
+  article ;
+- l'heure de création, l'heure de paiement et le numéro de table visibles sur
+  les ventes ;
+- des rapports filtrables, faciles à lire, accompagnés de graphiques utiles.
+**OUVERT** — Le sort des rapports qui se recouvrent (fusion ou rôle distinct) :
+à trancher par Mamat, paire par paire. Plan d'exécution : le bloc « qualité des
+rapports » de `audit-2026-11/05_MASTER_PLAN_FINITION.md`.
+
 ---
 
 ## 16. Piste d'audit

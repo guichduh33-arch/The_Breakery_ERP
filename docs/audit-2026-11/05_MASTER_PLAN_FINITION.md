@@ -36,12 +36,12 @@ projet) avant toute installation de tâche planifiée.
 |---|---|---|
 | Sprint 1 — Stabilisation et ambiguïtés critiques | 22 | 15 |
 | Sprint 2 — Nettoyage du code abandonné | 13 | 3 |
-| Sprint 3 — Features manquantes validées | 18 | 6 |
+| Sprint 3 — Features manquantes validées | 24 | 6 |
 | Sprint 4 — Optimisation et clôture | 11 | 1 |
-| **Total** | **64** | **25** |
+| **Total** | **70** | **25** |
 
-*(Décompte du 2026-11-09, après l'ajout de `S1-21` et `S1-22` sur demande de
-Mamat.)*
+*(Décompte du 2026-11-10, après l'ajout de `S1-21` et `S1-22` le 2026-11-09 puis
+du bloc « qualité des rapports », `S3-19` à `S3-24`, sur demande de Mamat.)*
 
 ---
 
@@ -1266,6 +1266,265 @@ obligatoires — **le pont ne démarre pas** si on suit la documentation.
 
 ---
 
+## Bloc « qualité des rapports » — `S3-19` à `S3-24`
+
+> Ajouté le **2026-11-10** sur demande de Mamat : des rapports pertinents,
+> filtrables, faciles à lire, accompagnés de graphiques utiles. Règles et
+> intentions dans `../SPECS_OFFICIELS_ERP_POS.md`, section 15.
+>
+> **Constat d'audit** (code de `master`, 2026-11-10, lecture seule des pages du
+> back-office et des migrations ; aucune requête sur la base, aucun rendu
+> navigateur) :
+> - Aucun rapport ne met la production en regard des ventes, ni par jour, ni par
+>   article, ni par catégorie. Trois pages de production lisent la même table
+>   sans jamais lire une vente.
+> - Le rapport des lignes d'achat est un journal plat : deux filtres (période,
+>   fournisseur), aucun tri, aucune vue par article, un plafond de 1 000 lignes
+>   sur lequel les totaux sont calculés.
+> - Aucun écran ne montre ensemble l'heure de création, l'heure de paiement et
+>   la table d'une vente. Les trois données existent en base ; seule la fiche
+>   d'**une** commande les réunit.
+> - Aucune page du dossier des rapports de vente ne filtre par type de commande,
+>   moyen de paiement ou table. La liste des commandes filtre déjà par type et
+>   par moyen de paiement, pas par table.
+> - Un socle commun existe (coquille de rapport, contrôle de période, en-tête
+>   triable). Il lui manque une barre de filtres au-delà de la période, et une
+>   table de rapport avec tri, pied de total et recherche : chaque page réécrit
+>   les siennes, et le tri manque sur la majorité.
+> - Plusieurs pages se recouvrent, et plusieurs listes n'ont aucun graphique.
+>
+> **Ordre interne** — `S3-22` (socle de filtres et de table) d'abord : les cinq
+> autres s'appuient dessus.
+
+---
+
+### `[S3-19]` Créer le rapport « production contre ventes »
+
+**Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
+
+**Constat** — Les données existent toutes : les fournées (date, produit,
+quantité), les lignes de vente, les pertes, les catégories. Aucune fonction ne
+les croise. La clôture de vitrine fait déjà ce calcul pour un jour et un
+produit, mais sur une courte liste de produits écrite en dur, et hors des
+rapports.
+
+**Fichiers**
+- `supabase/migrations/<nouveau>` — une fonction de rapport neuve au grain
+  **jour × article**, repliable par catégorie : produit, vendu, perdu, écart,
+  taux d'écoulement
+- `apps/backoffice/src/features/reports/hooks/` — un nouveau crochet, réponse
+  **validée dans le crochet**
+- `apps/backoffice/src/pages/reports/` — une nouvelle page, sa route et sa tuile
+  de hub
+- `supabase/migrations/20260624000017_create_get_production_report_v1_rpc.sql`
+  et `20261105000036_product_sales_permission.sql` — les deux définitions à
+  réutiliser (jour métier, lignes annulées exclues), **ne pas éditer**
+- `supabase/tests/` et les tests Vitest de la page
+
+**Travail** — Filtres : période, catégorie, article. Vue par jour, par article
+et par catégorie. Graphique : production et ventes côte à côte par jour, et
+classement des articles par écart. Descente d'un article vers ses fournées et
+ses lignes de vente.
+
+**À trancher par Mamat avant de coder** — l'agent ne choisit pas à sa place :
+1. « Produit » = quantité saisie à la fournée, ou rendement réel constaté ? Les
+   deux définitions coexistent aujourd'hui dans le code.
+2. Ventes B2B : incluses dans le vendu, ou dans une colonne séparée ?
+3. Pertes comptées : production seule, ou aussi pertes de stock approuvées et
+   pertes de vitrine ?
+4. Périmètre : tous les articles à recette, ou seulement les articles frais du
+   jour ?
+5. Qui voit ce rapport : le propriétaire seul, ou toute personne portant la
+   permission de rapport de stock ? (lié à `S1-08`)
+
+**Preuve** — pgTAP : sur un jeu fixe (une fournée de 20, 15 vendus, 2 perdus),
+la ligne rend 20 / 15 / 2 et l'écart 3 ; une fournée annulée et une ligne de
+vente annulée ne comptent pas ; le jour est le jour métier. Vitest de la page.
+Suite back-office complète verte. Comparaison à la main d'un jour réel en dev.
+
+**Dépend de** — `S3-22`. **Limite à écrire** — Un article vendu comme composant
+d'un combo n'a pas de ligne de vente propre : dire dans la page s'il est compté.
+
+---
+
+### `[S3-20]` Refondre le rapport des achats par article
+
+**Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10 : aussi
+détaillé et filtrable que les ventes par article.
+
+**Constat** — Voir le constat du bloc. S'y ajoutent trois défauts factuels : le
+sous-titre annonce des bons « reçus » alors que la fonction prend tout sauf
+brouillon et annulé ; la tuile d'unités commandées additionne des unités
+différentes ; les fournisseurs sont dédoublonnés par nom et non par identifiant.
+
+**Fichiers**
+- `supabase/migrations/20260624000012_create_get_purchase_items_v1_rpc.sql` —
+  point de départ, **ne pas éditer** ; partir du **corps live**
+- `supabase/migrations/<nouveau>` — version suivante de la famille
+  `get_purchase_items` : agrégat **par article** calculé serveur (quantité,
+  valeur, part, coût unitaire moyen, nombre de bons, nombre de fournisseurs),
+  totaux **non tronqués**, filtres catégorie, article, statut du bon ; et une
+  lecture paginée des lignes d'un article
+- `apps/backoffice/src/pages/reports/PurchaseItemsPage.tsx` et son crochet
+- `apps/backoffice/src/pages/reports/__tests__/purchase-items-page.smoke.test.tsx`
+- `supabase/tests/`
+
+**Travail** — Vue par article triable, avec comparaison à la période précédente.
+Filtres : période, fournisseur, catégorie, article, statut. Colonnes ajoutées :
+catégorie, part, coût unitaire moyen, unité d'achat, date de réception.
+Graphique : classement des articles par dépense, et dépense dans le temps.
+Descente d'un article vers ses lignes d'achat, paginée. Corriger les trois
+défauts factuels.
+
+**Preuve** — pgTAP : les totaux égalent la somme des lignes au-delà de 1 000
+lignes ; chaque filtre restreint bien ; les brouillons et annulés restent
+exclus. Vitest de la page. Types régénérés. Suite back-office complète verte.
+
+**Dépend de** — `S3-22`.
+
+---
+
+### `[S3-21]` Montrer l'heure de création, l'heure de paiement et la table des ventes
+
+**Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
+
+**Fichiers**
+- `supabase/migrations/<nouveau>` — version suivante des familles
+  `get_orders_list` et `get_product_sales_lines` (**corps live**). La liste des
+  commandes renvoie déjà l'heure de création : y ajouter l'heure de paiement,
+  le numéro de table et un filtre par table. Les lignes de vente d'un article
+  ne renvoient qu'une heure de vente : y ajouter les trois champs
+- `apps/backoffice/src/pages/orders/OrdersListPage.tsx`,
+  `apps/backoffice/src/features/orders/hooks/useOrdersList.ts` et
+  `apps/backoffice/src/features/orders/exportOrdersCsv.ts`
+- `apps/backoffice/src/features/reports/components/ProductSalesLinesDrawer.tsx`
+  et `hooks/useProductSalesLines.ts`
+- `apps/backoffice/src/pages/reports/SalesByTablePage.tsx` — rendre une table
+  cliquable vers ses commandes
+- `supabase/tests/` et les tests Vitest des trois écrans
+
+**Travail** — Liste des commandes : la colonne d'heure existante devient
+« Created », s'y ajoutent « Paid » et « Table », un filtre par table, et les
+trois champs dans l'export. Lignes de vente d'un article :
+les trois mêmes champs, plus le tri et l'export. Ventes par table : descente
+vers les commandes de la table.
+
+**Preuve** — pgTAP : une commande créée à 10 h et payée à 11 h rend les deux
+heures distinctes et sa table ; une commande sans table rend une valeur vide,
+jamais une erreur ; le filtre par table ne ramène que cette table. Vitest des
+trois écrans. Types régénérés. Suite back-office complète verte.
+
+**Attention** — Un bump de famille retire l'ancienne version dans la même
+migration : vérifier qu'aucun **autre** appelant en service ne la lit encore
+(leçon de `S1-22`). **Dépend de** — rien. Elle part **avant** `S3-22` : les deux
+bumpent la famille des lignes de vente d'un article, et deux bumps concurrents
+d'une même famille se marchent dessus.
+
+---
+
+### `[S3-22]` Donner aux rapports un socle commun de filtres et de table
+
+**Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10 (« filtrable,
+facile à lire »). Constat d'audit : voir le bloc.
+
+**Fichiers**
+- `apps/backoffice/src/features/reports/components/` — une barre de filtres
+  partagée (état dans l'URL, comme la période) et une table de rapport partagée
+  (tri, pied de total, recherche texte). Point de départ : `ReportShell.tsx`,
+  `PeriodControl.tsx`, `SortableTh.tsx` et `hooks/useSortedRows.ts`. **Étendre
+  ce socle, ne pas en créer un second**
+- Les pages de vente du dossier `apps/backoffice/src/pages/reports/` — brancher
+  le socle, page par page
+- `supabase/migrations/<nouveau>` — versions suivantes des fonctions de vente
+  qui reçoivent les nouveaux filtres (**corps live**, une famille par migration)
+- `apps/backoffice/src/routes/index.tsx` — la route des ventes par article
+  refuse un compte que sa fonction accepte : aligner
+- `supabase/tests/` et les tests Vitest des pages touchées
+
+**Travail**
+1. Écrire le socle et le prouver sur **une** page, les ventes par article :
+   filtres type de commande, moyen de paiement, table, plus la recherche.
+2. L'étendre aux autres rapports de vente, **une page par commit**.
+3. Exposer les filtres que le serveur accepte déjà et que l'écran ne propose
+   pas : l'article dans le journal des mouvements de stock, la catégorie dans
+   `CostSpendAnalyticsPage.tsx`. **Relire le corps live** des deux fonctions
+   avant de s'y fier : ce relevé vient des fichiers de migration.
+4. Relier les rapports entre eux : achats par date et par fournisseur vers les
+   lignes d'achat filtrées ; ventes par catégorie vers les ventes par article
+   filtrées.
+
+**Preuve** — Vitest : chaque filtre s'écrit dans l'URL, se relit au rechargement
+et arrive dans l'appel serveur. pgTAP par fonction bumpée : chaque filtre
+restreint bien, et sans filtre le total est **inchangé** par rapport à la
+version précédente. Suite back-office complète verte après chaque page.
+
+---
+
+### `[S3-23]` Ajouter les graphiques qui manquent
+
+**Risque prod** 🟢 · **Source** — Demande de Mamat du 2026-11-10 (« accompagnés
+de diagrammes ou graphiques utiles »).
+
+**Fichiers** — Les pages de `apps/backoffice/src/pages/reports/` listées
+ci-dessous ; les composants de graphique existants de
+`apps/backoffice/src/features/reports/components/charts/` sont à **réutiliser**,
+aucune librairie nouvelle.
+
+**Travail** — Un graphique par page, choisi pour la question que la page pose :
+- ventes par heure : lire **toute la période** et non son dernier jour ; carte
+  heure × jour de semaine
+- ventes par article et par catégorie : évolution dans le temps
+- écart de stock : corrections et pertes par article
+- mouvements de stock : entrées et sorties par jour et par type
+- rendement de production et coût des recettes : écart par recette
+- analyse de panier et ventes hors horaires : un visuel de répartition
+- production : quantités produites et perdues par jour, pas seulement la valeur
+
+**Preuve** — Chaque graphique a un test de rendu avec données et un test d'état
+vide. Contrôle au navigateur, thème clair et thème sombre. Suite back-office
+complète verte.
+
+**Dépend de** — `S3-22`.
+
+---
+
+### `[S3-24]` Arbitrer les rapports qui se recouvrent et ranger le hub
+
+**Risque prod** 🟠 · **Source** — Audit du 2026-11-10, sur demande de Mamat
+(« vérifie leur pertinence »).
+
+**Constat** — Recouvrements relevés :
+- ventes par employé ⊂ performance des employés (mêmes lignes, le second ajoute
+  annulations, remboursements et remises)
+- rendement de production ↔ efficacité de production ↔ rapport de production :
+  trois pages pour une seule table
+- marge brute ↔ ventes par article sur quantité et chiffre d'affaires
+- achats par date ↔ rapport de dépense sur les achats par jour
+- historique des mouvements de stock ↔ l'écran des mouvements du module stock
+- le rapport des pertes lit encore les lots (colonne et lignes de péremption) :
+  à nettoyer **avec** `S2-01`
+- rangement : l'écart de caisse est classé dans les ventes ; la production est
+  répartie sur deux sections ; la tuile de l'écart de stock porte un libellé
+  qui ne dit pas ce que la page mesure. Le renommage du « coût de production »
+  reste porté par `S4-07`, pas par cette tâche
+
+**Travail** — **Aucune suppression sans décision de Mamat.** Lui présenter, pour
+chaque paire, les deux options : fusionner dans le plus complet, ou garder les
+deux avec un rôle distinct écrit dans le sous-titre. Appliquer ensuite, une
+fusion par commit. Reclasser les tuiles et corriger les libellés, **en anglais**.
+
+**Preuve** — Aucune route morte, aucun lien du hub cassé, la recherche du hub
+trouve chaque rapport restant. Le hub est **recompté à la date de la tâche** (le
+chiffre écrit dans `S2-08` ne tient plus dès qu'une tuile s'ajoute), et le
+décompte de la section 15 des specs est remis à jour et **daté**. Suite
+back-office complète verte.
+
+**Dépend de** — `S2-01` (retrait des lots, pour le rapport des pertes), `S2-02`
+(les causes d'écart de rendement disparaissent des pages de production),
+`S2-08`, `S3-19`.
+
+---
+
 # Sprint 4 — Optimisation et clôture
 
 > Objectif : refermer la dette signalée en phase 1 et laisser le dépôt dans un
@@ -1438,6 +1697,14 @@ S3-01 ─> S3-02 ─> S3-03             (chaîne des sessions de caisse)
 
 S1-19 (ADR du hub)
   └─> S3-18
+
+S3-22 (socle de filtres et de table des rapports)
+  └─> S3-19, S3-20, S3-23
+
+S3-21 ─> S3-22                      (même famille de fonction : un bump à la fois)
+
+S2-01, S2-02, S2-08, S3-19
+  └─> S3-24                        (arbitrage des rapports qui se recouvrent)
 ```
 
 # Annexe B — Pièges d'exécution de ce dépôt
