@@ -112,6 +112,21 @@ describe('SalesByCategoryPage (smoke)', () => {
     expect(screen.getAllByText('Boissons').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('S3-22 — chaque catégorie ouvre Sales by Product filtré, même période, et garde la fiche', async () => {
+    renderPage();
+    const table = await screen.findByTestId('sbc-category-detail');
+    const link = await within(table).findByRole('link', { name: /View products sold in Viennoiserie/ });
+    expect(link).toHaveAttribute(
+      'href',
+      `/backoffice/reports/sales-by-product?category_id=c-1&start=${START}&end=${END}`,
+    );
+    // L'accès existant à la fiche catégorie reste en place.
+    expect(within(table).getByRole('link', { name: 'Viennoiserie' })).toHaveAttribute(
+      'href',
+      `/backoffice/products?category_id=c-1&date_from=${START}&date_to=${END}`,
+    );
+  });
+
   it('formats revenue with the module IDR formatter, not a raw number', async () => {
     renderPage();
     // Audit lot D / R-15 — la table rendait `2400000` via `toLocaleString()`.

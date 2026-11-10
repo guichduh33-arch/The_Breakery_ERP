@@ -104,6 +104,16 @@ describe('PurchaseByDatePage (smoke)', () => {
     expect(within(table).getByText('2026-06-05')).toBeInTheDocument();
   });
 
+  it('S3-22 — chaque jour ouvre Purchase Items sur ce seul jour', async () => {
+    injectRpcError = false;
+    renderPage();
+    const table = await screen.findByTestId('purchase-by-date-table');
+    const link = await within(table).findByRole('link', { name: '2026-06-05' });
+    expect(link).toHaveAttribute(
+      'href', '/backoffice/reports/purchase-items?start=2026-06-05&end=2026-06-05',
+    );
+  });
+
   it('charts the daily value with the paired-bars component', async () => {
     injectRpcError = false;
     renderPage();

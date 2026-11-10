@@ -47,9 +47,9 @@ DO $$ DECLARE actor uuid; BEGIN
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated')::text,true);
 END $$;
 CREATE TEMP TABLE tzb_snapshot AS
-SELECT public.get_orders_list_v7('1998-06-15','1998-06-15',
+SELECT public.get_orders_list_v8('1998-06-15','1998-06-15',
   jsonb_build_object('served_by',profile_id),200,'created_at','asc') AS page,
-  public.get_orders_counters_v5('1998-06-15','1998-06-15',
+  public.get_orders_counters_v6('1998-06-15','1998-06-15',
   jsonb_build_object('served_by',profile_id)) AS counters FROM tzb_context;
 
 INSERT INTO tzb_results SELECT is(current_setting('TimeZone'),'Asia/Makassar','session métier WITA');
@@ -78,19 +78,19 @@ INSERT INTO tzb_results SELECT is((counters->'total'->>'amount')::numeric,50015:
 INSERT INTO tzb_results SELECT is((counters->'paid'->>'count')::int,5,'les cinq commandes réglées par statut sont comptées') FROM tzb_snapshot;
 INSERT INTO tzb_results SELECT is((counters->'unpaid'->>'count')::int,0,'aucune commande impayée inventée') FROM tzb_snapshot;
 INSERT INTO tzb_results SELECT is((counters->'by_status'->'completed'->>'count')::int,5,'panier statut cohérent avec la liste') FROM tzb_snapshot;
-INSERT INTO tzb_results SELECT is(jsonb_array_length(public.get_orders_list_v7(
+INSERT INTO tzb_results SELECT is(jsonb_array_length(public.get_orders_list_v8(
   '1998-06-15','1998-06-16',jsonb_build_object('served_by',profile_id),200)->'lines'),8,
   'plage de deux jours : lendemain inclus, jour précédent exclu') FROM tzb_context;
-INSERT INTO tzb_results SELECT is((public.get_orders_counters_v5(
+INSERT INTO tzb_results SELECT is((public.get_orders_counters_v6(
   '1998-06-14','1998-06-14',jsonb_build_object('served_by',profile_id))->'total'->>'count')::int,1,
   'jour précédent isolé sans chevauchement') FROM tzb_context;
-INSERT INTO tzb_results SELECT is((public.get_orders_counters_v5(
+INSERT INTO tzb_results SELECT is((public.get_orders_counters_v6(
   '1998-06-16','1998-06-16',jsonb_build_object('served_by',profile_id))->'total'->>'count')::int,3,
   'jour suivant isolé dès minuit') FROM tzb_context;
 INSERT INTO tzb_results SELECT ok(
-  jsonb_array_length(public.get_orders_list_v7('1998-06-15','1998-06-15',
+  jsonb_array_length(public.get_orders_list_v8('1998-06-15','1998-06-15',
     jsonb_build_object('served_by',profile_id,'hour',6),200)->'lines')=1
-  AND (public.get_orders_counters_v5('1998-06-15','1998-06-15',
+  AND (public.get_orders_counters_v6('1998-06-15','1998-06-15',
     jsonb_build_object('served_by',profile_id,'hour',6))->'total'->>'count')::int=1,
   'filtre horaire 06h cohérent entre lignes et compteurs') FROM tzb_context;
 DO $$ DECLARE
@@ -100,7 +100,7 @@ BEGIN
   SELECT jsonb_build_object('served_by',profile_id) INTO filters FROM tzb_context;
   SELECT array_agg(id::text ORDER BY n) INTO expected FROM tzb_orders WHERE n BETWEEN 1 AND 5;
   LOOP
-    page:=public.get_orders_list_v7('1998-06-15','1998-06-15',filters,2,
+    page:=public.get_orders_list_v8('1998-06-15','1998-06-15',filters,2,
       'created_at','asc',cursor_value,cursor_id);
     ids:=ids||ARRAY(SELECT line->>'id' FROM jsonb_array_elements(page->'lines') line);
     cursor_value:=page->>'next_cursor_val'; cursor_id:=(page->>'next_cursor_id')::uuid;
@@ -110,10 +110,10 @@ BEGIN
   INSERT INTO tzb_results SELECT is(ids,expected,'pagination : cinq lignes sans perte ni doublon autour des bornes');
 END $$;
 INSERT INTO tzb_results SELECT ok(
-  has_function_privilege('authenticated','public.get_orders_list_v7(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
-  AND has_function_privilege('authenticated','public.get_orders_counters_v5(text,text,jsonb)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.get_orders_list_v7(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.get_orders_counters_v5(text,text,jsonb)','EXECUTE'),
+  has_function_privilege('authenticated','public.get_orders_list_v8(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
+  AND has_function_privilege('authenticated','public.get_orders_counters_v6(text,text,jsonb)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.get_orders_list_v8(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.get_orders_counters_v6(text,text,jsonb)','EXECUTE'),
   'droits authenticated conservés, anon/PUBLIC refusés');
 INSERT INTO tzb_results SELECT ok(
   to_regprocedure('public.get_orders_list_v6(text,text,jsonb,integer,text,text,text,uuid)') IS NULL
@@ -124,10 +124,10 @@ DO $$ BEGIN
   PERFORM set_config('request.jwt.claims','{}',true);
 END $$;
 INSERT INTO tzb_results SELECT throws_ok(
-  $$SELECT public.get_orders_list_v7('1998-06-15','1998-06-15')$$,
+  $$SELECT public.get_orders_list_v8('1998-06-15','1998-06-15')$$,
   '42501','Authentication required','liste : absence de session refusée');
 INSERT INTO tzb_results SELECT throws_ok(
-  $$SELECT public.get_orders_counters_v5('1998-06-15','1998-06-15')$$,
+  $$SELECT public.get_orders_counters_v6('1998-06-15','1998-06-15')$$,
   '42501','Authentication required','compteurs : absence de session refusée');
 INSERT INTO tzb_results SELECT * FROM finish();
 SELECT result FROM tzb_results;

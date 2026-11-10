@@ -1,7 +1,10 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByProduct.ts
 //
-// Query hook pour `get_sales_by_product_v5` — le détail des produits vendus sur
+// Query hook pour `get_sales_by_product_v6` — le détail des produits vendus sur
 // une fenêtre de jours métier, ventilé comptoir / B2B.
+//
+// S3-22 (2026-11-10) — v6 : `p_filters` restreint la portée des commandes
+// (type, moyen de paiement, table). Réponse inchangée.
 //
 // Deux réserves que la RPC porte et que la page DOIT afficher (elles ne se
 // devinent pas depuis les nombres) :
@@ -13,7 +16,11 @@
 //     total des remises.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 export interface ChannelSplit {
   qty:     number;
@@ -63,6 +70,8 @@ export interface UseSalesByProductParams {
   start:       string;
   end:         string;
   categoryId?: string | null;
+  /** Filtres de commande — transmis tels quels au tiroir des lignes. */
+  filters?:    SalesOrderFilters;
 }
 
 function toNum(v: unknown): number {
@@ -81,21 +90,28 @@ function toSplit(v: unknown): ChannelSplit {
 }
 
 export function useSalesByProduct(params: UseSalesByProductParams) {
-  const { start, end, categoryId } = params;
+  const { start, end, categoryId, filters } = params;
   return useQuery<SalesByProductData, Error>({
-    queryKey: ['sales-by-product', start, end, categoryId ?? null],
+    queryKey: ['sales-by-product', start, end, categoryId ?? null, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
       // `exactOptionalPropertyTypes` : on omet l'arg optionnel plutôt que de
       // poser `undefined`.
-      const args: { p_start_date: string; p_end_date: string; p_category_id?: string } = {
+      const args: {
+        p_start_date:   string;
+        p_end_date:     string;
+        p_category_id?: string;
+        p_filters?:     Json;
+      } = {
         p_start_date: start,
         p_end_date:   end,
       };
       if (categoryId) args.p_category_id = categoryId;
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
 
-      const { data, error } = await supabase.rpc('get_sales_by_product_v5', args);
+      const { data, error } = await supabase.rpc('get_sales_by_product_v6', args);
       if (error) throw error as Error;
 
       const r        = (data ?? {}) as Record<string, unknown>;

@@ -13,7 +13,10 @@ import type { OrdersListLine } from './hooks/useOrdersList.js';
 export function exportOrdersCsv(lines: OrdersListLine[], start: string, end: string): void {
   const csv = buildCsv(lines, [
     { header: 'Order #',  accessor: (o) => o.order_number },
-    { header: 'Time',     accessor: (o) => formatDateTimeWita(o.created_at) },
+    { header: 'Created',  accessor: (o) => formatDateTimeWita(o.created_at) },
+    // S3-21 — vide tant que la commande n'est pas réglée / hors salle.
+    { header: 'Paid',     accessor: (o) => (o.paid_at !== null ? formatDateTimeWita(o.paid_at) : '') },
+    { header: 'Table',    accessor: (o) => o.table_number ?? '' },
     { header: 'Type',     accessor: (o) => o.order_type },
     { header: 'Customer', accessor: (o) => o.customer_name ?? '' },
     { header: 'Items',    accessor: (o) => o.items_count, format: 'number' },

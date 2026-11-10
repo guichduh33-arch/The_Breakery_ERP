@@ -8322,11 +8322,11 @@ export type Database = {
       }
       get_operational_products_v2: { Args: never; Returns: Json }
       get_opname_items_v1: { Args: { p_count_id: string }; Returns: Json }
-      get_orders_counters_v5: {
+      get_orders_counters_v6: {
         Args: { p_end: string; p_filters?: Json; p_start: string }
         Returns: Json
       }
-      get_orders_list_v7: {
+      get_orders_list_v8: {
         Args: {
           p_cursor_id?: string
           p_cursor_val?: string
@@ -8405,10 +8405,11 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_sales_lines_v5: {
+      get_product_sales_lines_v7: {
         Args: {
           p_cursor?: string
           p_end_date: string
+          p_filters?: Json
           p_limit?: number
           p_product_id: string
           p_start_date: string
@@ -8499,10 +8500,11 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_sales_by_product_v5: {
+      get_sales_by_product_v6: {
         Args: {
           p_category_id?: string
           p_end_date: string
+          p_filters?: Json
           p_start_date: string
         }
         Returns: Json

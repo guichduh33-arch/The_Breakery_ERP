@@ -14,6 +14,10 @@
 //     comparerait deux catégories différentes.
 //  3. La carte de ventilation totalise le jeu COMPLET et referme ses 100 % par
 //     un reliquat « Others » — cinq lignes montrées ne font pas un total.
+//
+// S3-22 (2026-11-10) — chaque ligne de la table ouvre « Sales by Product »
+// filtré sur sa catégorie, sur la même période (`category_id` / `start` / `end`,
+// les clés que la page cible lit). Le lien du nom vers le catalogue reste.
 
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -29,6 +33,7 @@ import {
   BreakdownCard, type BreakdownRow, type ShareSegment,
 } from '@/features/reports/components/BreakdownCard.js';
 import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import {
   useSalesByCategory, type SalesCategoryRow,
@@ -265,6 +270,7 @@ export default function SalesByCategoryPage(): JSX.Element {
                 <th scope="col" className="py-2 text-right">Total</th>
                 <th scope="col" className="py-2 text-right">Share</th>
                 <th scope="col" className="py-2 text-right">Qty</th>
+                <th scope="col" className="py-2 pl-4 text-left">Products</th>
               </tr>
             </thead>
             <tbody>
@@ -282,6 +288,17 @@ export default function SalesByCategoryPage(): JSX.Element {
                     <td className={NUM_CELL}>{formatIdrFull(r.total)}</td>
                     <td className={NUM_CELL}>{formatPct1(sharePct(r.total, sums.total))}</td>
                     <td className={NUM_CELL}>{formatCount(r.qty)}</td>
+                    <td className="py-2 pl-4">
+                      {/* S3-22 — descente d'un cran, même période ; le nom, lui,
+                          garde son lien vers la fiche catégorie du catalogue. */}
+                      <DrilldownLink
+                        entity="sales_by_product"
+                        id=""
+                        filter={{ category_id: r.category_id, start, end }}
+                        icon={false}
+                        label={<>View products<span className="sr-only"> sold in {r.category_name}</span></>}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -293,6 +310,7 @@ export default function SalesByCategoryPage(): JSX.Element {
                   <td className={NUM_CELL}>{formatIdrFull(sums.total)}</td>
                   <td className={NUM_CELL}>100,0%</td>
                   <td className={NUM_CELL}>{formatCount(sums.qty)}</td>
+                  <td />
                 </tr>
               </tfoot>
             )}

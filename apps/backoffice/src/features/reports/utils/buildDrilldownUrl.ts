@@ -12,6 +12,10 @@
  *
  * `order_list`, `b2b_invoices`, `cash_treasury` are filter-only entities: pass
  * `id=''` and the URL is built from the base route (+ `filter` when relevant).
+ *
+ * S3-22 — `sales_by_product` et `purchase_items` : liens d'un rapport vers un
+ * autre, filter-only eux aussi. Le filtre porte les clés que la page CIBLE lit
+ * (`start` / `end` de `useReportPeriod`, `category_id` / `supplier_id`).
  */
 
 export type DrilldownEntity =
@@ -27,7 +31,9 @@ export type DrilldownEntity =
   | 'purchase_order'
   | 'order_list'
   | 'b2b_invoices'
-  | 'cash_treasury';
+  | 'cash_treasury'
+  | 'sales_by_product'
+  | 'purchase_items';
 
 export interface DrilldownFilter {
   // S31 legacy filter keys
@@ -52,6 +58,10 @@ export interface DrilldownFilter {
   refund_status?:  'none' | 'partial' | 'full';
   hour?:           number;
   has_modifiers?:  boolean;
+  // S3-21 — filtre table de la liste des commandes (égalité stricte serveur).
+  table_number?:   string;
+  // S3-22 — filtre fournisseur de Purchase Items.
+  supplier_id?:    string;
   [key: string]:   string | number | boolean | undefined;
 }
 
@@ -80,6 +90,8 @@ const LIST_FILTER_ONLY: Partial<Record<DrilldownEntity, string>> = {
   order_list:    '/backoffice/orders',
   b2b_invoices:  '/backoffice/b2b/payments?tab=invoices',
   cash_treasury: '/backoffice/accounting/cash',
+  sales_by_product: '/backoffice/reports/sales-by-product',
+  purchase_items:   '/backoffice/reports/purchase-items',
 };
 
 function appendFilter(base: string, filter?: DrilldownFilter): string {

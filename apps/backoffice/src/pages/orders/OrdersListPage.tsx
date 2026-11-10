@@ -10,10 +10,9 @@
 
 import { type JSX, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Download, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Input, Select, cn, type DataTableSort } from '@breakery/ui';
 import { Button, DataTable } from '@/components/BackofficeUi.js';
-import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
+import { todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
@@ -26,43 +25,28 @@ import {
   type OrdersSortColumn,
   type OrdersSortDir,
 } from '@/features/orders/hooks/useOrdersList.js';
-
-// Lot 5 chantier 4 — tri serveur. La liste blanche vit dans la RPC v4 ; ici,
-// seulement la correspondance colonne d'écran ↔ colonne de tri serveur.
-const SORT_TO_COLUMN_ID: Record<OrdersSortColumn, string> = {
-  created_at: 'time',
-  order_type: 'type',
-  total:      'amount',
-  status:     'status',
-};
-const COLUMN_ID_TO_SORT: Record<string, OrdersSortColumn> = {
-  time:   'created_at',
-  type:   'order_type',
-  amount: 'total',
-  status: 'status',
-};
+import { useOrdersCounters } from '@/features/orders/hooks/useOrdersCounters.js';
 import {
-  useOrdersCounters,
-  type OrdersCounters,
-} from '@/features/orders/hooks/useOrdersCounters.js';
+  buildMoneyCounterItems,
+  buildStatusCounterItems,
+  statusCell,
+} from '@/features/orders/ordersListCounterItems.js';
 import {
   ORDER_STATUS,
-  ORDER_STATUS_ORDER,
-  ORDER_STATUS_BADGE,
   ORDER_TYPES,
   ORDER_TYPE_LABEL,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABEL,
-  isSettledStatus,
-  orderStatusBadgeTone,
-  orderStatusLabel,
-  orderTypeLabel,
-  paymentMethodLabel,
   type OrderStatus,
 } from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
 import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
-import { RowActionsMenu } from '@/components/RowActionsMenu.js';
+import {
+  COLUMN_ID_TO_SORT,
+  SORT_TO_COLUMN_ID,
+  buildOrdersListColumns,
+} from '@/features/orders/ordersListColumns.js';
+import { TableNumberFilter } from '@/features/orders/components/TableNumberFilter.js';
 import { VoidOrderModal } from '@/features/orders/components/VoidOrderModal.js';
 import { CancelUnpaidOrderModal } from '@/features/orders/components/CancelUnpaidOrderModal.js';
 import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItemsModal.js';
@@ -80,10 +64,6 @@ function defaultStart(): string {
 }
 
 const DATE_COMMIT_MS = 400;
-
-function statusCell(c: OrdersCounters | undefined, s: OrderStatus): number {
-  return c?.by_status[s]?.count ?? 0;
-}
 
 /** Une URL peut porter n'importe quoi : NaN ne part jamais au serveur. */
 function numParam(raw: string | null): number | undefined {
@@ -172,6 +152,8 @@ export default function OrdersListPage(): JSX.Element {
     if (rs === 'none' || rs === 'partial' || rs === 'full') f.refund_status = rs;
     const hr = numParam(params.get('hour')); if (hr !== undefined) f.hour = hr;
     const ti = params.get('terminal_id');    if (ti) f.terminal_id = ti;
+    // S3-21 — même portée pour la liste ET les compteurs (parité v8 / v6).
+    const tn = params.get('table_number')?.trim(); if (tn) f.table_number = tn;
     return f;
   }, [params]);
 
@@ -211,64 +193,16 @@ export default function OrdersListPage(): JSX.Element {
     patchParams({ status: next === '' ? null : next });
   }, [patchParams]);
 
-  const counterItems = useMemo<ListCounter[]>(() => [
-    {
-      id: 'all',
-      label: 'All orders',
-      value: countersDown ? '—' : (c?.total.count ?? 0),
-      onSelect: () => { pick(''); },
-    },
-    ...ORDER_STATUS_ORDER.map((s): ListCounter => {
-      const spec = ORDER_STATUS[s];
-      const value = statusCell(c, s);
-      return {
-        id: s,
-        label: spec.label,
-        value: countersDown ? '—' : value,
-        ...(spec.tone !== undefined && value > 0 && !countersDown ? { tone: spec.tone } : {}),
-        onSelect: () => { pick(s); },
-      };
-    }),
-  ], [c, countersDown, pick]);
+  const counterItems = useMemo<ListCounter[]>(
+    () => buildStatusCounterItems(c, countersDown, pick),
+    [c, countersDown, pick],
+  );
 
-  // Bande d'argent (ADR-025 D5 amendée) — informative, non cliquable. Les
-  // sommes sont des TOTAUX DE COMMANDES réglées/non réglées ; le remboursé
-  // s'affiche à côté au lieu d'être soustrait en silence.
-  const moneyItems = useMemo<ListCounter[]>(() => [
-    {
-      id: 'amount-total',
-      label: 'Window total',
-      value: countersDown ? '—' : formatCurrency(c?.total.amount ?? 0),
-      title: `Sum of order totals between ${start} and ${end}, current filters applied — voided included.`,
-    },
-    {
-      id: 'amount-paid',
-      label: 'Settled',
-      value: countersDown ? '—' : formatCurrency(c?.paid.amount ?? 0),
-      ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
-      title: `${(c?.paid.count ?? 0).toLocaleString('id-ID')} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
-    },
-    {
-      id: 'amount-unpaid',
-      label: 'Unpaid',
-      value: countersDown ? '—' : formatCurrency(c?.unpaid.amount ?? 0),
-      ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
-      title: `${(c?.unpaid.count ?? 0).toLocaleString('id-ID')} orders not settled yet, voided excluded.`,
-    },
-    {
-      id: 'amount-refunded',
-      label: 'Refunded',
-      // « − Rp 0 » affichait un moins permanent devant un zéro : le signe ne
-      // se montre que lorsqu'il y a réellement de l'argent rendu.
-      value: countersDown
-        ? '—'
-        : (c?.refunded.amount ?? 0) > 0
-          ? `− ${formatCurrency(c?.refunded.amount ?? 0)}`
-          : formatCurrency(0),
-      ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
-      title: `${(c?.refunded.count ?? 0).toLocaleString('id-ID')} orders carry a refund in this window.`,
-    },
-  ], [c, countersDown, start, end]);
+  // Bande d'argent (ADR-025 D5 amendée) — informative, non cliquable.
+  const moneyItems = useMemo<ListCounter[]>(
+    () => buildMoneyCounterItems(c, countersDown, start, end),
+    [c, countersDown, start, end],
+  );
 
   // Actions de ligne — modales et tiroir de détail.
   const [detailId, setDetailId]     = useState<string | null>(null);
@@ -305,120 +239,16 @@ export default function OrdersListPage(): JSX.Element {
     setEditTarget({ id: orderId, number: orderNumber, items });
   }
 
-  const columns = useMemo<readonly DataTableColumn<OrdersListLine>[]>(() => [
-    {
-      id: 'number', header: 'Order #', width: '7.5rem',
-      render: (o) => (
-        <Link
-          to={`/backoffice/orders/${o.id}`}
-          // Or, et non `info` (critique du 2026-08-21, P1-3). DESIGN.md donne
-          // les liens à l'or ; ces cinquante-là étaient bleus, et le bleu du
-          // thème sert par ailleurs de première série de graphique. Un lecteur
-          // apprenait donc « bleu = série de données » sur un écran et
-          // « bleu = clique ici » sur le suivant. Une couleur, un sens.
-          className="font-data text-xs text-gold underline [text-decoration-color:color-mix(in_srgb,transparent,var(--gold-base)_70%)] underline-offset-[3px] hover:[text-decoration-color:var(--gold-base)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-        >
-          #{o.order_number.replace(/^#+/, '')}
-        </Link>
-      ),
-    },
-    {
-      id: 'time', header: 'Time', width: '7rem', sortable: true,
-      render: (o) => (
-        <span className="block whitespace-nowrap font-data text-xs leading-tight tabular-nums">
-          {formatTimeWita(o.created_at)}
-          <span className="block text-text-muted">{formatDateShortWita(o.created_at)}</span>
-        </span>
-      ),
-    },
-    {
-      id: 'type', header: 'Type', width: '6.5rem', sortable: true,
-      render: (o) => <span className="text-text-secondary">{orderTypeLabel(o.order_type)}</span>,
-    },
-    {
-      id: 'customer', header: 'Customer', width: '13rem',
-      render: (o) => (
-        o.customer_name !== null
-          ? (
-            <span className="block max-w-[13rem] truncate text-text-primary" title={o.customer_name}>
-              {o.customer_name}
-            </span>
-          )
-          : <span className="text-text-subtle" aria-hidden>—</span>
-      ),
-    },
-    {
-      id: 'items', header: 'Items', align: 'right', width: '4.5rem',
-      render: (o) => <span className="font-data tabular-nums">{o.items_count}</span>,
-    },
-    {
-      // 9,25rem et non 8,5. Cellule `text-sm` (14 px) en JetBrains Mono, chasse
-      // 0,6 em → 8,4 px par caractère, plus 28 px de padding compact :
-      // « Rp 150.000.000 » (14 car.) demande 145,6 px, « Rp 12.500.000 » 137,2.
-      // À 136 px la colonne était sous les deux — et la cellule étant
-      // `whitespace-nowrap`, le débordement ne se repliait pas : il poussait la
-      // table entière en défilement horizontal. Même calibre que les trois
-      // colonnes monétaires du catalogue produits.
-      id: 'amount', header: 'Amount', align: 'right', width: '9.25rem', sortable: true,
-      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
-    },
-    {
-      id: 'status', header: 'Status', width: '9.5rem', sortable: true,
-      render: (o) => (
-        <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(o.status))}>
-          {orderStatusLabel(o.status)}
-        </span>
-      ),
-    },
-    {
-      id: 'payment', header: 'Payment', width: '7.5rem',
-      // RÉGLÉ = méthode enregistrée OU statut porteur d'argent : une facture
-      // B2B encaissée (statut paid, zéro ligne order_payments) lit « Paid »,
-      // plus « Unpaid » à côté d'un badge Paid (review PR #367).
-      render: (o) => (
-        o.payment_method_primary !== null
-          ? <span className="text-text-secondary">{paymentMethodLabel(o.payment_method_primary)}</span>
-          : isSettledStatus(o.status)
-            ? <span className="text-success">Paid</span>
-            : o.status === 'voided'
-              ? <span className="text-text-subtle" aria-hidden>—</span>
-              : <span className="text-warning">Unpaid</span>
-      ),
-    },
-    {
-      // 7,5rem logeait TROIS icônes de 32 px. Depuis la convergence sur le menu
-      // `…` (critique du 2026-08-31, P1), une seule cible reste : 4rem.
-      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '4rem',
-      render: (o) => (
-        <span className="inline-flex items-center justify-end">
-          <RowActionsMenu
-            subject={o.order_number}
-            testId={`row-actions-${o.id}`}
-            entries={[
-              // Le détail d'abord : c'est la lecture, et la seule entrée
-              // toujours présente. `Void` descend en dernier ET porte `danger` —
-              // il était PREMIER et muet, à 2 px d'une cible bénigne.
-              { key: 'details', label: 'View details', testId: `row-details-${o.id}`,
-                activate: () => { setDetailId(o.id); } },
-              ...(hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment')
-                ? [{ key: 'edit', label: 'Edit items', testId: `row-edit-${o.id}`,
-                     activate: () => { void loadItemsAndOpenEdit(o.id, o.order_number); } }]
-                : []),
-              ...(hasVoid && (o.status === 'paid' || o.status === 'completed')
-                ? [{ key: 'void', label: 'Void order', danger: true, testId: `row-void-${o.id}`,
-                     activate: () => { setVoidTarget({ id: o.id, number: o.order_number }); } }]
-                : []),
-              ...(hasUnpaidVoid && (o.status === 'draft' || o.status === 'pending_payment')
-                ? [{ key: 'void-unpaid', label: 'Void unpaid order', danger: true, testId: `row-void-unpaid-${o.id}`,
-                     activate: () => { setUnpaidVoidId(o.id); } }]
-                : []),
-            ]}
-          />
-        </span>
-      ),
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [hasEditOpen, hasVoid, hasUnpaidVoid]);
+  // S3-21 — les colonnes vivent dans features/orders (page sous 500 lignes).
+  const columns = useMemo(() => buildOrdersListColumns({
+    hasEditOpen, hasVoid, hasUnpaidVoid,
+    onDetails:    (id) => { setDetailId(id); },
+    onEditItems:  (id, number) => { void loadItemsAndOpenEdit(id, number); },
+    onVoid:       (id, number) => { setVoidTarget({ id, number }); },
+    onVoidUnpaid: (id) => { setUnpaidVoidId(id); },
+  }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [hasEditOpen, hasVoid, hasUnpaidVoid]);
 
   return (
     <div className="flex flex-col gap-[13px]">
@@ -559,6 +389,10 @@ export default function OrdersListPage(): JSX.Element {
             <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>
           ))}
         </Select>
+        <TableNumberFilter
+          value={params.get('table_number') ?? ''}
+          onCommit={(next) => { patchParams({ table_number: next || null }); }}
+        />
       </div>
 
       <span className="sr-only" role="status" aria-live="polite">
@@ -584,7 +418,7 @@ export default function OrdersListPage(): JSX.Element {
       )}
       {(query.error === null || loadedLines.length > 0) && (
         <DataTable<OrdersListLine>
-          caption="Order number, time, type, customer, item count, amount, status and payment per order"
+          caption="Order number, created and paid times, table, type, customer, item count, amount, status and payment per order"
           columns={columns}
           rows={lines}
           getRowKey={(o) => o.id}
