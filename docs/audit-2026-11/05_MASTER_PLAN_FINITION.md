@@ -1370,8 +1370,8 @@ Suite back-office complète verte. Comparaison à la main d'un jour réel en dev
 
 **Dépend de** — `S3-22`. **Limite écrite** — Un article vendu comme composant
 d'un combo n'a pas de ligne de vente propre. La page dit s'il est compté :
-non jusqu'au point 8, oui depuis. Les ventes par article et par catégorie, elles,
-ne comptent toujours pas les composants : leur page des ventes par article le dit.
+non jusqu'au point 8, oui depuis. Le rapport des ventes par article, lui, ne
+compte toujours pas les composants, et sa page le dit.
 
 ---
 
