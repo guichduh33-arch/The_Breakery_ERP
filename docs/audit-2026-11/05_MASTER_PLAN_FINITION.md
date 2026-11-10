@@ -1302,6 +1302,10 @@ obligatoires — **le pont ne démarre pas** si on suit la documentation.
 
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
 
+**État — codé et prouvé en dev le 2026-11-10** (PR #678, **non fusionnée** à
+cette date). Sa fonction est absente de la production au relevé du même jour
+(`docs/runbooks/etat-environnements.md`).
+
 **Constat** — Les données existent toutes : les fournées (date, produit,
 quantité), les lignes de vente, les pertes, les catégories. Aucune fonction ne
 les croise. La clôture de vitrine fait déjà ce calcul pour un jour et un
@@ -1332,10 +1336,10 @@ ses lignes de vente.
 2. Ventes B2B : dans une **colonne séparée** des ventes au comptoir.
 3. Pertes : seules les pertes **enregistrées et approuvées** comptent. Une
    déclaration en attente n'est pas une perte.
-4. Périmètre : les articles frais du jour, c'est-à-dire les catégories pains,
-   viennoiseries, autres viennoiseries, salé et pâtisserie. **À vérifier à
-   l'exécution** : le nom exact de ces cinq catégories en base, à confirmer avec
-   Mamat si l'une d'elles ne se retrouve pas.
+4. Périmètre : les articles frais du jour. Catégories retenues avec Mamat le
+   2026-11-10, sur les noms relevés en production : Classic Breads, Sourdough
+   Breads, Classic Viennoiserie, Others Viennoiserie, Savouries, Individual
+   Pastries, Buns et Bagel. Aucune autre catégorie n'entre dans le rapport.
 5. Accès : le **propriétaire seul**. L'ouverture à d'autres comptes pourra
    suivre `S1-08`.
 
@@ -1390,6 +1394,14 @@ exclus. Vitest de la page. Types régénérés. Suite back-office complète vert
 
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
 
+**État — code fusionné le 2026-11-10** (PR #676), **back-office non publié**.
+En production, les fonctions nouvelles sont créées et égales au dev, les
+anciennes **pas encore retirées** : le retrait suit la publication du
+back-office. Relevé et ordre des gestes restants dans
+`docs/runbooks/etat-environnements.md`, complément du 10 novembre. La famille
+des compteurs de la liste a été bumpée avec celle de la liste, pour garder les
+deux sur le même filtre.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — version suivante des familles
   `get_orders_list` et `get_product_sales_lines` (**corps live**). La liste des
@@ -1428,6 +1440,19 @@ d'une même famille se marchent dessus.
 
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10 (« filtrable,
 facile à lire »). Constat d'audit : voir le bloc.
+
+**État — étapes 1, 3 et 4 fusionnées le 2026-11-10** (PR #677, entrée dans
+`master` par #676), **back-office non publié** ; production dans le même état
+transitoire que `S3-21`. Fait : le socle, prouvé sur les ventes par article ;
+l'article dans le journal des mouvements de stock ; la catégorie d'achat dans
+le rapport de dépense ; les deux liens de l'étape 4. **Reste** : l'étape 2, les
+autres rapports de vente sur le socle, une page par commit. S'y ajoute un lien
+non prévu à l'étape 4 : des ventes par origine vers les commandes, qui demande
+un filtre d'origine sur la liste des commandes.
+**Tranché par Mamat le 2026-11-10** : la route des ventes par article n'est
+**pas** alignée ; elle reste gardée par la seule permission des rapports de
+vente. La puce « aligner » des fichiers ci-dessous est donc close sans
+changement.
 
 **Fichiers**
 - `apps/backoffice/src/features/reports/components/` — une barre de filtres
