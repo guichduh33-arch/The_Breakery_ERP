@@ -18,7 +18,9 @@
 // clé : react-query n'en envoie qu'une.
 
 import { useCallback, useMemo, useState, type JSX } from 'react';
-import { Tabs, TabsContent } from '@breakery/ui';
+import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, cn } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
@@ -57,6 +59,8 @@ const VIEW_LABEL: Record<View, string> = { item: 'By item', category: 'By catego
 const MAX_SURPLUS_BARS = 8;
 const MAX_SHORT_BARS = 4;
 const MAX_TICK_CHARS = 16;
+/** Page où le propriétaire relit les restes déclarés par la caisse. */
+const LEFTOVERS_URL = '/backoffice/inventory/opname';
 
 function truncate(s: string): string {
   return s.length > MAX_TICK_CHARS ? `${s.slice(0, MAX_TICK_CHARS - 1)}…` : s;
@@ -164,10 +168,20 @@ export default function ProductionVsSalesPage(): JSX.Element {
       note: (summary?.gap ?? 0) < 0 ? 'sold beyond output' : 'produced − sold − waste',
     },
     {
+      key: 'unexplained', label: 'Unexplained',
+      value: summary === undefined || summary.unexplained === null ? '—' : signedCount(summary.unexplained),
+      note: summary === undefined || summary.unknown_cells === 0
+        ? 'after end-of-day counts'
+        : `${formatCount(summary.unknown_cells)} item-day${summary.unknown_cells === 1 ? '' : 's'} not counted`,
+    },
+    {
       key: 'sell-through', label: 'Sell-through', value: formatSellThrough(summary?.sell_through_pct ?? null),
       note: 'sold ÷ produced',
     },
   ];
+  // Jours servis sans déclaration de restes : le bilan de ces jours (et du
+  // lendemain) reste inconnu.
+  const daysWithoutCount = byDay.filter((d) => !d.has_closing).length;
 
   const activeCount = Object.keys(filters.active).length;
   const meta = [
@@ -236,6 +250,20 @@ export default function ProductionVsSalesPage(): JSX.Element {
         >
           This report covers at most 92 days: showing {periodLabel(data.period.start, data.period.end)} instead
           of {periodLabel(start, end)}.
+        </p>
+      )}
+      {data !== undefined && daysWithoutCount > 0 && (
+        <p
+          role="note"
+          className="mt-2 rounded-sm border border-border-subtle bg-surface-4 px-3 py-2 text-xs text-text-secondary"
+          data-testid="pvs-missing-counts"
+        >
+          {formatCount(daysWithoutCount)} of {formatCount(byDay.length)} day{byDay.length === 1 ? '' : 's'} have
+          no end-of-day count from the till: the unexplained quantity of those days, and of the day after, is
+          unknown.{' '}
+          <Link to={LEFTOVERS_URL} className={cn('rounded-sm text-gold underline-offset-2 hover:underline', FOCUS_RING)}>
+            Review end-of-day counts
+          </Link>
         </p>
       )}
 
@@ -359,9 +387,26 @@ export default function ProductionVsSalesPage(): JSX.Element {
       >
         <p className="font-medium text-text-primary">Informational report: it does not change stock.</p>
         <ul className="mt-1 list-disc space-y-0.5 pl-4">
+          <li>
+            Unexplained = carried over + produced − sold − approved waste − left at close. The two counts come from
+            the till&apos;s end-of-day display count; the latest correction counts.{' '}
+            <Link
+              to={LEFTOVERS_URL}
+              className={cn('rounded-sm text-gold underline-offset-2 hover:underline', FOCUS_RING)}
+              data-testid="pvs-leftovers-link"
+            >
+              Review end-of-day counts
+            </Link>
+          </li>
+          <li>A missing count is shown as —, never as 0. A total marked &quot;partial&quot; leaves those item-days out.</li>
+          <li>
+            In a total, the unexplained quantity adds up item-days that have both counts only: it may not match the
+            other columns of that total. An item-day with no activity and nothing left is not listed.
+          </li>
+          <li>Counter sales count on the day they are recognised. B2B orders count on the day they are delivered, paid or on credit; an order not yet delivered does not count.</li>
           <li>An item sold as part of a combo is not counted as sold here. Promotional gifts are not counted either.</li>
-          <li>Only approved waste counts, dated on the day it was approved.</li>
-          <li>A day&apos;s gap is not a stock level: it ignores what was carried over from the day before.</li>
+          <li>Only approved waste counts. Waste entered in an end-of-day count is dated on that day; other waste on the day it was approved.</li>
+          <li>The gap (produced − sold − waste) ignores what was carried over from the day before.</li>
           <li>Items on an order line cancelled after preparation are neither sold nor approved waste, so they stay in the gap.</li>
           <li>Only fresh daily items are covered: the categories listed in the Category filter.</li>
         </ul>

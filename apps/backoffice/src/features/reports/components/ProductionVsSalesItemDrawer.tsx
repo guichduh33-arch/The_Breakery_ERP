@@ -19,7 +19,9 @@ import {
 } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { DrilldownLink } from './DrilldownLink.js';
-import { GapValue, formatSellThrough, sellThroughOf } from './productionVsSalesColumns.js';
+import {
+  GapValue, LeftoverValue, UnexplainedValue, formatSellThrough, sellThroughOf,
+} from './productionVsSalesColumns.js';
 import type { PvsDayProductRow, PvsProductRow } from '../hooks/useProductionVsSales.js';
 import { buildDrilldownUrl } from '../utils/buildDrilldownUrl.js';
 import { formatCount, longDate, periodLabel } from '../utils/reportFigures.js';
@@ -97,11 +99,14 @@ export function ProductionVsSalesItemDrawer({
                 <thead>
                   <tr className="border-b border-border-subtle text-left text-text-secondary">
                     <th scope="col" className={TH}>Day</th>
+                    <th scope="col" className={cn(TH, 'text-right')}>Carried over</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Produced</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Counter</th>
                     <th scope="col" className={cn(TH, 'text-right')}>B2B</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Sold total</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Approved waste</th>
+                    <th scope="col" className={cn(TH, 'text-right')}>Left at close</th>
+                    <th scope="col" className={cn(TH, 'text-right')}>Unexplained</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Gap</th>
                   </tr>
                 </thead>
@@ -109,11 +114,14 @@ export function ProductionVsSalesItemDrawer({
                   {rows.map((d) => (
                     <tr key={d.date} className="border-b border-border-row" data-testid={`pvs-day-${d.date}`}>
                       <td className="whitespace-nowrap px-2 py-1.5 font-data">{longDate(d.date)}</td>
+                      <td className={NUM}><LeftoverValue value={d.opening} /></td>
                       <td className={NUM}>{formatCount(d.produced)}</td>
                       <td className={NUM}>{formatCount(d.sold_counter)}</td>
                       <td className={NUM}>{formatCount(d.sold_b2b)}</td>
                       <td className={NUM}>{formatCount(d.sold_total)}</td>
                       <td className={NUM}>{formatCount(d.wasted)}</td>
+                      <td className={NUM}><LeftoverValue value={d.closing} /></td>
+                      <td className={NUM}><UnexplainedValue value={d.unexplained} /></td>
                       <td className={NUM}><GapValue gap={d.gap} /></td>
                     </tr>
                   ))}
@@ -122,11 +130,16 @@ export function ProductionVsSalesItemDrawer({
                   <tfoot>
                     <tr className="border-t border-border-subtle font-semibold" data-testid="pvs-item-total">
                       <td className="px-2 py-2">Total</td>
+                      <td className={NUM}>{formatCount(item.opening)}</td>
                       <td className={NUM}>{formatCount(item.produced)}</td>
                       <td className={NUM}>{formatCount(item.sold_counter)}</td>
                       <td className={NUM}>{formatCount(item.sold_b2b)}</td>
                       <td className={NUM}>{formatCount(item.sold_total)}</td>
                       <td className={NUM}>{formatCount(item.wasted)}</td>
+                      <td className={NUM}>{formatCount(item.closing)}</td>
+                      <td className={NUM}>
+                        <UnexplainedValue value={item.unexplained} unknown={item.unknown_cells} />
+                      </td>
                       <td className={NUM}><GapValue gap={item.gap} /></td>
                     </tr>
                   </tfoot>
@@ -139,7 +152,7 @@ export function ProductionVsSalesItemDrawer({
         <SheetFooter className="items-center sm:justify-between">
           <span className="font-data text-xs tabular-nums text-text-muted" data-testid="pvs-item-sell-through">
             {item !== null ? `Sell-through ${formatSellThrough(sellThroughOf(item))}` : ''}
-            {' · '}days with no activity are left out
+            {' · '}days with no activity and nothing left are left out
           </span>
           <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
         </SheetFooter>

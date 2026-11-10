@@ -1,9 +1,13 @@
 // apps/backoffice/src/features/reports/hooks/useProductionVsSales.ts
 //
-// S3-19 — hook de `get_production_vs_sales_v1` : la production du jour face aux
-// ventes reconnues (comptoir et B2B séparés) et aux pertes APPROUVÉES, par
-// article, catégorie et jour. Rapport informatif : quantités seules, aucun
-// montant, aucune écriture.
+// S3-19 — hook de la famille `get_production_vs_sales` : la production du jour
+// face aux ventes (comptoir au jour de reconnaissance, B2B au jour de
+// livraison) et aux pertes APPROUVÉES, par article, catégorie et jour, puis le
+// BILAN avec les restes déclarés par la caisse en fin de journée. Rapport
+// informatif : quantités seules, aucun montant, aucune écriture.
+//
+// Un reste inconnu (jour sans clôture, article absent) arrive à `null` : il ne
+// se lit jamais comme un zéro.
 //
 // La réponse est VALIDÉE ici, pas castée : la RPC promet des clés toujours
 // présentes, des tableaux jamais nuls et des nombres numériques. Une réponse qui
@@ -28,7 +32,19 @@ export interface ProductionVsSalesFigures {
   gap:          number;
 }
 
-export interface ProductionVsSalesSummary extends ProductionVsSalesFigures {
+/** Bilan agrégé : restes connus sommés, non expliqué des seules cellules connues. */
+export interface PvsBalance {
+  /** Reste de la veille (somme des restes connus). */
+  opening:       number;
+  /** Reste du soir (somme des restes connus). */
+  closing:       number;
+  /** reste veille + produit − vendu − pertes − reste soir ; `null` si rien n'est connu. */
+  unexplained:   number | null;
+  /** Nombre de cellules jour × article dont le non expliqué est inconnu. */
+  unknown_cells: number;
+}
+
+export interface ProductionVsSalesSummary extends ProductionVsSalesFigures, PvsBalance {
   /** `null` quand rien n'a été produit. */
   sell_through_pct: number | null;
 }
@@ -39,8 +55,10 @@ export interface PvsCategory {
   slug: string;
 }
 
-export interface PvsDayRow extends ProductionVsSalesFigures {
-  date: string;
+export interface PvsDayRow extends ProductionVsSalesFigures, PvsBalance {
+  date:        string;
+  /** La caisse a-t-elle déclaré ses restes ce soir-là ? */
+  has_closing: boolean;
 }
 
 export interface PvsCategoryRow extends ProductionVsSalesSummary {
@@ -56,8 +74,12 @@ export interface PvsProductRow extends ProductionVsSalesSummary {
 }
 
 export interface PvsDayProductRow extends ProductionVsSalesFigures {
-  date:       string;
-  product_id: string;
+  date:        string;
+  product_id:  string;
+  /** `null` = reste inconnu. */
+  opening:     number | null;
+  closing:     number | null;
+  unexplained: number | null;
 }
 
 export interface ProductionVsSalesData {
@@ -128,9 +150,24 @@ function figures(o: Obj, path: string): ProductionVsSalesFigures {
   };
 }
 
+function bool(v: unknown, path: string): boolean {
+  if (typeof v !== 'boolean') throw malformed(path);
+  return v;
+}
+
+function balance(o: Obj, path: string): PvsBalance {
+  return {
+    opening:       num(o.opening, `${path}.opening`),
+    closing:       num(o.closing, `${path}.closing`),
+    unexplained:   numOrNull(o.unexplained, `${path}.unexplained`),
+    unknown_cells: num(o.unknown_cells, `${path}.unknown_cells`),
+  };
+}
+
 function withSellThrough(o: Obj, path: string): ProductionVsSalesSummary {
   return {
     ...figures(o, path),
+    ...balance(o, path),
     sell_through_pct: numOrNull(o.sell_through_pct, `${path}.sell_through_pct`),
   };
 }
@@ -157,7 +194,13 @@ export function parseProductionVsSales(raw: unknown): ProductionVsSalesData {
     summary: withSellThrough(obj(r.summary, 'summary'), 'summary'),
     by_day: arr(r.by_day, 'by_day').map((d, i) => {
       const o = obj(d, `by_day[${i}]`);
-      return { date: str(o.date, `by_day[${i}].date`), ...figures(o, `by_day[${i}]`) };
+      const p = `by_day[${i}]`;
+      return {
+        date: str(o.date, `${p}.date`),
+        ...figures(o, p),
+        ...balance(o, p),
+        has_closing: bool(o.has_closing, `${p}.has_closing`),
+      };
     }),
     by_category: arr(r.by_category, 'by_category').map((c, i) => {
       const p = `by_category[${i}]`;
@@ -186,6 +229,9 @@ export function parseProductionVsSales(raw: unknown): ProductionVsSalesData {
         date:       str(o.date, `${p}.date`),
         product_id: str(o.product_id, `${p}.product_id`),
         ...figures(o, p),
+        opening:     numOrNull(o.opening, `${p}.opening`),
+        closing:     numOrNull(o.closing, `${p}.closing`),
+        unexplained: numOrNull(o.unexplained, `${p}.unexplained`),
       };
     }),
   };
@@ -218,7 +264,7 @@ export function useProductionVsSales(params: UseProductionVsSalesParams) {
       if (categoryId) args.p_category_id = categoryId;
       if (productId) args.p_product_id = productId;
 
-      const { data, error } = await supabase.rpc('get_production_vs_sales_v1', args);
+      const { data, error } = await supabase.rpc('get_production_vs_sales_v3', args);
       if (error) throw toReportError(error);
       return parseProductionVsSales(data);
     },
