@@ -12,11 +12,16 @@
 //  · la carte de ventilation totalise le jeu COMPLET et referme ses 100 % ;
 //  · l'export vit sous un MENU, et sans `reports.export` il se désactive en
 //    disant pourquoi au lieu de disparaître.
+//
+// S3-22 (2026-11-11) — LES FILTRES DE COMMANDE (type, paiement, table) : chacun
+// s'écrit dans l'URL, se relit depuis une URL initiale, et part dans
+// `p_filters` du classement ET de sa comparaison ; sans filtre l'argument est
+// omis ; le lien « View products » transporte les mêmes clés.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 const mockRpc = vi.fn();
 let rows: unknown[] = [];
@@ -26,7 +31,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_category_v6') {
+      if (fn === 'get_sales_by_category_v7') {
         return injectRpcError
           ? Promise.resolve({ data: null, error: new Error('RPC error: permission denied') })
           : Promise.resolve({ data: rows, error: null });
@@ -57,12 +62,18 @@ const CATEGORY_ROWS = [
 const START = '2026-06-01';
 const END   = '2026-06-07';
 
+function LocationProbe() {
+  const loc = useLocation();
+  return <span data-testid="location">{loc.search}</span>;
+}
+
 function renderPage(search = `?start=${START}&end=${END}`) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[`/backoffice/reports/sales-by-category${search}`]}>
         <SalesByCategoryPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -70,7 +81,7 @@ function renderPage(search = `?start=${START}&end=${END}`) {
 
 function boundsQueried(): { p_date_start: string; p_date_end: string }[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_sales_by_category_v6')
+    .filter(([fn]) => fn === 'get_sales_by_category_v7')
     .map(([, args]) => args as { p_date_start: string; p_date_end: string });
 }
 
@@ -210,5 +221,137 @@ describe('SalesByCategoryPage (smoke)', () => {
     });
     expect(screen.getByTestId('report-error').textContent).toMatch(/RPC error/i);
     expect(screen.queryByTestId('sbc-category-detail')).toBeNull();
+  });
+});
+
+function callsOf(): Record<string, unknown>[] {
+  return mockRpc.mock.calls
+    .filter(([fn]) => fn === 'get_sales_by_category_v7')
+    .map(([, args]) => args as Record<string, unknown>);
+}
+
+/** Dernier `p_filters` envoyé, pour la période courante ET la comparaison. */
+async function expectBothPeriodsFiltered(expected: Record<string, string>): Promise<void> {
+  await waitFor(() => {
+    const filtered = callsOf().filter((a) => {
+      const f = a.p_filters as Record<string, string> | undefined;
+      return f !== undefined && Object.entries(expected).every(([k, v]) => f[k] === v);
+    });
+    expect(filtered.some((a) => a.p_date_start === START)).toBe(true);
+    expect(filtered.some((a) => a.p_date_start === '2026-05-25')).toBe(true);
+  });
+}
+
+const FILTERED = `?start=${START}&end=${END}`
+  + '&order_type=dine_in&payment_method=cash&table_number=T-07';
+
+describe('SalesByCategoryPage — S3-22 filters', () => {
+  it('sends no p_filters when no filter is active', async () => {
+    renderPage();
+    await screen.findAllByText('Viennoiserie');
+    expect(callsOf().length).toBeGreaterThanOrEqual(2);
+    for (const a of callsOf()) expect(a).not.toHaveProperty('p_filters');
+    expect(screen.queryByTestId('filters-clear')).toBeNull();
+  });
+
+  it('reads the three filters back from the initial URL and sends them to both periods', async () => {
+    renderPage(FILTERED);
+    const expected = { order_type: 'dine_in', payment_method: 'cash', table_number: 'T-07' };
+    await waitFor(() => {
+      const calls = callsOf();
+      expect(calls.some((a) => a.p_date_start === START)).toBe(true);
+      expect(calls.some((a) => a.p_date_start === '2026-05-25')).toBe(true);
+      for (const a of calls) expect(a.p_filters).toEqual(expected);
+    });
+    expect(screen.getByTestId('filter-order_type')).toHaveValue('dine_in');
+    expect(screen.getByTestId('filter-payment_method')).toHaveValue('cash');
+    expect(screen.getByTestId('filter-table_number')).toHaveValue('T-07');
+    // Ligne méta ET annonce live de ReportShell : au moins une occurrence.
+    expect(screen.getAllByText(/3 filters active/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ignores an order type that is not a Postgres enum value', async () => {
+    renderPage(`?start=${START}&end=${END}&order_type=take_away`);
+    await screen.findAllByText('Viennoiserie');
+    for (const a of callsOf()) expect(a).not.toHaveProperty('p_filters');
+  });
+
+  it('picking an order type writes it to the URL and to p_filters', async () => {
+    renderPage();
+    await screen.findAllByText('Viennoiserie');
+    fireEvent.change(screen.getByTestId('filter-order_type'), { target: { value: 'take_out' } });
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('order_type=take_out');
+    });
+    await expectBothPeriodsFiltered({ order_type: 'take_out' });
+  });
+
+  it('picking a payment method writes it to the URL, to p_filters, and states its caveat', async () => {
+    renderPage();
+    await screen.findAllByText('Viennoiserie');
+    expect(screen.queryByTestId('payment-filter-note')).toBeNull();
+    fireEvent.change(screen.getByTestId('filter-payment_method'), { target: { value: 'qris' } });
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('payment_method=qris');
+    });
+    await expectBothPeriodsFiltered({ payment_method: 'qris' });
+    expect(await screen.findByTestId('payment-filter-note')).toHaveTextContent(/counts in full under each/i);
+  });
+
+  it('typing a table number writes it to the URL and to p_filters', async () => {
+    renderPage();
+    await screen.findAllByText('Viennoiserie');
+    const input = screen.getByTestId('filter-table_number');
+    fireEvent.change(input, { target: { value: 'T-12' } });
+    // Le champ commet au blur sans attendre le délai de frappe.
+    fireEvent.blur(input);
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('table_number=T-12');
+    });
+    await expectBothPeriodsFiltered({ table_number: 'T-12' });
+  });
+
+  it('the View products link carries the same order filters as the page', async () => {
+    renderPage(FILTERED);
+    const table = await screen.findByTestId('sbc-category-detail');
+    const link = await within(table).findByRole('link', { name: /View products sold in Viennoiserie/ });
+    expect(link).toHaveAttribute(
+      'href',
+      `/backoffice/reports/sales-by-product?category_id=c-1&start=${START}&end=${END}`
+        + '&order_type=dine_in&payment_method=cash&table_number=T-07',
+    );
+    // La fiche catégorie du catalogue n'a pas de filtres de commande.
+    expect(within(table).getByRole('link', { name: 'Viennoiserie' })).toHaveAttribute(
+      'href',
+      `/backoffice/products?category_id=c-1&date_from=${START}&date_to=${END}`,
+    );
+  });
+
+  it('Clear filters removes every filter from the URL at once and keeps the period', async () => {
+    renderPage(FILTERED);
+    await screen.findAllByText('Viennoiserie');
+    fireEvent.click(screen.getByTestId('filters-clear'));
+    await waitFor(() => {
+      const search = screen.getByTestId('location').textContent ?? '';
+      for (const k of ['order_type', 'payment_method', 'table_number']) {
+        expect(search).not.toContain(`${k}=`);
+      }
+      expect(search).toContain(`start=${START}`);
+    });
+    expect(screen.queryByTestId('filters-clear')).toBeNull();
+  });
+
+  it('table sorts by name on demand and keeps the total footer', async () => {
+    renderPage();
+    await screen.findAllByText('Viennoiserie');
+    const table = within(screen.getByTestId('sbc-category-detail')).getByRole('table');
+    let rows = within(table).getAllByRole('row');
+    // En-tête + deux catégories (CA décroissant) + pied.
+    expect(rows).toHaveLength(4);
+    expect(rows[1]?.textContent ?? '').toMatch(/Viennoiserie/);
+    expect(screen.getByTestId('sbc-table-footer')).toHaveTextContent('Rp 3.000.000');
+    fireEvent.click(within(table).getByRole('button', { name: /Category/ }));
+    rows = within(table).getAllByRole('row');
+    expect(rows[1]?.textContent ?? '').toMatch(/Boissons/);
   });
 });

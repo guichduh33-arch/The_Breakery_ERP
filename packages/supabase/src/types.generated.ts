@@ -8479,8 +8479,8 @@ export type Database = {
           unit: string
         }[]
       }
-      get_sales_by_category_v6: {
-        Args: { p_date_end: string; p_date_start: string }
+      get_sales_by_category_v7: {
+        Args: { p_date_end: string; p_date_start: string; p_filters?: Json }
         Returns: {
           category_id: string
           category_name: string
@@ -8518,8 +8518,8 @@ export type Database = {
         }
         Returns: Json
       }
-      get_sales_by_staff_v5: {
-        Args: { p_date_end: string; p_date_start: string }
+      get_sales_by_staff_v6: {
+        Args: { p_date_end: string; p_date_start: string; p_filters?: Json }
         Returns: {
           avg_basket: number
           order_count: number

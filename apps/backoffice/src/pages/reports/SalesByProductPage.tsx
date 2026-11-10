@@ -58,16 +58,16 @@ import {
 } from '@/features/reports/components/ProductSalesLinesDrawer.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import {
-  useReportFilters, type ReportFilterDef, type ReportFilterOption,
+  useReportFilters, type ReportFilterDef,
 } from '@/features/reports/hooks/useReportFilters.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters, type SalesOrderFilterKey,
+} from '@/features/reports/components/salesOrderFilters.js';
 import {
   useSalesByProduct, type SalesProductRow,
 } from '@/features/reports/hooks/useSalesByProduct.js';
 import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
-import {
-  ORDER_TYPES, ORDER_TYPE_LABEL, PAYMENT_METHODS, PAYMENT_METHOD_LABEL,
-} from '@/features/orders/statusMeta.js';
 import {
   CHART_1, CHART_3, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
@@ -99,17 +99,11 @@ function truncate(s: string): string {
   return s.length > MAX_TICK_CHARS ? `${s.slice(0, MAX_TICK_CHARS - 1)}…` : s;
 }
 
-type FilterKey = 'category_id' | 'order_type' | 'payment_method' | 'table_number';
+type FilterKey = 'category_id' | SalesOrderFilterKey;
 
 /** Clé d'URL de la recherche produit : « Clear filters » la vide aussi. */
 const SEARCH_KEY = 'q';
 const EXTRA_FILTER_KEYS: readonly string[] = [SEARCH_KEY];
-
-// Options dérivées des maps typées sur les enums Postgres — jamais recopiées.
-const ORDER_TYPE_OPTIONS: readonly ReportFilterOption[] =
-  ORDER_TYPES.map((t) => ({ value: t, label: ORDER_TYPE_LABEL[t] }));
-const PAYMENT_OPTIONS: readonly ReportFilterOption[] =
-  PAYMENT_METHODS.map((m) => ({ value: m, label: PAYMENT_METHOD_LABEL[m] }));
 
 interface KpiDescriptor {
   key: string; label: string; value: string;
@@ -133,35 +127,17 @@ export default function SalesByProductPage(): JSX.Element {
       kind: 'select', key: 'category_id', label: 'Category', allLabel: 'All categories',
       options: (categories ?? []).map((c) => ({ value: c.id, label: c.name })),
     },
-    {
-      kind: 'select', key: 'order_type', label: 'Order type', allLabel: 'All types',
-      options: ORDER_TYPE_OPTIONS, strict: true,
-    },
-    {
-      kind: 'select', key: 'payment_method', label: 'Payment method', allLabel: 'All payments',
-      options: PAYMENT_OPTIONS, strict: true,
-    },
-    {
-      kind: 'text', key: 'table_number', label: 'Table', placeholder: 'Any',
-      maxLength: 32, width: 'w-28',
-    },
+    // Les trois filtres de commande, partagés avec Category et Staff.
+    ...SALES_ORDER_FILTER_DEFS,
   ], [categories]);
   const filters = useReportFilters(filterDefs, { extraKeys: EXTRA_FILTER_KEYS });
   const categoryId = filters.values.category_id;
   const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
     filters.values;
 
-  // `find` sur la liste d'enum : la valeur sort typée sans cast, et une valeur
-  // hors enum (déjà écartée par `strict`) ne peut pas partir au serveur.
-  const orderFilters = useMemo<SalesOrderFilters>(() => {
-    const ot = ORDER_TYPES.find((t) => t === orderType);
-    const pm = PAYMENT_METHODS.find((m) => m === paymentMethod);
-    return {
-      ...(ot !== undefined ? { order_type: ot } : {}),
-      ...(pm !== undefined ? { payment_method: pm } : {}),
-      ...(tableNumber !== '' ? { table_number: tableNumber } : {}),
-    };
-  }, [orderType, paymentMethod, tableNumber]);
+  const orderFilters = useMemo<SalesOrderFilters>(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
 
   const current = useSalesByProduct({
     start, end, categoryId: categoryId || null, filters: orderFilters,
@@ -274,17 +250,7 @@ export default function SalesByProductPage(): JSX.Element {
     <ReportFilterBar
       defs={filterDefs}
       filters={filters}
-      note={paymentMethod !== '' ? (
-        // Le filtre retient les COMMANDES qui portent ce moyen, pas les montants
-        // réglés par lui : une commande mixte compte en entier sous chacun. Le
-        // filtre exige une ligne de règlement ; on ne prétend pas savoir quels
-        // canaux en ont une.
-        <p className="text-xs text-text-secondary" role="note" data-testid="payment-filter-note">
-          An order paid with several methods counts in full under each one, so
-          totals per method do not add up. Orders with no recorded payment line
-          are left out.
-        </p>
-      ) : undefined}
+      note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined}
     />
   );
 

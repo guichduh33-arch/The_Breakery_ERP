@@ -8,6 +8,13 @@
 // période précédente — elle est ajoutée ici, sur chaque tuile et en seconde
 // série du graphe. L'appariement se fait par `staff_id`, jamais par rang : un
 // classement qui bouge comparerait deux personnes différentes.
+//
+// S3-22 (2026-11-11) — la page reçoit le socle de filtres : type de commande,
+// moyen de paiement, table (mêmes clés d'URL et mêmes libellés que Sales by
+// Product). Ils partent au classement ET à sa comparaison — même portée — et
+// la descente vers les commandes servies les transporte : la liste des
+// commandes lit les mêmes clés et applique les mêmes prédicats. La table passe
+// sur `ReportTable` (tri opt-in, pied de total, recherche client sur le nom).
 
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -23,7 +30,15 @@ import {
   BreakdownCard, type BreakdownRow,
 } from '@/features/reports/components/BreakdownCard.js';
 import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import { ReportTable, type ReportColumn } from '@/features/reports/components/ReportTable.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
+import type { SortSpec } from '@/features/reports/hooks/useSortedRows.js';
+import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import {
   useSalesByStaff, type SalesStaffRow,
 } from '@/features/reports/hooks/useSalesByStaff.js';
@@ -42,7 +57,6 @@ const csvColumns: CsvColumn<SalesStaffRow>[] = [
   { header: 'Avg Basket',  accessor: (r) => r.avg_basket,  format: 'idr-round100' },
 ];
 
-const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 const INK_LINK = 'text-gold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 const MAX_BARS = 8;
 const MAX_TICK_CHARS = 14;
@@ -63,13 +77,76 @@ function truncate(s: string): string {
   return s.length > MAX_TICK_CHARS ? `${s.slice(0, MAX_TICK_CHARS - 1)}…` : s;
 }
 
+/** Clé d'URL de la recherche sur le nom : « Clear filters » la vide aussi. */
+const SEARCH_KEY = 'q';
+const EXTRA_FILTER_KEYS: readonly string[] = [SEARCH_KEY];
+
+type SortKey = 'name' | 'total' | 'orders' | 'avg';
+
+/** Niveau module : `useSortedRows` met les specs en dépendance du tri. La part
+ *  suit le total — même ordre, une seule clé. */
+const SORT_SPECS: Readonly<Record<SortKey, SortSpec<SalesStaffRow>>> = {
+  name:   { kind: 'string', value: (r) => r.staff_name },
+  total:  { kind: 'number', value: (r) => r.total },
+  orders: { kind: 'number', value: (r) => r.order_count },
+  avg:    { kind: 'number', value: (r) => r.avg_basket },
+};
+
+function buildColumns(
+  sums: { total: number; orders: number },
+  avgBasket: number,
+): readonly ReportColumn<SalesStaffRow, SortKey>[] {
+  return [
+    {
+      id: 'name', header: 'Staff', sortKey: 'name', className: 'font-medium',
+      searchText: (r) => r.staff_name,
+      cell: (r) => {
+        const url = buildDrilldownUrl('user', r.staff_id);
+        return url !== null
+          ? <Link to={url} className={INK_LINK}>{r.staff_name}</Link>
+          : r.staff_name;
+      },
+      footer: 'Total',
+    },
+    {
+      id: 'total', header: 'Total', sortKey: 'total', align: 'right',
+      cell: (r) => formatIdrFull(r.total),
+      footer: formatIdrFull(sums.total),
+    },
+    {
+      id: 'share', header: 'Share', align: 'right',
+      cell: (r) => formatPct1(sharePct(r.total, sums.total)),
+      footer: '100,0%',
+    },
+    {
+      id: 'orders', header: 'Orders', sortKey: 'orders', align: 'right',
+      cell: (r) => formatCount(r.order_count),
+      footer: formatCount(sums.orders),
+    },
+    {
+      id: 'avg', header: 'Avg basket', sortKey: 'avg', align: 'right',
+      cell: (r) => formatIdrFull(r.avg_basket),
+      footer: formatIdrFull(avgBasket),
+    },
+  ];
+}
+
 export default function SalesByStaffPage(): JSX.Element {
   // Bornes déjà nommées `start` / `end` : aucun repli de nom nécessaire.
   const period = useReportPeriod();
   const { start, end, compareRange } = period;
 
-  const current = useSalesByStaff(start, end);
-  const compare = useSalesByStaff(compareRange.start, compareRange.end);
+  const filters = useReportFilters(SALES_ORDER_FILTER_DEFS, { extraKeys: EXTRA_FILTER_KEYS });
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
+    filters.values;
+  const orderFilters = useMemo<SalesOrderFilters>(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
+
+  // Courant et comparaison sous la MÊME portée : sinon chaque delta comparerait
+  // un jeu filtré à un jeu entier.
+  const current = useSalesByStaff(start, end, orderFilters);
+  const compare = useSalesByStaff(compareRange.start, compareRange.end, orderFilters);
 
   const rows    = useMemo(() => current.data ?? [], [current.data]);
   const cmpRows = useMemo(() => compare.data ?? [], [compare.data]);
@@ -92,7 +169,10 @@ export default function SalesByStaffPage(): JSX.Element {
 
   const top = topSlice(sorted, (r) => r.total);
   const topRows: BreakdownRow[] = top.rows.map((r, i) => {
-    const url = buildDrilldownUrl('order_list', '', { served_by: r.staff_id, start, end });
+    // Les commandes servies, sous la même portée que le chiffre affiché.
+    const url = buildDrilldownUrl('order_list', '', {
+      served_by: r.staff_id, start, end, ...orderFilters,
+    });
     return {
       key:      r.staff_id,
       label:    r.staff_name,
@@ -138,11 +218,25 @@ export default function SalesByStaffPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     `${formatCount(rows.length)} staff member${rows.length === 1 ? '' : 's'}`,
     'revenue attributed to the cashier who served',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell : changer de
+    // filtre réécrit les chiffres, et il faut le dire.
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
+
+  const columns = useMemo(() => buildColumns(sums, avgBasket), [sums, avgBasket]);
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={SALES_ORDER_FILTER_DEFS}
+      filters={filters}
+      note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined}
+    />
+  );
 
   const toolbar = (
     <>
@@ -168,9 +262,12 @@ export default function SalesByStaffPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={current.error}
       isEmpty={!current.isLoading && current.data !== undefined && rows.length === 0}
-      emptyState={{ title: 'No sales', description: 'No sales in the selected date range.' }}
+      emptyState={{
+        title: 'No sales', description: 'No sales in the selected date range and filters.',
+      }}
       kpis={
         <KpiBand isLoading={current.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
           {tiles.map((t, i) => (
@@ -231,49 +328,19 @@ export default function SalesByStaffPage(): JSX.Element {
         isLoading={current.isLoading}
         testId="sbs-staff-detail"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Revenue, order count and average basket per staff member</caption>
-            <thead>
-              <tr className="border-b border-border-subtle text-text-secondary">
-                <th scope="col" className="py-2 text-left">Staff</th>
-                <th scope="col" className="py-2 text-right">Total</th>
-                <th scope="col" className="py-2 text-right">Share</th>
-                <th scope="col" className="py-2 text-right">Orders</th>
-                <th scope="col" className="py-2 text-right">Avg basket</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((r) => {
-                const url = buildDrilldownUrl('user', r.staff_id);
-                return (
-                  <tr key={r.staff_id} className="border-b border-border-subtle">
-                    <td className="py-2 font-medium">
-                      {url !== null
-                        ? <Link to={url} className={INK_LINK}>{r.staff_name}</Link>
-                        : r.staff_name}
-                    </td>
-                    <td className={NUM_CELL}>{formatIdrFull(r.total)}</td>
-                    <td className={NUM_CELL}>{formatPct1(sharePct(r.total, sums.total))}</td>
-                    <td className={NUM_CELL}>{formatCount(r.order_count)}</td>
-                    <td className={NUM_CELL}>{formatIdrFull(r.avg_basket)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            {sorted.length > 0 && (
-              <tfoot>
-                <tr className="border-t border-border-subtle font-semibold">
-                  <td className="py-2">Total</td>
-                  <td className={NUM_CELL}>{formatIdrFull(sums.total)}</td>
-                  <td className={NUM_CELL}>100,0%</td>
-                  <td className={NUM_CELL}>{formatCount(sums.orders)}</td>
-                  <td className={NUM_CELL}>{formatIdrFull(avgBasket)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <ReportTable
+          rows={sorted}
+          columns={columns}
+          sortSpecs={SORT_SPECS}
+          rowKey={(r) => r.staff_id}
+          caption="Revenue, order count and average basket per staff member"
+          showFooter
+          search={{
+            label: 'Search staff', placeholder: 'Search staff', noun: 'staff member', urlKey: SEARCH_KEY,
+          }}
+          emptyText="No staff member sold."
+          testId="sbs-table"
+        />
       </PanelCard>
     </ReportShell>
   );
