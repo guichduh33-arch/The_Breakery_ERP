@@ -95,10 +95,10 @@ INSERT INTO cpt_results SELECT ok(
 INSERT INTO cpt_results SELECT ok(
   has_function_privilege('authenticated','public.get_orders_list_v8(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
   AND has_function_privilege('authenticated','public.get_orders_counters_v6(text,text,jsonb)','EXECUTE')
-  AND has_function_privilege('authenticated','public.get_product_sales_lines_v6(uuid,date,date,integer,text)','EXECUTE')
+  AND has_function_privilege('authenticated','public.get_product_sales_lines_v7(uuid,date,date,integer,text,jsonb)','EXECUTE')
   AND NOT has_function_privilege('anon','public.get_orders_list_v8(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE')
   AND NOT has_function_privilege('anon','public.get_orders_counters_v6(text,text,jsonb)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.get_product_sales_lines_v6(uuid,date,date,integer,text)','EXECUTE'),
+  AND NOT has_function_privilege('anon','public.get_product_sales_lines_v7(uuid,date,date,integer,text,jsonb)','EXECUTE'),
   'droits authenticated posés, anon/PUBLIC refusés sur les trois fonctions');
 INSERT INTO cpt_results SELECT ok(
   to_regprocedure('public.get_orders_list_v7(text,text,jsonb,integer,text,text,text,uuid)') IS NULL

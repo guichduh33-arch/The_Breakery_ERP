@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useProductSalesLines.ts
 //
 // Le drill-down de « Sales by Product » : les LIGNES de vente d'un produit,
-// paginées au curseur keyset (`get_product_sales_lines_v6`).
+// paginées au curseur keyset (`get_product_sales_lines_v7`).
 //
 // `totals` porte le jeu COMPLET, pas la page chargée. La page rendue en tire un
 // pied honnête même quand seules cent lignes sur mille sont descendues — un pied
@@ -13,9 +13,16 @@
 //
 // S3-21 (2026-11-10) — v6 : chaque ligne porte aussi `created_at`, `paid_at`
 // et `table_number` de sa commande ; `sold_at` est inchangé.
+//
+// S3-22 (2026-11-10) — v7 : `p_filters`, la MÊME portée que le classement
+// (`useSalesByProduct`), pour que les lignes referment le total du produit.
 
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 /** Canal de vente d'une ligne — le même vocabulaire que la vue agrégée. */
 export type SalesLineChannel = 'counter' | 'b2b';
@@ -68,6 +75,7 @@ export interface UseProductSalesLinesParams {
   productId: string | null;
   start:     string;
   end:       string;
+  filters?:  SalesOrderFilters;
 }
 
 export const SALES_LINES_PAGE_SIZE = 100;
@@ -86,9 +94,11 @@ function toNullableStr(v: unknown): string | null {
   return v != null && v !== '' ? toStr(v) : null;
 }
 
-export function useProductSalesLines({ productId, start, end }: UseProductSalesLinesParams) {
+export function useProductSalesLines({
+  productId, start, end, filters,
+}: UseProductSalesLinesParams) {
   return useInfiniteQuery<ProductSalesLinesPage, Error>({
-    queryKey: ['product-sales-lines', productId, start, end],
+    queryKey: ['product-sales-lines', productId, start, end, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: productId !== null && Boolean(start && end),
     initialPageParam: null as string | null,
@@ -100,6 +110,7 @@ export function useProductSalesLines({ productId, start, end }: UseProductSalesL
         p_end_date:   string;
         p_limit:      number;
         p_cursor?:    string;
+        p_filters?:   Json;
       } = {
         p_product_id: productId ?? '',
         p_start_date: start,
@@ -107,8 +118,10 @@ export function useProductSalesLines({ productId, start, end }: UseProductSalesL
         p_limit:      SALES_LINES_PAGE_SIZE,
       };
       if (typeof pageParam === 'string' && pageParam !== '') args.p_cursor = pageParam;
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
 
-      const { data, error } = await supabase.rpc('get_product_sales_lines_v6', args);
+      const { data, error } = await supabase.rpc('get_product_sales_lines_v7', args);
       if (error) throw error as Error;
 
       const r      = (data ?? {}) as Record<string, unknown>;

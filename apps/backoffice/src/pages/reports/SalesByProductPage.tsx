@@ -25,22 +25,30 @@
 // jeu COMPLET, pas aux seules barres montrées — sinon douze produits sur
 // quatre-vingts refermeraient la courbe à 100 %, ce qui dirait « ces douze font
 // tout le chiffre ».
+//
+// S3-22 (2026-11-10) — page témoin du socle de filtres : `ReportFilterBar`
+// (catégorie, type de commande, moyen de paiement, table — tous dans l'URL) et
+// `ReportTable` (tri + recherche client sur le nom). Les trois filtres de
+// commande partent au classement ET au tiroir : même portée, mêmes totaux. La
+// recherche ne touche ni les KPI, ni les graphes, ni l'export : c'est une
+// loupe sur la table, pas un filtre du rapport.
 
 import { useMemo, useState, type JSX } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductSalesVisibilityRealtime } from '@/features/reports/hooks/useProductSalesVisibilityRealtime.js';
-import { Link } from 'react-router-dom';
-import { selectClassName, cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { Delta } from '@/components/kpi/Delta.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
-import { SortableTh } from '@/features/reports/components/SortableTh.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import { ReportTable } from '@/features/reports/components/ReportTable.js';
+import {
+  SALES_BY_PRODUCT_SORT_SPECS, buildSalesByProductColumns,
+} from '@/features/reports/components/salesByProductColumns.js';
 import {
   BreakdownCard, type BreakdownRow, type ShareSegment,
 } from '@/features/reports/components/BreakdownCard.js';
@@ -50,14 +58,16 @@ import {
 } from '@/features/reports/components/ProductSalesLinesDrawer.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import {
-  useSortedRows, type SortSpec,
-} from '@/features/reports/hooks/useSortedRows.js';
+  useReportFilters, type ReportFilterDef, type ReportFilterOption,
+} from '@/features/reports/hooks/useReportFilters.js';
 import {
   useSalesByProduct, type SalesProductRow,
 } from '@/features/reports/hooks/useSalesByProduct.js';
+import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
-import { useUrlState } from '@/hooks/useUrlState.js';
-import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
+import {
+  ORDER_TYPES, ORDER_TYPE_LABEL, PAYMENT_METHODS, PAYMENT_METHOD_LABEL,
+} from '@/features/orders/statusMeta.js';
 import {
   CHART_1, CHART_3, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
@@ -80,7 +90,6 @@ const csvColumns: CsvColumn<SalesProductRow>[] = [
   { header: 'B2B revenue',     accessor: (r) => r.b2b.revenue,           format: 'idr-round100' },
 ];
 
-const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 /** Au-delà, l'axe devient une frise illisible — la table dit le reste, et
  *  l'aside annonce la coupe. */
 const MAX_BARS = 12;
@@ -90,23 +99,17 @@ function truncate(s: string): string {
   return s.length > MAX_TICK_CHARS ? `${s.slice(0, MAX_TICK_CHARS - 1)}…` : s;
 }
 
-type SortKey =
-  | 'name' | 'category' | 'qty' | 'revenue' | 'discount'
-  | 'avg' | 'share' | 'counter' | 'b2b';
+type FilterKey = 'category_id' | 'order_type' | 'payment_method' | 'table_number';
 
-/** Défini au niveau module : le hook le met en dépendance du tri, une identité
- *  neuve à chaque rendu retrierait sans fin. */
-const SORT_SPECS: Readonly<Record<SortKey, SortSpec<SalesProductRow>>> = {
-  name:     { kind: 'string', value: (r) => r.name },
-  category: { kind: 'string', value: (r) => r.category_name },
-  qty:      { kind: 'number', value: (r) => r.qty },
-  revenue:  { kind: 'number', value: (r) => r.revenue },
-  discount: { kind: 'number', value: (r) => r.discount },
-  avg:      { kind: 'number', value: (r) => r.avg_price },
-  share:    { kind: 'number', value: (r) => r.share_pct },
-  counter:  { kind: 'number', value: (r) => r.counter.revenue },
-  b2b:      { kind: 'number', value: (r) => r.b2b.revenue },
-};
+/** Clé d'URL de la recherche produit : « Clear filters » la vide aussi. */
+const SEARCH_KEY = 'q';
+const EXTRA_FILTER_KEYS: readonly string[] = [SEARCH_KEY];
+
+// Options dérivées des maps typées sur les enums Postgres — jamais recopiées.
+const ORDER_TYPE_OPTIONS: readonly ReportFilterOption[] =
+  ORDER_TYPES.map((t) => ({ value: t, label: ORDER_TYPE_LABEL[t] }));
+const PAYMENT_OPTIONS: readonly ReportFilterOption[] =
+  PAYMENT_METHODS.map((m) => ({ value: m, label: PAYMENT_METHOD_LABEL[m] }));
 
 interface KpiDescriptor {
   key: string; label: string; value: string;
@@ -118,7 +121,6 @@ export default function SalesByProductPage(): JSX.Element {
   useProductSalesVisibilityRealtime(!!user);
   const period = useReportPeriod();
   const { start, end, compareRange } = period;
-  const [categoryId, setCategoryId] = useUrlState('category_id', '');
 
   // Le produit dont on lit les lignes. Local et non dans l'URL : c'est une
   // lecture transitoire, pas un état de la page qu'on partagerait par un lien.
@@ -126,17 +128,53 @@ export default function SalesByProductPage(): JSX.Element {
 
   const { data: categories } = useAllCategories();
 
-  const current = useSalesByProduct({ start, end, categoryId: categoryId || null });
+  const filterDefs = useMemo<readonly ReportFilterDef<FilterKey>[]>(() => [
+    {
+      kind: 'select', key: 'category_id', label: 'Category', allLabel: 'All categories',
+      options: (categories ?? []).map((c) => ({ value: c.id, label: c.name })),
+    },
+    {
+      kind: 'select', key: 'order_type', label: 'Order type', allLabel: 'All types',
+      options: ORDER_TYPE_OPTIONS, strict: true,
+    },
+    {
+      kind: 'select', key: 'payment_method', label: 'Payment method', allLabel: 'All payments',
+      options: PAYMENT_OPTIONS, strict: true,
+    },
+    {
+      kind: 'text', key: 'table_number', label: 'Table', placeholder: 'Any',
+      maxLength: 32, width: 'w-28',
+    },
+  ], [categories]);
+  const filters = useReportFilters(filterDefs, { extraKeys: EXTRA_FILTER_KEYS });
+  const categoryId = filters.values.category_id;
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
+    filters.values;
+
+  // `find` sur la liste d'enum : la valeur sort typée sans cast, et une valeur
+  // hors enum (déjà écartée par `strict`) ne peut pas partir au serveur.
+  const orderFilters = useMemo<SalesOrderFilters>(() => {
+    const ot = ORDER_TYPES.find((t) => t === orderType);
+    const pm = PAYMENT_METHODS.find((m) => m === paymentMethod);
+    return {
+      ...(ot !== undefined ? { order_type: ot } : {}),
+      ...(pm !== undefined ? { payment_method: pm } : {}),
+      ...(tableNumber !== '' ? { table_number: tableNumber } : {}),
+    };
+  }, [orderType, paymentMethod, tableNumber]);
+
+  const current = useSalesByProduct({
+    start, end, categoryId: categoryId || null, filters: orderFilters,
+  });
   const compare = useSalesByProduct({
     start: compareRange.start, end: compareRange.end, categoryId: categoryId || null,
+    filters: orderFilters,
   });
 
   const rows    = useMemo(() => current.isError || current.isFetching ? [] : current.data?.by_product ?? [], [current.data, current.isError, current.isFetching]);
   const summary = current.isError || current.isFetching ? undefined : current.data?.summary;
   const prev    = compare.isError || compare.isFetching ? undefined : compare.data?.summary;
   const comparable = compare.data !== undefined ? prev : undefined;
-
-  const sorted = useSortedRows<SalesProductRow, SortKey>(rows, SORT_SPECS);
 
   // Le Pareto lit le classement PAR CHIFFRE D'AFFAIRES, jamais le tri courant de
   // la table : un tri par nom en ferait une frise sans pente, ce qui n'est plus
@@ -215,29 +253,44 @@ export default function SalesByProductPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     `${formatCount(rows.length)} product${rows.length === 1 ? '' : 's'}`,
     'counter and B2B, cancelled lines and promo gifts excluded',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell : changer de
+    // filtre réécrit les chiffres, et il faut le dire.
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
+
+  // `setOpened` est stable : seules les données du pied et la période font
+  // varier la définition.
+  const columns = useMemo(
+    () => buildSalesByProductColumns({ summary, start, end, onOpen: setOpened }),
+    [summary, start, end],
+  );
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={filterDefs}
+      filters={filters}
+      note={paymentMethod !== '' ? (
+        // Le filtre retient les COMMANDES qui portent ce moyen, pas les montants
+        // réglés par lui : une commande mixte compte en entier sous chacun. Le
+        // filtre exige une ligne de règlement ; on ne prétend pas savoir quels
+        // canaux en ont une.
+        <p className="text-xs text-text-secondary" role="note" data-testid="payment-filter-note">
+          An order paid with several methods counts in full under each one, so
+          totals per method do not add up. Orders with no recorded payment line
+          are left out.
+        </p>
+      ) : undefined}
+    />
+  );
 
   const toolbar = (
     <>
       <PeriodControl period={period} showCompare />
-      <label className="flex items-center gap-1.5 text-xs text-text-muted">
-        <span>Category</span>
-        <select
-          value={categoryId}
-          onChange={(e) => { setCategoryId(e.target.value); }}
-          aria-label="Category filter"
-          className={cn(selectClassName, 'h-9 w-auto')}
-        >
-          <option value="">All categories</option>
-          {(categories ?? []).map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-      </label>
       <ExportMenu
         csv={{ rows, columns: csvColumns, filename: `sales-by-product-${start}_${end}` }}
         disabled={rows.length === 0 || current.isError || current.isFetching}
@@ -251,11 +304,12 @@ export default function SalesByProductPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={current.error}
       isEmpty={!current.isLoading && current.data !== undefined && rows.length === 0}
       emptyState={{
         title: 'No sales',
-        description: 'No product was sold in the selected date range and category.',
+        description: 'No product was sold in the selected date range and filters.',
       }}
       kpis={
         <KpiBand isLoading={current.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
@@ -341,100 +395,26 @@ export default function SalesByProductPage(): JSX.Element {
         isLoading={current.isLoading}
         testId="sbp-product-detail"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">
-              Quantity, revenue and channel split per product
-            </caption>
-            <thead>
-              <tr className="border-b border-border-subtle text-text-secondary">
-                <SortableTh label="Product"   sortKey="name"     sorted={sorted} />
-                <SortableTh label="Category"  sortKey="category" sorted={sorted} />
-                <SortableTh label="Qty"       sortKey="qty"      sorted={sorted} align="right" />
-                <SortableTh label="Revenue"   sortKey="revenue"  sorted={sorted} align="right" />
-                <SortableTh label="Share"     sortKey="share"    sorted={sorted} align="right" />
-                <SortableTh label="Avg price" sortKey="avg"      sorted={sorted} align="right" />
-                <SortableTh label="Discount"  sortKey="discount" sorted={sorted} align="right" />
-                <SortableTh label="Counter"   sortKey="counter"  sorted={sorted} align="right" />
-                <SortableTh label="B2B"       sortKey="b2b"      sorted={sorted} align="right" />
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.rows.map((r) => {
-                const catUrl = r.category_id !== null
-                  ? buildDrilldownUrl('category', r.category_id, { date_from: start, date_to: end })
-                  : null;
-                return (
-                  <tr key={r.product_id} className="border-b border-border-subtle">
-                    <td className="py-2">
-                      {/* Le drill-down de CE rapport, ce sont les lignes de vente
-                          — pas la fiche produit, qui vit dans le tiroir. */}
-                      <button
-                        type="button"
-                        onClick={() => { setOpened({ id: r.product_id, name: r.name }); }}
-                        data-testid={`open-lines-${r.product_id}`}
-                        className={cn(
-                          'rounded-sm text-left text-gold underline-offset-2 hover:underline',
-                          FOCUS_RING,
-                        )}
-                      >
-                        {r.name}
-                      </button>
-                    </td>
-                    <td className="py-2 text-text-secondary">
-                      {catUrl !== null && r.category_name !== null ? (
-                        <Link
-                          to={catUrl}
-                          className={cn('underline-offset-2 hover:underline hover:text-gold', FOCUS_RING)}
-                        >
-                          {r.category_name}
-                        </Link>
-                      ) : (r.category_name ?? '—')}
-                    </td>
-                    <td className={NUM_CELL}>{formatCount(r.qty)}</td>
-                    <td className={NUM_CELL}>{formatIdrFull(r.revenue)}</td>
-                    <td className={NUM_CELL}>{formatPct1(r.share_pct)}</td>
-                    <td className={NUM_CELL}>{formatIdrFull(r.avg_price)}</td>
-                    <td className={NUM_CELL}>
-                      {r.discount > 0
-                        ? `−${formatIdrFull(r.discount)}`
-                        : <span className="text-text-subtle">—</span>}
-                    </td>
-                    <td className={NUM_CELL}>{formatIdrFull(r.counter.revenue)}</td>
-                    <td className={NUM_CELL}>
-                      {r.b2b.revenue > 0
-                        ? formatIdrFull(r.b2b.revenue)
-                        : <span className="text-text-subtle">—</span>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            {sorted.rows.length > 0 && summary !== undefined && (
-              <tfoot>
-                <tr className="border-t border-border-subtle font-semibold">
-                  <td className="py-2">Total</td>
-                  <td />
-                  <td className={NUM_CELL}>{formatCount(summary.qty)}</td>
-                  <td className={NUM_CELL}>{formatIdrFull(summary.revenue)}</td>
-                  <td className={NUM_CELL}>100,0%</td>
-                  <td className={NUM_CELL}>{formatIdrFull(summary.avg_price)}</td>
-                  <td className={NUM_CELL}>
-                    {summary.discount > 0 ? `−${formatIdrFull(summary.discount)}` : '—'}
-                  </td>
-                  <td className={NUM_CELL}>{formatIdrFull(summary.counter.revenue)}</td>
-                  <td className={NUM_CELL}>{formatIdrFull(summary.b2b.revenue)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <ReportTable
+          rows={rows}
+          columns={columns}
+          sortSpecs={SALES_BY_PRODUCT_SORT_SPECS}
+          rowKey={(r) => r.product_id}
+          caption="Quantity, revenue and channel split per product"
+          showFooter={summary !== undefined}
+          search={{
+            label: 'Search products', placeholder: 'Search products', noun: 'product', urlKey: SEARCH_KEY,
+          }}
+          emptyText="No product sold."
+          testId="sbp-table"
+        />
       </PanelCard>
 
       <ProductSalesLinesDrawer
         product={current.isError || current.isFetching ? null : opened}
         start={start}
         end={end}
+        filters={orderFilters}
         onClose={() => { setOpened(null); }}
       />
     </ReportShell>

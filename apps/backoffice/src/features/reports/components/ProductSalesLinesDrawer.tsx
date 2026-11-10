@@ -23,6 +23,9 @@
 // « Sold at » ; tri CLIENT par colonne (`useSortedRows`, ordre serveur par
 // défaut) sur les lignes DÉJÀ chargées ; export CSV de ces mêmes lignes, dans
 // l'ordre affiché, gaté `reports.export` comme ExportMenu.
+//
+// S3-22 (2026-11-10) — reçoit les filtres de commande du classement et les
+// transmet à la RPC : sans eux, le tiroir totaliserait une autre portée.
 
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -38,6 +41,7 @@ import {
   useProductSalesLines, type ProductSalesLine,
 } from '../hooks/useProductSalesLines.js';
 import { useSortedRows, type SortSpec } from '../hooks/useSortedRows.js';
+import type { SalesOrderFilters } from '../utils/salesFilters.js';
 import { SortableTh } from './SortableTh.js';
 import { exportErrorDetail } from './ExportButtons.js';
 import { formatIdrFull } from '../utils/chartColors.js';
@@ -48,6 +52,8 @@ export interface ProductSalesLinesDrawerProps {
   product: { id: string; name: string } | null;
   start:   string;
   end:     string;
+  /** S3-22 — la portée du classement : les lignes referment son total. */
+  filters?: SalesOrderFilters;
   onClose: () => void;
 }
 
@@ -108,9 +114,11 @@ function customerCell(line: ProductSalesLine): JSX.Element {
 }
 
 export function ProductSalesLinesDrawer({
-  product, start, end, onClose,
+  product, start, end, filters, onClose,
 }: ProductSalesLinesDrawerProps): JSX.Element {
-  const q = useProductSalesLines({ productId: product?.id ?? null, start, end });
+  const q = useProductSalesLines({
+    productId: product?.id ?? null, start, end, ...(filters !== undefined ? { filters } : {}),
+  });
   const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const hidden = q.isError || q.isFetching;

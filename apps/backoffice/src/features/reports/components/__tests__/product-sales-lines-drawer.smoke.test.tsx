@@ -36,20 +36,28 @@ const LINES_DATA = {
   next_cursor: null,
 };
 
+const { mockRpc } = vi.hoisted(() => ({
+  mockRpc: vi.fn<(fn: string, args: Record<string, unknown>) => void>(),
+}));
+
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (fn: string) => Promise.resolve(
-      fn === 'get_product_sales_lines_v6'
-        ? { data: LINES_DATA, error: null }
-        : { data: null, error: null },
-    ),
+    rpc: (fn: string, args: Record<string, unknown>) => {
+      mockRpc(fn, args);
+      return Promise.resolve(
+        fn === 'get_product_sales_lines_v7'
+          ? { data: LINES_DATA, error: null }
+          : { data: null, error: null },
+      );
+    },
   },
 }));
 
 import { ProductSalesLinesDrawer } from '../ProductSalesLinesDrawer.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import type { SalesOrderFilters } from '../../utils/salesFilters.js';
 
-function renderDrawer() {
+function renderDrawer(filters?: SalesOrderFilters) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -58,6 +66,7 @@ function renderDrawer() {
           product={{ id: 'p2', name: 'Croissant' }}
           start="2026-06-01"
           end="2026-06-30"
+          {...(filters !== undefined ? { filters } : {})}
           onClose={() => { /* no-op */ }}
         />
       </MemoryRouter>
@@ -72,6 +81,24 @@ function orderNumbers(table: HTMLElement): string[] {
 beforeEach(() => {
   useAuthStore.setState({ permissions: ['reports.export'] });
   vi.mocked(downloadCsv).mockClear();
+  mockRpc.mockReset();
+});
+
+describe('ProductSalesLinesDrawer — S3-22 order filters', () => {
+  it('forwards the ranking filters to p_filters of get_product_sales_lines_v7', async () => {
+    renderDrawer({ order_type: 'dine_in', payment_method: 'qris', table_number: ' T-07 ' });
+    await screen.findByTestId('lines-table');
+    const args = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v7')?.[1];
+    expect(args?.p_filters).toEqual({ order_type: 'dine_in', payment_method: 'qris', table_number: 'T-07' });
+  });
+
+  it('sends no p_filters without filters', async () => {
+    renderDrawer({});
+    await screen.findByTestId('lines-table');
+    const args = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v7')?.[1];
+    expect(args).toBeDefined();
+    expect(args).not.toHaveProperty('p_filters');
+  });
 });
 
 describe('ProductSalesLinesDrawer — created, paid, table', () => {
