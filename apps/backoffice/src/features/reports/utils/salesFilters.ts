@@ -4,6 +4,8 @@
 // `get_sales_by_product` et `get_product_sales_lines` (argument `p_filters`).
 // Les deux RPC appliquent la MÊME portée : c'est ce qui permet aux lignes du
 // tiroir de refermer le total affiché par le classement.
+// Les familles `get_sales_by_category` et `get_sales_by_staff` lisent le même
+// argument, avec les mêmes prédicats.
 //
 // Les valeurs d'enum sont typées sur Postgres (types régénérés) : aucune
 // valeur n'est recopiée ici.
