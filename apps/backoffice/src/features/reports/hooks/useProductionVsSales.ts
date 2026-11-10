@@ -6,6 +6,11 @@
 // BILAN avec les restes déclarés par la caisse en fin de journée. Rapport
 // informatif : quantités seules, aucun montant, aucune écriture.
 //
+// Un article servi comme composant d'un combo compte comme VENDU (décision du
+// 2026-11-11) : `sold_in_combo` en donne la part, DÉJÀ comprise dans
+// `sold_counter` / `sold_b2b` / `sold_total` — elle ne s'y additionne pas. Une
+// clé absente vaut 0 (réponse d'une version antérieure de la famille).
+//
 // Un reste inconnu (jour sans clôture, article absent) arrive à `null` : il ne
 // se lit jamais comme un zéro.
 //
@@ -27,6 +32,8 @@ export interface ProductionVsSalesFigures {
   sold_counter: number;
   sold_b2b:     number;
   sold_total:   number;
+  /** Part de `sold_total` servie en combo ; déjà comprise, ne s'additionne pas. */
+  sold_in_combo: number;
   wasted:       number;
   /** produced − sold_total − wasted ; NÉGATIF quand on vend du stock antérieur. */
   gap:          number;
@@ -139,12 +146,18 @@ function numOrNull(v: unknown, path: string): number | null {
   return v === null ? null : num(v, path);
 }
 
+/** Clé absente = 0 ; présente, elle doit être un nombre fini. */
+function numOrZero(v: unknown, path: string): number {
+  return v === undefined ? 0 : num(v, path);
+}
+
 function figures(o: Obj, path: string): ProductionVsSalesFigures {
   return {
     produced:     num(o.produced, `${path}.produced`),
     sold_counter: num(o.sold_counter, `${path}.sold_counter`),
     sold_b2b:     num(o.sold_b2b, `${path}.sold_b2b`),
     sold_total:   num(o.sold_total, `${path}.sold_total`),
+    sold_in_combo: numOrZero(o.sold_in_combo, `${path}.sold_in_combo`),
     wasted:       num(o.wasted, `${path}.wasted`),
     gap:          num(o.gap, `${path}.gap`),
   };
@@ -264,7 +277,7 @@ export function useProductionVsSales(params: UseProductionVsSalesParams) {
       if (categoryId) args.p_category_id = categoryId;
       if (productId) args.p_product_id = productId;
 
-      const { data, error } = await supabase.rpc('get_production_vs_sales_v3', args);
+      const { data, error } = await supabase.rpc('get_production_vs_sales_v4', args);
       if (error) throw toReportError(error);
       return parseProductionVsSales(data);
     },

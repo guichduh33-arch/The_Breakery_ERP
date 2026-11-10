@@ -51,6 +51,9 @@ export function ProductionVsSalesItemDrawer({
   );
 
   const salesUrl = buildDrilldownUrl('sales_by_product', '', { start, end });
+  // Part servie en combo, DÉJÀ comprise dans « Sold total » : colonne montrée
+  // seulement si l'article en a, pour ne pas charger les autres tiroirs.
+  const showCombo = item !== null && item.sold_in_combo > 0;
 
   return (
     <Sheet open={item !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -104,6 +107,11 @@ export function ProductionVsSalesItemDrawer({
                     <th scope="col" className={cn(TH, 'text-right')}>Counter</th>
                     <th scope="col" className={cn(TH, 'text-right')}>B2B</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Sold total</th>
+                    {showCombo && (
+                      <th scope="col" className={cn(TH, 'text-right')} data-testid="pvs-item-combo-head">
+                        Of which in combos
+                      </th>
+                    )}
                     <th scope="col" className={cn(TH, 'text-right')}>Approved waste</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Left at close</th>
                     <th scope="col" className={cn(TH, 'text-right')}>Unexplained</th>
@@ -119,6 +127,7 @@ export function ProductionVsSalesItemDrawer({
                       <td className={NUM}>{formatCount(d.sold_counter)}</td>
                       <td className={NUM}>{formatCount(d.sold_b2b)}</td>
                       <td className={NUM}>{formatCount(d.sold_total)}</td>
+                      {showCombo && <td className={NUM}>{formatCount(d.sold_in_combo)}</td>}
                       <td className={NUM}>{formatCount(d.wasted)}</td>
                       <td className={NUM}><LeftoverValue value={d.closing} /></td>
                       <td className={NUM}><UnexplainedValue value={d.unexplained} /></td>
@@ -135,6 +144,9 @@ export function ProductionVsSalesItemDrawer({
                       <td className={NUM}>{formatCount(item.sold_counter)}</td>
                       <td className={NUM}>{formatCount(item.sold_b2b)}</td>
                       <td className={NUM}>{formatCount(item.sold_total)}</td>
+                      {showCombo && (
+                        <td className={NUM} data-testid="pvs-item-combo-total">{formatCount(item.sold_in_combo)}</td>
+                      )}
                       <td className={NUM}>{formatCount(item.wasted)}</td>
                       <td className={NUM}>{formatCount(item.closing)}</td>
                       <td className={NUM}>

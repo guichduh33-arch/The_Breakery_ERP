@@ -52,7 +52,7 @@ function openReport() {
 }
 
 function reportCalls(): number {
-  return state.rpc.mock.calls.filter(([fn]) => fn === 'get_production_vs_sales_v3').length;
+  return state.rpc.mock.calls.filter(([fn]) => fn === 'get_production_vs_sales_v4').length;
 }
 
 beforeEach(() => {

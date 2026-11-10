@@ -24,7 +24,7 @@ vi.mock('@breakery/domain', async (importOriginal) => ({
   buildCsv,
 }));
 
-const ZERO = { produced: 0, sold_counter: 0, sold_b2b: 0, sold_total: 0, wasted: 0, gap: 0 };
+const ZERO = { produced: 0, sold_counter: 0, sold_b2b: 0, sold_total: 0, sold_in_combo: 0, wasted: 0, gap: 0 };
 /** Bilan : aucun reste connu (le cas par défaut des agrégats sans clôture). */
 const NO_BAL = { opening: 0, closing: 0, unexplained: null, unknown_cells: 1 };
 
@@ -39,7 +39,7 @@ const P1 = { product_id: 'p1', product_name: 'Baguette', category_id: 'c1', cate
 const P3 = { product_id: 'p3', product_name: 'Sourdough', category_id: 'c1', category_name: 'Classic breads',
   produced: 10, sold_counter: 8, sold_b2b: 0, sold_total: 8, wasted: 0, gap: 2, sell_through_pct: 80, ...NO_BAL };
 const P2 = { product_id: 'p2', product_name: 'Croissant', category_id: 'c2', category_name: 'Classic viennoiserie',
-  produced: 20, sold_counter: 20, sold_b2b: 4, sold_total: 24, wasted: 0, gap: -4, sell_through_pct: 120,
+  produced: 20, sold_counter: 20, sold_b2b: 4, sold_total: 24, sold_in_combo: 5, wasted: 0, gap: -4, sell_through_pct: 120,
   opening: 9, closing: 3, unexplained: 2, unknown_cells: 0 };
 
 const FULL = {
@@ -47,7 +47,7 @@ const FULL = {
   timezone: 'Asia/Makassar',
   generated_at: '2026-11-10T08:00:00+08:00',
   categories: CATEGORIES,
-  summary: { produced: 70, sold_counter: 58, sold_b2b: 7, sold_total: 65, wasted: 2, gap: 3, sell_through_pct: 92.9,
+  summary: { produced: 70, sold_counter: 58, sold_b2b: 7, sold_total: 65, sold_in_combo: 5, wasted: 2, gap: 3, sell_through_pct: 92.9,
     opening: 9, closing: 3, unexplained: 2, unknown_cells: 1 },
   by_day: [
     { date: '2026-11-01', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5,
@@ -64,9 +64,9 @@ const FULL = {
   // Servi trié par écart décroissant, comme la RPC.
   by_product: [P1, P3, P2],
   by_day_product: [
-    { date: '2026-11-02', product_id: 'p2', produced: 10, sold_counter: 12, sold_b2b: 2, sold_total: 14, wasted: 0, gap: -4,
+    { date: '2026-11-02', product_id: 'p2', produced: 10, sold_counter: 12, sold_b2b: 2, sold_total: 14, sold_in_combo: 3, wasted: 0, gap: -4,
       opening: 3, closing: 0, unexplained: -1 },
-    { date: '2026-11-01', product_id: 'p2', produced: 10, sold_counter: 8, sold_b2b: 2, sold_total: 10, wasted: 0, gap: 0,
+    { date: '2026-11-01', product_id: 'p2', produced: 10, sold_counter: 8, sold_b2b: 2, sold_total: 10, sold_in_combo: 2, wasted: 0, gap: 0,
       opening: 6, closing: 3, unexplained: 3 },
     { date: '2026-11-01', product_id: 'p1', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5,
       opening: null, closing: null, unexplained: null },
@@ -102,7 +102,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn !== 'get_production_vs_sales_v3') return Promise.resolve({ data: null, error: null });
+      if (fn !== 'get_production_vs_sales_v4') return Promise.resolve({ data: null, error: null });
       if (rpcError !== null) return Promise.resolve({ data: null, error: rpcError });
       if (args.p_product_id === 'p2') return Promise.resolve({ data: ONLY_CROISSANT, error: null });
       return Promise.resolve({ data: payload, error: null });
@@ -141,7 +141,7 @@ function renderPage(search = '?start=2026-11-01&end=2026-11-02') {
 
 function rpcCalls(): Record<string, unknown>[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_production_vs_sales_v3')
+    .filter(([fn]) => fn === 'get_production_vs_sales_v4')
     .map(([, args]) => args as Record<string, unknown>);
 }
 
@@ -172,7 +172,7 @@ describe('ProductionVsSalesPage', () => {
     const produced = await screen.findByTestId('kpi-produced');
     await waitFor(() => { expect(produced).toHaveTextContent('70'); });
     expect(screen.getByTestId('kpi-sold')).toHaveTextContent('65');
-    expect(screen.getByTestId('kpi-sold')).toHaveTextContent('Counter 58 · B2B 7');
+    expect(screen.getByTestId('kpi-sold')).toHaveTextContent('Counter 58 · B2B 7 · of which 5 in combos');
     expect(screen.getByTestId('kpi-waste')).toHaveTextContent('2');
     expect(screen.getByTestId('kpi-gap')).toHaveTextContent('3');
     expect(screen.getByTestId('kpi-sell-through')).toHaveTextContent('92,9%');
@@ -271,6 +271,35 @@ describe('ProductionVsSalesPage', () => {
     expect(rpcCalls().length).toBe(before);
   });
 
+  it('shows the combo share per day and in total in the item drawer', async () => {
+    renderPage();
+    await loaded();
+    fireEvent.click(screen.getByTestId('open-item-p2'));
+    const drawer = await screen.findByTestId('pvs-item-drawer');
+    expect(within(drawer).getByTestId('pvs-item-combo-head')).toHaveTextContent('Of which in combos');
+    const day = within(drawer).getByTestId('pvs-day-2026-11-02');
+    // Jour : produit, comptoir, B2B, total, part combo — dans cet ordre.
+    const cells = Array.from(day.querySelectorAll('td')).map((c) => c.textContent);
+    expect(cells.slice(2, 7)).toEqual(['10', '12', '2', '14', '3']);
+    expect(within(drawer).getByTestId('pvs-item-combo-total')).toHaveTextContent('5');
+  });
+
+  it('hides the combo share when the item has none', async () => {
+    renderPage();
+    await loaded();
+    fireEvent.click(screen.getByTestId('open-item-p1'));
+    const drawer = await screen.findByTestId('pvs-item-drawer');
+    expect(within(drawer).queryByTestId('pvs-item-combo-head')).not.toBeInTheDocument();
+    expect(within(drawer).queryByTestId('pvs-item-combo-total')).not.toBeInTheDocument();
+  });
+
+  it('keeps the Sold tile plain when nothing went into combos', async () => {
+    payload = { ...FULL, summary: { ...FULL.summary, sold_in_combo: 0 } };
+    renderPage();
+    await loaded();
+    expect(screen.getByTestId('kpi-sold')).not.toHaveTextContent(/combos/);
+  });
+
   it('exports the displayed view as CSV', async () => {
     renderPage('?start=2026-11-01&end=2026-11-02&view=category');
     await screen.findByTestId('pvs-table-category');
@@ -281,7 +310,7 @@ describe('ProductionVsSalesPage', () => {
     const [rows, columns] = buildCsv.mock.calls[0] ?? [[], []];
     expect(rows).toHaveLength(2);
     expect(columns.map((c) => c.header)).toEqual([
-      'Category', 'Carried over', 'Produced', 'Sold counter', 'Sold B2B', 'Sold total', 'Approved waste',
+      'Category', 'Carried over', 'Produced', 'Sold counter', 'Sold B2B', 'Sold total', 'Sold in combos', 'Approved waste',
       'Left at close', 'Unexplained', 'Item-days without count', 'Gap', 'Sell-through %',
     ]);
   });
@@ -324,8 +353,10 @@ describe('ProductionVsSalesPage', () => {
     await loaded();
     const notes = screen.getByTestId('pvs-reading-notes');
     expect(notes).toHaveTextContent('Informational report: it does not change stock.');
-    expect(notes).toHaveTextContent(/combo/);
-    expect(notes).toHaveTextContent(/gifts/);
+    expect(notes).toHaveTextContent(/An item served in a combo counts as sold/);
+    expect(notes).toHaveTextContent(/combo line quantity × the item quantity in the combo/);
+    expect(notes).toHaveTextContent(/Promotional gifts are not counted as sold/);
+    expect(notes).not.toHaveTextContent(/not counted as sold here/);
     expect(notes).toHaveTextContent(/approved waste/i);
     expect(notes).toHaveTextContent(/Unexplained = carried over \+ produced − sold − approved waste − left at close/);
     expect(notes).toHaveTextContent(/B2B orders count on the day they are delivered, paid or on credit/);

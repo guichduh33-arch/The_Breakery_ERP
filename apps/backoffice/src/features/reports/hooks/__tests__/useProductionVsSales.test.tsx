@@ -25,7 +25,7 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
-const FIG = { produced: 10, sold_counter: 6, sold_b2b: 2, sold_total: 8, wasted: 1, gap: 1 };
+const FIG = { produced: 10, sold_counter: 6, sold_b2b: 2, sold_total: 8, sold_in_combo: 3, wasted: 1, gap: 1 };
 const BAL = { opening: 3, closing: 2, unexplained: 2, unknown_cells: 1 };
 
 const ENVELOPE = {
@@ -50,13 +50,13 @@ beforeEach(() => {
 });
 
 describe('useProductionVsSales', () => {
-  it('calls get_production_vs_sales_v3 and omits the unset filters', async () => {
+  it('calls get_production_vs_sales_v4 and omits the unset filters', async () => {
     mockRpc.mockResolvedValue({ data: ENVELOPE, error: null });
     const { result } = renderHook(
       () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v3', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v4', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07',
     });
   });
@@ -68,7 +68,7 @@ describe('useProductionVsSales', () => {
       { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v3', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v4', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07', p_category_id: 'c1', p_product_id: 'p1',
     });
   });
@@ -87,6 +87,20 @@ describe('useProductionVsSales', () => {
     expect(d?.by_product[0]?.category_name).toBe('Classic breads');
     expect(d?.by_day_product[0]?.gap).toBe(-3);
     expect(d?.by_category[0]?.sold_b2b).toBe(2);
+  });
+
+  it('reads the combo share at all five levels', async () => {
+    mockRpc.mockResolvedValue({ data: ENVELOPE, error: null });
+    const { result } = renderHook(
+      () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
+    );
+    await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
+    const d = result.current.data;
+    expect(d?.summary.sold_in_combo).toBe(3);
+    expect(d?.by_day[0]?.sold_in_combo).toBe(3);
+    expect(d?.by_category[0]?.sold_in_combo).toBe(3);
+    expect(d?.by_product[0]?.sold_in_combo).toBe(3);
+    expect(d?.by_day_product[0]?.sold_in_combo).toBe(3);
   });
 
   it('keeps an unknown leftover as null, never as zero', async () => {
@@ -123,12 +137,33 @@ describe('useProductionVsSales', () => {
 });
 
 describe('parseProductionVsSales', () => {
+  it('reads a missing combo share as 0', () => {
+    const strip = <T extends Record<string, unknown>>(o: T): Omit<T, 'sold_in_combo'> => {
+      const { sold_in_combo: _drop, ...rest } = o;
+      return rest;
+    };
+    const d = parseProductionVsSales({
+      ...ENVELOPE,
+      summary: strip(ENVELOPE.summary),
+      by_day: ENVELOPE.by_day.map(strip),
+      by_category: ENVELOPE.by_category.map(strip),
+      by_product: ENVELOPE.by_product.map(strip),
+      by_day_product: ENVELOPE.by_day_product.map(strip),
+    });
+    expect(d.summary.sold_in_combo).toBe(0);
+    expect(d.by_day[0]?.sold_in_combo).toBe(0);
+    expect(d.by_category[0]?.sold_in_combo).toBe(0);
+    expect(d.by_product[0]?.sold_in_combo).toBe(0);
+    expect(d.by_day_product[0]?.sold_in_combo).toBe(0);
+  });
+
   it.each([
     ['a non-object', null, /response/],
     ['a string number', { ...ENVELOPE, summary: { ...ENVELOPE.summary, produced: '10' } }, /summary\.produced/],
     ['a missing period', { ...ENVELOPE, period: undefined }, /period/],
     ['a non-finite number', { ...ENVELOPE, by_day: [{ date: '2026-11-01', ...FIG, ...BAL, has_closing: true, gap: Number.NaN }] }, /by_day\[0\]\.gap/],
     ['a missing leftover count', { ...ENVELOPE, summary: { ...ENVELOPE.summary, unknown_cells: undefined } }, /summary\.unknown_cells/],
+    ['a non-numeric combo share', { ...ENVELOPE, summary: { ...ENVELOPE.summary, sold_in_combo: '3' } }, /summary\.sold_in_combo/],
     ['a missing closing flag', { ...ENVELOPE, by_day: [{ date: '2026-11-01', ...FIG, ...BAL }] }, /by_day\[0\]\.has_closing/],
   ])('rejects %s', (_label, raw, pattern) => {
     expect(() => parseProductionVsSales(raw)).toThrow(pattern);

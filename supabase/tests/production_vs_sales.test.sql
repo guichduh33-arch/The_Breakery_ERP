@@ -1,4 +1,4 @@
--- S3-19 : get_production_vs_sales_v3 — production enregistrée contre ventes
+-- S3-19 : famille get_production_vs_sales — production enregistrée contre ventes
 -- (comptoir et B2B séparés) et pertes APPROUVÉES, par jour, article, catégorie,
 -- puis le bilan avec les restes déclarés en fin de journée (bloc « avril »).
 --
@@ -35,7 +35,7 @@
 BEGIN;
 SELECT set_config('statement_timeout','60s',true);
 CREATE TEMP TABLE pvs_results(n serial, result text);
-INSERT INTO pvs_results(result) SELECT plan(53);
+INSERT INTO pvs_results(result) SELECT plan(57);
 
 CREATE TEMP TABLE pvs_ctx AS
 SELECT o.id AS owner_id, o.auth_user_id AS owner_uid, s.id AS staff_id, s.auth_user_id AS staff_uid,
@@ -202,18 +202,18 @@ CREATE TEMP TABLE pvs_before AS SELECT (SELECT count(*) FROM public.stock_moveme
   (SELECT count(*) FROM public.audit_logs) AS al, (SELECT count(*) FROM public.journal_entries) AS je;
 
 CREATE TEMP TABLE pvs_r AS SELECT
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13') AS r,
-  public.get_production_vs_sales_v3('1997-03-10','1997-03-10',NULL,pa) AS a1,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',NULL,pa) AS fa,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',cat_buns) AS fbuns,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',cat_bread) AS fbread,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',NULL,px) AS fx,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',cat_sfg) AS fsfg,
-  public.get_production_vs_sales_v3('1997-03-09','1997-03-13',NULL,pt) AS ft,
-  public.get_production_vs_sales_v3('1997-03-15','1997-03-15') AS sd,
-  public.get_production_vs_sales_v3('1996-01-01','1997-03-13') AS clamp,
-  public.get_production_vs_sales_v3('1997-04-02','1997-04-04') AS apr,
-  public.get_production_vs_sales_v3('1997-04-02','1997-04-04',cat_buns) AS aprbuns
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13') AS r,
+  public.get_production_vs_sales_v4('1997-03-10','1997-03-10',NULL,pa) AS a1,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,pa) AS fa,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_buns) AS fbuns,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_bread) AS fbread,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,px) AS fx,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_sfg) AS fsfg,
+  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,pt) AS ft,
+  public.get_production_vs_sales_v4('1997-03-15','1997-03-15') AS sd,
+  public.get_production_vs_sales_v4('1996-01-01','1997-03-13') AS clamp,
+  public.get_production_vs_sales_v4('1997-04-02','1997-04-04') AS apr,
+  public.get_production_vs_sales_v4('1997-04-02','1997-04-04',cat_buns) AS aprbuns
 FROM pvs_ctx;
 
 INSERT INTO pvs_results(result) SELECT ok(r ?& ARRAY['period','timezone','generated_at','categories','summary',
@@ -379,10 +379,10 @@ INSERT INTO pvs_results(result) SELECT ok(
 
 -- (k) droits.
 INSERT INTO pvs_results(result) SELECT ok(
-  has_function_privilege('authenticated','public.get_production_vs_sales_v3(date,date,uuid,uuid)','EXECUTE')
-  AND has_function_privilege('service_role','public.get_production_vs_sales_v3(date,date,uuid,uuid)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.get_production_vs_sales_v3(date,date,uuid,uuid)','EXECUTE')
-  AND NOT has_function_privilege('public','public.get_production_vs_sales_v3(date,date,uuid,uuid)','EXECUTE'),
+  has_function_privilege('authenticated','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
+  AND has_function_privilege('service_role','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
+  AND NOT has_function_privilege('public','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE'),
   '(k) authenticated et service_role exécutent, anon et PUBLIC non');
 INSERT INTO pvs_results(result) SELECT ok(
   to_regprocedure('public.get_production_vs_sales_v1(date,date,uuid,uuid)') IS NULL
@@ -391,10 +391,10 @@ INSERT INTO pvs_results(result) SELECT ok(
 
 -- Bornes.
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v3('1997-03-13','1997-03-09')$$,'22023','invalid_date_range',
+  $$SELECT public.get_production_vs_sales_v4('1997-03-13','1997-03-09')$$,'22023','invalid_date_range',
   'fin avant début refusée');
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v3(NULL,'1997-03-09')$$,'22023','start and end dates are required',
+  $$SELECT public.get_production_vs_sales_v4(NULL,'1997-03-09')$$,'22023','start and end dates are required',
   'dates requises');
 
 -- BOUT EN BOUT : une perte et une perte de vitrine passent par les vraies
@@ -413,8 +413,8 @@ CREATE TEMP TABLE pvs_decl AS SELECT
 FROM pvs_ctx;
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
 CREATE TEMP TABLE pvs_pending AS SELECT
-  public.get_production_vs_sales_v3(today,today,NULL,pe) AS w,
-  public.get_production_vs_sales_v3(today,today,NULL,pv) AS d FROM pvs_ctx;
+  public.get_production_vs_sales_v4(today,today,NULL,pe) AS w,
+  public.get_production_vs_sales_v4(today,today,NULL,pv) AS d FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT ok(
   (p.w->'summary'->>'wasted')::numeric=0 AND (p.d->'summary'->>'wasted')::numeric=0
   AND (SELECT count(*) FROM public.stock_declarations s WHERE s.id IN (x.dw,x.dd) AND s.status='pending')=2
@@ -424,8 +424,8 @@ INSERT INTO pvs_results(result) SELECT ok(
 CREATE TEMP TABLE pvs_approved AS SELECT public.approve_stock_declaration_v4(dw) AS w,
   public.approve_stock_declaration_v4(dd) AS d FROM pvs_decl;
 CREATE TEMP TABLE pvs_after AS SELECT
-  public.get_production_vs_sales_v3(today,today,NULL,pe) AS w,
-  public.get_production_vs_sales_v3(today,today,NULL,pv) AS d FROM pvs_ctx;
+  public.get_production_vs_sales_v4(today,today,NULL,pe) AS w,
+  public.get_production_vs_sales_v4(today,today,NULL,pv) AS d FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT is(
   (SELECT string_agg(m.movement_type||'|'||m.reference_type||'|'||(m.reference_id=x.dw)||'|'||trim_scale(m.quantity)||'|'||m.unit,',')
      FROM public.stock_movements m WHERE m.product_id=c.pe),
@@ -447,6 +447,72 @@ INSERT INTO pvs_results(result) SELECT ok(
   AND (SELECT count(*) FROM public.display_movements dm WHERE dm.product_id=c.pv AND dm.movement_type='waste')=1,
   'bout en bout vitrine : comptée une seule fois (le retrait de vitrine n''est pas relu)') FROM pvs_after a, pvs_ctx c;
 
+-- Articles servis en combo (décision de Mamat, 2026-11-11). Jour isolé : le
+-- 7 avril. Un combo est UNE ligne (ici portée par X, hors périmètre) dont les
+-- articles vivent dans combo_components.
+--   A : fournée 10 ; 2 vendus en ligne propre ; combo ×3 au comptoir avec A×2
+--       (6) ; combo ×1 en B2B livré avec A×2 (2).
+--   B et C : le même combo comptoir porte B×1 (3) et C sans quantité (×1 → 3).
+--   Ne comptent pas : X composant (hors périmètre), un identifiant mal formé,
+--   un combo annulé (×5), un combo cadeau promo (×7), des composants qui ne
+--   sont pas un tableau (×9).
+CREATE TEMP TABLE pvs_combo AS SELECT gen_random_uuid() AS oc, gen_random_uuid() AS ob;
+INSERT INTO public.production_records(product_id,production_number,quantity_produced,quantity_waste,
+  waste_reason,production_date,reverted_at,reverted_by,reverted_reason)
+SELECT pa,'PROD-19970407-9009',10,0,NULL::public.waste_reason,'1997-04-07 07:00:00+08'::timestamptz,NULL::timestamptz,NULL::uuid,NULL FROM pvs_ctx;
+INSERT INTO public.orders(id,order_number,order_type,status,subtotal,tax_amount,total,created_at,paid_at,session_id,served_by,b2b_delivered_at)
+SELECT oc,'PGTAP-PVS-C1','take_out'::order_type,'completed'::order_status,0,0,0,
+  '1997-04-07 09:00:00+08'::timestamptz,'1997-04-07 09:05:00+08'::timestamptz,session_id,owner_id,NULL::timestamptz FROM pvs_ctx, pvs_combo UNION ALL
+SELECT ob,'PGTAP-PVS-C2','b2b','b2b_pending',0,0,0,'1997-04-06 15:00:00+08',NULL,NULL,owner_id,'1997-04-07 08:00:00+08' FROM pvs_ctx, pvs_combo;
+INSERT INTO public.order_items(order_id,product_id,name_snapshot,unit_price,quantity,line_total,
+  is_cancelled,cancelled_at,cancelled_by,cancelled_reason,is_promo_gift,combo_components)
+SELECT oc,pa,'own line',0,2,0,false,NULL::timestamptz,NULL::uuid,NULL,false,NULL::jsonb FROM pvs_ctx, pvs_combo UNION ALL
+SELECT oc,px,'combo',0,3,0,false,NULL,NULL,NULL,false,jsonb_build_array(
+    jsonb_build_object('product_id',pa,'name','A','quantity',2,'modifiers','[]'::jsonb),
+    jsonb_build_object('product_id',pb,'name','B','quantity',1,'modifiers','[]'::jsonb),
+    jsonb_build_object('product_id',pc,'name','C'),
+    jsonb_build_object('product_id',px,'name','X','quantity',1),
+    jsonb_build_object('product_id','not-a-uuid','name','broken','quantity',4)) FROM pvs_ctx, pvs_combo UNION ALL
+SELECT oc,px,'combo cancelled',0,5,0,true,'1997-04-07 09:02:00+08',owner_id,'fixture',false,
+  jsonb_build_array(jsonb_build_object('product_id',pa,'quantity',1)) FROM pvs_ctx, pvs_combo UNION ALL
+SELECT oc,px,'combo gift',0,7,0,false,NULL,NULL,NULL,true,
+  jsonb_build_array(jsonb_build_object('product_id',pa,'quantity',1)) FROM pvs_ctx, pvs_combo UNION ALL
+SELECT oc,px,'combo not an array',0,9,0,false,NULL,NULL,NULL,false,
+  jsonb_build_object('product_id',pa,'quantity',1) FROM pvs_ctx, pvs_combo UNION ALL
+SELECT ob,px,'b2b combo',0,1,0,false,NULL,NULL,NULL,false,
+  jsonb_build_array(jsonb_build_object('product_id',pa,'quantity',2)) FROM pvs_ctx, pvs_combo;
+
+SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
+CREATE TEMP TABLE pvs_cr AS SELECT public.get_production_vs_sales_v4('1997-04-07','1997-04-07') AS r;
+INSERT INTO pvs_results(result) SELECT is(
+  (SELECT pg_temp.pvs_m(e)||'|'||trim_scale((e->>'sold_in_combo')::numeric)::text
+     FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid=c.pa),
+  '10/8/2/10/0/0|8',
+  'combo : A compte sa ligne propre (2), le combo comptoir (3×2) et le combo B2B livré (1×2) ; annulé, cadeau et non-tableau écartés')
+  FROM pvs_cr x, pvs_ctx c;
+INSERT INTO pvs_results(result) SELECT is(
+  (SELECT string_agg(trim_scale((e->>'sold_counter')::numeric)::text||'/'||trim_scale((e->>'sold_in_combo')::numeric)::text,
+                     ',' ORDER BY e->>'product_name')
+     FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid IN (c.pb,c.pc))
+  ||'|'||(SELECT count(*) FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid=c.px)::text,
+  '3/3,3/3|0',
+  'combo : B (×1) et C (quantité absente = 1) comptent 3 chacun ; le composant hors périmètre et l''identifiant mal formé ne comptent pas')
+  FROM pvs_cr x, pvs_ctx c;
+INSERT INTO pvs_results(result) SELECT is(
+  pg_temp.pvs_m(x.r->'summary')
+  ||'|'||trim_scale((x.r->'summary'->>'sold_in_combo')::numeric)::text
+  ||'|'||trim_scale((x.r->'by_day'->0->>'sold_in_combo')::numeric)::text
+  ||'|'||trim_scale((SELECT sum((e->>'sold_in_combo')::numeric) FROM jsonb_array_elements(x.r->'by_category') e))::text
+  ||'|'||trim_scale((SELECT sum((e->>'sold_in_combo')::numeric) FROM jsonb_array_elements(x.r->'by_product') e))::text
+  ||'|'||trim_scale((SELECT sum((e->>'sold_in_combo')::numeric) FROM jsonb_array_elements(x.r->'by_day_product') e))::text,
+  '10/14/2/16/0/-6|14|14|14|14|14',
+  'combo : sold_in_combo est compris dans sold_total et se referme aux cinq niveaux') FROM pvs_cr x;
+INSERT INTO pvs_results(result) SELECT ok(
+  (r->'summary'->>'sold_in_combo')::numeric=0
+  AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(r->'by_day') e WHERE (e->>'sold_in_combo')::numeric<>0)
+  AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(r->'by_product') e WHERE NOT e ? 'sold_in_combo'),
+  'combo : sans combo dans la fenêtre, sold_in_combo vaut 0 et les autres chiffres sont ceux d''avant') FROM pvs_r;
+
 -- Une catégorie du périmètre supprimée sort du rapport, avec ses articles.
 UPDATE public.categories SET deleted_at=now() WHERE slug='buns';
 INSERT INTO pvs_results(result) SELECT ok(
@@ -455,7 +521,7 @@ INSERT INTO pvs_results(result) SELECT ok(
   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.r->'by_category') e WHERE (e->>'category_id')::uuid=c.cat_buns)
   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid=c.pb),
   'une catégorie du périmètre supprimée sort du rapport : liste, ventilations et total')
-  FROM (SELECT public.get_production_vs_sales_v3('1997-03-09','1997-03-13') AS r) x, pvs_ctx c;
+  FROM (SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13') AS r) x, pvs_ctx c;
 
 -- (j) garde, reproduite de l'état de stock réservé au propriétaire : un
 -- non-propriétaire et une absence de session sont arrêtés par l'assertion
@@ -466,18 +532,18 @@ SELECT staff_id,'reports.inventory.read',true,'Transactional report grant fixtur
 ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
 SELECT pg_temp.pvs_as(staff_uid) FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v3('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
+  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
   '(j) non-propriétaire refusé, même avec la permission de rapport');
 SELECT pg_temp.pvs_as(NULL);
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v3('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
+  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
   '(j) absence de session refusée');
 INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
 SELECT owner_id,'reports.inventory.read',false,'Transactional report deny fixture' FROM pvs_ctx
 ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=false,expires_at=NULL;
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v3('1997-03-09','1997-03-13')$$,'42501',
+  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'42501',
   'permission denied: reports.inventory.read required','(j) propriétaire sans reports.inventory.read : 42501');
 
 INSERT INTO pvs_results(result) SELECT * FROM finish();
