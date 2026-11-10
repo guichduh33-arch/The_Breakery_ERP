@@ -36,7 +36,7 @@ SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(16);
+SELECT plan(17);
 
 -- ============================================================
 -- A. get_sales_by_product_v2 — garde, bornes, invariants
@@ -178,8 +178,11 @@ BEGIN
    WHERE (p->>'product_id')::uuid = v_pid;
   v_qty_before := COALESCE(v_qty_before, 0);
 
-  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, paid_at, session_id)
-  VALUES ('#PGTAP-SBP', 'take_out', 'paid', 10000, 0, 10000, now(), v_sid)
+  -- Créée une heure avant d'être payée, sur une table : T17 relit ces trois champs.
+  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total,
+                      created_at, paid_at, table_number, session_id)
+  VALUES ('#PGTAP-SBP', 'take_out', 'paid', 10000, 0, 10000,
+          now() - interval '1 hour', now(), 'PGTAP-T9', v_sid)
   RETURNING id INTO v_oid;
 
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total,
@@ -205,6 +208,32 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t8')::boolean,
   'T8: cancelled line and promo gift excluded, line discount counted');
+
+-- T17 (S3-21) : la ligne de vente porte la création, le paiement et la table de
+-- sa commande ; une commande sans table rend un null, jamais une clé absente.
+DO $$
+DECLARE v_pid uuid; v_r JSONB; v_line JSONB; v_ok BOOLEAN;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  SELECT oi.product_id INTO v_pid
+    FROM order_items oi JOIN orders o ON o.id = oi.order_id
+   WHERE o.order_number = '#PGTAP-SBP' LIMIT 1;
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_product_sales_lines_v6(v_pid, CURRENT_DATE - 1, CURRENT_DATE, 500);
+  SELECT l INTO v_line FROM jsonb_array_elements(v_r->'lines') l
+   WHERE l->>'order_number' = '#PGTAP-SBP';
+  v_ok := v_line IS NOT NULL
+      AND v_line->>'table_number' = 'PGTAP-T9'
+      AND (v_line->>'created_at')::timestamptz < (v_line->>'paid_at')::timestamptz
+      AND NOT EXISTS (
+        SELECT 1 FROM jsonb_array_elements(v_r->'lines') l
+         WHERE NOT (l ? 'created_at' AND l ? 'paid_at' AND l ? 'table_number')
+            OR l->>'created_at' IS NULL);
+  PERFORM set_config('breakery.t17', COALESCE(v_ok, false)::text, false);
+END $$;
+SELECT ok(current_setting('breakery.t17')::boolean,
+  'T17: sales line carries order created_at, paid_at and table_number');
 
 -- ============================================================
 -- B. get_product_sales_lines_v2 — garde, curseur, réconciliation
@@ -235,12 +264,12 @@ BEGIN
   SELECT pid INTO v_pid FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
+  v_r := get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE);
   v_ok := (v_r ? 'lines') AND (v_r ? 'totals') AND (v_r ? 'next_cursor') AND (v_r ? 'has_more');
   PERFORM set_config('breakery.t9', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t9')::boolean,
-  'T9: get_product_sales_lines_v5 returns lines/totals/next_cursor/has_more');
+  'T9: get_product_sales_lines_v6 returns lines/totals/next_cursor/has_more');
 
 -- T10 garde : CASHIER → 42501
 DO $$
@@ -249,7 +278,7 @@ BEGIN
   SELECT pid INTO v_pid FROM _sbp_subject;
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
+    PERFORM get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t10', v_caught::text, false);
@@ -265,7 +294,7 @@ BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
   BEGIN
-    PERFORM get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 100, 'not-a-cursor');
+    PERFORM get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE, 100, 'not-a-cursor');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t11', v_caught::text, false);
@@ -281,7 +310,7 @@ BEGIN
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1);
+  v_r := get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE, 1);
   v_ok := (jsonb_array_length(v_r->'lines') = 1)
       AND (CASE WHEN v_n > 1 THEN (v_r->>'has_more')::boolean ELSE true END);
   PERFORM set_config('breakery.t12', v_ok::text, false);
@@ -300,7 +329,7 @@ BEGIN
   v_agg   := get_sales_by_product_v5('2026-01-01', CURRENT_DATE);
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_lines := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE);
+  v_lines := get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE);
   SELECT (p->>'revenue')::numeric INTO v_prod
     FROM jsonb_array_elements(v_agg->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -321,13 +350,13 @@ BEGIN
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_p1  := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1);
+  v_p1  := get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE, 1);
   v_cur := v_p1->>'next_cursor';
   v_last := (v_p1->'lines'->0)->>'id';
   IF v_n > 1 AND v_cur IS NOT NULL THEN
     PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-    v_p2 := get_product_sales_lines_v5(v_pid, '2026-01-01', CURRENT_DATE, 1, v_cur);
+    v_p2 := get_product_sales_lines_v6(v_pid, '2026-01-01', CURRENT_DATE, 1, v_cur);
     v_ok := (jsonb_array_length(v_p2->'lines') = 1)
         AND (((v_p2->'lines'->0)->>'id') <> v_last);
   ELSE
@@ -343,7 +372,7 @@ UPDATE public.user_permission_overrides SET is_granted=true WHERE permission_cod
  AND user_profile_id=(SELECT id FROM public.user_profiles WHERE employee_code='EMP001' AND deleted_at IS NULL);
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000002"}',true);
 SELECT lives_ok($$SELECT get_sales_by_product_v5('2026-01-01',CURRENT_DATE)$$,'Dedicated product-sales permission can read the report');
-SELECT lives_ok(format('SELECT get_product_sales_lines_v5(%L,%L,%L)',pid,'2026-01-01',CURRENT_DATE),
+SELECT lives_ok(format('SELECT get_product_sales_lines_v6(%L,%L,%L)',pid,'2026-01-01',CURRENT_DATE),
  'Dedicated product-sales permission can read its lines') FROM _sbp_subject;
 SELECT * FROM finish();
 ROLLBACK;

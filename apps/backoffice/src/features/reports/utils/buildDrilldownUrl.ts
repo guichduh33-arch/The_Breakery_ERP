@@ -52,6 +52,8 @@ export interface DrilldownFilter {
   refund_status?:  'none' | 'partial' | 'full';
   hour?:           number;
   has_modifiers?:  boolean;
+  // S3-21 — filtre table de la liste des commandes (égalité stricte serveur).
+  table_number?:   string;
   [key: string]:   string | number | boolean | undefined;
 }
 

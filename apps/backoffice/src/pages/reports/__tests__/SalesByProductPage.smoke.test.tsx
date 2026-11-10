@@ -57,11 +57,13 @@ const LINES_DATA = {
   product_id: 'p2',
   period: { start: '2026-06-01', end: '2026-06-30' },
   lines: [
-    { id: 'l1', sold_at: '2026-06-30T09:15:00+08:00', order_id: 'o9', order_number: '#0004',
+    { id: 'l1', sold_at: '2026-06-30T09:15:00+08:00', created_at: '2026-06-30T08:50:00+08:00',
+      paid_at: '2026-06-30T09:15:00+08:00', table_number: 'T-07', order_id: 'o9', order_number: '#0004',
       customer_id: null, customer_name: null, channel: 'counter', served_by_name: 'Mamat',
       name_snapshot: 'Croissant', quantity: 2, unit_price: 10_000, modifiers_total: 0,
       discount_amount: 5_000, discount_reason: 'Staff', line_total: 15_000 },
-    { id: 'l2', sold_at: '2026-06-29T08:02:00+08:00', order_id: 'o8', order_number: '#0011',
+    { id: 'l2', sold_at: '2026-06-29T08:02:00+08:00', created_at: '2026-06-29T08:02:00+08:00',
+      paid_at: null, table_number: null, order_id: 'o8', order_number: '#0011',
       customer_id: 'cu1', customer_name: 'Warung Sari', channel: 'b2b', served_by_name: 'Mamat',
       name_snapshot: 'Croissant classique', quantity: 10, unit_price: 9_000, modifiers_total: 0,
       discount_amount: 0, discount_reason: null, line_total: 90_000 },
@@ -93,7 +95,7 @@ vi.mock('@/lib/supabase.js', () => {
         if (fn === 'get_sales_by_product_v5') {
           return Promise.resolve({ data: salesPayload, error: null });
         }
-        if (fn === 'get_product_sales_lines_v5') {
+        if (fn === 'get_product_sales_lines_v6') {
           return Promise.resolve({ data: LINES_DATA, error: null });
         }
         return Promise.resolve({ data: null, error: null });
@@ -215,7 +217,7 @@ describe('SalesByProductPage smoke', () => {
 
     const drawer = await screen.findByTestId('product-sales-lines-drawer');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v5');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v6');
       expect(call).toBeDefined();
       const args = (call as [string, { p_product_id: string }])[1];
       expect(args.p_product_id).toBe('p2');

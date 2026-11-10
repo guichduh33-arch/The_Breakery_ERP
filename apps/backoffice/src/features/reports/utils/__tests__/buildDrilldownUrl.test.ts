@@ -102,4 +102,10 @@ describe('buildDrilldownUrl', () => {
       buildDrilldownUrl('order_list', '', { served_by: 'u-1', status: 'completed' }),
     ).toBe('/backoffice/orders?served_by=u-1&status=completed');
   });
+
+  it('T19 (S3-21) order_list with table_number + period, encoded', () => {
+    expect(
+      buildDrilldownUrl('order_list', '', { table_number: 'Patio 9', start: '2027-01-01', end: '2027-01-31' }),
+    ).toBe('/backoffice/orders?table_number=Patio+9&start=2027-01-01&end=2027-01-31');
+  });
 });

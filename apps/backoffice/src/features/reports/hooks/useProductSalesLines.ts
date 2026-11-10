@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useProductSalesLines.ts
 //
 // Le drill-down de « Sales by Product » : les LIGNES de vente d'un produit,
-// paginées au curseur keyset (`get_product_sales_lines_v5`).
+// paginées au curseur keyset (`get_product_sales_lines_v6`).
 //
 // `totals` porte le jeu COMPLET, pas la page chargée. La page rendue en tire un
 // pied honnête même quand seules cent lignes sur mille sont descendues — un pied
@@ -10,6 +10,9 @@
 // Le curseur est le token TEXT `"<sold_at>|<id>"` servi par la RPC : la page ne
 // le fabrique jamais, elle le repasse tel quel. `enabled` est piloté par la
 // présence d'un produit — le tiroir monte fermé.
+//
+// S3-21 (2026-11-10) — v6 : chaque ligne porte aussi `created_at`, `paid_at`
+// et `table_number` de sa commande ; `sold_at` est inchangé.
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -19,8 +22,15 @@ export type SalesLineChannel = 'counter' | 'b2b';
 
 export interface ProductSalesLine {
   id:              string;
-  /** Horodatage de la vente (paid_at, repli created_at) — à rendre en WITA. */
+  /** Date de reconnaissance de la vente : `outstanding_at`, sinon `paid_at`,
+   *  sinon `created_at` de la commande. Porte le curseur — à rendre en WITA. */
   sold_at:         string;
+  /** Création de la commande. */
+  created_at:      string;
+  /** Paiement de la commande ; null tant qu'elle n'est pas réglée. */
+  paid_at:         string | null;
+  /** Table de la commande ; null hors service à table. */
+  table_number:    string | null;
   order_id:        string;
   /** NON UNIQUE : la séquence repart par jour. Toujours l'afficher avec sa date. */
   order_number:    string;
@@ -98,7 +108,7 @@ export function useProductSalesLines({ productId, start, end }: UseProductSalesL
       };
       if (typeof pageParam === 'string' && pageParam !== '') args.p_cursor = pageParam;
 
-      const { data, error } = await supabase.rpc('get_product_sales_lines_v5', args);
+      const { data, error } = await supabase.rpc('get_product_sales_lines_v6', args);
       if (error) throw error as Error;
 
       const r      = (data ?? {}) as Record<string, unknown>;
@@ -111,6 +121,9 @@ export function useProductSalesLines({ productId, start, end }: UseProductSalesL
           return {
             id:              toStr(o.id),
             sold_at:         toStr(o.sold_at),
+            created_at:      toStr(o.created_at),
+            paid_at:         toNullableStr(o.paid_at),
+            table_number:    toNullableStr(o.table_number),
             order_id:        toStr(o.order_id),
             order_number:    toStr(o.order_number),
             customer_id:     toNullableStr(o.customer_id),

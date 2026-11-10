@@ -31,6 +31,7 @@ import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ParetoChart } from '@/features/reports/components/charts/ParetoChart.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import {
@@ -321,7 +322,16 @@ export default function SalesByTablePage(): JSX.Element {
                   const d = pctChange(t.revenue, t.revenue_prev);
                   return (
                     <tr key={t.table_number} className="border-b border-border-subtle">
-                      <td className="py-2">{t.table_number}</td>
+                      <td className="py-2">
+                        {/* S3-21 — la table ouvre ses commandes sur la même période. */}
+                        <DrilldownLink
+                          entity="order_list"
+                          id=""
+                          label={t.table_number}
+                          filter={{ table_number: t.table_number, start, end }}
+                          icon={false}
+                        />
+                      </td>
                       <td className={NUM_CELL}>{t.seats ?? '—'}</td>
                       <td className={NUM_CELL}>{formatCount(t.orders)}</td>
                       <td className={cn(NUM_CELL, 'font-semibold')}>{formatIdrFull(t.revenue)}</td>

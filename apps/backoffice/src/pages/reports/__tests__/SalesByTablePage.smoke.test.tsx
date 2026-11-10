@@ -160,6 +160,18 @@ describe('SalesByTablePage smoke', () => {
     expect(patio).toHaveTextContent(/90\.000/);
   });
 
+  it('(S3-21) links each table to its orders over the same period', async () => {
+    renderPage();
+    await screen.findAllByText('Patio-9');
+    const panel = screen.getByTestId('table-table');
+    expect(within(panel).getByRole('link', { name: 'T-01' })).toHaveAttribute(
+      'href', '/backoffice/orders?table_number=T-01&start=2027-01-01&end=2027-01-31',
+    );
+    expect(within(panel).getByRole('link', { name: 'Patio-9' })).toHaveAttribute(
+      'href', '/backoffice/orders?table_number=Patio-9&start=2027-01-01&end=2027-01-31',
+    );
+  });
+
   it('offers the CSV export per table, and no PDF', async () => {
     renderPage();
     await waitFor(() => { expect(screen.getByTestId('export-menu')).not.toBeDisabled(); });

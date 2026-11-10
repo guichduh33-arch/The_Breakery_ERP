@@ -18,17 +18,28 @@
 //  4. Le titre du tiroir ne prend pas le `font-display` par défaut de
 //     `SheetTitle` : Playfair est réservé au monogramme de marque (DESIGN.md),
 //     et cet écran n'a pas à grossir la dette de propagation.
+//
+// S3-21 (2026-11-10) — création, paiement et table de la commande à côté de
+// « Sold at » ; tri CLIENT par colonne (`useSortedRows`, ordre serveur par
+// défaut) sur les lignes DÉJÀ chargées ; export CSV de ces mêmes lignes, dans
+// l'ordre affiché, gaté `reports.export` comme ExportMenu.
 
-import type { JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Loader2, Receipt } from 'lucide-react';
+import { Download, ExternalLink, Loader2, Receipt } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge, Sheet, SheetDescription, cn } from '@breakery/ui';
+import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { Button, EmptyState, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import {
   useProductSalesLines, type ProductSalesLine,
 } from '../hooks/useProductSalesLines.js';
+import { useSortedRows, type SortSpec } from '../hooks/useSortedRows.js';
+import { SortableTh } from './SortableTh.js';
+import { exportErrorDetail } from './ExportButtons.js';
 import { formatIdrFull } from '../utils/chartColors.js';
 import { formatCount, periodLabel } from '../utils/reportFigures.js';
 
@@ -41,6 +52,46 @@ export interface ProductSalesLinesDrawerProps {
 }
 
 const NUM_CELL  = 'px-2 py-1.5 text-right font-data tabular-nums';
+const TH_CELL   = 'px-2 py-1.5';
+const TIME_CELL = 'whitespace-nowrap px-2 py-1.5 font-data tabular-nums text-text-secondary';
+const DASH      = <span className="text-text-subtle">—</span>;
+
+type LineSortKey =
+  | 'sold_at' | 'created_at' | 'paid_at' | 'order' | 'table' | 'customer'
+  | 'channel' | 'qty' | 'unit_price' | 'discount' | 'line_total';
+
+const customerText = (l: ProductSalesLine): string =>
+  l.customer_id === null ? 'Walk-in' : l.customer_name ?? 'Customer';
+
+// Stable (niveau module) : `useSortedRows` le porte dans ses dépendances.
+const SORT_SPECS: Readonly<Record<LineSortKey, SortSpec<ProductSalesLine>>> = {
+  sold_at:    { kind: 'date',   value: (l) => l.sold_at },
+  created_at: { kind: 'date',   value: (l) => l.created_at },
+  paid_at:    { kind: 'date',   value: (l) => l.paid_at },
+  order:      { kind: 'string', value: (l) => l.order_number },
+  table:      { kind: 'string', value: (l) => l.table_number },
+  customer:   { kind: 'string', value: customerText },
+  channel:    { kind: 'string', value: (l) => l.channel },
+  qty:        { kind: 'number', value: (l) => l.quantity },
+  unit_price: { kind: 'number', value: (l) => l.unit_price },
+  discount:   { kind: 'number', value: (l) => l.discount_amount },
+  line_total: { kind: 'number', value: (l) => l.line_total },
+};
+
+const CSV_COLUMNS: CsvColumn<ProductSalesLine>[] = [
+  { header: 'Sold at',    accessor: (l) => l.sold_at,    format: 'datetime' },
+  { header: 'Created',    accessor: (l) => l.created_at, format: 'datetime' },
+  { header: 'Paid',       accessor: (l) => l.paid_at,    format: 'datetime' },
+  { header: 'Order #',    accessor: (l) => l.order_number },
+  { header: 'Table',      accessor: (l) => l.table_number },
+  { header: 'Customer',   accessor: customerText },
+  { header: 'Channel',    accessor: (l) => (l.channel === 'b2b' ? 'B2B' : 'Counter') },
+  { header: 'Sold as',    accessor: (l) => l.name_snapshot },
+  { header: 'Qty',        accessor: (l) => l.quantity,        format: 'number' },
+  { header: 'Unit price', accessor: (l) => l.unit_price,      format: 'idr' },
+  { header: 'Discount',   accessor: (l) => l.discount_amount, format: 'idr' },
+  { header: 'Line total', accessor: (l) => l.line_total,      format: 'idr' },
+];
 const LINK_CELL = cn('text-gold underline-offset-2 hover:underline', FOCUS_RING);
 
 function customerCell(line: ProductSalesLine): JSX.Element {
@@ -60,12 +111,29 @@ export function ProductSalesLinesDrawer({
   product, start, end, onClose,
 }: ProductSalesLinesDrawerProps): JSX.Element {
   const q = useProductSalesLines({ productId: product?.id ?? null, start, end });
+  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
-  const lines  = q.isError || q.isFetching ? [] : q.data?.pages.flatMap((p) => p.lines) ?? [];
+  const hidden = q.isError || q.isFetching;
+  // Mémoïsé : `useSortedRows` ne retrie que si le tableau change.
+  const lines  = useMemo(
+    () => (hidden ? [] : q.data?.pages.flatMap((p) => p.lines) ?? []),
+    [hidden, q.data],
+  );
+  const sorted = useSortedRows<ProductSalesLine, LineSortKey>(lines, SORT_SPECS);
   const totals = q.isError || q.isFetching ? undefined : q.data?.pages[0]?.totals;
   const loaded = lines.length;
   const all    = totals?.lines ?? 0;
   const isEmpty = !q.isLoading && q.data !== undefined && all === 0;
+
+  // Les lignes CHARGÉES, dans l'ordre affiché — pas le jeu complet du serveur.
+  const handleCsv = (): void => {
+    try {
+      downloadCsv(buildCsv(sorted.rows, CSV_COLUMNS), `product-sales-lines-${start}_${end}`);
+    } catch (e) {
+      const detail = exportErrorDetail(e);
+      toast.error(detail === '' ? 'CSV export failed. Please try again.' : `CSV export failed: ${detail}`);
+    }
+  };
 
   return (
     <Sheet open={product !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -117,21 +185,29 @@ export function ProductSalesLinesDrawer({
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-left text-text-secondary">
-                    <th scope="col" className="px-2 py-1.5">Sold at</th>
-                    <th scope="col" className="px-2 py-1.5">Order</th>
-                    <th scope="col" className="px-2 py-1.5">Customer</th>
-                    <th scope="col" className="px-2 py-1.5">Channel</th>
-                    <th scope="col" className="px-2 py-1.5 text-right">Qty</th>
-                    <th scope="col" className="px-2 py-1.5 text-right">Unit price</th>
-                    <th scope="col" className="px-2 py-1.5 text-right">Discount</th>
-                    <th scope="col" className="px-2 py-1.5 text-right">Line total</th>
+                    <SortableTh label="Sold at"    sortKey="sold_at"    sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Created"    sortKey="created_at" sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Paid"       sortKey="paid_at"    sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Order"      sortKey="order"      sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Table"      sortKey="table"      sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Customer"   sortKey="customer"   sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Channel"    sortKey="channel"    sorted={sorted} className={TH_CELL} />
+                    <SortableTh label="Qty"        sortKey="qty"        sorted={sorted} className={TH_CELL} align="right" />
+                    <SortableTh label="Unit price" sortKey="unit_price" sorted={sorted} className={TH_CELL} align="right" />
+                    <SortableTh label="Discount"   sortKey="discount"   sorted={sorted} className={TH_CELL} align="right" />
+                    <SortableTh label="Line total" sortKey="line_total" sorted={sorted} className={TH_CELL} align="right" />
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((l) => (
-                    <tr key={l.id} className="border-b border-border-row">
-                      <td className="px-2 py-1.5 font-data tabular-nums text-text-secondary">
-                        {formatDateTimeShortWita(l.sold_at)}
+                  {sorted.rows.map((l) => (
+                    <tr key={l.id} className="border-b border-border-row" data-testid={`line-${l.id}`}>
+                      <td className={TIME_CELL}>{formatDateTimeShortWita(l.sold_at)}</td>
+                      <td className={TIME_CELL} data-testid="line-created">
+                        {/* Une date vide ferait lever le formateur et blanchirait le tiroir. */}
+                        {l.created_at !== '' ? formatDateTimeShortWita(l.created_at) : DASH}
+                      </td>
+                      <td className={TIME_CELL} data-testid="line-paid">
+                        {l.paid_at !== null ? formatDateTimeShortWita(l.paid_at) : DASH}
                       </td>
                       <td className="px-2 py-1.5">
                         <Link
@@ -147,6 +223,7 @@ export function ProductSalesLinesDrawer({
                           </span>
                         )}
                       </td>
+                      <td className="px-2 py-1.5 font-data" data-testid="line-table">{l.table_number ?? DASH}</td>
                       <td className="px-2 py-1.5">{customerCell(l)}</td>
                       <td className="px-2 py-1.5">
                         <Badge variant={l.channel === 'b2b' ? 'default' : 'secondary'} className="text-xs">
@@ -172,7 +249,7 @@ export function ProductSalesLinesDrawer({
                   <tfoot>
                     {/* Le jeu COMPLET, pas la page — d'où `totals` et non `lines`. */}
                     <tr className="border-t border-border-subtle font-semibold">
-                      <td className="px-2 py-2" colSpan={4}>
+                      <td className="px-2 py-2" colSpan={7}>
                         Total · {formatCount(totals.orders)} order{totals.orders === 1 ? '' : 's'}
                       </td>
                       <td className={NUM_CELL}>{formatCount(totals.qty)}</td>
@@ -213,7 +290,20 @@ export function ProductSalesLinesDrawer({
               <> · {formatCount(totals.counter_qty)} counter / {formatCount(totals.b2b_qty)} B2B</>
             )}
           </span>
-          <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+          <span className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleCsv}
+              disabled={!canExport || sorted.rows.length === 0}
+              title={!canExport ? 'Requires the reports.export permission.' : undefined}
+              data-testid="lines-export-csv"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden />
+              Export CSV
+            </Button>
+            <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+          </span>
         </SheetFooter>
       </SheetContent>
     </Sheet>
