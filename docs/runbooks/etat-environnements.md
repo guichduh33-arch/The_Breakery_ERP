@@ -56,6 +56,34 @@ La fonction de `S3-19` (`get_production_vs_sales_v1`, migration
 `20261110000003`) est **absente** de la production à ce relevé (lecture du
 catalogue des fonctions) ; sa PR #678 n'est pas fusionnée.
 
+### Même jour, en soirée — publication du back-office et retrait
+
+Relevé du 10 novembre 2026 vers 19 h 30, UTC+8, candidat `a577f82a` (fusions
+#676, #678, #679), sur demande de Mamat de publier tout le travail du jour.
+Observé directement. Ce relevé **clôt** l'état transitoire décrit ci-dessus.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA | `ci.yml` sur `master`, run 42800017228, réussi ; pgTAP lancé à la main, run 42800184564, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production | Migration `production_vs_sales_report` appliquée avant la publication : `get_production_vs_sales_v1`, corps égal au dev (md5 `58bc9622…`), `anon` sans EXECUTE. Additive : rien de retiré | — |
+| Backend production, lecture | Sous l'identité du propriétaire, dans une transaction annulée, du 2026-11-01 au 2026-11-08 : 8 catégories, 8 jours, 52 articles ; produit 2 864, vendu 1 773 dont 238 en B2B, pertes approuvées 0, écart 1 091 | Aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42805598428, réussi, approuvé par Mamat ; déploiement de production sur `a577f82a` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DT-QkAzg.js` (avant : `index-CZtgSqXd.js`). Dans les fichiers servis : les cinq fonctions nouvelles sont appelées, aucune des quatre anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_reports_drop_superseded_versions`, après la publication : `get_orders_list_v7`, `get_orders_counters_v5`, `get_product_sales_lines_v5`, `get_sales_by_product_v5` retirées | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Backend production, état final | Cinq fonctions seulement dans ces familles, corps égaux au dev, `authenticated` avec EXECUTE, `anon` sans | — |
+| API | Appel anonyme de `get_orders_list_v8` et de `get_production_vs_sales_v1` : HTTP 401 | Aucun appel authentifié par l'API |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. La liste des commandes, Sales by Product et Production vs Sales
+restent à ouvrir une fois en production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans les fichiers `20261107000002` (liste et compteurs) et
+`20261105000036` (ventes par article et ses lignes) ; les empreintes des corps
+de production retirés, relevées avant le retrait, sont `0b3b1bd6…`,
+`647328b9…`, `ae37eacf…` et `4ea0817e…`. Un retour demande de recréer ces
+quatre fonctions **puis** de republier le back-office précédent (`a35fd5f5`).
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.

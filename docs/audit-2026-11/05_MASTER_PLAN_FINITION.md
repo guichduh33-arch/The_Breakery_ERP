@@ -1302,9 +1302,10 @@ obligatoires — **le pont ne démarre pas** si on suit la documentation.
 
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
 
-**État — codé et prouvé en dev le 2026-11-10** (PR #678, **non fusionnée** à
-cette date). Sa fonction est absente de la production au relevé du même jour
-(`docs/runbooks/etat-environnements.md`).
+**État — publié en production le 2026-11-10** (PR #678). Fonction en
+production égale au dev, back-office publié. **Reste** : ouvrir le rapport en
+production avec le compte du propriétaire. Relevé dans
+`docs/runbooks/etat-environnements.md`, complément du 10 novembre.
 
 **Constat** — Les données existent toutes : les fournées (date, produit,
 quantité), les lignes de vente, les pertes, les catégories. Aucune fonction ne
@@ -1394,10 +1395,10 @@ exclus. Vitest de la page. Types régénérés. Suite back-office complète vert
 
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10.
 
-**État — code fusionné le 2026-11-10** (PR #676), **back-office non publié**.
-En production, les fonctions nouvelles sont créées et égales au dev, les
-anciennes **pas encore retirées** : le retrait suit la publication du
-back-office. Relevé et ordre des gestes restants dans
+**État — publié en production le 2026-11-10** (PR #676). Fonctions nouvelles
+en production égales au dev, back-office publié, anciennes versions retirées
+après la publication. **Reste** : ouvrir la liste des commandes et les ventes
+par article en production avec un compte connecté. Relevé dans
 `docs/runbooks/etat-environnements.md`, complément du 10 novembre. La famille
 des compteurs de la liste a été bumpée avec celle de la liste, pour garder les
 deux sur le même filtre.
@@ -1441,9 +1442,8 @@ d'une même famille se marchent dessus.
 **Risque prod** 🟠 · **Source** — Demande de Mamat du 2026-11-10 (« filtrable,
 facile à lire »). Constat d'audit : voir le bloc.
 
-**État — étapes 1, 3 et 4 fusionnées le 2026-11-10** (PR #677, entrée dans
-`master` par #676), **back-office non publié** ; production dans le même état
-transitoire que `S3-21`. Fait : le socle, prouvé sur les ventes par article ;
+**État — étapes 1, 3 et 4 publiées en production le 2026-11-10** (PR #677,
+entrée dans `master` par #676), avec `S3-21`. Fait : le socle, prouvé sur les ventes par article ;
 l'article dans le journal des mouvements de stock ; la catégorie d'achat dans
 le rapport de dépense ; les deux liens de l'étape 4. **Reste** : l'étape 2, les
 autres rapports de vente sur le socle, une page par commit. S'y ajoute un lien
