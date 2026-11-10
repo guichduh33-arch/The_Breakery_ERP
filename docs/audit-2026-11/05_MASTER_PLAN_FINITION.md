@@ -1462,6 +1462,15 @@ le rapport de dépense ; les deux liens de l'étape 4. **Reste** : l'étape 2, l
 autres rapports de vente sur le socle, une page par commit. S'y ajoute un lien
 non prévu à l'étape 4 : des ventes par origine vers les commandes, qui demande
 un filtre d'origine sur la liste des commandes.
+**Étape 2, premier lot — développé le 2026-11-11, base de développement
+seulement, non publié** : les ventes par catégorie et les ventes par vendeur
+portent les trois filtres (type de commande, moyen de paiement, table). Les
+familles `get_sales_by_category` et `get_sales_by_staff` sont bumpées en dev.
+Restent sur l'étape 2 les autres rapports de vente. Les ventes du jour sont
+laissées de côté à dessein : un filtre de commande n'y a pas de sens défini
+pour les remboursements, les encaissements et les annulations, et ce sens est
+à trancher par Mamat. Limite relevée : un PDF exporté sous filtre ne mentionne
+pas le filtre, sur les trois pages qui portent le socle.
 **Tranché par Mamat le 2026-11-10** : la route des ventes par article n'est
 **pas** alignée ; elle reste gardée par la seule permission des rapports de
 vente. La puce « aligner » des fichiers ci-dessous est donc close sans
