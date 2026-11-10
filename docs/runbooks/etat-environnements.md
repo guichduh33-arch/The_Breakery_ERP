@@ -84,6 +84,33 @@ de production retirés, relevées avant le retrait, sont `0b3b1bd6…`,
 `647328b9…`, `ae37eacf…` et `4ea0817e…`. Un retour demande de recréer ces
 quatre fonctions **puis** de republier le back-office précédent (`a35fd5f5`).
 
+### Nuit du 10 au 11 novembre — bilan Production vs Sales (PR #681)
+
+Relevé de la nuit du 10 au 11 novembre 2026, vers 0 h 45, UTC+8, candidat
+`10a815f8` (fusions #680 et #681), sur demande de Mamat. Observé directement.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA | `ci.yml` sur `master`, run 42827502415, réussi ; pgTAP lancé à la main, run 42841826618, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_production_vs_sales_v1` seule dans sa famille ; tables, vues et gardes lues par la version suivante présentes | — |
+| Backend production | Application additive `production_vs_sales_display_balance_additive`, avant la publication : `get_production_vs_sales_v3` créée, corps égal au dev (md5 `307758e9…`), mêmes droits, `anon` sans EXECUTE | Texte du fichier `20261110000005` **sans son `DROP`** ; `get_production_vs_sales_v2`, intermédiaire, n'est pas créée et le fichier `20261110000004` n'est pas joué |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, du 2026-11-01 au 2026-11-08, anciennes et nouvelle versions côte à côte : produit 2 864 et comptoir 1 535 égaux ; vendu B2B 238 → 599 (commandes livrées, payées ou non) ; pertes 0 → 3 ; 8 catégories, 8 jours, 52 articles ; deux jours portent une clôture de vitrine (06 et 07) ; 290 cellules au non-expliqué inconnu | Un seul intervalle comparé ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42848794540, réussi, approuvé par Mamat ; déploiement de production sur `10a815f8` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-Dc2HyGfM.js` (avant : `index-DT-QkAzg.js`). Dans les fichiers servis : `get_production_vs_sales_v3` appelée, aucune autre version de la famille ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `production_vs_sales_drop_superseded_version`, après la publication : `get_production_vs_sales_v1` retirée | Un onglet du back-office ouvert avant la publication appelle encore l'ancienne : il faut le recharger |
+| Backend production, état final | `get_production_vs_sales_v3` seule dans sa famille, corps égal au dev, `authenticated` avec EXECUTE, `anon` sans | — |
+| API | Appel anonyme de `get_production_vs_sales_v3` : HTTP 401 | Aucun appel authentifié par l'API |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Production vs Sales reste à ouvrir une fois en production, comme la
+liste des commandes et Sales by Product.
+
+**Retour** : le corps retiré n'est pas sauvegardé hors Git. Il se retrouve dans
+le fichier `20261110000003` ; son empreinte en production, relevée avant le
+retrait, est `58bc9622…`. Un retour demande de recréer cette fonction **puis**
+de republier le back-office précédent (`a577f82a`).
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
