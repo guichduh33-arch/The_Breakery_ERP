@@ -131,4 +131,27 @@ describe('ReportTable', () => {
     expect(screen.queryByRole('searchbox')).toBeNull();
     expect(bodyNames()).toHaveLength(3);
   });
+
+  it('reports the visible rows (search and sort applied) to onVisibleRowsChange', () => {
+    const seen: string[][] = [];
+    render(
+      <MemoryRouter initialEntries={['/r']}>
+        <ReportTable<Row, K>
+          rows={ROWS}
+          columns={COLUMNS}
+          sortSpecs={SPECS}
+          rowKey={(r) => r.id}
+          caption="Products sold"
+          search={{ label: 'Search products', noun: 'product', urlKey: 'q' }}
+          onVisibleRowsChange={(rows) => { seen.push(rows.map((r) => r.name)); }}
+          testId="t"
+        />
+      </MemoryRouter>,
+    );
+    expect(seen.at(-1)).toEqual(['Croissant', 'Baguette', 'Crème brûlée']);
+    fireEvent.change(screen.getByTestId('t-search'), { target: { value: 'cr' } });
+    expect(seen.at(-1)).toEqual(['Croissant', 'Crème brûlée']);
+    fireEvent.click(screen.getByTestId('sort-qty'));
+    expect(seen.at(-1)).toEqual(['Crème brûlée', 'Croissant']);
+  });
 });

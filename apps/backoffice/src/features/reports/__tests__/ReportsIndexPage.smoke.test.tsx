@@ -53,17 +53,19 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  // 45, et non 46, depuis le 2026-08-22 : `Perishable Turnover` a quitté l'index.
+  // 45 depuis le 2026-08-22 : `Perishable Turnover` a quitté l'index.
   // ADR-004, conséquence 2 — « retirer le rapport perishable-turnover de la
   // navigation » — et une grille de tuiles cliquables EST une navigation
   // (arbitrage du propriétaire). La route, la page, la RPC et le gabarit PDF
-  // subsistent ; seule la tuile part. Ce compteur EST le contrat : il existe
-  // pour qu'un ajout de tuile soit un geste conscient, pas un effet de bord.
-  it('has exactly 45 active card links (46 avant le retrait de Perishable Turnover)', () => {
+  // subsistent ; seule la tuile part.
+  // 46 depuis le 2026-11-10 (S3-19) : 45 + `Production vs Sales` (Operations).
+  // Ce compteur EST le contrat : il existe pour qu'un ajout de tuile soit un
+  // geste conscient, pas un effet de bord.
+  it('has exactly 46 active card links (45 after Perishable Turnover left, + Production vs Sales)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(45);
+    expect(links).toHaveLength(46);
   });
 
   it('ne montre AUCUNE tuile Perishable Turnover (ADR-004)', () => {

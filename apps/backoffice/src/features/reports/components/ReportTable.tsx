@@ -13,7 +13,7 @@
 // quatre-vingts il se lirait comme leur somme. Le compteur « n of m » dit alors
 // la restriction.
 
-import { useMemo, useState, type JSX, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react';
 import { Input, cn } from '@breakery/ui';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { SortableTh } from './SortableTh.js';
@@ -63,6 +63,12 @@ export interface ReportTableProps<T, K extends string> {
   /** Texte quand `rows` est vide. */
   emptyText?: string;
   testId?:   string;
+  /**
+   * S3-19 — reçoit les lignes AFFICHÉES (recherche appliquée, ordre de tri
+   * courant) à chaque changement : l'export de la page suit ce que la table
+   * montre. Optionnel ; sans lui, rien ne change. Passer une fonction stable.
+   */
+  onVisibleRowsChange?: (rows: readonly T[]) => void;
 }
 
 /** Casse et accents ignorés : « creme » trouve « Crème brûlée ». */
@@ -83,7 +89,7 @@ function useSearchQuery(urlKey: string | undefined): readonly [string, (v: strin
 
 export function ReportTable<T, K extends string>({
   rows, columns, sortSpecs, rowKey, caption, showFooter = false, search,
-  emptyText = 'No rows.', testId = 'report-table',
+  emptyText = 'No rows.', testId = 'report-table', onVisibleRowsChange,
 }: ReportTableProps<T, K>): JSX.Element {
   const [query, setQuery] = useSearchQuery(search?.urlKey);
   const needle = normalize(query.trim());
@@ -103,6 +109,11 @@ export function ReportTable<T, K extends string>({
 
   const sorted = useSortedRows<T, K>(filtered, sortSpecs);
   const narrowed = filtered.length !== rows.length;
+
+  // `sorted.rows` est mémoïsé : le rappel ne part qu'à un vrai changement.
+  useEffect(() => {
+    onVisibleRowsChange?.(sorted.rows);
+  }, [sorted.rows, onVisibleRowsChange]);
 
   return (
     <div className="space-y-2" data-testid={testId}>
