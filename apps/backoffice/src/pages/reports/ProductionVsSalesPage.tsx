@@ -399,6 +399,10 @@ export default function ProductionVsSalesPage(): JSX.Element {
             </Link>
           </li>
           <li>A missing count is shown as —, never as 0. A total marked &quot;partial&quot; leaves those item-days out.</li>
+          <li>
+            In a total, the unexplained quantity adds up item-days that have both counts only: it may not match the
+            other columns of that total. An item-day with no activity and nothing left is not listed.
+          </li>
           <li>Counter sales count on the day they are recognised. B2B orders count on the day they are delivered, paid or on credit; an order not yet delivered does not count.</li>
           <li>An item sold as part of a combo is not counted as sold here. Promotional gifts are not counted either.</li>
           <li>Only approved waste counts. Waste entered in an end-of-day count is dated on that day; other waste on the day it was approved.</li>
