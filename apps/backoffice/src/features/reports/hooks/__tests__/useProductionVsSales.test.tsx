@@ -26,20 +26,23 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 const FIG = { produced: 10, sold_counter: 6, sold_b2b: 2, sold_total: 8, wasted: 1, gap: 1 };
+const BAL = { opening: 3, closing: 2, unexplained: 2, unknown_cells: 1 };
 
 const ENVELOPE = {
   period: { start: '2026-11-01', end: '2026-11-07' },
   timezone: 'Asia/Makassar',
   generated_at: '2026-11-10T08:00:00+08:00',
   categories: [{ id: 'c1', name: 'Classic breads', slug: 'classic-breads' }],
-  summary: { ...FIG, sell_through_pct: 80 },
-  by_day: [{ date: '2026-11-01', ...FIG }],
-  by_category: [{ category_id: 'c1', category_name: 'Classic breads', ...FIG, sell_through_pct: 80 }],
+  summary: { ...FIG, ...BAL, sell_through_pct: 80 },
+  by_day: [{ date: '2026-11-01', ...FIG, ...BAL, unexplained: null, has_closing: false }],
+  by_category: [{ category_id: 'c1', category_name: 'Classic breads', ...FIG, ...BAL, sell_through_pct: 80 }],
   by_product: [{
     product_id: 'p1', product_name: 'Baguette', category_id: 'c1', category_name: 'Classic breads',
-    ...FIG, sell_through_pct: null,
+    ...FIG, ...BAL, sell_through_pct: null,
   }],
-  by_day_product: [{ date: '2026-11-01', product_id: 'p1', ...FIG, gap: -3 }],
+  by_day_product: [{
+    date: '2026-11-01', product_id: 'p1', ...FIG, gap: -3, opening: null, closing: 2, unexplained: null,
+  }],
 };
 
 beforeEach(() => {
@@ -47,13 +50,13 @@ beforeEach(() => {
 });
 
 describe('useProductionVsSales', () => {
-  it('calls get_production_vs_sales_v1 and omits the unset filters', async () => {
+  it('calls get_production_vs_sales_v3 and omits the unset filters', async () => {
     mockRpc.mockResolvedValue({ data: ENVELOPE, error: null });
     const { result } = renderHook(
       () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v1', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v3', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07',
     });
   });
@@ -65,7 +68,7 @@ describe('useProductionVsSales', () => {
       { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v1', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v3', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07', p_category_id: 'c1', p_product_id: 'p1',
     });
   });
@@ -84,6 +87,18 @@ describe('useProductionVsSales', () => {
     expect(d?.by_product[0]?.category_name).toBe('Classic breads');
     expect(d?.by_day_product[0]?.gap).toBe(-3);
     expect(d?.by_category[0]?.sold_b2b).toBe(2);
+  });
+
+  it('keeps an unknown leftover as null, never as zero', async () => {
+    mockRpc.mockResolvedValue({ data: ENVELOPE, error: null });
+    const { result } = renderHook(
+      () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
+    );
+    await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
+    const d = result.current.data;
+    expect(d?.summary).toMatchObject({ opening: 3, closing: 2, unexplained: 2, unknown_cells: 1 });
+    expect(d?.by_day[0]).toMatchObject({ unexplained: null, has_closing: false });
+    expect(d?.by_day_product[0]).toMatchObject({ opening: null, closing: 2, unexplained: null });
   });
 
   it('turns a malformed response into a readable error, not a crash', async () => {
@@ -112,7 +127,9 @@ describe('parseProductionVsSales', () => {
     ['a non-object', null, /response/],
     ['a string number', { ...ENVELOPE, summary: { ...ENVELOPE.summary, produced: '10' } }, /summary\.produced/],
     ['a missing period', { ...ENVELOPE, period: undefined }, /period/],
-    ['a non-finite number', { ...ENVELOPE, by_day: [{ date: '2026-11-01', ...FIG, gap: Number.NaN }] }, /by_day\[0\]\.gap/],
+    ['a non-finite number', { ...ENVELOPE, by_day: [{ date: '2026-11-01', ...FIG, ...BAL, has_closing: true, gap: Number.NaN }] }, /by_day\[0\]\.gap/],
+    ['a missing leftover count', { ...ENVELOPE, summary: { ...ENVELOPE.summary, unknown_cells: undefined } }, /summary\.unknown_cells/],
+    ['a missing closing flag', { ...ENVELOPE, by_day: [{ date: '2026-11-01', ...FIG, ...BAL }] }, /by_day\[0\]\.has_closing/],
   ])('rejects %s', (_label, raw, pattern) => {
     expect(() => parseProductionVsSales(raw)).toThrow(pattern);
   });

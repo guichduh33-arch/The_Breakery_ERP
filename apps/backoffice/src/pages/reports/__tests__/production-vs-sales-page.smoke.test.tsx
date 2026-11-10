@@ -25,41 +25,51 @@ vi.mock('@breakery/domain', async (importOriginal) => ({
 }));
 
 const ZERO = { produced: 0, sold_counter: 0, sold_b2b: 0, sold_total: 0, wasted: 0, gap: 0 };
+/** Bilan : aucun reste connu (le cas par défaut des agrégats sans clôture). */
+const NO_BAL = { opening: 0, closing: 0, unexplained: null, unknown_cells: 1 };
 
 const CATEGORIES = [
   { id: 'c1', name: 'Classic breads', slug: 'classic-breads' },
   { id: 'c2', name: 'Classic viennoiserie', slug: 'classic-viennoiserie' },
 ];
 
+// Croissant (p2) porte un bilan connu les deux jours ; les autres, aucun reste.
 const P1 = { product_id: 'p1', product_name: 'Baguette', category_id: 'c1', category_name: 'Classic breads',
-  produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5, sell_through_pct: 82.5 };
+  produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5, sell_through_pct: 82.5, ...NO_BAL };
 const P3 = { product_id: 'p3', product_name: 'Sourdough', category_id: 'c1', category_name: 'Classic breads',
-  produced: 10, sold_counter: 8, sold_b2b: 0, sold_total: 8, wasted: 0, gap: 2, sell_through_pct: 80 };
+  produced: 10, sold_counter: 8, sold_b2b: 0, sold_total: 8, wasted: 0, gap: 2, sell_through_pct: 80, ...NO_BAL };
 const P2 = { product_id: 'p2', product_name: 'Croissant', category_id: 'c2', category_name: 'Classic viennoiserie',
-  produced: 20, sold_counter: 20, sold_b2b: 4, sold_total: 24, wasted: 0, gap: -4, sell_through_pct: 120 };
+  produced: 20, sold_counter: 20, sold_b2b: 4, sold_total: 24, wasted: 0, gap: -4, sell_through_pct: 120,
+  opening: 9, closing: 3, unexplained: 2, unknown_cells: 0 };
 
 const FULL = {
   period: { start: '2026-11-01', end: '2026-11-02' },
   timezone: 'Asia/Makassar',
   generated_at: '2026-11-10T08:00:00+08:00',
   categories: CATEGORIES,
-  summary: { produced: 70, sold_counter: 58, sold_b2b: 7, sold_total: 65, wasted: 2, gap: 3, sell_through_pct: 92.9 },
+  summary: { produced: 70, sold_counter: 58, sold_b2b: 7, sold_total: 65, wasted: 2, gap: 3, sell_through_pct: 92.9,
+    opening: 9, closing: 3, unexplained: 2, unknown_cells: 1 },
   by_day: [
-    { date: '2026-11-01', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5 },
-    { date: '2026-11-02', produced: 30, sold_counter: 28, sold_b2b: 4, sold_total: 32, wasted: 0, gap: -2 },
+    { date: '2026-11-01', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5,
+      opening: 6, closing: 3, unexplained: 3, unknown_cells: 1, has_closing: true },
+    { date: '2026-11-02', produced: 30, sold_counter: 28, sold_b2b: 4, sold_total: 32, wasted: 0, gap: -2,
+      opening: 3, closing: 0, unexplained: -1, unknown_cells: 0, has_closing: true },
   ],
   by_category: [
     { category_id: 'c1', category_name: 'Classic breads', produced: 50, sold_counter: 38, sold_b2b: 3,
-      sold_total: 41, wasted: 2, gap: 7, sell_through_pct: 82 },
+      sold_total: 41, wasted: 2, gap: 7, sell_through_pct: 82, ...NO_BAL },
     { category_id: 'c2', category_name: 'Classic viennoiserie', produced: 20, sold_counter: 20, sold_b2b: 4,
-      sold_total: 24, wasted: 0, gap: -4, sell_through_pct: 120 },
+      sold_total: 24, wasted: 0, gap: -4, sell_through_pct: 120, opening: 9, closing: 3, unexplained: 2, unknown_cells: 0 },
   ],
   // Servi trié par écart décroissant, comme la RPC.
   by_product: [P1, P3, P2],
   by_day_product: [
-    { date: '2026-11-02', product_id: 'p2', produced: 10, sold_counter: 12, sold_b2b: 2, sold_total: 14, wasted: 0, gap: -4 },
-    { date: '2026-11-01', product_id: 'p2', produced: 10, sold_counter: 8, sold_b2b: 2, sold_total: 10, wasted: 0, gap: 0 },
-    { date: '2026-11-01', product_id: 'p1', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5 },
+    { date: '2026-11-02', product_id: 'p2', produced: 10, sold_counter: 12, sold_b2b: 2, sold_total: 14, wasted: 0, gap: -4,
+      opening: 3, closing: 0, unexplained: -1 },
+    { date: '2026-11-01', product_id: 'p2', produced: 10, sold_counter: 8, sold_b2b: 2, sold_total: 10, wasted: 0, gap: 0,
+      opening: 6, closing: 3, unexplained: 3 },
+    { date: '2026-11-01', product_id: 'p1', produced: 40, sold_counter: 30, sold_b2b: 3, sold_total: 33, wasted: 2, gap: 5,
+      opening: null, closing: null, unexplained: null },
   ],
 };
 
@@ -71,10 +81,16 @@ const ONLY_CROISSANT = {
   by_day_product: FULL.by_day_product.filter((d) => d.product_id === 'p2'),
 };
 
+/** Le 2 novembre sans clôture de la caisse. */
+const MISSING_COUNT = {
+  ...FULL,
+  by_day: [FULL.by_day[0], { ...FULL.by_day[1], has_closing: false, unexplained: null, unknown_cells: 1 }],
+};
+
 const EMPTY = {
   ...FULL,
-  summary: { ...ZERO, sell_through_pct: null },
-  by_day: FULL.by_day.map((d) => ({ ...d, ...ZERO })),
+  summary: { ...ZERO, ...NO_BAL, unknown_cells: 0, sell_through_pct: null },
+  by_day: FULL.by_day.map((d) => ({ ...d, ...ZERO, ...NO_BAL, unknown_cells: 0 })),
   by_category: [], by_product: [], by_day_product: [],
 };
 
@@ -86,7 +102,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn !== 'get_production_vs_sales_v1') return Promise.resolve({ data: null, error: null });
+      if (fn !== 'get_production_vs_sales_v3') return Promise.resolve({ data: null, error: null });
       if (rpcError !== null) return Promise.resolve({ data: null, error: rpcError });
       if (args.p_product_id === 'p2') return Promise.resolve({ data: ONLY_CROISSANT, error: null });
       return Promise.resolve({ data: payload, error: null });
@@ -125,7 +141,7 @@ function renderPage(search = '?start=2026-11-01&end=2026-11-02') {
 
 function rpcCalls(): Record<string, unknown>[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_production_vs_sales_v1')
+    .filter(([fn]) => fn === 'get_production_vs_sales_v3')
     .map(([, args]) => args as Record<string, unknown>);
 }
 
@@ -265,7 +281,8 @@ describe('ProductionVsSalesPage', () => {
     const [rows, columns] = buildCsv.mock.calls[0] ?? [[], []];
     expect(rows).toHaveLength(2);
     expect(columns.map((c) => c.header)).toEqual([
-      'Category', 'Produced', 'Sold counter', 'Sold B2B', 'Sold total', 'Approved waste', 'Gap', 'Sell-through %',
+      'Category', 'Carried over', 'Produced', 'Sold counter', 'Sold B2B', 'Sold total', 'Approved waste',
+      'Left at close', 'Unexplained', 'Item-days without count', 'Gap', 'Sell-through %',
     ]);
   });
 
@@ -310,8 +327,50 @@ describe('ProductionVsSalesPage', () => {
     expect(notes).toHaveTextContent(/combo/);
     expect(notes).toHaveTextContent(/gifts/);
     expect(notes).toHaveTextContent(/approved waste/i);
-    expect(notes).toHaveTextContent(/not a stock level/);
+    expect(notes).toHaveTextContent(/Unexplained = carried over \+ produced − sold − approved waste − left at close/);
+    expect(notes).toHaveTextContent(/B2B orders count on the day they are delivered, paid or on credit/);
+    expect(notes).toHaveTextContent(/never as 0/);
     expect(notes).toHaveTextContent(/cancelled after preparation .*stay in the gap/);
     expect(notes).toHaveTextContent(/Only fresh daily items are covered/);
+    expect(screen.getByTestId('pvs-leftovers-link')).toHaveAttribute('href', '/backoffice/inventory/opname');
+  });
+
+  it('shows the unexplained quantity, partial when some counts are missing', async () => {
+    renderPage();
+    await loaded();
+    const tile = screen.getByTestId('kpi-unexplained');
+    expect(tile).toHaveTextContent('2');
+    expect(tile).toHaveTextContent('1 item-day not counted');
+    const footer = screen.getByTestId('pvs-table-item-footer');
+    expect(within(footer).getByTestId('unexplained-partial')).toHaveTextContent('partial');
+    // Un reste inconnu s'affiche « — », jamais 0.
+    const baguette = bodyRows('pvs-table-item').find((r) => r.textContent?.includes('Baguette'));
+    if (baguette === undefined) throw new Error('Baguette row not rendered');
+    expect(within(baguette).getByTestId('unexplained-unknown')).toHaveTextContent('—');
+  });
+
+  it('shows unknown leftovers as — in the item drawer', async () => {
+    renderPage();
+    await loaded();
+    fireEvent.click(screen.getByTestId('open-item-p1'));
+    const drawer = await screen.findByTestId('pvs-item-drawer');
+    const day = within(drawer).getByTestId('pvs-day-2026-11-01');
+    expect(day).toHaveTextContent(/not counted/);
+    expect(within(day).getByTestId('unexplained-unknown')).toBeInTheDocument();
+  });
+
+  it('hides the missing-count note when every day was counted', async () => {
+    renderPage();
+    await loaded();
+    expect(screen.queryByTestId('pvs-missing-counts')).not.toBeInTheDocument();
+  });
+
+  it('flags the days without an end-of-day count', async () => {
+    payload = MISSING_COUNT;
+    renderPage();
+    const note = await screen.findByTestId('pvs-missing-counts');
+    expect(note).toHaveTextContent(/1 of 2 days have no end-of-day count/);
+    expect(within(note).getByRole('link', { name: 'Review end-of-day counts' }))
+      .toHaveAttribute('href', '/backoffice/inventory/opname');
   });
 });
