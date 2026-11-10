@@ -57,7 +57,7 @@ INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT current_stock FROM p
 INSERT INTO antifraud_results(tap) SELECT is((SELECT e->>'current_stock' FROM jsonb_array_elements(public.get_operational_products_v2()) e
  WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),NULL::text,'Operational catalogue masks exact stock');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_sales_day_v1(current_date),'Open shift keeps the sales day private');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v5(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v6(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_daily_sales_v5(current_date::text,current_date::text)','P0003','business_day_not_closed','Newest daily-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_order_v2(order_id),'ADMIN cannot use the paid kitchen exception even with POS permissions') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(sale_je),'Sale JE hidden while originating shift is open') FROM antifraud_ids;

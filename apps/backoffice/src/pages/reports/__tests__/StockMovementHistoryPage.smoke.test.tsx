@@ -8,7 +8,7 @@
 // lot : il garde son propre tri de colonne, déjà pourvu d'`aria-sort`.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import StockMovementHistoryPage from '@/pages/reports/StockMovementHistoryPage.js';
@@ -52,18 +52,38 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
+      if (fn === 'get_operational_products_v2') {
+        return Promise.resolve({ data: PRODUCTS, error: null });
+      }
       return Promise.resolve({ data: null, error: null });
     },
   },
 }));
 
-function renderPage() {
+// Catalogue opérationnel minimal : deux articles suivis, un non suivi. Le nom
+// diffère de la ligne de mouvement (« Flour ») : l'option du filtre ne doit pas
+// doubler le texte que les tests attendent dans la table.
+const PRODUCTS = [
+  { id: 'prod-1', sku: 'FL-1', name: 'Wheat flour', track_inventory: true, variant_label: null, categories: null },
+  { id: 'prod-2', sku: 'BU-1', name: 'Butter', track_inventory: true,  variant_label: null, categories: null },
+  { id: 'prod-3', sku: 'CB-1', name: 'Combo',  track_inventory: false, variant_label: null, categories: null },
+];
+
+function renderPage(search = '') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><StockMovementHistoryPage /></MemoryRouter>
+      <MemoryRouter initialEntries={[`/backoffice/reports/stock-movement-history${search}`]}>
+        <StockMovementHistoryPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+function ledgerArgs(): { p_product_id: string | null; p_movement_type: string | null }[] {
+  return mockRpc.mock.calls
+    .filter(([fn]) => fn === 'get_stock_movement_ledger_v4')
+    .map(([, args]) => args as { p_product_id: string | null; p_movement_type: string | null });
 }
 
 // L'export est gouverné par `reports.export`. Ce test vérifie le CÂBLAGE de
@@ -126,10 +146,66 @@ describe('StockMovementHistoryPage (smoke)', () => {
     expect(screen.queryByTestId('export-pdf')).toBeNull();
   });
 
-  it('garde son filtre par type de mouvement dans le bandeau', async () => {
+  it('garde son filtre par type de mouvement, désormais sur la barre du socle', async () => {
     renderPage();
     await screen.findByText('Flour');
-    expect(screen.getByLabelText('Filter by movement type')).toBeInTheDocument();
+    const bar = screen.getByTestId('report-filter-bar');
+    const type = within(bar).getByLabelText('Movement type');
+    // Enum complet, `production` compris (absent de l'ancienne liste en dur).
+    expect(within(type).getByRole('option', { name: 'production' })).toBeInTheDocument();
+    fireEvent.change(type, { target: { value: 'waste' } });
+    await waitFor(() => {
+      expect(ledgerArgs().at(-1)?.p_movement_type).toBe('waste');
+    });
+  });
+
+  it('S3-22 — lit l’article dans l’URL au montage et le passe en p_product_id', async () => {
+    renderPage('?product_id=prod-2&movement_type=sale');
+    await waitFor(() => {
+      expect(ledgerArgs().at(-1)).toMatchObject({ p_product_id: 'prod-2', p_movement_type: 'sale' });
+    });
+    expect(await screen.findByRole('option', { name: 'Butter' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Item')).toHaveValue('prod-2');
+  });
+
+  it('S3-22 — ne propose que les articles suivis en stock', async () => {
+    renderPage();
+    const item = await screen.findByLabelText('Item');
+    await within(item).findByRole('option', { name: 'Wheat flour' });
+    expect(within(item).queryByRole('option', { name: 'Combo' })).toBeNull();
+  });
+
+  it('S3-22 — choisir un article l’envoie au serveur, « Clear filters » le retire', async () => {
+    renderPage('?movement_type=purchase');
+    const item = await screen.findByLabelText('Item');
+    await within(item).findByRole('option', { name: 'Wheat flour' });
+    fireEvent.change(item, { target: { value: 'prod-1' } });
+    await waitFor(() => {
+      expect(ledgerArgs().at(-1)).toMatchObject({ p_product_id: 'prod-1', p_movement_type: 'purchase' });
+    });
+    fireEvent.click(screen.getByTestId('filters-clear'));
+    await waitFor(() => {
+      expect(ledgerArgs().at(-1)).toMatchObject({ p_product_id: null, p_movement_type: null });
+    });
+    expect(screen.queryByTestId('filters-clear')).toBeNull();
+  });
+
+  it('S3-22 — un article inconnu de la liste reste visible et retirable', async () => {
+    renderPage('?product_id=prod-gone');
+    const item = await screen.findByLabelText('Item');
+    await within(item).findByRole('option', { name: 'Wheat flour' });
+    expect(item).toHaveValue('prod-gone');
+    expect(screen.getByTestId('filter-product_id-unknown')).toHaveTextContent('Unknown (not in list)');
+    await waitFor(() => { expect(ledgerArgs().at(-1)?.p_product_id).toBe('prod-gone'); });
+    fireEvent.click(screen.getByTestId('filters-clear'));
+    await waitFor(() => { expect(ledgerArgs().at(-1)?.p_product_id).toBeNull(); });
+    expect(screen.queryByTestId('filter-product_id-unknown')).toBeNull();
+  });
+
+  it('S3-22 — un type hors enum lu dans l’URL ne part pas au serveur', async () => {
+    renderPage('?movement_type=bogus');
+    await waitFor(() => { expect(ledgerArgs().length).toBeGreaterThan(0); });
+    expect(ledgerArgs().every((a) => a.p_movement_type === null)).toBe(true);
   });
 
   it('le tri de colonne du tableau partagé reste en place (aria-sort)', async () => {

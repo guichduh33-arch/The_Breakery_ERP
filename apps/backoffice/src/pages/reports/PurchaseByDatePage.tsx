@@ -25,6 +25,10 @@
 //
 // Params URL : `start` / `end` / `cmp` — les bornes portaient déjà les noms du
 // socle, aucun repli legacy n'est nécessaire.
+//
+// S3-22 (2026-11-10) — chaque jour de la table ouvre « Purchase Items » sur ce
+// seul jour (`start` = `end`). Même périmètre de statut des deux côtés (hors
+// brouillon et annulé), même date (`order_date`).
 
 import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
@@ -36,6 +40,7 @@ import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import { formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
@@ -240,7 +245,15 @@ export default function PurchaseByDatePage(): JSX.Element {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.date} className="border-b border-border-subtle">
-                  <td className="py-2 font-data text-xs text-text-secondary">{r.date}</td>
+                  <td className="py-2 font-data text-xs">
+                    {/* S3-22 — le jour ouvre ses lignes d'achat, sur ce seul jour. */}
+                    <DrilldownLink
+                      entity="purchase_items"
+                      id=""
+                      filter={{ start: r.date, end: r.date }}
+                      label={r.date}
+                    />
+                  </td>
                   <td className={NUM_CELL}>{formatCount(r.po_count)}</td>
                   <td className={NUM_CELL}>{formatIdrFull(r.total)}</td>
                   <td className={NUM_CELL}>{formatIdrFull(r.received_total)}</td>

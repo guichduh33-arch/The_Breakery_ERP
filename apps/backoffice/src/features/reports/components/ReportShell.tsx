@@ -33,6 +33,12 @@ export interface ReportShellProps {
   /** Actions du bandeau, 32 px : PeriodControl, filtres, ExportMenu (le seul
    *  primaire encre). */
   toolbar?: ReactNode;
+  /**
+   * S3-22 — rangée de filtres (`ReportFilterBar`) sous le bandeau. Rendue
+   * HORS des branches erreur et vide : un filtre qui vide le rapport doit
+   * rester sous la main pour être retiré.
+   */
+  filters?: ReactNode;
   /** Bande de KPI, posée sur le papier au-dessus du corps. */
   kpis?: ReactNode;
   /**
@@ -66,6 +72,7 @@ export function ReportShell({
   subtitle,
   breadcrumb,
   toolbar,
+  filters,
   kpis,
   error = null,
   isEmpty,
@@ -128,6 +135,8 @@ export function ReportShell({
       </nav>
 
       <PageHeader title={title} subtitle={subtitle} actions={toolbar} />
+
+      {filters}
 
       <span role="status" className="sr-only" data-testid="report-live">{liveMessage}</span>
 
