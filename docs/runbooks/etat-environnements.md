@@ -26,6 +26,36 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 10 novembre 2026 — fonctions de rapport `S3-21` et `S3-22`
+
+Relevé du 10 novembre 2026 en fin d'après-midi, UTC+8. Observé directement.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `b095fc27` (fusion de #676, qui porte `S3-21` et `S3-22`) ; sa source appelle `get_orders_list_v8`, `get_orders_counters_v6`, `get_product_sales_lines_v7` et `get_sales_by_product_v6` | — |
+| BO production | Dernier déploiement de production : `a35fd5f5`, du 2026-11-09. Les fusions du 10 novembre ne sont **pas publiées** ; ce code appelle encore `get_orders_list_v7`, `get_orders_counters_v5`, `get_product_sales_lines_v5` et `get_sales_by_product_v5` | Lu dans la liste des déploiements GitHub, pas dans le bundle chargé |
+| Backend production | Phase **additive** des migrations `20261110000001` et `20261110000002`, sur décision de Mamat : les quatre fonctions nouvelles sont créées, **aucune ancienne n'est retirée**. Quatre applications : `sales_by_product_filters_aggregate_additive`, `sales_by_product_filters_lines_additive`, `sales_created_paid_table_orders_list_additive`, `sales_created_paid_table_orders_counters_additive` | Le texte appliqué est celui des fichiers, **sans leurs `DROP`** ; `get_product_sales_lines_v6`, intermédiaire, n'est pas créée |
+| Backend production | Corps des quatre fonctions nouvelles **égaux au dev** (md5 de `prosrc` : `d63888b7…`, `29fc8f6f…`, `0db669e8…`, `0a61d206…`) ; mêmes droits qu'en dev, `anon` sans EXECUTE ; les quatre anciennes toujours présentes, corps inchangés | — |
+| Backend production, lecture | Sous l'identité du propriétaire, dans une transaction annulée, sur le 2026-11-08 : liste v7 et v8, mêmes 114 commandes ; compteurs v5 et v6 égaux ; ventes par article v5 et v6 égales, résumé et lignes ; 46 lignes de la liste portent une table | Un seul jour comparé ; aucun appel depuis le back-office |
+
+**Reste dû, dans cet ordre** : publier le back-office depuis `master` (workflow
+« Publish Backoffice Production », approbation de Mamat) ; vérifier la liste des
+commandes et Sales by Product sur le back-office publié ; **puis seulement**
+retirer les quatre anciennes fonctions (`get_orders_list_v7`,
+`get_orders_counters_v5`, `get_product_sales_lines_v5`,
+`get_sales_by_product_v5`), par un retrait ciblé. Les fichiers ne se rejouent
+pas tels quels : le second retire aussi `get_product_sales_lines_v6`, absente
+de la production, et ce `DROP` échouerait. Après ce retrait, la production
+porte le même état final que les deux fichiers.
+Retirer avant de publier casserait le back-office en service. Tant que le
+retrait n'est pas fait, la production porte les deux générations : état
+transitoire voulu, pas une dérive.
+
+La fonction de `S3-19` (`get_production_vs_sales_v1`, migration
+`20261110000003`) est **absente** de la production à ce relevé (lecture du
+catalogue des fonctions) ; sa PR #678 n'est pas fusionnée.
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
