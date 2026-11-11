@@ -10688,7 +10688,7 @@ export type Database = {
           has_drift: boolean
         }[]
       }
-      record_b2b_payment_v5: {
+      record_b2b_payment_v6: {
         Args: {
           p_amount: number
           p_customer_id: string
