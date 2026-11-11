@@ -2,7 +2,8 @@
 //
 // S3-22 — les TROIS filtres de commande des rapports de vente (type, moyen de
 // paiement, table), déclarés une seule fois pour toutes les pages qui les
-// portent : Sales by Product, Sales by Category, Sales by Staff. Mêmes clés
+// portent : Sales by Product, Sales by Category, Sales by Staff, Sales by
+// Origin, Sales by Customer. Mêmes clés
 // d'URL, mêmes libellés, même réserve de lecture — un lien d'un rapport vers
 // un autre transporte donc la portée sans traduction.
 //
