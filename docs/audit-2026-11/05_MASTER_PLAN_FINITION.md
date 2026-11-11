@@ -1479,7 +1479,16 @@ ventes par catégorie et les ventes par vendeur portent les trois filtres (type
 de commande, moyen de paiement, table). Les familles `get_sales_by_category` et
 `get_sales_by_staff` sont bumpées, production égale au dev. Relevé dans
 `docs/runbooks/etat-environnements.md`, section du 11 novembre.
-Restent sur l'étape 2 les autres rapports de vente. Les ventes du jour sont
+**Étape 2, deuxième lot — en dev le 2026-11-11, non publié** : les ventes par
+origine et les ventes par client portent les trois mêmes filtres. Les familles
+`get_sales_by_origin` et `get_sales_by_customer` sont bumpées ; le serveur
+applique les filtres à la période et à la fenêtre précédente. Sur les ventes
+par client, le drapeau « nouveau client » reste lu sur toutes les commandes du
+client, choix de l'agent : il dit qui découvre la boutique, pas qui essaie un
+autre type de commande.
+Restent sur l'étape 2 les autres rapports de vente. Les ventes par heure
+attendent `S3-23`, qui change déjà leur portée (toute la période au lieu d'un
+jour) : deux bumps de la même famille se marcheraient dessus. Les ventes du jour sont
 laissées de côté à dessein : un filtre de commande n'y a pas de sens défini
 pour les remboursements, les encaissements et les annulations, et ce sens est
 à trancher par Mamat. Limite relevée : un PDF exporté sous filtre ne mentionne
