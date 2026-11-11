@@ -28,7 +28,7 @@
 -- T20 : fn_create_je_for_refund idempotent
 -- T21 : fn_create_je_for_refund uses mapping (no hardcoded 1110/4100/2110)
 -- T22 : journal_entries_je_idempotency_uniq UNIQUE blocks duplicate
--- T23 : tr_stock_movement_je emits JE for waste (DR WASTE_EXPENSE / CR INVENTORY_GENERAL)
+-- T23 : tr_stock_movement_je emits JE for waste (DR WASTE_EXPENSE / CR compte de stock de l'article)
 -- T24 : tr_stock_movement_je emits JE for adjustment_in (DR INVENTORY / CR ADJUSTMENT_INCOME)
 -- T25 : tr_stock_movement_je idempotent
 -- T26 : tr_stock_movement_je skips transfer_in (no JE for intra-company)
