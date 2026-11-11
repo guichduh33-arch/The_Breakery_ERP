@@ -111,6 +111,43 @@ le fichier `20261110000003` ; son empreinte en production, relevée avant le
 retrait, est `58bc9622…`. Un retour demande de recréer cette fonction **puis**
 de republier le back-office précédent (`a577f82a`).
 
+### 11 novembre 2026 — filtres de vente, articles de combo, lenteur du propriétaire
+
+Relevé du 11 novembre 2026 en matinée, UTC+8, sur demande de Mamat. Candidat du
+back-office : `d4fdc4f1` (fusions #683 et #684). Correctif de vue : `40d0dd69`
+(fusion #685). Observé directement. Aucun essai créant une écriture, une
+commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `d4fdc4f1` | `ci.yml` sur `master`, run 42884721040, réussi ; pgTAP lancé à la main, run 42931506865, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_sales_by_category_v6`, `get_sales_by_staff_v5` et `get_production_vs_sales_v3` seules dans leurs familles ; le corps de la troisième égal au dev d'avant le bump (md5 `307758e9…`) ; vues et gardes lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `sales_by_category_staff_filters_additive` et `production_vs_sales_combo_components_additive`, avant la publication : `get_sales_by_category_v7`, `get_sales_by_staff_v6` et `get_production_vs_sales_v4` créées, corps égaux au dev (md5 `399c4b1c…`, `5ab8fd92…`, `35a3648c…`), mêmes droits, `anon` sans EXECUTE | Texte des fichiers `20261111000001` à `20261111000003` **sans leur `DROP`** |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, sur 7 jours, anciennes et nouvelles versions côte à côte : ventes par catégorie 20 lignes et 86 557 000 des deux côtés, 17 lignes et 39 325 000 sous le filtre `dine_in` ; ventes par vendeur 4 lignes et 86 557 000 des deux côtés ; production contre ventes, vendu 1 974 → 2 062, dont 88 en combo, non expliqué 200 → 159 | Un seul intervalle comparé ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42937311668, réussi, approuvé par Mamat ; déploiement de production sur `d4fdc4f1` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DJhDSxYs.js`. Dans les fichiers servis : les trois nouvelles versions appelées, aucune des trois anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_filters_and_combo_components_drop_replaced`, après la publication : les trois anciennes versions retirées | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Lenteur, constat | Avant correctif, sous l'identité du propriétaire, production contre ventes sur 7 jours : 42 s (ancienne version) et 23 s (nouvelle), pour une limite de 8 s du rôle `authenticated`. Une lecture complète de `reporting_private.closed_pos_orders_v1` (5 290 commandes) : 1,2 s, le contrôle de visibilité tournant une fois par commande | L'échec à l'écran n'a pas été observé : il est déduit des deux mesures |
+| Preuves du correctif | PR #685 : `pgtap` et `db-gate` réussis, run 42938315631, sur `95a6f47d` | Aucun pgTAP manuel sur `40d0dd69` : le changement ne touche pas le back-office et n'a pas demandé de publication |
+| Backend production | Application `reporting_owner_check_once` : la vue teste le propriétaire une fois par requête. Définition égale au dev (md5 `cc6c9d92…`), aucun droit direct, le propriétaire voit 5 310 commandes sur 5 310 | Texte entier du fichier `20261111000004` |
+| Lenteur, après | Sous l'identité du propriétaire : production contre ventes 4,6 s sur 7 jours (premier appel), 2,3 s sur 30 jours, 4,4 s sur 91 jours ; ventes par catégorie sur 7 jours 0,03 s (avant : 2,2 s) | Mesures uniques ; la marge sous 8 s reste mince pour production contre ventes |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Sales by Category, Sales by Staff et Production vs Sales restent à
+ouvrir une fois en production.
+
+**Limites du correctif de lenteur** : un compte non propriétaire garde le
+contrôle par ligne ; les vues de confidentialité des règlements, des
+remboursements et des sessions gardent le leur.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000023` (ventes par catégorie), `20261105000027`
+(ventes par vendeur) et `20261110000005` (production contre ventes, md5
+`307758e9…`). Un retour des fonctions demande de les recréer **puis** de
+republier le back-office précédent (`10a815f8`). Un retour de la vue se fait en
+rejouant sa définition du fichier `20261105000001` ; il ne dépend pas du
+back-office.
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
