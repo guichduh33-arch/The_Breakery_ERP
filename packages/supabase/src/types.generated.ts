@@ -10899,6 +10899,10 @@ export type Database = {
         }
         Returns: Json
       }
+      reopen_fiscal_period_v1: {
+        Args: { p_manager_pin: string; p_period_id: string; p_reason?: string }
+        Returns: Json
+      }
       reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
