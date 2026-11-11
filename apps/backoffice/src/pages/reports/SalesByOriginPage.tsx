@@ -17,6 +17,11 @@
 //     EXCLUES (arbitrage : pas de bucket Historique) — sur une période à
 //     cheval, le total peut différer des autres rapports de ventes ; la
 //     réserve le dit au lieu de le laisser deviner.
+//
+// S3-22 (2026-11-11) — la page reçoit le socle de filtres : type de commande,
+// moyen de paiement, table (mêmes clés d'URL et mêmes libellés que Sales by
+// Product). Le serveur les applique à la période ET à la fenêtre précédente :
+// les parts et les deltas restent à portée égale.
 
 import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
@@ -33,10 +38,16 @@ import {
 import {
   StackedBarsChart, type StackedSeries,
 } from '@/features/reports/components/charts/StackedBarsChart.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
 import {
   useSalesByOrigin, type OriginRow,
 } from '@/features/reports/hooks/useSalesByOrigin.js';
+import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import {
   categoricalColor, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
@@ -73,7 +84,14 @@ export default function SalesByOriginPage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end } = period;
 
-  const report = useSalesByOrigin({ start, end });
+  const filters = useReportFilters(SALES_ORDER_FILTER_DEFS);
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
+    filters.values;
+  const orderFilters = useMemo<SalesOrderFilters>(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
+
+  const report = useSalesByOrigin({ start, end, filters: orderFilters });
   const summary = report.data?.summary;
   // Stabilisée : consommée par le useMemo de l'ordre d'identité.
   const origins = useMemo(() => report.data?.by_origin ?? [], [report.data]);
@@ -178,10 +196,22 @@ export default function SalesByOriginPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     'source-coded orders only, vs the previous window of same length',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell : changer de
+    // filtre réécrit les chiffres, et il faut le dire.
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={SALES_ORDER_FILTER_DEFS}
+      filters={filters}
+      note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined}
+    />
+  );
 
   const toolbar = (
     <>
@@ -202,11 +232,14 @@ export default function SalesByOriginPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={report.error}
       isEmpty={isEmpty}
       emptyState={{
         title: 'No source-coded sale',
-        description: 'No order carrying the origin-coded number in this date range — the numbering went live on 2026-08-16.',
+        description: activeCount > 0
+          ? 'No source-coded order matches these filters in this date range.'
+          : 'No order carrying the origin-coded number in this date range — the numbering went live on 2026-08-16.',
       }}
       kpis={
         <KpiBand isLoading={report.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
