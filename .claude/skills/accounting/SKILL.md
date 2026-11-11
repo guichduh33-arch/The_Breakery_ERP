@@ -60,8 +60,9 @@ changement fiscal.
 3 equity, 4 revenue, 5 cogs, 6 opex) · désactivation via `update_account_active`
 uniquement · jamais de DROP d'un compte avec lignes historiques.
 
-**Avant de toucher la clôture** : états `open` → `closed` → `locked` (irréversible,
-aucun RPC de déverrouillage) · la clôture annuelle seede N+1 · sa garde anti-rejeu ne
+**Avant de toucher la clôture** : états `open` → `closed` → `locked` · `closed` se rouvre
+(famille `reopen_fiscal_period` : propriétaire, PIN, tracée, refusée si l'exercice porte
+déjà sa clôture annuelle) · `locked` est irréversible, aucun RPC de déverrouillage · la clôture annuelle seede N+1 · sa garde anti-rejeu ne
 repose PAS sur l'index d'idempotence.
 
 ---
