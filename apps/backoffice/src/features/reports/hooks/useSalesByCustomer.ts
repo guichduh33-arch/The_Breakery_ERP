@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByCustomer.ts
 //
-// Query hook pour `get_sales_by_customer_v3` — le CA identifié (client attaché)
+// Query hook pour la famille `get_sales_by_customer` — le CA identifié (client attaché)
 // vs l'anonyme, le détail par client avec fenêtre précédente, les nouveaux et
 // le décrochage. Le seuil de décrochage est une CONSTANTE DOMAIN
 // (CUSTOMER_CHURN_MIN_PREV_ORDERS) transmise en argument — la RPC reste
@@ -9,10 +9,19 @@
 // Ce que la page DOIT dire (la RPC le porte, ça ne se devine pas des nombres) :
 //   · identifié = CAPTURE, pas clientèle — l'anonyme est du comptoir sans carte ;
 //   · le filtre de type ne restreint QUE l'identifié — l'anonyme n'a pas de type.
+//
+// S3-22 (2026-11-11) — `p_filters` restreint la portée des commandes (type,
+// moyen de paiement, table), mêmes prédicats que `get_sales_by_product`, sur
+// tous les chiffres sauf `is_new` (première commande à la boutique, tous
+// canaux confondus). Sans filtre, l'argument est omis.
 
 import { useQuery } from '@tanstack/react-query';
 import { CUSTOMER_CHURN_MIN_PREV_ORDERS } from '@breakery/domain';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 export interface CustomerSalesRow {
   customer_id:      string;
@@ -66,6 +75,7 @@ export interface UseSalesByCustomerParams {
   start:         string;
   end:           string;
   customerType?: 'retail' | 'b2b' | null;
+  filters?:      SalesOrderFilters;
 }
 
 function toNum(v: unknown): number {
@@ -94,23 +104,25 @@ function toType(v: unknown): 'retail' | 'b2b' {
 }
 
 export function useSalesByCustomer(params: UseSalesByCustomerParams) {
-  const { start, end, customerType } = params;
+  const { start, end, customerType, filters } = params;
   return useQuery<SalesByCustomerData, Error>({
-    queryKey: ['sales-by-customer', start, end, customerType ?? null],
+    queryKey: ['sales-by-customer', start, end, customerType ?? null, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
       const args: {
         p_start_date: string; p_end_date: string;
-        p_customer_type?: string; p_churn_min_orders: number;
+        p_customer_type?: string; p_churn_min_orders: number; p_filters?: Json;
       } = {
         p_start_date:       start,
         p_end_date:         end,
         p_churn_min_orders: CUSTOMER_CHURN_MIN_PREV_ORDERS,
       };
       if (customerType) args.p_customer_type = customerType;
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
 
-      const { data, error } = await supabase.rpc('get_sales_by_customer_v3', args);
+      const { data, error } = await supabase.rpc('get_sales_by_customer_v4', args);
       if (error) throw error as Error;
 
       const r       = (data ?? {}) as Record<string, unknown>;

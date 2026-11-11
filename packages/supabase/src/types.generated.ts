@@ -8488,11 +8488,12 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_customer_v3: {
+      get_sales_by_customer_v4: {
         Args: {
           p_churn_min_orders?: number
           p_customer_type?: string
           p_end_date: string
+          p_filters?: Json
           p_start_date: string
         }
         Returns: Json
@@ -8505,8 +8506,8 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_origin_v3: {
-        Args: { p_end_date: string; p_start_date: string }
+      get_sales_by_origin_v4: {
+        Args: { p_end_date: string; p_filters?: Json; p_start_date: string }
         Returns: Json
       }
       get_sales_by_product_v6: {

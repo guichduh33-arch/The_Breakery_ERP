@@ -1,14 +1,21 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByOrigin.ts
 //
-// Query hook pour `get_sales_by_origin_v3` — les ventes par origine de
+// Query hook pour la famille `get_sales_by_origin` — les ventes par origine de
 // commande (P comptoir / T1-T2 tablettes / BO back-office, le B2B sort
 // structurellement en BO). L'origine est lue dans le numéro source-codé
 // (2026-08-16) ; les commandes pré-numérotation sont EXCLUES (arbitrage) —
 // le rapport ne dit rien d'avant le cutover et la page l'affiche en réserve.
 // `by_day` arrive en format LONG {date, origin, …} : la page pivote.
+// S3-22 (2026-11-11) — `p_filters` restreint la portée des commandes (type,
+// moyen de paiement, table), mêmes prédicats que `get_sales_by_product`, sur
+// la période ET sur la fenêtre précédente. Sans filtre, l'argument est omis.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 export interface OriginRow {
   origin:         string;
@@ -43,8 +50,9 @@ export interface SalesByOriginData {
 }
 
 export interface UseSalesByOriginParams {
-  start: string;
-  end:   string;
+  start:    string;
+  end:      string;
+  filters?: SalesOrderFilters;
 }
 
 function toNum(v: unknown): number {
@@ -63,16 +71,21 @@ function toPeriod(v: unknown): { start: string; end: string } {
 }
 
 export function useSalesByOrigin(params: UseSalesByOriginParams) {
-  const { start, end } = params;
+  const { start, end, filters } = params;
   return useQuery<SalesByOriginData, Error>({
-    queryKey: ['sales-by-origin', start, end],
+    queryKey: ['sales-by-origin', start, end, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_sales_by_origin_v3', {
+      // `exactOptionalPropertyTypes` : on omet l'arg optionnel plutôt que de
+      // poser `undefined`.
+      const args: { p_start_date: string; p_end_date: string; p_filters?: Json } = {
         p_start_date: start,
         p_end_date:   end,
-      });
+      };
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
+      const { data, error } = await supabase.rpc('get_sales_by_origin_v4', args);
       if (error) throw error as Error;
 
       const r       = (data ?? {}) as Record<string, unknown>;
