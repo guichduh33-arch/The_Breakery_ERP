@@ -275,7 +275,8 @@ $function$;
 --      A. le coût des ventes des mouvements `sale` / `sale_void` restés sans
 --         écriture, valorisés au `unit_cost` du mouvement, à défaut au
 --         `cost_price` ACTUEL de l'article (le coût d'époque n'a pas été gardé) ;
---      B. le reclassement des réceptions passées, de 1141 vers 1142 ;
+--      B. le reclassement des réceptions passées, de 1141 vers 1142 (celles
+--         de l'import historique exceptées) ;
 --      C. le reclassement des écritures de mouvement passées (et de leurs
 --         contre-passations de production) posées sur un autre compte de
 --         stock que celui de l'article.
@@ -308,6 +309,9 @@ DECLARE
   v_entry_no    TEXT;
   v_summary     JSONB;
 BEGIN
+  -- Deux passages réels simultanés ne doivent pas franchir ensemble la garde.
+  PERFORM pg_advisory_xact_lock(hashtextextended('stock-chain-catchup', 0));
+
   IF EXISTS (SELECT 1 FROM journal_entries
               WHERE reference_type = 'manual'
                 AND metadata->>'kind' = 'stock_chain_catchup'
@@ -360,6 +364,8 @@ BEGIN
           JOIN journal_entries je ON je.id = jel.journal_entry_id
          WHERE je.reference_type = 'purchase'
            AND je.status IN ('posted','locked')
+           -- L'import historique garde son routage : ses réceptions restent sur 1141.
+           AND NOT (COALESCE(je.metadata, '{}'::jsonb) ? 'financial_import_run_id')
            AND jel.account_id = v_general
       ) s
       CROSS JOIN LATERAL (VALUES (v_general, -s.net), (v_raw, s.net)) AS x(account_id, amount)

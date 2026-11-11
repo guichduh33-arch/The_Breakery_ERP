@@ -7,7 +7,7 @@
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 BEGIN;
-SELECT plan(33);
+SELECT plan(34);
 
 CREATE TEMP TABLE _ids(label text PRIMARY KEY, id uuid) ON COMMIT DROP;
 CREATE TEMP TABLE _base(k text PRIMARY KEY, v jsonb) ON COMMIT DROP;
@@ -46,7 +46,13 @@ END $$;
 
 -- Relevé à blanc AVANT les fixtures : la régularisation voit toute la base,
 -- les assertions portent donc sur des écarts.
+-- Si la base porte déjà SA régularisation, on l'efface pour la durée de la
+-- transaction : sans cela le relevé à blanc rendrait « déjà posté », sans
+-- lignes, et les écarts ci-dessous ne mesureraient plus rien.
+UPDATE public.journal_entries SET metadata = metadata - 'kind'
+ WHERE reference_type = 'manual' AND metadata->>'kind' = 'stock_chain_catchup';
 INSERT INTO _base VALUES ('before', public.post_stock_chain_catchup_v1(true));
+SELECT ok((SELECT v ? 'lines' FROM _base WHERE k = 'before'), 'the dry run returns its lines');
 
 DO $fixture$
 DECLARE
