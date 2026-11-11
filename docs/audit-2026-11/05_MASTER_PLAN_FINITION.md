@@ -1247,8 +1247,12 @@ migration `20261111000013_expense_accounts_by_nature.sql`. Cinq comptes créés
 bancaires, `6123` bureau) ; « Other » garde `6190`. Une catégorie déjà utilisée
 garde son compte, règle en vigueur que la migration respecte. Relevé en
 production le même jour : dix catégories, quatre sur `6190`, dont « Office »
-qui porte 2 dépenses (896 926,14 IDR) et ne sera donc **pas** réaffectée — son
-sort attend un arbitrage. Aucune écriture passée n'est réécrite.
+qui porte 2 dépenses (896 926,14 IDR). **Arbitrage de Mamat du 2026-11-11** :
+les dépenses futures de « Office » vont sur `6123`, les deux passées restent
+sur `6190`. La migration `20261111000014_expense_office_category_account.sql`
+lève la garde une seule fois pour cette catégorie, trace le geste dans le
+journal d'audit et la remet en place ; prouvé en dev sur un cas simulé, dans
+une transaction annulée. Aucune écriture passée n'est réécrite.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — comptes transport, assurance, taxes, frais

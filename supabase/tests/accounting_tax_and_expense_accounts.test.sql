@@ -3,7 +3,7 @@
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 BEGIN;
-SELECT plan(9);
+SELECT plan(11);
 
 -- S1-17 --------------------------------------------------------------------
 SELECT is((SELECT count(*)::int FROM public.accounts
@@ -40,6 +40,16 @@ SELECT is((SELECT count(*)::int
 SELECT is((SELECT count(*)::int FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
             WHERE c.code = 'OTHER' AND a.code <> '6190'),
   0, 'the catch-all category keeps the other-expenses account');
+
+-- « Office » vise son compte même déjà utilisée (arbitrage du 2026-11-11), et
+-- la garde de service courant est de nouveau en place après la migration.
+SELECT is((SELECT count(*)::int FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
+            WHERE c.code = 'OFFICE' AND a.code <> '6123'),
+  0, 'the office category targets the office account, used or not');
+SELECT is((SELECT tgenabled::text FROM pg_trigger
+            WHERE tgrelid = 'public.expense_categories'::regclass
+              AND tgname = 'guard_expense_category_definition'),
+  'O', 'the category guard is enabled');
 SELECT is((SELECT count(*)::int FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
             WHERE a.code = '6190' AND c.code IN ('TRANSPORT','INSURANCE','TAX','BANK_FEES')
               AND NOT EXISTS (SELECT 1 FROM public.expenses e WHERE e.category_id = c.id)),

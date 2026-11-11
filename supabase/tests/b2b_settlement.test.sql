@@ -417,8 +417,13 @@ BEGIN
       FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
      WHERE l.journal_entry_id = (v_res->>'je_id')::uuid AND l.debit > 0;
     SELECT a.code INTO v_expected FROM accounts a
-     WHERE a.id = resolve_mapping_account(CASE WHEN v_method = 'cash'
-       THEN 'CASH_WALLET_UNDEPOSITED' ELSE _sale_payment_mapping_key_v1(v_method::text) END);
+     -- Clés écrites en clair, sans passer par le helper que la fonction appelle :
+     -- un helper faux ferait sinon passer l'assertion.
+     WHERE a.id = resolve_mapping_account(CASE v_method
+       WHEN 'cash'     THEN 'CASH_WALLET_UNDEPOSITED'
+       WHEN 'qris'     THEN 'SALE_PAYMENT_QRIS'
+       WHEN 'card'     THEN 'SALE_PAYMENT_DEBIT'
+       WHEN 'transfer' THEN 'SALE_PAYMENT_TRANSFER' END);
     v_detail := v_detail || v_method::text || '=' || COALESCE(v_got,'?') || ' ';
     IF v_got IS DISTINCT FROM v_expected THEN v_ok := FALSE; END IF;
   END LOOP;
