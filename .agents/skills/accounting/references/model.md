@@ -50,7 +50,7 @@ dédiée — jamais d'INSERT direct dans `journal_entries`.
 | `trg_create_sale_journal_entry_upd` | `orders` AFTER UPDATE OF `status` → `paid` ou `voided` | `create_sale_journal_entry()` |
 | `trg_create_je_for_refund` | `refunds` AFTER INSERT — CONSTRAINT trigger, DEFERRABLE INITIALLY DEFERRED | `fn_create_je_for_refund()` |
 | `trg_create_purchase_je` | `goods_receipt_notes` AFTER INSERT | `create_purchase_journal_entry()` |
-| `tr_20_je_emit` | `stock_movements` AFTER INSERT — types `waste`, `adjustment`, `adjustment_in/out`, `opname_in/out`, `production_in/out` | `tr_stock_movement_je()` |
+| `tr_20_je_emit` | `stock_movements` AFTER INSERT — types `sale`, `sale_void`, `waste`, `adjustment`, `adjustment_in/out`, `opname_in/out`, `production_in/out` ; le compte de stock est celui de l'article (`_stock_inventory_mapping_key` : recette → 1143, sinon 1142) | `tr_stock_movement_je()` |
 
 ### Émetteurs par RPC (la RPC émet elle-même sa JE ou ses lignes)
 
@@ -145,8 +145,8 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 | **1117** | Small Money (Change Float) | 1 asset | `CASH_WALLET_SMALL_MONEY` |
 | **1131** | Accounts Receivable | 1 asset | Créances hors B2B ; aucun mapping, zéro ligne au 2026-08-17 |
 | **1132** | AR - B2B | 1 asset | `B2B_AR` — c'est ICI que vit l'AR réel |
-| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; reçoit le PPN supplier foldé |
-| **1142/1143** | Inventory Raw / Finished | 1 asset | `INVENTORY_RAW_MATERIAL` / `INVENTORY_FINISHED_GOODS` |
+| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; plus alimenté par les réceptions ni les mouvements (import historique seul) |
+| **1142/1143** | Inventory Raw / Finished | 1 asset | `INVENTORY_RAW_MATERIAL` (articles achetés ; reçoit le PPN supplier foldé) / `INVENTORY_FINISHED_GOODS` (articles fabriqués). Coût des ventes : `SALE_COGS` |
 | **1151** | VAT Input — RESERVED | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/005), réactivation hard-bloquée. Les mappings `EXPENSE_VAT_INPUT`/`PURCHASE_VAT_INPUT` y pointent encore mais **aucune fonction ne les résout** |
 | **2110** | PB1 (10%) Payable | 2 liability | `SALE_PB1_TAX` — sortie mensuelle Bapenda |
 | **2141** | Accounts Payable | 2 liability | `PURCHASE_PAYABLE`, `EXPENSE_AP` |

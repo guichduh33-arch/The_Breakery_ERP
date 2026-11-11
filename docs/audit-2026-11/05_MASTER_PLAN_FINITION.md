@@ -226,6 +226,25 @@ production.
 contre un coût de production de **1 700 IDR** ; `1142` à **−34 767 500 IDR** ;
 la chaîne `1141` → `1142` → `1143` ne se raccorde jamais.
 
+**État — développé en dev le 2026-11-11**, branche
+`feat/s1-05-chaine-comptable-stock`, migration
+`20261111000010_stock_accounting_chain_sale_cogs.sql` appliquée sur la base dev
+seulement ; **la production ne l'a pas**. Règle retenue : chaque article a un
+seul compte de stock, celui des produits finis s'il porte une recette, celui
+des matières premières sinon, et tous ses mouvements passent par lui. Relevé en
+production le même jour, en lecture seule : aucun article acheté ne porte de
+recette, aucun article fabriqué n'en manque. La vente débite le coût des ventes
+(clé de mapping neuve, posée sur `5110` comme le demande la preuve ci-dessous,
+réaffectable depuis l'écran des mappings), l'annulation et le remboursement le
+rendent, la réception débite les matières premières. `1141` n'est plus
+alimenté, hors import historique qui garde son routage. **Traitement du
+passé : décision de Mamat du 2026-11-11, une écriture de régularisation.** La
+fonction existe, calcule à blanc par défaut, et n'a été exécutée nulle part ;
+les mouvements de vente passés n'ayant pas gardé leur coût d'époque, elle les
+valorise au coût actuel de l'article. **Non fait** : exécution en production,
+relevé des soldes après livraison, et l'écriture d'un retour fournisseur, qui
+n'a jamais existé.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump du déclencheur comptable des mouvements
   de stock : traiter le type `sale`, débiter le coût des ventes, créditer le

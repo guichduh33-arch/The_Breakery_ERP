@@ -37,9 +37,9 @@ RETURNS void LANGUAGE plpgsql AS $$
 DECLARE v_id uuid;
 BEGIN
   INSERT INTO public.stock_movements (product_id, movement_type, quantity, unit, reason, unit_cost,
-                                      created_by, reference_type, metadata, created_at)
+                                      created_by, reference_type, reference_id, metadata, created_at)
   VALUES ((SELECT id FROM _ids WHERE label = p_product), p_type, p_qty, 'pcs', 'pgTAP stock chain',
-          p_cost, (SELECT id FROM _ids WHERE label = 'profile'), 'admin_action', p_meta, p_at)
+          p_cost, (SELECT id FROM _ids WHERE label = 'profile'), 'admin_action', gen_random_uuid(), p_meta, p_at)
   RETURNING id INTO v_id;
   INSERT INTO _ids VALUES (p_label, v_id);
 END $$;
@@ -61,15 +61,17 @@ DECLARE
   v_raw uuid := gen_random_uuid(); v_fin uuid := gen_random_uuid(); v_zero uuid := gen_random_uuid();
 BEGIN
   INSERT INTO auth.users(id) VALUES (v_auth);
-  INSERT INTO public.user_profiles(id,auth_user_id,employee_code,full_name,role_code,is_active)
-  VALUES (v_profile,v_auth,'SAC-'||left(v_profile::text,8),'Stock chain fixture','MANAGER',true);
+  INSERT INTO public.user_profiles(id,auth_user_id,employee_code,full_name,role_code,pin_hash,is_active)
+  VALUES (v_profile,v_auth,'SAC-'||left(v_profile::text,8),'Stock chain fixture','MANAGER',public.hash_pin('285741'),true);
   INSERT INTO public.categories(id,name,slug) VALUES (v_cat,'SAC fixture','sac-'||left(v_cat::text,8));
   INSERT INTO public.products (id, sku, name, category_id, retail_price, unit, cost_price,
     product_type, is_active, current_stock, track_inventory, deduct_stock) VALUES
     (v_raw,  'SAC-RAW-'||left(v_raw::text,6),  'SAC raw',      v_cat, 0, 'pcs', 1000, 'finished', true, 100, true, true),
     (v_fin,  'SAC-FIN-'||left(v_fin::text,6),  'SAC finished', v_cat, 0, 'pcs', 5000, 'finished', true, 100, true, true),
     (v_zero, 'SAC-ZER-'||left(v_zero::text,6), 'SAC zero',     v_cat, 0, 'pcs', 0,    'finished', true, 100, true, true);
-  INSERT INTO public.recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_fin, v_raw, 3, 'pcs', true);
+  INSERT INTO public.recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_fin, v_raw, 5, 'pcs', true);
+  -- 5 x 1 000 : le coût de l'article fabriqué est recalculé depuis sa recette,
+  -- il doit donc valoir les 5 000 que les assertions attendent.
   INSERT INTO public.suppliers(id,code,name) VALUES (v_sup,'SAC-'||left(v_sup::text,8),'SAC supplier');
   INSERT INTO public.purchase_orders(id,po_number,supplier_id) VALUES (v_po,'PO-SAC-'||left(v_po::text,8),v_sup);
   INSERT INTO public.fiscal_periods(period_start,period_end,status) VALUES ('2092-06-01','2092-06-30','closed');
