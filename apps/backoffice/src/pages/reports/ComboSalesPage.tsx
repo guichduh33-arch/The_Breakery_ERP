@@ -18,6 +18,11 @@
 //
 // Frontière : la cannibalisation (composant vendu seul vs en combo) est un
 // chantier v2 — arbitrage Mamat.
+//
+// S3-22 (2026-11-11) — la page reçoit le socle de filtres : type de commande,
+// moyen de paiement, table (mêmes clés d'URL et mêmes libellés que Sales by
+// Product). Le serveur les applique à TOUS les chiffres, ticket « sans combo »
+// et fenêtre précédente compris : la part et l'uplift restent à portée égale.
 
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -33,8 +38,14 @@ import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { BreakdownCard, type BreakdownRow } from '@/features/reports/components/BreakdownCard.js';
 import { TrendLineChart } from '@/features/reports/components/charts/TrendLineChart.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
 import { useComboSales, type ComboRow } from '@/features/reports/hooks/useComboSales.js';
+import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 import {
   categoricalColor, formatIdrCompact, formatIdrFull,
@@ -57,7 +68,14 @@ export default function ComboSalesPage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end } = period;
 
-  const report = useComboSales({ start, end });
+  const filters = useReportFilters(SALES_ORDER_FILTER_DEFS);
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
+    filters.values;
+  const orderFilters = useMemo<SalesOrderFilters>(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
+
+  const report = useComboSales({ start, end, filters: orderFilters });
   const summary = report.data?.summary;
   const combos  = report.data?.by_combo ?? [];
   const picks   = report.data?.component_picks ?? [];
@@ -118,10 +136,22 @@ export default function ComboSalesPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     'vs the previous window of same length',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell : changer de
+    // filtre réécrit les chiffres, et il faut le dire.
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={SALES_ORDER_FILTER_DEFS}
+      filters={filters}
+      note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined}
+    />
+  );
 
   const toolbar = (
     <>
@@ -142,11 +172,14 @@ export default function ComboSalesPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={report.error}
       isEmpty={isEmpty}
       emptyState={{
         title: 'No combo sold',
-        description: 'No combo line in the selected date range — combos are configured in Products › Combos.',
+        description: activeCount > 0
+          ? 'No combo line matches these filters in the selected date range.'
+          : 'No combo line in the selected date range — combos are configured in Products › Combos.',
       }}
       kpis={
         <KpiBand isLoading={report.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>

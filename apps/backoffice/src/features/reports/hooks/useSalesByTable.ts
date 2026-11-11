@@ -1,13 +1,20 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByTable.ts
 //
-// Query hook pour `get_sales_by_table_v3` — les ventes par table de salle.
+// Query hook pour la famille `get_sales_by_table` — les ventes par table de salle.
 // Périmètre : dine-in canoniques AVEC table (une dine-in sans table est un
 // cas non autorisé — arbitrage 2026-08-17 — et n'entre pas). La heatmap
 // arrive en format long (table × jour ISO, commandes ET CA) ; l'affichage
 // retenu est le NOMBRE de commandes, le CA sert le tooltip.
+// S3-22 (2026-11-11) — `p_filters` ne porte ici que le moyen de paiement : le
+// type et la table sont fixés par le rapport lui-même. Même prédicat que
+// `get_sales_by_product`, sur la période ET la fenêtre précédente.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 export interface TableRow {
   table_number: string;
@@ -44,8 +51,10 @@ export interface SalesByTableData {
 }
 
 export interface UseSalesByTableParams {
-  start: string;
-  end:   string;
+  start:    string;
+  end:      string;
+  /** Seul le moyen de paiement a un sens sur ce rapport. */
+  filters?: Pick<SalesOrderFilters, 'payment_method'>;
 }
 
 function toNum(v: unknown): number {
@@ -70,16 +79,21 @@ function toPeriod(v: unknown): { start: string; end: string } {
 }
 
 export function useSalesByTable(params: UseSalesByTableParams) {
-  const { start, end } = params;
+  const { start, end, filters } = params;
   return useQuery<SalesByTableData, Error>({
-    queryKey: ['sales-by-table', start, end],
+    queryKey: ['sales-by-table', start, end, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_sales_by_table_v3', {
+      // `exactOptionalPropertyTypes` : on omet l'arg optionnel plutôt que de
+      // poser `undefined`.
+      const args: { p_start_date: string; p_end_date: string; p_filters?: Json } = {
         p_start_date: start,
         p_end_date:   end,
-      });
+      };
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
+      const { data, error } = await supabase.rpc('get_sales_by_table_v4', args);
       if (error) throw error as Error;
 
       const r       = (data ?? {}) as Record<string, unknown>;

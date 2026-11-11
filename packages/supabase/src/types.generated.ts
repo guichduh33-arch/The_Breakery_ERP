@@ -8227,8 +8227,8 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_combo_sales_v4: {
-        Args: { p_end_date: string; p_start_date: string }
+      get_combo_sales_v5: {
+        Args: { p_end_date: string; p_filters?: Json; p_start_date: string }
         Returns: Json
       }
       get_customer_cohort_v2: {
@@ -8529,8 +8529,8 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_table_v3: {
-        Args: { p_end_date: string; p_start_date: string }
+      get_sales_by_table_v4: {
+        Args: { p_end_date: string; p_filters?: Json; p_start_date: string }
         Returns: Json
       }
       get_staff_performance_v3: {
