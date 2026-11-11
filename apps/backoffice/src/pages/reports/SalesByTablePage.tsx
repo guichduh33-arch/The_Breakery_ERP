@@ -20,6 +20,13 @@
 // d'ÉTAT varianceScale (good/watch/bad) — un contresens pour de l'intensité
 // d'activité. Un composant partagé d'intensité naîtra quand un second rapport
 // en aura besoin.
+//
+// S3-22 (2026-11-11) — la page reçoit le SEUL filtre de moyen de paiement du
+// socle (même clé d'URL, même libellé). Le type et la table n'y ont pas de
+// sens : le rapport ne lit que des commandes sur place, et la table est sa
+// dimension. Le serveur applique le filtre à la période ET à la fenêtre
+// précédente ; les tables et places actives n'en dépendent pas. Le lien d'une
+// table vers ses commandes transporte le filtre.
 
 import { useMemo, type JSX } from 'react';
 import { cn } from '@breakery/ui';
@@ -33,7 +40,12 @@ import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ParetoChart } from '@/features/reports/components/charts/ParetoChart.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import {
+  PaymentFilterNote, SALES_PAYMENT_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
 import {
   useSalesByTable, type TableRow,
 } from '@/features/reports/hooks/useSalesByTable.js';
@@ -62,7 +74,17 @@ export default function SalesByTablePage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end } = period;
 
-  const report = useSalesByTable({ start, end });
+  const filters = useReportFilters(SALES_PAYMENT_FILTER_DEFS);
+  const paymentMethod = filters.values.payment_method;
+  // Même conversion que les autres pages : une valeur hors enum ne part pas.
+  const orderFilters = useMemo(() => {
+    const { payment_method } = toSalesOrderFilters({
+      order_type: '', payment_method: paymentMethod, table_number: '',
+    });
+    return payment_method !== undefined ? { payment_method } : {};
+  }, [paymentMethod]);
+
+  const report = useSalesByTable({ start, end, filters: orderFilters });
   const summary = report.data?.summary;
   // Stabilisée : consommée par les useMemo de la matrice et du Pareto.
   const tables  = useMemo(() => report.data?.by_table ?? [], [report.data]);
@@ -136,7 +158,17 @@ export default function SalesByTablePage(): JSX.Element {
   const meta = [
     periodLabel(start, end),
     'dine-in orders with a table, vs the previous window of same length',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell.
+    ...(paymentMethod !== '' ? ['1 filter active'] : []),
   ].join(' · ');
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={SALES_PAYMENT_FILTER_DEFS}
+      filters={filters}
+      note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined}
+    />
+  );
 
   const toolbar = (
     <>
@@ -157,11 +189,14 @@ export default function SalesByTablePage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={report.error}
       isEmpty={isEmpty}
       emptyState={{
         title: 'No table order',
-        description: 'No dine-in order carrying a table number in the selected date range.',
+        description: paymentMethod !== ''
+          ? 'No table order matches this payment method in the selected date range.'
+          : 'No dine-in order carrying a table number in the selected date range.',
       }}
       kpis={
         <KpiBand isLoading={report.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
@@ -323,12 +358,17 @@ export default function SalesByTablePage(): JSX.Element {
                   return (
                     <tr key={t.table_number} className="border-b border-border-subtle">
                       <td className="py-2">
-                        {/* S3-21 — la table ouvre ses commandes sur la même période. */}
+                        {/* S3-21 — la table ouvre ses commandes sur la même période,
+                            et S3-22 y transporte le filtre de paiement actif. */}
                         <DrilldownLink
                           entity="order_list"
                           id=""
                           label={t.table_number}
-                          filter={{ table_number: t.table_number, start, end }}
+                          filter={{
+                            table_number: t.table_number, start, end,
+                            ...(orderFilters.payment_method !== undefined
+                              ? { payment_method: orderFilters.payment_method } : {}),
+                          }}
                           icon={false}
                         />
                       </td>

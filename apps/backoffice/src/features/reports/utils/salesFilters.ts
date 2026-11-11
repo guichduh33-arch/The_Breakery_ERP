@@ -5,8 +5,9 @@
 // Les deux RPC appliquent la MÊME portée : c'est ce qui permet aux lignes du
 // tiroir de refermer le total affiché par le classement.
 // Les familles `get_sales_by_category`, `get_sales_by_staff`,
-// `get_sales_by_origin` et `get_sales_by_customer` lisent le même argument,
-// avec les mêmes prédicats.
+// `get_sales_by_origin`, `get_sales_by_customer` et `get_combo_sales` lisent
+// le même argument, avec les mêmes prédicats ; `get_sales_by_table` n'en lit
+// que le moyen de paiement.
 //
 // Les valeurs d'enum sont typées sur Postgres (types régénérés) : aucune
 // valeur n'est recopiée ici.
