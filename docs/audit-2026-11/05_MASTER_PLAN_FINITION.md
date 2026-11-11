@@ -1355,7 +1355,11 @@ ses lignes de vente.
    (quantité de la ligne du combo × quantité du composant). La recette reste
    sur le combo. Relevé de production du même jour, en lecture seule : 104
    lignes de combo du 2026-09-01 au 2026-11-10, portant 254 articles.
-   **Développé le 2026-11-11, base de développement seulement, non publié.**
+   **Publié en production le 2026-11-11** (PR #684). Le même jour, la lenteur
+   du rapport pour le propriétaire (23 à 42 s sur 7 jours, pour une limite de
+   8 s) est corrigée dans la vue des commandes closes (PR #685) : moins de 5 s
+   mesurées ensuite. Relevé dans `docs/runbooks/etat-environnements.md`,
+   section du 11 novembre.
 
 **Choix technique de l'agent (2026-11-10), dans le cadre du point 7** — Une
 perte saisie dans la déclaration de fin de journée compte le jour de cette
@@ -1470,10 +1474,11 @@ le rapport de dépense ; les deux liens de l'étape 4. **Reste** : l'étape 2, l
 autres rapports de vente sur le socle, une page par commit. S'y ajoute un lien
 non prévu à l'étape 4 : des ventes par origine vers les commandes, qui demande
 un filtre d'origine sur la liste des commandes.
-**Étape 2, premier lot — développé le 2026-11-11, base de développement
-seulement, non publié** : les ventes par catégorie et les ventes par vendeur
-portent les trois filtres (type de commande, moyen de paiement, table). Les
-familles `get_sales_by_category` et `get_sales_by_staff` sont bumpées en dev.
+**Étape 2, premier lot — publié en production le 2026-11-11** (PR #683) : les
+ventes par catégorie et les ventes par vendeur portent les trois filtres (type
+de commande, moyen de paiement, table). Les familles `get_sales_by_category` et
+`get_sales_by_staff` sont bumpées, production égale au dev. Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 11 novembre.
 Restent sur l'étape 2 les autres rapports de vente. Les ventes du jour sont
 laissées de côté à dessein : un filtre de commande n'y a pas de sens défini
 pour les remboursements, les encaissements et les annulations, et ce sens est
