@@ -16,7 +16,11 @@ BEGIN
    LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
-  UPDATE user_profiles SET pin_hash = extensions.crypt('424242', extensions.gen_salt('bf'))
+  -- Le compteur d'échecs du profil choisi est remis à zéro pour la durée de la
+  -- transaction : un profil laissé à un essai du verrouillage faisait tomber T3
+  -- sur account_locked après le PIN faux de T2.
+  UPDATE user_profiles SET failed_login_attempts = 0, locked_until = NULL,
+         pin_hash = extensions.crypt('424242', extensions.gen_salt('bf'))
    WHERE id = v_prof;
 
   -- S77 (D-7) : clôture transactionnelle d'une éventuelle session ouverte
