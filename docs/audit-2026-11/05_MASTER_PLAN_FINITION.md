@@ -173,6 +173,19 @@ s'ouvrent sans erreur sur le back-office déployé. pgTAP vert.
 appelé par **tous** les émetteurs, y compris l'écriture de vente. Clôturer le
 mois en cours **arrête la caisse**, et aucune fonction ne sait rouvrir.
 
+**État — développé et prouvé en dev le 2026-11-11**, branche
+`feat/s1-03-reouverture-periode-fiscale`. Migration
+`20261111000009_reopen_fiscal_period.sql` appliquée sur la base dev seulement ;
+**la production ne l'a pas**. La fonction rouvre une période `closed`, refuse
+une période `locked`, et refuse aussi une période dont l'exercice porte déjà son
+écriture de clôture annuelle (garde ajoutée : une écriture de résultat passée
+après le report fausserait le compte de résultats reportés). Le motif est
+facultatif. L'écran des périodes montre le geste au seul propriétaire, et la
+fenêtre de clôture avertit quand la période choisie contient le jour courant.
+pgTAP : 18 assertions vertes, dont le parcours clôturée → écriture refusée →
+rouverte → écriture acceptée. **Non fait** : le parcours à l'écran avec un
+compte propriétaire connecté (PIN du propriétaire dev inconnu de l'agent).
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction de réouverture, gatée propriétaire,
   sous PIN, traçant dans `audit_logs`

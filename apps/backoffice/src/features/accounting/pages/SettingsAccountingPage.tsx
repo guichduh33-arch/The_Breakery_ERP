@@ -10,6 +10,7 @@ import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriod
 import { fiscalPeriodLabel } from '../utils/fiscalPeriodLabel.js';
 import { FiscalPeriodModal } from '../components/FiscalPeriodModal.js';
 import { AnnualCloseModal } from '../components/AnnualCloseModal.js';
+import { ReopenFiscalPeriodModal } from '../components/ReopenFiscalPeriodModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import {
@@ -31,6 +32,10 @@ export default function SettingsAccountingPage(): JSX.Element {
   const [showAnnual, setShowAnnual]     = useState(false);
   const [pickedPeriod, setPickedPeriod] = useState<FiscalPeriodRow | null>(null);
   const [showAll, setShowAll]           = useState(false);
+  // La réouverture est réservée au propriétaire : le serveur le vérifie
+  // (famille `reopen_fiscal_period`), l'écran ne montre le geste qu'à lui.
+  const isOwner = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN');
+  const [reopenPeriod, setReopenPeriod] = useState<FiscalPeriodRow | null>(null);
 
   function openModalFor(p: FiscalPeriodRow | null) {
     setPickedPeriod(p);
@@ -54,7 +59,7 @@ export default function SettingsAccountingPage(): JSX.Element {
         title="Accounting settings"
         // `italic` retiré : l'italique n'est pas un rôle typographique de ce
         // thème (DESIGN.md § Typographie).
-        subtitle="Manage fiscal periods (close / lock for backdating prevention)"
+        subtitle="Manage fiscal periods (close, reopen, or lock for backdating prevention)"
         // Bandeau de page = `TOOLBAR_BTN_*` (32 px) et non le primitif partagé
         // (56 px) — DESIGN.md § Components. Un SEUL aplat encre : la clôture de
         // période, geste courant ; la clôture annuelle, rare, reste secondaire.
@@ -130,6 +135,16 @@ export default function SettingsAccountingPage(): JSX.Element {
                     {row.locked_at === null ? '—' : formatDateTimeShortWita(row.locked_at)}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    {isOwner && row.status === 'closed' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReopenPeriod(row)}
+                        data-testid={`fp-reopen-${row.period_start}`}
+                      >
+                        Reopen
+                      </Button>
+                    )}
                     {canClose && row.status !== 'locked' && (
                       <Button
                         variant="ghost"
@@ -154,6 +169,13 @@ export default function SettingsAccountingPage(): JSX.Element {
         <FiscalPeriodModal
           onClose={() => setShowAll(false)}
           initialPeriodId={pickedPeriod?.id}
+        />
+      )}
+
+      {reopenPeriod !== null && (
+        <ReopenFiscalPeriodModal
+          period={reopenPeriod}
+          onClose={() => setReopenPeriod(null)}
         />
       )}
 
