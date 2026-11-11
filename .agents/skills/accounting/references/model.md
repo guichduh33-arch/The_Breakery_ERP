@@ -59,7 +59,7 @@ dédiée — jamais d'INSERT direct dans `journal_entries`.
 | `complete_order_with_payment`, `pay_existing_order` | remise POS, points loyalty | `SALE_DISCOUNT` → 4900, `LOYALTY_LIABILITY` → 2210 |
 | `_emit_expense_je` (appelée par le workflow expenses) | dépense approuvée | charge TTC (PPN foldé) ; `EXPENSE_AP` 2141 / `EXPENSE_CASH_OUT` 1111 |
 | `create_b2b_order`, `cancel_b2b_order` | vente / annulation B2B | `SALE_B2B_REVENUE` → 4131, `B2B_AR` → 1132 |
-| `record_b2b_payment` | règlement B2B | `B2B_PAYMENT_BANK` → 1112 |
+| `record_b2b_payment` | règlement B2B | table moyen-vers-compte de la vente (`_sale_payment_mapping_key`, ADR-013 D3) ; espèces → `CASH_WALLET_UNDEPOSITED` 1110 |
 | `adjust_b2b_balance` | write-off créance B2B | `B2B_AR_ADJUSTMENT` → 6520 |
 | `close_shift` | écart de caisse à la clôture | `SHIFT_CASH_VARIANCE_EXPENSE` → 5910 / `_INCOME` → 4910 |
 | `grant_store_credit`, `expire_store_credit` | avoir accordé / expiré | `STORE_CREDIT_GRANT_EXPENSE` → 6117, `STORE_CREDIT_EXPIRY_INCOME` → 4920 |
@@ -139,7 +139,7 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 |------|-----|--------|-------|
 | **1110** | Cash on Hand | 1 asset | Caisse shift ; `CASH_WALLET_UNDEPOSITED` |
 | **1111** | Petty Cash | 1 asset | `CASH_WALLET_PETTY`, `EXPENSE_CASH_OUT` |
-| **1112** | Bank Operating | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER`, `B2B_PAYMENT_BANK` |
+| **1112** | Bank Operating | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER` (vente et règlement B2B par virement) ; `B2B_PAYMENT_BANK` n'est plus lue par aucun émetteur |
 | **1115** | Cash - QRIS Clearing | 1 asset | `SALE_PAYMENT_QRIS` |
 | **1116** | Cash - Card Clearing | 1 asset | `SALE_PAYMENT_DEBIT` |
 | **1117** | Small Money (Change Float) | 1 asset | `CASH_WALLET_SMALL_MONEY` |

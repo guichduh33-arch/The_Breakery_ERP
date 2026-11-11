@@ -287,6 +287,14 @@ Aujourd'hui un règlement B2B en QRIS va directement en banque alors qu'une vent
 QRIS passe par le compte d'attente : les deux chemins ne peuvent pas se
 rapprocher.
 
+**État — développé et prouvé en dev le 2026-11-11**, dans le lot comptable
+(PR #692), migration `20261111000011_b2b_payment_sale_mapping_routing.sql` ;
+**la production ne l'a pas**. Le règlement B2B lit le helper de mapping de la
+vente. Relevé en dev, dans une transaction annulée : QRIS → `1115`, carte →
+`1116`, virement → `1112`. Les espèces restent sur le coffre non déposé
+(`1110`), choix déjà écrit dans le skill B2B (« hors tiroir POS ») et non
+modifié. Les règlements passés ne sont pas réécrits.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — faire lire la table moyen-vers-compte par
   l'émetteur d'écriture de règlement B2B
@@ -543,6 +551,15 @@ après.
 **Source** — Arbitrage §2bis lot 6. `2143` est actif, postable, cible d'aucun
 mapping ; `2142` « VAT Output » est actif, postable, et agrégé au bilan avec la
 taxe à payer — dans un plan **NON-PKP**.
+
+**État — développé en dev le 2026-11-11**, dans le lot comptable (PR #692),
+migration `20261111000012_reserve_tax_accounts_2142_2143.sql`. **Écart avec le
+constat ci-dessus**, relevé le même jour en dev et en production : les deux
+comptes étaient **déjà inactifs**, sans aucune ligne ni mapping. La migration
+les rend en plus non postables et dit pourquoi dans leur libellé. **Non fait** :
+la fonction du bilan nomme encore leurs codes (sans effet tant qu'ils ne
+portent aucune ligne), et rien n'interdit de les réactiver comme c'est le cas
+pour `1151`.
 
 **Fichiers**
 - `supabase/migrations/20260603000021_deactivate_account_1151_non_pkp.sql` —
@@ -1223,6 +1240,15 @@ crochet existent ; aucun bouton ne les appelle.
 
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 6. **Six** catégories sur
 douze atterrissent toutes sur « autres charges ».
+
+**État — développé en dev le 2026-11-11**, dans le lot comptable (PR #692),
+migration `20261111000013_expense_accounts_by_nature.sql`. Cinq comptes créés
+(`6118` transport, `6119` assurance, `6121` taxes et licences, `6122` frais
+bancaires, `6123` bureau) ; « Other » garde `6190`. Une catégorie déjà utilisée
+garde son compte, règle en vigueur que la migration respecte. Relevé en
+production le même jour : dix catégories, quatre sur `6190`, dont « Office »
+qui porte 2 dépenses (896 926,14 IDR) et ne sera donc **pas** réaffectée — son
+sort attend un arbitrage. Aucune écriture passée n'est réécrite.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — comptes transport, assurance, taxes, frais
