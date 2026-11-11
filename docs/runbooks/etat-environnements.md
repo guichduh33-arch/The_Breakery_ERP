@@ -173,6 +173,31 @@ retrouvent dans `20261105000026` (ventes par origine) et `20261105000024`
 (ventes par client). Un retour demande de les recréer **puis** de republier le
 back-office précédent (`d4fdc4f1`).
 
+### Même jour, soir — filtres des ventes de combos et par table (PR #689)
+
+Relevé du 11 novembre 2026 en soirée, UTC+8, sur demande de Mamat. Candidat du
+back-office : `f2249dfb` (fusion #689). Observé directement. Aucun essai créant
+une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `f2249dfb` | `ci.yml` sur `master`, run 42987909552, réussi ; pgTAP lancé à la main, run 42988150709, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_combo_sales_v4` et `get_sales_by_table_v3` seules dans leurs familles (md5 sans retour chariot `ace5fbb2…` et `22e9f6bf…`) ; vues et garde lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `combo_sales_filters_additive` et `sales_by_table_filters_additive`, avant la publication : `get_combo_sales_v5` et `get_sales_by_table_v4` créées, corps égaux au dev (md5 `c4234732…`, `56af9681…`), mêmes droits, `anon` sans EXECUTE | Texte des fichiers `20261111000007` et `20261111000008` **sans leur `DROP`** |
+| Backend production, lecture | Sous l'identité d'un compte autorisé aux rapports de vente, dans une transaction annulée, sur 7 jours : sans filtre, anciennes et nouvelles versions rendent le même résultat ; combos 7 018 000, dont 5 725 000 sous le filtre `dine_in` ; ventes par table 39 047 000, dont 8 677 000 sous le filtre `cash` | Un seul intervalle ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42993676805, réussi, approuvé par Mamat ; déploiement de production sur `f2249dfb` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DfI1FoNk.js`. Dans les 322 fichiers servis : les deux nouvelles versions appelées, aucune des deux anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `combo_table_filters_drop_replaced`, après la publication : les deux anciennes versions retirées ; seules `get_combo_sales_v5` et `get_sales_by_table_v4` restent, `authenticated` avec EXECUTE, `anon` sans | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Combo Sales et Sales by Table restent à ouvrir une fois en
+production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000011` (ventes de combos) et `20261105000026` (ventes
+par table). Un retour demande de les recréer **puis** de republier le
+back-office précédent (`d2744da4`).
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.

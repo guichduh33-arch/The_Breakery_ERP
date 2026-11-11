@@ -1487,12 +1487,13 @@ par client, le drapeau « nouveau client » reste lu sur toutes les commandes du
 client, choix de l'agent : il dit qui découvre la boutique, pas qui essaie un
 autre type de commande. Production égale au dev, relevé dans
 `docs/runbooks/etat-environnements.md`, section du 11 novembre après-midi.
-**Étape 2, troisième lot — développé en dev le 2026-11-11** : les ventes de
+**Étape 2, troisième lot — publié en production le 2026-11-11** (PR #689) : les ventes de
 combos portent les trois filtres ; les ventes par table ne portent que le moyen
 de paiement, choix de l'agent : le rapport ne lit déjà que des commandes sur
 place avec une table, et la table est sa dimension. Le lien d'une table vers ses
 commandes transporte le filtre. Les familles `get_combo_sales` et
-`get_sales_by_table` sont bumpées en dev ; production non touchée.
+`get_sales_by_table` sont bumpées, production égale au dev. Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 11 novembre au soir.
 Restent sur l'étape 2 les autres rapports de vente. Les ventes par heure
 attendent `S3-23`, qui change déjà leur portée (toute la période au lieu d'un
 jour) : deux bumps de la même famille se marcheraient dessus. Les ventes du jour sont
