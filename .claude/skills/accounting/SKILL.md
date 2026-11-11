@@ -29,7 +29,7 @@ changement fiscal.
   est à **Lombok, NTB** — pas Bali, cf. ADR-005). « PB1 » reste le label usuel dans le
   code. Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
 - **Input tax** : PPN 11% fournisseurs PKP **non-récupérable** → **folded** dans le coût
-  d'acquisition (achats de stock → `INVENTORY_GENERAL` 1141) ou dans la charge (dépenses
+  d'acquisition (achats de stock → `INVENTORY_RAW_MATERIAL` 1142) ou dans la charge (dépenses
   → compte de catégorie). Le compte `1151 VAT Input` est **désactivé** et sa réactivation
   refusée par la RPC. Ne jamais chercher à le rouvrir sans un nouvel ADR supersedant
   ADR-005.

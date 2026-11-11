@@ -10688,7 +10688,7 @@ export type Database = {
           has_drift: boolean
         }[]
       }
-      record_b2b_payment_v5: {
+      record_b2b_payment_v6: {
         Args: {
           p_amount: number
           p_customer_id: string
@@ -10898,6 +10898,14 @@ export type Database = {
           p_session_id?: string
         }
         Returns: Json
+      }
+      post_stock_chain_catchup_v1: {
+        Args: { p_actor?: string; p_dry_run?: boolean }
+        Returns: Json
+      }
+      _stock_inventory_mapping_key_v1: {
+        Args: { p_product_id: string }
+        Returns: string
       }
       reopen_fiscal_period_v1: {
         Args: { p_manager_pin: string; p_period_id: string; p_reason?: string }

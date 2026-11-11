@@ -193,6 +193,11 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 - Une demande = un sujet, une branche de travail et une PR principale. Un chantier
   lourd exige un découpage justifié par l’agent principal. Reprendre la branche existante
   quand elle convient ; un blocage ne justifie pas une copie « production » automatique.
+  **Lot par domaine** (décision de Mamat du 2026-11-11, pour le master plan de
+  finition) : plusieurs tâches d'un même domaine peuvent partager une branche, une PR,
+  une revue et une mise en production. Le lot est alors le sujet. Les filets ne
+  changent pas : chaque tâche garde sa preuve, ses tests et sa ligne d'état. Une tâche
+  lourde ou risquée reste seule ; une tâche qui bloque sort du lot au lieu de le retenir.
 - Étapes constantes : cadrée → développée → vérifiée dev → relue → intégrée → prête
   à livrer → déployée → vérifiée en usage → clôturée. Une étape non applicable se
   justifie ; un blocage ou une suspension conserve le dernier état prouvé.

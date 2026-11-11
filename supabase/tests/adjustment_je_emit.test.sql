@@ -7,9 +7,12 @@
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 --
 -- T1 : adjustment quantity > 0 → JE balanced (total_debit = total_credit > 0)
--- T2 : lignes = DR INVENTORY_GENERAL (1141) / CR ADJUSTMENT_INCOME (4510)
+-- T2 : lignes = DR compte de stock de l'article / CR ADJUSTMENT_INCOME (4510)
 -- T3 : adjustment quantity < 0 → JE balanced
--- T4 : lignes = DR ADJUSTMENT_EXPENSE (6510) / CR INVENTORY_GENERAL (1141)
+-- T4 : lignes = DR ADJUSTMENT_EXPENSE (6510) / CR compte de stock de l'article
+--
+-- S1-05 : le compte de stock est celui de l'article (fabriqué -> produits finis,
+-- acheté -> matières premières), plus le compte général.
 -- T5 : idempotence — exactement 1 JE par mouvement
 
 BEGIN;
@@ -45,7 +48,7 @@ BEGIN
     UPDATE products SET cost_price = 1000 WHERE id = v_product_id;
   END IF;
 
-  v_inv     := resolve_mapping_account('INVENTORY_GENERAL');
+  v_inv     := resolve_mapping_account(_stock_inventory_mapping_key_v1(v_product_id));
   v_adj_inc := resolve_mapping_account('ADJUSTMENT_INCOME');
   v_adj_exp := resolve_mapping_account('ADJUSTMENT_EXPENSE');
 
@@ -103,7 +106,7 @@ SELECT ok(
 SELECT ok(
   COALESCE(current_setting('breakery.adj_t2', true) = 'true', false)
    OR current_setting('breakery.adj_skip', true) IS NOT NULL,
-  'T2: adjustment (+) = DR INVENTORY_GENERAL / CR ADJUSTMENT_INCOME'
+  'T2: adjustment (+) = DR the article inventory account / CR ADJUSTMENT_INCOME'
 );
 SELECT ok(
   COALESCE(current_setting('breakery.adj_t3', true) = 'true', false)
@@ -113,7 +116,7 @@ SELECT ok(
 SELECT ok(
   COALESCE(current_setting('breakery.adj_t4', true) = 'true', false)
    OR current_setting('breakery.adj_skip', true) IS NOT NULL,
-  'T4: adjustment (−) = DR ADJUSTMENT_EXPENSE / CR INVENTORY_GENERAL'
+  'T4: adjustment (−) = DR ADJUSTMENT_EXPENSE / CR the article inventory account'
 );
 SELECT ok(
   COALESCE(current_setting('breakery.adj_t5', true) = 'true', false)

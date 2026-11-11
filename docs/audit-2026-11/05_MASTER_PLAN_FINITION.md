@@ -226,6 +226,25 @@ production.
 contre un coût de production de **1 700 IDR** ; `1142` à **−34 767 500 IDR** ;
 la chaîne `1141` → `1142` → `1143` ne se raccorde jamais.
 
+**État — développé en dev le 2026-11-11**, branche
+`feat/s1-05-chaine-comptable-stock`, migration
+`20261111000010_stock_accounting_chain_sale_cogs.sql` appliquée sur la base dev
+seulement ; **la production ne l'a pas**. Règle retenue : chaque article a un
+seul compte de stock, celui des produits finis s'il porte une recette, celui
+des matières premières sinon, et tous ses mouvements passent par lui. Relevé en
+production le même jour, en lecture seule : aucun article acheté ne porte de
+recette, aucun article fabriqué n'en manque. La vente débite le coût des ventes
+(clé de mapping neuve, posée sur `5110` comme le demande la preuve ci-dessous,
+réaffectable depuis l'écran des mappings), l'annulation et le remboursement le
+rendent, la réception débite les matières premières. `1141` n'est plus
+alimenté, hors import historique qui garde son routage. **Traitement du
+passé : décision de Mamat du 2026-11-11, une écriture de régularisation.** La
+fonction existe, calcule à blanc par défaut, et n'a été exécutée nulle part ;
+les mouvements de vente passés n'ayant pas gardé leur coût d'époque, elle les
+valorise au coût actuel de l'article. **Non fait** : exécution en production,
+relevé des soldes après livraison, et l'écriture d'un retour fournisseur, qui
+n'a jamais existé.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump du déclencheur comptable des mouvements
   de stock : traiter le type `sale`, débiter le coût des ventes, créditer le
@@ -267,6 +286,14 @@ livraison.
 Aujourd'hui un règlement B2B en QRIS va directement en banque alors qu'une vente
 QRIS passe par le compte d'attente : les deux chemins ne peuvent pas se
 rapprocher.
+
+**État — développé et prouvé en dev le 2026-11-11**, dans le lot comptable
+(PR #692), migration `20261111000011_b2b_payment_sale_mapping_routing.sql` ;
+**la production ne l'a pas**. Le règlement B2B lit le helper de mapping de la
+vente. Relevé en dev, dans une transaction annulée : QRIS → `1115`, carte →
+`1116`, virement → `1112`. Les espèces restent sur le coffre non déposé
+(`1110`), choix déjà écrit dans le skill B2B (« hors tiroir POS ») et non
+modifié. Les règlements passés ne sont pas réécrits.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — faire lire la table moyen-vers-compte par
@@ -524,6 +551,15 @@ après.
 **Source** — Arbitrage §2bis lot 6. `2143` est actif, postable, cible d'aucun
 mapping ; `2142` « VAT Output » est actif, postable, et agrégé au bilan avec la
 taxe à payer — dans un plan **NON-PKP**.
+
+**État — développé en dev le 2026-11-11**, dans le lot comptable (PR #692),
+migration `20261111000012_reserve_tax_accounts_2142_2143.sql`. **Écart avec le
+constat ci-dessus**, relevé le même jour en dev et en production : les deux
+comptes étaient **déjà inactifs**, sans aucune ligne ni mapping. La migration
+les rend en plus non postables et dit pourquoi dans leur libellé. **Non fait** :
+la fonction du bilan nomme encore leurs codes (sans effet tant qu'ils ne
+portent aucune ligne), et rien n'interdit de les réactiver comme c'est le cas
+pour `1151`.
 
 **Fichiers**
 - `supabase/migrations/20260603000021_deactivate_account_1151_non_pkp.sql` —
@@ -1204,6 +1240,19 @@ crochet existent ; aucun bouton ne les appelle.
 
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 6. **Six** catégories sur
 douze atterrissent toutes sur « autres charges ».
+
+**État — développé en dev le 2026-11-11**, dans le lot comptable (PR #692),
+migration `20261111000013_expense_accounts_by_nature.sql`. Cinq comptes créés
+(`6118` transport, `6119` assurance, `6121` taxes et licences, `6122` frais
+bancaires, `6123` bureau) ; « Other » garde `6190`. Une catégorie déjà utilisée
+garde son compte, règle en vigueur que la migration respecte. Relevé en
+production le même jour : dix catégories, quatre sur `6190`, dont « Office »
+qui porte 2 dépenses (896 926,14 IDR). **Arbitrage de Mamat du 2026-11-11** :
+les dépenses futures de « Office » vont sur `6123`, les deux passées restent
+sur `6190`. La migration `20261111000014_expense_office_category_account.sql`
+lève la garde une seule fois pour cette catégorie, trace le geste dans le
+journal d'audit et la remet en place ; prouvé en dev sur un cas simulé, dans
+une transaction annulée. Aucune écriture passée n'est réécrite.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — comptes transport, assurance, taxes, frais
