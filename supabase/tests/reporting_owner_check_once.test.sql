@@ -57,7 +57,7 @@ CREATE FUNCTION pg_temp.roc_as(p uuid) RETURNS void LANGUAGE plpgsql AS $f$ BEGI
 END $f$;
 
 INSERT INTO roc_results(result) SELECT ok(
-  pg_get_viewdef('reporting_private.closed_pos_orders_v1'::regclass, true) ~ '\(\s*SELECT\s+is_business_owner_v1\(\)',
+  pg_get_viewdef('reporting_private.closed_pos_orders_v1'::regclass, true) ~ '\(\s*SELECT\s+(public\.)?is_business_owner_v1\(\)',
   'T1: the view tests the owner in an uncorrelated subquery');
 
 SELECT pg_temp.roc_as(owner_uid) FROM roc_ctx;
