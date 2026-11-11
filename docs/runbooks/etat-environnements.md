@@ -148,6 +148,31 @@ republier le back-office précédent (`10a815f8`). Un retour de la vue se fait e
 rejouant sa définition du fichier `20261105000001` ; il ne dépend pas du
 back-office.
 
+### Même jour, après-midi — filtres des ventes par origine et par client (PR #687)
+
+Relevé du 11 novembre 2026 après-midi, UTC+8, sur demande de Mamat. Candidat
+du back-office : `d2744da4` (fusion #687). Observé directement. Aucun essai
+créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `d2744da4` | `ci.yml` sur `master`, run 42954307200, réussi ; pgTAP lancé à la main, run 42954334692, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_sales_by_origin_v3` et `get_sales_by_customer_v3` seules dans leurs familles ; corps égaux au dev d'avant le bump, fins de ligne mises à part (md5 sans retour chariot `ebc92e68…` et `d8c5e259…`) ; vues et garde lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `sales_by_origin_filters_additive` et `sales_by_customer_filters_additive`, avant la publication : `get_sales_by_origin_v4` et `get_sales_by_customer_v4` créées, corps égaux au dev (md5 `5cc4f206…`, `60dd6fab…`), mêmes commentaire et droits, `anon` sans EXECUTE | Texte des fichiers `20261111000005` et `20261111000006` **sans leur `DROP`** |
+| BO production | Workflow « Publish Backoffice Production », run 42966889206, réussi, approuvé par Mamat ; déploiement de production sur `d2744da4` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-jhCi2DSt.js`. Dans les 321 fichiers servis : les deux nouvelles versions appelées, aucune des deux anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_origin_customer_filters_drop_v3`, après la publication : les deux anciennes versions retirées ; seules les v4 restent | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, sur 7 jours : ventes par origine 84 572 000, dont 39 606 000 sous le filtre `dine_in` ; ventes par client, identifié 6 604 000, dont 771 000 sous le filtre `cash` ; les quatre appels en 0,53 s | Un seul intervalle ; mesure unique |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Sales by Origin et Sales by Customer restent à ouvrir une fois en
+production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000026` (ventes par origine) et `20261105000024`
+(ventes par client). Un retour demande de les recréer **puis** de republier le
+back-office précédent (`d4fdc4f1`).
+
 ## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
 
 Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
