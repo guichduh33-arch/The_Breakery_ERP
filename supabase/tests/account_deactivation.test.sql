@@ -49,8 +49,16 @@ SELECT ok(has_function_privilege('authenticated','public.set_user_active_v1(uuid
 SELECT ok(has_permission(pg_temp.uid('cashier'),'users.update'), 'profil actif : droit accordé');
 UPDATE user_profiles SET is_active = false WHERE id = pg_temp.profile('cashier');
 SELECT ok(NOT has_permission(pg_temp.uid('cashier'),'users.update'), 'même profil désactivé : droit perdu');
+-- Les helpers d'identité de l'appelant suivent la même règle.
+SELECT pg_temp.login('cashier');
+SELECT ok(get_current_role() IS NULL, 'profil désactivé : plus de rôle courant');
+SELECT ok(get_current_profile_id() IS NULL, 'profil désactivé : plus de profil courant');
+SELECT ok(_current_profile_id() IS NULL, 'profil désactivé : plus de profil courant (helper interne)');
 UPDATE user_profiles SET is_active = true WHERE id = pg_temp.profile('cashier');
 SELECT ok(has_permission(pg_temp.uid('cashier'),'users.update'), 'profil réactivé : droit rendu');
+SELECT is(get_current_role(), 'CASHIER', 'profil réactivé : rôle courant rendu');
+SELECT is(get_current_profile_id(), pg_temp.profile('cashier'), 'profil réactivé : profil courant rendu');
+SELECT is(_current_profile_id(), pg_temp.profile('cashier'), 'profil réactivé : profil courant rendu (helper interne)');
 
 -- 2. Gardes du geste.
 SELECT pg_temp.login('plain');
