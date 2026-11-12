@@ -330,6 +330,22 @@ avant/après des soldes `1112`, `1115`, `1116` en dev.
 **Source** — Arbitrage §2bis lot 1. `has_permission` vérifie que le profil n'est
 pas supprimé, mais **pas qu'il est actif**.
 
+**État — développé et prouvé en dev le 2026-11-12**, branche
+`fix/lot-auth-s1-07-s1-13`, migrations `20261112000002` et `20261112000003`
+appliquées sur la base dev seulement ; **la production ne les a pas**.
+`has_permission` exige un profil actif, ainsi que les trois helpers qui
+identifient l'appelant (constat de revue : ils ignoraient aussi l'activité).
+**Écart relevé** : aucune fonction de désactivation n'existait, seule la
+suppression posait un compte inactif. Une fonction de la famille
+`set_user_active` est ajoutée — gardée par `users.update`, motif exigé,
+auto-désactivation refusée, dernier administrateur actif protégé, sessions
+closes, trace au journal d'audit — et la fiche d'un utilisateur du back-office
+offre le geste. pgTAP : `supabase/tests/account_deactivation.test.sql`, vert
+sur dev par sections. **Non fait** : le parcours à l'écran avec un compte
+connecté (PIN du propriétaire dev inconnu de l'agent). Tout détenteur de
+`users.update` peut désactiver un `ADMIN`, comme il peut déjà le supprimer :
+parité voulue avec l'existant, pas un choix nouveau.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — ajouter le contrôle d'activité dans
   `has_permission` (**partir du corps live**, `pg_get_functiondef`)
@@ -474,6 +490,15 @@ production avant que cette tâche soit livrée.
 **Risque prod** 🔴
 **Source** — Audit 02, P0 de sécurité : deux constructions de filtre `or=`
 concatènent une saisie utilisateur sans échappement.
+
+**État — développé le 2026-11-12**, branche `fix/lot-auth-s1-07-s1-13`,
+front seulement, **non publié**. Relevé du code ce jour-là : **trois** sites
+et non deux — la liste des fournisseurs, la liste des dépenses, et la recherche
+du fournisseur de référence de l'import historique, qui n'échappait rien. Les
+deux listes retirent les caractères de structure et les jokers par un helper
+commun ; l'import pose deux filtres simples à la place du filtre `or`. Les
+autres recherches du back-office nettoyaient déjà leur saisie. Un test par
+site, plus ceux du helper ; un test rougit quand on retire le nettoyage.
 
 **Fichiers** — Les deux sites sont nommés dans
 `02_DETTE_TECHNIQUE_ET_NETTOYAGE.md` §4 (recherche de liste côté back-office).
