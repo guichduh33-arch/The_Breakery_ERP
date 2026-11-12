@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 12 novembre 2026 au soir — lot sécurité `S1-07` et `S1-13`
+
+Relevé du 12 novembre 2026 entre 20 h et 22 h, UTC+8. Observé directement.
+PR #695. Aucune commande, aucun paiement ni aucun compte n'a été créé ou
+désactivé en production ; les essais ont eu lieu sur dev, en transaction annulée.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `ec4a3707` (fusion de #695). CI et pgTAP verts sur ce commit exact, pgTAP lancé à la main | — |
+| Backend production, avant, 20 h 04 | Corps de `has_permission` et des trois helpers d'identité égaux au dev d'avant modification (md5). 11 profils actifs, aucun inactif, aucune session de caisse ouverte | Un compte inactif aurait perdu ses droits à la livraison : il n'y en avait pas |
+| Backend production, livraison | Migrations `20261112000002` et `20261112000003` appliquées : `has_permission`, `get_current_role`, `get_current_profile_id` et `_current_profile_id` exigent un profil actif ; `set_user_active_v1` créée | Livraison en deux appels, quelques minutes d'écart |
+| Backend production, corps | md5 de `prosrc`, retours chariot retirés, égaux au dev et aux fichiers du dépôt : `has_permission` `5918a8f5…`, `set_user_active_v1` `eeed733e…`, `get_current_role` `a09c1984…`, `get_current_profile_id` `01aa1f50…`, `_current_profile_id` `beb9759b…`. `anon` sans EXECUTE sur `set_user_active_v1` | — |
+| Backend production, usage | Chacun des 11 profils actifs garde au moins une permission de son rôle par `has_permission` | Lecture seule ; aucune désactivation réelle n'a été jouée en production |
+| BO production, 21 h 58 | Publication réussie sur `ec4a3707`, approuvée par Mamat dans l'environnement « Production » de GitHub | — |
+| BO production, bundle servi | `https://backoffice.the-breakery.com` : le bundle chargé nomme `set_user_active_v1` et ne porte que la référence Supabase de production | Lu par téléchargement des fichiers servis, pas dans un onglet connecté. Le parcours du bouton à l'écran n'a pas été joué |
+
+Retour arrière, si nécessaire : recréer `has_permission` depuis
+`20260517000030_refactor_has_permission.sql` (md5 du corps de production avant
+livraison : `34064863…`) et les helpers depuis `20260510000002_init_rls_helpers.sql`
+et la migration qui définit `_current_profile_id` ; retirer `set_user_active_v1`
+seulement après retour du back-office au bundle précédent, qui ne l'appelle pas.
+
 ## Complément des 11 et 12 novembre 2026 — lot comptable
 
 Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi et en début
@@ -48,6 +70,7 @@ transactions annulées.
 | Backend production, 12 nov. 13 h 35 | Migration `20261112000001` appliquée (PR #693, `master` à `ee8b4fa6`) : `post_stock_chain_catchup_v2` créée, `v1` retirée. md5 du corps `04a4f6ea…`, égal au dev et au fichier. `anon` et `authenticated` sans EXECUTE | L'outil a rendu une erreur « already exists » alors que la migration figurait déjà au registre une minute plus tôt : lue comme une seconde tentative automatique. Une session de caisse était ouverte ; aucune fonction de caisse n'est touchée |
 | Régularisation, à blanc, 12 nov. 13 h 37 | 5 969 mouvements de vente sans écriture (18 à coût zéro), coût 37 801 100 ; 3 915 commandes de l'import historique, coût 96 924 700 ; réceptions reclassées 55 754 502,48 ; mouvements reclassés 102 191 500, tous antérieurs à la livraison du 11 nov. Écriture équilibrée à 279 552 702,48 : débit `5110` 134 725 800 et `1142` 144 826 902,48, crédit `1141` 240 643 802,48 et `1143` 38 908 900 | Lignes historiques valant zéro : 615 articles à coût zéro, 545 combos sans composants. Coût actuel des fiches, pas celui du jour de la vente |
 | Régularisation, enregistrée, 12 nov. | Sur accord de Mamat : `JE-20261112-0785`, statut `posted`, datée du 12 nov., mêmes montants et mêmes quatre lignes que le passage à blanc. Auteur : le seul profil `SUPER_ADMIN` actif. Une trace `accounting.stock_chain.catchup_posted` au journal d'audit. Un nouveau passage à blanc répond `already_posted` | Les lignes à coût zéro restent à zéro : les corriger demandera une écriture manuelle complémentaire |
+| Backend production, soldes, 12 nov. après l'écriture | `5110` 137 749 100 ; `1142` 98 161 701,78 ; `1143` 6 067 800 ; `1141` 46 431 023,94. Aucune écriture déséquilibrée, en en-tête comme en lignes | Soldes cumulés de toutes les écritures `posted` ou `locked`, toutes périodes |
 
 Retour arrière, si nécessaire : recréer `tr_stock_movement_je` depuis
 `20260727000246_adjustment_je_emit_types_noop.sql` (md5 du corps de production
