@@ -6,6 +6,7 @@ import { supabase, supabaseUrl } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { historicalProductPayload, parseReferencePackage } from './referencePackage.js';
 import type { ProductReference, ReferencePackage, SupplierReference } from './referencePackage.js';
+import { lookupSupplierReference } from './supplierReferenceLookup.js';
 
 const project = new URL(supabaseUrl).hostname.split('.')[0] ?? '';
 export function HistoricalReferencePanel() {
@@ -48,10 +49,9 @@ export function HistoricalReferencePanel() {
     };
     const supplierLookup = async (ref: SupplierReference) => {
       guard();
-      const q = await supabase.from('suppliers').select('id,code,name,is_active,deleted_at').or(`code.eq.${ref.code},name.ilike.${ref.name}`);
-      guard(); if (q.error) throw new Error(q.error.message);
-      if (q.data.length > 1 || q.data.some((s) => s.name.toLowerCase() !== ref.name.toLowerCase() || s.deleted_at !== null || !s.is_active)) throw new Error(`Existing supplier ${ref.name} is ambiguous or inactive.`);
-      return q.data[0];
+      const found = await lookupSupplierReference(ref, guard);
+      if (found.length > 1 || found.some((s) => s.name.toLowerCase() !== ref.name.toLowerCase() || s.deleted_at !== null || !s.is_active)) throw new Error(`Existing supplier ${ref.name} is ambiguous or inactive.`);
+      return found[0];
     };
     running.current = true; setBusy(true); setError(''); setResults([]);
     try {

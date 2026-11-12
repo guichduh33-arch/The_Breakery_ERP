@@ -5,6 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { ilikeAnyFilter } from '@/lib/postgrestSearch.js';
 import type { Database } from '@breakery/supabase';
 
 export type ExpenseRow = Database['public']['Tables']['expenses']['Row'];
@@ -22,6 +23,11 @@ export interface ExpensesListFilters {
 }
 
 export const EXPENSES_QUERY_KEY = ['expenses-bo'] as const;
+
+/** Filtre `.or()` de la recherche dépenses (S1-13), `null` si rien à chercher. */
+export function expenseSearchFilter(raw: string): string | null {
+  return ilikeAnyFilter(['description', 'vendor_name', 'remarks', 'expense_number'], raw);
+}
 
 export function useExpensesList(filters: ExpensesListFilters = {}) {
   return useQuery<ExpenseRow[]>({
@@ -50,10 +56,8 @@ export function useExpensesList(filters: ExpensesListFilters = {}) {
       if (filters.dateTo !== undefined && filters.dateTo !== '') {
         q = q.lte('expense_date', filters.dateTo);
       }
-      if (filters.search !== undefined && filters.search.trim() !== '') {
-        const term = filters.search.trim().replace(/[%_]/g, '\\$&');
-        q = q.or(`description.ilike.%${term}%,vendor_name.ilike.%${term}%,remarks.ilike.%${term}%,expense_number.ilike.%${term}%`);
-      }
+      const search = expenseSearchFilter(filters.search ?? '');
+      if (search !== null) q = q.or(search);
 
       const { data, error } = await q;
       if (error) throw error;
