@@ -249,14 +249,25 @@ n'a jamais existé.
 
 **En production depuis le 2026-11-11 au soir** : les ventes écrivent leur coût
 (relevé du 2026-11-12 à midi : 2 065 900 de coût pour 7 126 000 de ventes du
-jour). **Régularisation non enregistrée.** Arbitrage de Mamat du même soir : le
+jour). Régularisation non enregistrée à ce relevé. Arbitrage de Mamat du même soir : le
 coût se calcule sur la fiche de l'article vendu, suivi en stock ou non. Une
 migration préparée (`20261112000001_stock_chain_catchup_historical_orders.sql`,
-appliquée en dev seulement) remplace la fonction pour compter aussi les ventes
+appliquée en dev ce jour-là) remplace la fonction pour compter aussi les ventes
 payées de l'import historique, qui n'ont laissé aucun mouvement de stock —
 3 915 commandes, coût de fiche 96 914 487 au relevé de production du
 2026-11-12 — sorties du compte général de stock. Limites : coût
 actuel de la fiche, combos importés sans composants non valorisables.
+
+**Régularisation enregistrée en production le 2026-11-12**, sur accord de
+Mamat : migration `20261112000001` appliquée (PR #693), puis écriture
+`JE-20261112-0785`, équilibrée à 279 552 702,48, dont 96 924 700 de coût pour
+les 3 915 commandes de l'import historique. Y valent zéro : 615 lignes à coût
+de fiche nul et 545 combos importés sans composants ; les reprendre demandera
+une écriture manuelle complémentaire. Relevé dans
+`docs/runbooks/etat-environnements.md`. Soldes relevés en production juste après :
+`5110` 137 749 100, `1142` 98 161 701,78 (positif), `1143` 6 067 800, `1141`
+46 431 023,94, et `0` écriture déséquilibrée. **Reste** : l'écriture d'un
+retour fournisseur.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump du déclencheur comptable des mouvements
