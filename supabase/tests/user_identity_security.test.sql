@@ -115,10 +115,13 @@ SELECT throws_ok($$ SELECT update_user_profile_v2(pg_temp.profile('cashier'),'Fo
   '42501','active_profile_required','profil inactif : édition refusée');
 SELECT throws_ok($$ SELECT reset_user_pin_v2(pg_temp.profile('cashier'),'111222') $$,
   '42501','active_profile_required','profil inactif : reset refusé');
+-- Depuis S1-07, `has_permission` refuse un profil inactif : ces deux fonctions
+-- l'interrogent AVANT leur propre contrôle de profil actif, le refus tombe donc
+-- un cran plus tôt, même code d'erreur.
 SELECT throws_ok($$ SELECT update_user_role_v2(pg_temp.profile('cashier'),'CASHIER','audit inactive') $$,
-  '42501','active_profile_required','profil inactif : rôle refusé');
+  '42501','update_user_role_v2: missing permission users.update','profil inactif : rôle refusé');
 SELECT throws_ok($$ SELECT create_user_v2('AUDIT-INACTIVE','Audit inactive','CASHIER','285741') $$,
-  '42501','active_profile_required','profil inactif : création refusée');
+  '42501','create_user_v2: missing permission users.create','profil inactif : création refusée');
 SELECT is(change_user_pin_v1(profile_id,pg_temp.profile('cashier'),'111222')->>'error',
   'active_profile_required','chemin EF refuse ' || name)
 FROM identity_fixture WHERE name IN ('missing','deleted','inactive');
