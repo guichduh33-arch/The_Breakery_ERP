@@ -211,11 +211,12 @@ rechargement d'onglet**. Côté serveur, `has_permission` est une lecture vivant
 **un retrait de droit prend effet immédiatement** sur toute opération gatée. Un
 bouton peut donc rester affiché alors que le serveur refuse.
 
-**FAIT** — `has_permission` vérifie que le profil n'est pas supprimé, mais **pas
-qu'il est actif**.
+**FAIT** — `has_permission` et les helpers qui identifient l'appelant exigent
+un profil **non supprimé et actif** (en production depuis le 2026-11-12). La
+désactivation et la réactivation d'un compte passent par la famille
+`set_user_active`, gardée par `users.update` : elle clôt les sessions du
+compte, refuse l'auto-désactivation et protège le dernier administrateur actif.
 **RÈGLE** — Désactiver un compte doit couper ses droits immédiatement.
-**À LIVRER** — Ajouter le contrôle d'activité et révoquer les sessions à la
-désactivation.
 
 **ABANDONNÉ** — L'expiration automatique des PIN. Trois documents l'annonçaient
 « déjà implémentée », dont l'ADR-006 : c'est faux et ce n'est pas voulu. La

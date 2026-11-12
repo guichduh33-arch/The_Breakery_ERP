@@ -357,6 +357,14 @@ connecté (PIN du propriétaire dev inconnu de l'agent). Tout détenteur de
 `users.update` peut désactiver un `ADMIN`, comme il peut déjà le supprimer :
 parité voulue avec l'existant, pas un choix nouveau.
 
+**En production depuis le 2026-11-12 au soir** (PR #695) : les deux migrations
+appliquées, corps égaux au dev, back-office publié le même soir. Le verrou CI
+sur `has_permission` porte une exception unique pour cette migration, accordée
+par Mamat et épinglée au contenu du fichier. Relevé dans
+`docs/runbooks/etat-environnements.md`. **Reste** : jouer le geste à l'écran
+avec un compte connecté ; aucune désactivation réelle n'a été faite en
+production.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — ajouter le contrôle d'activité dans
   `has_permission` (**partir du corps live**, `pg_get_functiondef`)
@@ -510,6 +518,8 @@ deux listes retirent les caractères de structure et les jokers par un helper
 commun ; l'import pose deux filtres simples à la place du filtre `or`. Les
 autres recherches du back-office nettoyaient déjà leur saisie. Un test par
 site, plus ceux du helper ; un test rougit quand on retire le nettoyage.
+**Publié en production le 2026-11-12 au soir** avec le back-office de la
+PR #695.
 
 **Fichiers** — Les deux sites sont nommés dans
 `02_DETTE_TECHNIQUE_ET_NETTOYAGE.md` §4 (recherche de liste côté back-office).

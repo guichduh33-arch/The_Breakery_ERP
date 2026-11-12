@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 12 novembre 2026 au soir — lot sécurité `S1-07` et `S1-13`
+
+Relevé du 12 novembre 2026 entre 20 h et 22 h, UTC+8. Observé directement.
+PR #695. Aucune commande, aucun paiement ni aucun compte n'a été créé ou
+désactivé en production ; les essais ont eu lieu sur dev, en transaction annulée.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `ec4a3707` (fusion de #695). CI et pgTAP verts sur ce commit exact, pgTAP lancé à la main | — |
+| Backend production, avant, 20 h 04 | Corps de `has_permission` et des trois helpers d'identité égaux au dev d'avant modification (md5). 11 profils actifs, aucun inactif, aucune session de caisse ouverte | Un compte inactif aurait perdu ses droits à la livraison : il n'y en avait pas |
+| Backend production, livraison | Migrations `20261112000002` et `20261112000003` appliquées : `has_permission`, `get_current_role`, `get_current_profile_id` et `_current_profile_id` exigent un profil actif ; `set_user_active_v1` créée | Livraison en deux appels, quelques minutes d'écart |
+| Backend production, corps | md5 de `prosrc`, retours chariot retirés, égaux au dev et aux fichiers du dépôt : `has_permission` `5918a8f5…`, `set_user_active_v1` `eeed733e…`, `get_current_role` `a09c1984…`, `get_current_profile_id` `01aa1f50…`, `_current_profile_id` `beb9759b…`. `anon` sans EXECUTE sur `set_user_active_v1` | — |
+| Backend production, usage | Chacun des 11 profils actifs garde au moins une permission de son rôle par `has_permission` | Lecture seule ; aucune désactivation réelle n'a été jouée en production |
+| BO production, 21 h 58 | Publication réussie sur `ec4a3707`, approuvée par Mamat dans l'environnement « Production » de GitHub | — |
+| BO production, bundle servi | `https://backoffice.the-breakery.com` : le bundle chargé nomme `set_user_active_v1` et ne porte que la référence Supabase de production | Lu par téléchargement des fichiers servis, pas dans un onglet connecté. Le parcours du bouton à l'écran n'a pas été joué |
+
+Retour arrière, si nécessaire : recréer `has_permission` depuis
+`20260517000030_refactor_has_permission.sql` (md5 du corps de production avant
+livraison : `34064863…`) et les helpers depuis `20260510000002_init_rls_helpers.sql`
+et la migration qui définit `_current_profile_id` ; retirer `set_user_active_v1`
+seulement après retour du back-office au bundle précédent, qui ne l'appelle pas.
+
 ## Complément des 11 et 12 novembre 2026 — lot comptable
 
 Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi et en début
