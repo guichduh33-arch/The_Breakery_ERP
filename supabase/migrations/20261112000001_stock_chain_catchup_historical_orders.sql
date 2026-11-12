@@ -7,7 +7,8 @@
 -- 2026-10-31 ; les ventes payées de septembre et d'octobre, importées, n'en
 -- portent aucun et valaient zéro dans le premier calcul.
 --
--- Partie D, ajoutée ici : pour chaque commande payée sans mouvement de vente,
+-- Partie D, ajoutée ici : pour chaque commande payée de l'import historique
+-- (`is_historical_import` ou document d'import financier) sans mouvement de vente,
 -- quantité x coût actuel de la fiche (un combo = somme de ses composants
 -- gardés sur la ligne). Débit du coût des ventes, crédit du compte général de
 -- stock, là où l'import historique a rangé les achats de cette période.
@@ -15,7 +16,10 @@
 -- Limites écrites : coût ACTUEL de la fiche, pas celui du jour de la vente ;
 -- un combo importé sans ses composants ne peut pas être valorisé (compté à
 -- part dans le résumé) ; un article à coût zéro vaut zéro ; les commandes non
--- payées ne sont pas reprises.
+-- payées ne sont pas reprises ; les ingrédients de modificateurs ne sont pas
+-- valorisés ; un remboursement partiel n'est pas déduit (aucun n'existe sur ces
+-- commandes au relevé de production du 2026-11-12). Une commande courante sans
+-- mouvement de vente n'est PAS reprise : son coût viendra de son mouvement.
 --
 -- Le reste du corps est celui de la version précédente, égal au live (md5
 -- vérifié en dev et en production le 2026-11-11). Elle n'a été exécutée
@@ -159,13 +163,16 @@ BEGIN
          CASE WHEN p.product_type = 'combo' THEN
                 (SELECT COALESCE(SUM(round_idr(oi.quantity * (c->>'quantity')::numeric * COALESCE(cp.cost_price, 0))), 0)
                    FROM jsonb_array_elements(COALESCE(oi.combo_components, '[]'::jsonb)) c
-                   LEFT JOIN products cp ON cp.id = (c->>'product_id')::uuid)
+                   LEFT JOIN products cp ON cp.id::text = c->>'product_id')
               ELSE round_idr(oi.quantity * COALESCE(p.cost_price, 0))
          END AS value
     FROM orders o
     JOIN order_items oi ON oi.order_id = o.id AND COALESCE(oi.is_cancelled, false) = false
     JOIN products p ON p.id = oi.product_id
    WHERE o.status = 'paid'
+     -- Historique importé seulement : une commande courante sans mouvement
+     -- (B2B payée avant retrait) sera valorisée par son mouvement, plus tard.
+     AND (o.is_historical_import OR o.financial_import_document_id IS NOT NULL)
      AND NOT EXISTS (SELECT 1 FROM stock_movements sm
                       WHERE sm.reference_id = o.id AND sm.movement_type = 'sale');
 

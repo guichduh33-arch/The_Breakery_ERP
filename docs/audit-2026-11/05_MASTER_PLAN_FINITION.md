@@ -250,11 +250,12 @@ n'a jamais existé.
 **En production depuis le 2026-11-11 au soir** : les ventes écrivent leur coût
 (relevé du 2026-11-12 à midi : 2 065 900 de coût pour 7 126 000 de ventes du
 jour). **Régularisation non enregistrée.** Arbitrage de Mamat du même soir : le
-coût se calcule sur la fiche de l'article vendu, suivi en stock ou non. La
-fonction est donc remplacée (`20261112000001_stock_chain_catchup_historical_orders.sql`)
-pour compter aussi les ventes payées sans mouvement de stock — septembre et
-octobre, importées : 3 917 commandes, coût de fiche 96 935 058 au relevé de
-production du 2026-11-11 — sorties du compte général de stock. Limites : coût
+coût se calcule sur la fiche de l'article vendu, suivi en stock ou non. Une
+migration préparée (`20261112000001_stock_chain_catchup_historical_orders.sql`,
+appliquée en dev seulement) remplace la fonction pour compter aussi les ventes
+payées de l'import historique, qui n'ont laissé aucun mouvement de stock —
+3 915 commandes, coût de fiche 96 914 487 au relevé de production du
+2026-11-12 — sorties du compte général de stock. Limites : coût
 actuel de la fiche, combos importés sans composants non valorisables.
 
 **Fichiers**

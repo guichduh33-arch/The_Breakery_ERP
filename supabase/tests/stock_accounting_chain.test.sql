@@ -218,6 +218,14 @@ INSERT INTO _ids SELECT 'hist_order', id FROM public.orders WHERE order_number L
 INSERT INTO public.order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total) VALUES
   ((SELECT id FROM _ids WHERE label='hist_order'), (SELECT id FROM _ids WHERE label='fin'),  'SAC finished', 0, 2, 0),
   ((SELECT id FROM _ids WHERE label='hist_order'), (SELECT id FROM _ids WHERE label='zero'), 'SAC zero',     0, 1, 0);
+-- Une commande COURANTE payée sans mouvement (B2B payée avant retrait) : elle
+-- ne doit pas être reprise, son coût viendra de son mouvement. Si elle l'était,
+-- les écarts ci-dessous vaudraient 15 000 et 2 commandes.
+INSERT INTO public.orders (id, order_number, subtotal, tax_amount, total, status, order_type)
+VALUES (gen_random_uuid(), 'SAC-CUR-' || left(gen_random_uuid()::text, 8), 0, 0, 0, 'paid', 'b2b');
+INSERT INTO public.order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
+SELECT o.id, (SELECT id FROM _ids WHERE label='fin'), 'SAC finished', 0, 1, 0
+  FROM public.orders o WHERE o.order_number LIKE 'SAC-CUR-%';
 
 INSERT INTO _base VALUES ('after', public.post_stock_chain_catchup_v2(true));
 CREATE FUNCTION pg_temp.delta(p_field text) RETURNS numeric LANGUAGE sql AS $$
@@ -238,7 +246,7 @@ SELECT is(pg_temp.delta('sale_movements'), 4::numeric, 'four movements without a
 SELECT is(pg_temp.delta('purchases_reclassified'), 11100::numeric, 'the past receipt leaves the general account for raw materials');
 -- Ventes sans mouvement : 2 x 5 000 au coût de la fiche, sorties du compte général.
 SELECT is(pg_temp.delta('historical_cogs'), 10000::numeric, 'a paid order without any stock movement is costed at the product cost');
-SELECT is(pg_temp.delta('historical_orders'), 1::numeric, 'one order without movement is seen');
+SELECT is(pg_temp.delta('historical_orders'), 1::numeric, 'one historical order is seen, the current one is ignored');
 SELECT is(pg_temp.delta('historical_zero_cost_lines'), 1::numeric, 'its zero-cost line is counted, not valued');
 SELECT is(pg_temp.line_delta('SALE_COGS'), 17000::numeric, 'net cost-of-sales line, movements and orders without movement');
 -- 1141 : − réception 11 100, + perte 1 000 (elle y était créditée), − 10 000 de ventes sans mouvement.
