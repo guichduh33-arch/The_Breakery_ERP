@@ -28,8 +28,9 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 
 ## Complément des 11 et 12 novembre 2026 — lot comptable
 
-Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi, UTC+8. Observé
-directement. Lot : `S1-03`, `S1-05`, `S1-06`, `S1-17`, `S3-15` (PR #691 et #692).
+Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi et en début
+d'après-midi, UTC+8. Observé directement. Lot : `S1-03`, `S1-05`, `S1-06`,
+`S1-17`, `S3-15` (PR #691, #692 et #693).
 Aucune commande ni aucun paiement n'a été créé ; les essais ont eu lieu dans des
 transactions annulées.
 
@@ -44,6 +45,9 @@ transactions annulées.
 | BO production, 12 nov. 12 h 05 | Publication n° 29 réussie sur `01e9de59`, après un premier refus du contrôle préalable faute de passage pgTAP sur ce commit exact (lancé à la main, vert) | Lu dans la liste des déploiements GitHub, pas dans le bundle chargé |
 | Backend production, 12 nov. 12 h 10 | `record_b2b_payment_v5` retirée après la publication | Un onglet du back-office resté ouvert sur l'ancien bundle échouera sur un règlement B2B jusqu'à son rechargement ; aucun règlement B2B n'avait été saisi entre-temps |
 | Backend production, usage, 12 nov. 12 h 09 | 70 ventes payées (7 126 000). 340 mouvements de vente, 337 avec écriture, coût des ventes du jour 2 065 900, aucune écriture déséquilibrée depuis la livraison | Les 3 mouvements sans écriture valent zéro après arrondi |
+| Backend production, 12 nov. 13 h 35 | Migration `20261112000001` appliquée (PR #693, `master` à `ee8b4fa6`) : `post_stock_chain_catchup_v2` créée, `v1` retirée. md5 du corps `04a4f6ea…`, égal au dev et au fichier. `anon` et `authenticated` sans EXECUTE | L'outil a rendu une erreur « already exists » alors que la migration figurait déjà au registre une minute plus tôt : lue comme une seconde tentative automatique. Une session de caisse était ouverte ; aucune fonction de caisse n'est touchée |
+| Régularisation, à blanc, 12 nov. 13 h 37 | 5 969 mouvements de vente sans écriture (18 à coût zéro), coût 37 801 100 ; 3 915 commandes de l'import historique, coût 96 924 700 ; réceptions reclassées 55 754 502,48 ; mouvements reclassés 102 191 500, tous antérieurs à la livraison du 11 nov. Écriture équilibrée à 279 552 702,48 : débit `5110` 134 725 800 et `1142` 144 826 902,48, crédit `1141` 240 643 802,48 et `1143` 38 908 900 | Lignes historiques valant zéro : 615 articles à coût zéro, 545 combos sans composants. Coût actuel des fiches, pas celui du jour de la vente |
+| Régularisation, enregistrée, 12 nov. | Sur accord de Mamat : `JE-20261112-0785`, statut `posted`, datée du 12 nov., mêmes montants et mêmes quatre lignes que le passage à blanc. Auteur : le seul profil `SUPER_ADMIN` actif. Une trace `accounting.stock_chain.catchup_posted` au journal d'audit. Un nouveau passage à blanc répond `already_posted` | Les lignes à coût zéro restent à zéro : les corriger demandera une écriture manuelle complémentaire |
 
 Retour arrière, si nécessaire : recréer `tr_stock_movement_je` depuis
 `20260727000246_adjustment_je_emit_types_noop.sql` (md5 du corps de production
