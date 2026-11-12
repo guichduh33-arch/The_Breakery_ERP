@@ -11113,6 +11113,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_user_active_v1: {
+        Args: { p_is_active: boolean; p_reason: string; p_user_id: string }
+        Returns: Json
+      }
       set_user_kitchen_access_v1: {
         Args: {
           p_enabled: boolean
