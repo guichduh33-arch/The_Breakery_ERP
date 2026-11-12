@@ -10899,7 +10899,7 @@ export type Database = {
         }
         Returns: Json
       }
-      post_stock_chain_catchup_v1: {
+      post_stock_chain_catchup_v2: {
         Args: { p_actor?: string; p_dry_run?: boolean }
         Returns: Json
       }

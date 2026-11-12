@@ -185,6 +185,8 @@ fenêtre de clôture avertit quand la période choisie contient le jour courant.
 pgTAP : 18 assertions vertes, dont le parcours clôturée → écriture refusée →
 rouverte → écriture acceptée. **Non fait** : le parcours à l'écran avec un
 compte propriétaire connecté (PIN du propriétaire dev inconnu de l'agent).
+**En production depuis le 2026-11-11 au soir**, back-office publié le
+2026-11-12 (relevé dans `docs/runbooks/etat-environnements.md`).
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction de réouverture, gatée propriétaire,
@@ -245,6 +247,17 @@ valorise au coût actuel de l'article. **Non fait** : exécution en production,
 relevé des soldes après livraison, et l'écriture d'un retour fournisseur, qui
 n'a jamais existé.
 
+**En production depuis le 2026-11-11 au soir** : les ventes écrivent leur coût
+(relevé du 2026-11-12 à midi : 2 065 900 de coût pour 7 126 000 de ventes du
+jour). **Régularisation non enregistrée.** Arbitrage de Mamat du même soir : le
+coût se calcule sur la fiche de l'article vendu, suivi en stock ou non. Une
+migration préparée (`20261112000001_stock_chain_catchup_historical_orders.sql`,
+appliquée en dev seulement) remplace la fonction pour compter aussi les ventes
+payées de l'import historique, qui n'ont laissé aucun mouvement de stock —
+3 915 commandes, coût de fiche 96 914 487 au relevé de production du
+2026-11-12 — sorties du compte général de stock. Limites : coût
+actuel de la fiche, combos importés sans composants non valorisables.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump du déclencheur comptable des mouvements
   de stock : traiter le type `sale`, débiter le coût des ventes, créditer le
@@ -293,7 +306,9 @@ rapprocher.
 vente. Relevé en dev, dans une transaction annulée : QRIS → `1115`, carte →
 `1116`, virement → `1112`. Les espèces restent sur le coffre non déposé
 (`1110`), choix déjà écrit dans le skill B2B (« hors tiroir POS ») et non
-modifié. Les règlements passés ne sont pas réécrits.
+modifié. Les règlements passés ne sont pas réécrits. **En production depuis le
+2026-11-11**, ancienne version retirée le 2026-11-12 après publication du
+back-office.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — faire lire la table moyen-vers-compte par
@@ -559,7 +574,7 @@ comptes étaient **déjà inactifs**, sans aucune ligne ni mapping. La migration
 les rend en plus non postables et dit pourquoi dans leur libellé. **Non fait** :
 la fonction du bilan nomme encore leurs codes (sans effet tant qu'ils ne
 portent aucune ligne), et rien n'interdit de les réactiver comme c'est le cas
-pour `1151`.
+pour `1151`. **En production depuis le 2026-11-11.**
 
 **Fichiers**
 - `supabase/migrations/20260603000021_deactivate_account_1151_non_pkp.sql` —
@@ -1252,7 +1267,8 @@ les dépenses futures de « Office » vont sur `6123`, les deux passées restent
 sur `6190`. La migration `20261111000014_expense_office_category_account.sql`
 lève la garde une seule fois pour cette catégorie, trace le geste dans le
 journal d'audit et la remet en place ; prouvé en dev sur un cas simulé, dans
-une transaction annulée. Aucune écriture passée n'est réécrite.
+une transaction annulée. Aucune écriture passée n'est réécrite. **En production
+depuis le 2026-11-11** : « Office » y est passée de `6190` à `6123`, geste tracé.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — comptes transport, assurance, taxes, frais

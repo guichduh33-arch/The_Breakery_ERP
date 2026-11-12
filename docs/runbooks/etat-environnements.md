@@ -26,6 +26,31 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément des 11 et 12 novembre 2026 — lot comptable
+
+Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi, UTC+8. Observé
+directement. Lot : `S1-03`, `S1-05`, `S1-06`, `S1-17`, `S3-15` (PR #691 et #692).
+Aucune commande ni aucun paiement n'a été créé ; les essais ont eu lieu dans des
+transactions annulées.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `01e9de59` (fusion de #692) | — |
+| Backend production, 11 nov. vers 21 h 40 | Aucune session de caisse ouverte, période de novembre ouverte. Appliqué en **phase additive** : réouverture de période, clé `SALE_COGS`, helper du compte de stock par article, fonction de régularisation, déclencheur des mouvements de stock et écriture de réception remplacés, `record_b2b_payment_v6` créée **sans retirer** `v5`, `2142` et `2143` non postables, cinq comptes de charge, catégorie « Office » réaffectée | La sauvegarde la plus récente datait de 03 h 30 le même jour |
+| Backend production, corps | md5 de `prosrc`, retours chariot retirés, égaux au dev et aux fichiers du dépôt : `reopen_fiscal_period_v1` `0401b9fa…`, `_stock_inventory_mapping_key_v1` `39ee54cc…`, `tr_stock_movement_je` `c75a9af9…`, `create_purchase_journal_entry` `0f309097…`, `post_stock_chain_catchup_v1` `2c8bcab9…`, `record_b2b_payment_v6` `c8113f23…`. `anon` sans EXECUTE sur aucune | `record_b2b_payment_v6` a été dérivée du `v5` live par remplacement, puis créée seulement si l'empreinte égalait celle du fichier |
+| Backend production, essai annulé | Vente d'un article fabriqué : débit `5110`, crédit `1143`. Vente d'un article acheté : débit `5110`, crédit `1142` | Deux articles seulement |
+| Backend production, « Office » | Compte `6190` → `6123`, 2 dépenses passées inchangées, trace `expense.category.account_reassigned` au journal d'audit, garde de catégorie de nouveau active | — |
+| Régularisation, à blanc, 11 nov. | 5 966 mouvements de vente sans écriture, coût 37 759 000 ; réceptions reclassées 55 754 502,48 ; écriture équilibrée à 182 628 202,48 | **Non enregistrée.** Elle ne voyait pas les ventes payées sans mouvement de stock. Mesuré le même soir par une requête de lecture sur `orders`, `order_items` et `products`, hors de la fonction : 3 917 commandes payées sans mouvement, coût de fiche 96 935 058, dont 3 915 de l'import historique. Une migration préparée (`20261112000001`) remplace la fonction pour les compter ; **elle n'est pas appliquée en production à ce relevé** |
+| BO production, 12 nov. 12 h 05 | Publication n° 29 réussie sur `01e9de59`, après un premier refus du contrôle préalable faute de passage pgTAP sur ce commit exact (lancé à la main, vert) | Lu dans la liste des déploiements GitHub, pas dans le bundle chargé |
+| Backend production, 12 nov. 12 h 10 | `record_b2b_payment_v5` retirée après la publication | Un onglet du back-office resté ouvert sur l'ancien bundle échouera sur un règlement B2B jusqu'à son rechargement ; aucun règlement B2B n'avait été saisi entre-temps |
+| Backend production, usage, 12 nov. 12 h 09 | 70 ventes payées (7 126 000). 340 mouvements de vente, 337 avec écriture, coût des ventes du jour 2 065 900, aucune écriture déséquilibrée depuis la livraison | Les 3 mouvements sans écriture valent zéro après arrondi |
+
+Retour arrière, si nécessaire : recréer `tr_stock_movement_je` depuis
+`20260727000246_adjustment_je_emit_types_noop.sql` (md5 du corps de production
+avant livraison : `30fbda51…`, égal à ce fichier) et `create_purchase_journal_entry`
+depuis la migration qui la précède dans le dépôt ; les écritures de coût déjà
+émises resteraient et devraient être contre-passées à la main.
+
 ## Complément du 10 novembre 2026 — fonctions de rapport `S3-21` et `S3-22`
 
 Relevé du 10 novembre 2026 en fin d'après-midi, UTC+8. Observé directement.
