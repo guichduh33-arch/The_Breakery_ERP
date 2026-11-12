@@ -7,7 +7,7 @@
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 BEGIN;
-SELECT plan(34);
+SELECT plan(37);
 
 CREATE TEMP TABLE _ids(label text PRIMARY KEY, id uuid) ON COMMIT DROP;
 CREATE TEMP TABLE _base(k text PRIMARY KEY, v jsonb) ON COMMIT DROP;
@@ -51,7 +51,7 @@ END $$;
 -- lignes, et les écarts ci-dessous ne mesureraient plus rien.
 UPDATE public.journal_entries SET metadata = metadata - 'kind'
  WHERE reference_type = 'manual' AND metadata->>'kind' = 'stock_chain_catchup';
-INSERT INTO _base VALUES ('before', public.post_stock_chain_catchup_v1(true));
+INSERT INTO _base VALUES ('before', public.post_stock_chain_catchup_v2(true));
 SELECT ok((SELECT v ? 'lines' FROM _base WHERE k = 'before'), 'the dry run returns its lines');
 
 DO $fixture$
@@ -87,8 +87,8 @@ SELECT is(public._stock_inventory_mapping_key_v1((SELECT id FROM _ids WHERE labe
   'INVENTORY_FINISHED_GOODS','an article with a recipe sits in finished goods');
 SELECT ok(NOT has_function_privilege('anon','public._stock_inventory_mapping_key_v1(uuid)','EXECUTE')
   AND NOT has_function_privilege('authenticated','public._stock_inventory_mapping_key_v1(uuid)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.post_stock_chain_catchup_v1(boolean,uuid)','EXECUTE')
-  AND NOT has_function_privilege('authenticated','public.post_stock_chain_catchup_v1(boolean,uuid)','EXECUTE'),
+  AND NOT has_function_privilege('anon','public.post_stock_chain_catchup_v2(boolean,uuid)','EXECUTE')
+  AND NOT has_function_privilege('authenticated','public.post_stock_chain_catchup_v2(boolean,uuid)','EXECUTE'),
   'the helper and the catch-up are closed to anon and authenticated');
 SELECT isnt(pg_temp.code('SALE_COGS'), NULL, 'the cost-of-sales mapping resolves to an active account');
 
@@ -188,7 +188,7 @@ SELECT is((SELECT count(*)::int FROM public.journal_entry_lines l JOIN public.jo
 -- annulation sans écriture, une réception et une perte posées sur 1141, une
 -- consommation de semi-fini posée sur les matières premières.
 -- ---------------------------------------------------------------------------
-INSERT INTO _base VALUES ('mid', public.post_stock_chain_catchup_v1(true));
+INSERT INTO _base VALUES ('mid', public.post_stock_chain_catchup_v2(true));
 SELECT is(_b.v->'lines', _a.v->'lines', 'movements that already carry an entry add nothing to the catch-up')
   FROM _base _a, _base _b WHERE _a.k='before' AND _b.k='mid';
 
@@ -209,7 +209,17 @@ UPDATE public.journal_entry_lines l SET account_id = public.resolve_mapping_acco
  WHERE je.id = l.journal_entry_id AND l.credit > 0 AND je.reference_type='stock_movement'
    AND je.reference_id = (SELECT id FROM _ids WHERE label='prod_out_fin');
 
-INSERT INTO _base VALUES ('after', public.post_stock_chain_catchup_v1(true));
+-- Une commande payée sans aucun mouvement de stock, comme les ventes importées
+-- d'avant la mise en service : 2 articles fabriqués à 5 000, 1 article à coût
+-- zéro. Montants de vente à zéro pour ne pas déclencher d'écriture de vente.
+INSERT INTO public.orders (id, order_number, subtotal, tax_amount, total, status, is_historical_import)
+VALUES (gen_random_uuid(), 'SAC-HIST-' || left(gen_random_uuid()::text, 8), 0, 0, 0, 'paid', true);
+INSERT INTO _ids SELECT 'hist_order', id FROM public.orders WHERE order_number LIKE 'SAC-HIST-%';
+INSERT INTO public.order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total) VALUES
+  ((SELECT id FROM _ids WHERE label='hist_order'), (SELECT id FROM _ids WHERE label='fin'),  'SAC finished', 0, 2, 0),
+  ((SELECT id FROM _ids WHERE label='hist_order'), (SELECT id FROM _ids WHERE label='zero'), 'SAC zero',     0, 1, 0);
+
+INSERT INTO _base VALUES ('after', public.post_stock_chain_catchup_v2(true));
 CREATE FUNCTION pg_temp.delta(p_field text) RETURNS numeric LANGUAGE sql AS $$
   SELECT (a.v->>p_field)::numeric - (b.v->>p_field)::numeric FROM _base a, _base b WHERE a.k='after' AND b.k='before'
 $$;
@@ -226,16 +236,20 @@ $$;
 SELECT is(pg_temp.delta('cogs_recognised'), 7000::numeric, 'the catch-up recognises the cost of sales left without an entry, voids deducted');
 SELECT is(pg_temp.delta('sale_movements'), 4::numeric, 'four movements without an entry are seen, the zero-cost one included');
 SELECT is(pg_temp.delta('purchases_reclassified'), 11100::numeric, 'the past receipt leaves the general account for raw materials');
-SELECT is(pg_temp.line_delta('SALE_COGS'), 7000::numeric, 'net cost-of-sales line');
--- 1141 : − réception 11 100, + perte 1 000 (elle y était créditée).
-SELECT is(pg_temp.line_delta('INVENTORY_GENERAL'), -10100::numeric, 'net general-inventory line');
+-- Ventes sans mouvement : 2 x 5 000 au coût de la fiche, sorties du compte général.
+SELECT is(pg_temp.delta('historical_cogs'), 10000::numeric, 'a paid order without any stock movement is costed at the product cost');
+SELECT is(pg_temp.delta('historical_orders'), 1::numeric, 'one order without movement is seen');
+SELECT is(pg_temp.delta('historical_zero_cost_lines'), 1::numeric, 'its zero-cost line is counted, not valued');
+SELECT is(pg_temp.line_delta('SALE_COGS'), 17000::numeric, 'net cost-of-sales line, movements and orders without movement');
+-- 1141 : − réception 11 100, + perte 1 000 (elle y était créditée), − 10 000 de ventes sans mouvement.
+SELECT is(pg_temp.line_delta('INVENTORY_GENERAL'), -20100::numeric, 'net general-inventory line');
 -- 1142 : + réception 11 100, − vente 2 000, − perte 1 000, + semi-fini 5 000.
 SELECT is(pg_temp.line_delta('INVENTORY_RAW_MATERIAL'), 13100::numeric, 'net raw-materials line');
 -- 1143 : − vente 10 000, + annulation 5 000, − semi-fini 5 000.
 SELECT is(pg_temp.line_delta('INVENTORY_FINISHED_GOODS'), -10000::numeric, 'net finished-goods line');
 
 -- Passage réel : une écriture équilibrée, tracée, et un second passage refusé.
-INSERT INTO _base VALUES ('real', public.post_stock_chain_catchup_v1(false, (SELECT id FROM _ids WHERE label='profile')));
+INSERT INTO _base VALUES ('real', public.post_stock_chain_catchup_v2(false, (SELECT id FROM _ids WHERE label='profile')));
 SELECT ok((SELECT (r.v->>'posted')::boolean
      AND je.total_debit = je.total_credit AND je.total_debit = (r.v->>'total_debit')::numeric
      AND je.total_debit = (SELECT sum(debit) FROM public.journal_entry_lines WHERE journal_entry_id=je.id)
@@ -245,7 +259,7 @@ SELECT ok((SELECT (r.v->>'posted')::boolean
                   AND al.entity_id = je.id AND al.actor_id = (SELECT id FROM _ids WHERE label='profile'))
    FROM _base r JOIN public.journal_entries je ON je.id = (r.v->>'je_id')::uuid WHERE r.k='real'),
   'the real run posts one balanced, audited entry');
-SELECT throws_ok($q$ SELECT public.post_stock_chain_catchup_v1(false) $q$,
+SELECT throws_ok($q$ SELECT public.post_stock_chain_catchup_v2(false) $q$,
   'P0003','stock_chain_catchup_already_posted','a second real run is refused');
 
 SELECT * FROM finish();
