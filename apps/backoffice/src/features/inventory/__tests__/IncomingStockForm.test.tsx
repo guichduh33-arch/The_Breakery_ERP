@@ -56,7 +56,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
-        if (fn === 'get_operational_products_v2') return Promise.resolve({ data: MOCK_PRODUCTS, error: null });
+        if (fn === 'get_operational_products_v3') return Promise.resolve({ data: MOCK_PRODUCTS, error: null });
         const out = mockRpc(fn, args) as RpcResult | undefined;
         return Promise.resolve(out ?? { data: { movement_id: 'm-1', product_id: 'p-1', new_current_stock: 110 }, error: null });
       },

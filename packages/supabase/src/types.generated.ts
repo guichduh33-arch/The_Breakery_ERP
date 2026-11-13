@@ -8321,6 +8321,7 @@ export type Database = {
         Returns: Json
       }
       get_operational_products_v2: { Args: never; Returns: Json }
+      get_operational_products_v3: { Args: never; Returns: Json }
       get_opname_items_v1: { Args: { p_count_id: string }; Returns: Json }
       get_orders_counters_v6: {
         Args: { p_end: string; p_filters?: Json; p_start: string }

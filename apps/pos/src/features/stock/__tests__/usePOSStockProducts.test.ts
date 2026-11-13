@@ -55,7 +55,7 @@ describe('usePOSStockProducts', () => {
     expect(rows[0]?.name).toBe('Croissant');
     expect(rows[0]?.category_name).toBe('Pastry');
 
-    expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v2');
+    expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v3');
   });
 
   it.each([null, { quantity: null }, { quantity: 0 }])('preserves null and zero display counters for %j', async (displayStock) => {
