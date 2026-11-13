@@ -65,7 +65,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (t: string) => buildChain(t),
       rpc: (...args: unknown[]) => {
-        if (args[0] === 'get_operational_products_v2') return Promise.resolve({ data: [{ ...MOCK_PRODUCT, wholesale_price: response.wholesalePrice }], error: null });
+        if (args[0] === 'get_operational_products_v3') return Promise.resolve({ data: [{ ...MOCK_PRODUCT, wholesale_price: response.wholesalePrice }], error: null });
         const override = rpcSpy(...args) as Promise<unknown> | undefined;
         return override ?? Promise.resolve({
           data: { product: { ...MOCK_PRODUCT, name: 'Affogato Deluxe' }, ignored_fields: response.ignored },

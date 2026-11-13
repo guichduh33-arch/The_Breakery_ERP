@@ -41,7 +41,7 @@ beforeEach(() => {
     request: vi.fn((_name: string, _options: unknown, callback: (lock: { mode: 'exclusive' }) => Promise<unknown>) => callback({ mode: 'exclusive' })),
   } });
   api.rpc.mockImplementation((name: string, args: Record<string, unknown> = {}) => {
-    if (name === 'get_operational_products_v2') return Promise.resolve({ data: [{ id: product, name: 'Croissant', sku: 'CLV-007',
+    if (name === 'get_operational_products_v3') return Promise.resolve({ data: [{ id: product, name: 'Croissant', sku: 'CLV-007',
       unit: 'pcs', is_active: true, is_display_item: true, current_stock: null, is_sellable: true,
       display_stock: { quantity: null }, categories: null, category_id: null, min_stock_threshold: 0, retail_price: 10000 }], error: null });
     if (name === 'get_display_day_closing_v1') return Promise.resolve({ data: api.recorded, error: null });

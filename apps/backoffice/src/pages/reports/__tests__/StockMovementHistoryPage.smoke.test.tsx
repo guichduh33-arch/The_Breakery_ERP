@@ -52,7 +52,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      if (fn === 'get_operational_products_v2') {
+      if (fn === 'get_operational_products_v3') {
         return Promise.resolve({ data: PRODUCTS, error: null });
       }
       return Promise.resolve({ data: null, error: null });
