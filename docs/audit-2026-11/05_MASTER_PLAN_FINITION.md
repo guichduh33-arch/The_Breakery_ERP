@@ -45,6 +45,76 @@ du bloc « qualité des rapports », `S3-19` à `S3-24`, sur demande de Mamat.)*
 
 ---
 
+## Avancement au 2026-11-14 au soir
+
+Relevé du 2026-11-14, tiré des paragraphes **État** de chaque tâche et de
+`../runbooks/etat-environnements.md`. Il se périme au prochain lot : la
+vérité de chaque tâche reste son propre paragraphe **État**.
+
+| Sprint | En production | En cours | Retirée | Restent | Total |
+|---|---|---|---|---|---|
+| Sprint 1 | 13 | 2 | 1 | 6 | 22 |
+| Sprint 2 | 0 | 0 | 0 | 13 | 13 |
+| Sprint 3 | 3 | 1 | 0 | 20 | 24 |
+| Sprint 4 | 0 | 0 | 0 | 11 | 11 |
+| **Total** | **16** | **3** | **1** | **50** | **70** |
+
+### Fait — en production
+
+| Tâche | Livrée | Ce qui reste à constater |
+|---|---|---|
+| `S1-02` fonctions absentes | 2026-11-09, PR #666 | Refaire l'aperçu du relevé bancaire d'octobre sur le back-office republié |
+| `S1-03` réouverture de période | 2026-11-11 | Le parcours à l'écran avec un compte propriétaire |
+| `S1-04` réglages B2B | 2026-11-14, PR #698 | Ouvrir la page de réglages B2B dans un navigateur |
+| `S1-05` coût des ventes | 2026-11-11, régularisation le 2026-11-12 | L'écriture d'un retour fournisseur, qui n'existe pas |
+| `S1-06` règlements B2B | 2026-11-11, PR #692 | — |
+| `S1-07` compte désactivé | 2026-11-12, PR #695 | Le parcours à l'écran avec un compte connecté |
+| `S1-09` plafond de remise de ligne | 2026-11-14, PR #700 | Premières ventes réelles, puis retrait de l'ancienne version de la fonction de paiement ; essai à l'écran du POS |
+| `S1-12` promotions aux prix serveur | 2026-11-14, PR #700 | Idem `S1-09`, même livraison |
+| `S1-13` injections PostgREST | 2026-11-12, PR #695 | — |
+| `S1-14` adresse des tâches planifiées | 2026-11-14, PR #701 | Le secret de production, à poser avec l'installation des tâches |
+| `S1-17` comptes de taxe hors régime | 2026-11-11, PR #692 | La fonction du bilan nomme encore leurs codes |
+| `S1-21` addition avant paiement | 2026-11-10, paquet `a35fd5f5` | La preuve sur papier |
+| `S1-22` exemplaires du ticket serveur | 2026-11-10, paquet `a35fd5f5` | La preuve sur papier |
+| `S3-15` comptes de charge par nature | 2026-11-11, PR #692 | — |
+| `S3-19` production contre ventes | 2026-11-10, PR #678 | Ouvrir le rapport en production avec le compte du propriétaire |
+| `S3-21` heures et table des ventes | 2026-11-10, PR #676 | Ouvrir les deux écrans en production avec un compte connecté |
+
+### En cours
+
+| Tâche | Où elle en est | Ce qui la débloque |
+|---|---|---|
+| `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
+| `S1-11` produit non suivi | Prouvé en dev, PR #703 | Fusion de la PR, puis migration en production |
+| `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
+
+### Retirée
+
+`S1-19` — voir son paragraphe.
+
+### Restent
+
+- **Sprint 1** (6) : `S1-08`, `S1-10`, `S1-15`, `S1-16`, `S1-18`, `S1-20`.
+- **Sprint 2** (13) : `S2-01` à `S2-13`.
+- **Sprint 3** (20) : `S3-01` à `S3-14`, `S3-16`, `S3-17`, `S3-18`, `S3-20`,
+  `S3-23`, `S3-24`.
+- **Sprint 4** (11) : `S4-01` à `S4-11`.
+
+### Ordre retenu pour la suite du Sprint 1
+
+1. `S1-11` en production, après fusion de la PR #703.
+2. `S1-18` — **décision de Mamat du 2026-11-14** : la liste fermée reçoit
+   `expired`, `leftover`, `damaged` et `other`, commune à la production, au
+   stock et à la vitrine ; les pertes passées gardent leur texte et sont
+   marquées « non précisé ».
+3. `S1-10` — décisions S04 et lot 7 déjà rendues.
+4. `S1-08` — seul, en au moins trois paquets.
+5. `S1-16` — débloquée par `S1-14`.
+6. `S1-15` — dépend de `S1-01`, encore en cours : elle ne part pas sans elle.
+7. `S1-20`.
+
+---
+
 # Sprint 1 — Stabilisation et ambiguïtés critiques
 
 > Objectif : que la production cesse de perdre de l'information, cesse de
