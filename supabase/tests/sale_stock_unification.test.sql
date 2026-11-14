@@ -84,7 +84,7 @@ DO $$ DECLARE r record; BEGIN SELECT * INTO r FROM _ids2;
   PERFORM _record_sale_stock_v1(r.unt, 1, r.ord, r.prof, 'u', p_allow_negative:=false);
 END $$;
 INSERT INTO _r SELECT is((SELECT current_stock FROM products WHERE id=(SELECT unt FROM _ids2)),
-  -1::numeric, 'T14: NON-tracked product deducts freely to -1 (guard skipped for untracked)');
+  0::numeric, 'T14: NON-tracked product keeps its counter (S1-11: guard skipped, no decrement)');
 INSERT INTO _r SELECT is((SELECT count(*) FROM stock_movements WHERE product_id=(SELECT unt FROM _ids2) AND movement_type='sale'),
   1::bigint, 'T15: NON-tracked deduction still writes a sale stock_movement');
 

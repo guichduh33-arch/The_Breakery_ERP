@@ -26,6 +26,21 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 14 novembre 2026, fin de soirée — adresse des tâches planifiées `S1-14`
+
+Relevé du 14 novembre 2026 après 19 h 40, UTC+8. Observé directement. PR #701.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `c6a69096` (fusion de #701). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, avant | 0 tâche planifiée, aucun secret Vault | — |
+| Backend production, livraison | Migration `20261114000003` appliquée : schéma `scheduling_private` et helper `edge_function_url`, corps égal au dev (md5 de `prosrc` `280478e4…`), EXECUTE pour `postgres` seul, `anon` et `authenticated` sans droit sur le schéma | — |
+| Backend production, usage | 0 tâche après livraison : la migration n'en installe aucune. Le helper rend NULL, faute de secret `project_url` | Le secret se pose avec l'installation des tâches |
+| Backend dev | Secret `project_url` posé sur l'adresse du projet dev. La tâche d'envoi des notifications y répond 200 | — |
+
+Retour arrière, si nécessaire : `DROP SCHEMA scheduling_private CASCADE`, tant
+qu'aucune tâche de production ne l'appelle.
+
 ## Complément du 14 novembre 2026 au soir — lot money-path `S1-09` et `S1-12`
 
 Relevé du 14 novembre 2026 entre 17 h 48 et 19 h 20, UTC+8. Observé directement.
