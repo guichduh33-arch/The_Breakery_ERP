@@ -253,7 +253,8 @@ d'une ardoise. Chacune porte sa clé d'idempotence. La règle d'`AGENTS.md` qui 
    surcharges d'options plus les ajustements des modificateurs de composants
    (ADR-017).
 4. Sous-total de ligne, arrondi à la centaine **après** empilement.
-5. Moins la remise de ligne — **montant libre envoyé par la caisse**.
+5. Moins la remise de ligne — montant envoyé par la caisse, **refusé** s'il est
+   négatif ou supérieur au sous-total serveur de sa ligne.
 6. Moins les promotions, chacune revalidée serveur et dont le montant doit être
    **strictement égal** à celui calculé par le serveur.
 7. Moins le rachat de points (1 point = 10 IDR, par multiples de 100 points).
@@ -269,7 +270,8 @@ d'une ardoise. Chacune porte sa clé d'idempotence. La règle d'`AGENTS.md` qui 
 
 **RÈGLE** — La remise de ligne doit être **plafonnée au sous-total serveur de la
 ligne** concernée.
-**À LIVRER** — Ajouter ce plafond.
+**FAIT** — Plafond en production depuis le 2026-11-14, sur la vente directe. La
+vente d'une commande envoyée en cuisine bornait déjà sa remise de ligne.
 
 **RÈGLE** — Le contrôle par PIN d'une remise est **systématique**, jamais
 au-delà d'un seuil.
@@ -818,13 +820,12 @@ la priorité saisie, puis la date de création.
 avec repli silencieux sur un moteur TypeScript local en cas d'échec. Ce repli
 ignore les plafonds d'usage par conception.
 
-**FAIT** — Une promotion ciblée produit ou catégorie calcule sa remise sur le
-prix **envoyé par la caisse**, et le contrôle de cohérence compare deux valeurs
-issues de ce même prix : il ne détecte rien. Zéro promotion active aujourd'hui,
-la faille est dormante.
 **RÈGLE** — L'évaluation doit relire les prix serveur. **Prérequis à la création
 de la première promotion ciblée produit ou catégorie.**
-**À LIVRER** — Cette relecture.
+**FAIT** — Depuis le 2026-11-14, en production, le paiement fait évaluer les
+promotions au prix résolu par le serveur. Le contrôle de cohérence compare donc
+le montant de la caisse à un calcul serveur. L'aperçu en caisse évalue encore
+avec les prix de la caisse : il n'encaisse rien, le paiement fait foi.
 
 **FAIT** — Le seuil de montant minimum de panier n'est pas évalué sur la même
 base à l'affichage et au paiement.
