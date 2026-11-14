@@ -8089,7 +8089,7 @@ export type Database = {
       can_view_order_v2: { Args: { p_order_id: string }; Returns: boolean }
       can_view_sales_day_v1: { Args: { p_day: string }; Returns: boolean }
       can_view_stock_v1: { Args: never; Returns: boolean }
-      complete_order_with_payment_v32: {
+      complete_order_with_payment_v33: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

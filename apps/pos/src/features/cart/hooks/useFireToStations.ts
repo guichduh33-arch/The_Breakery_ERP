@@ -57,7 +57,7 @@ export interface FireContext {
   tableNumber?: string;
   /**
    * S43 P0-3 — post-payment auto-fire (usePaymentFlowLogic): the order ALREADY
-   * exists in the DB — created server-side by complete_order_with_payment_v32
+   * exists in the DB — created server-side by complete_order_with_payment_v33
    * (direct pay) or just paid via pay_existing_order_v25 (pickup / fired order).
    * Persisting here would mint an orphan `pending_payment` order (direct pay)
    * or append against a PAID order → P0002 (pickup). When true: skip the RPC
