@@ -435,6 +435,21 @@ boulanger (constat §9 des specs).
 **Source** — Arbitrage §2bis lot 2. La remise de ligne est aujourd'hui un
 **montant libre** envoyé par la caisse, sans plafond.
 
+**État — développé et prouvé en dev le 2026-11-14**, branche
+`fix/lot-money-path-s1-09-s1-12` (lot money-path, avec `S1-12`), migration
+`20261114000002_payment_line_discount_cap_server_priced_promos.sql` appliquée
+sur la base dev seulement ; **la production ne l'a pas**. Relevé du corps live
+ce jour-là : le défaut ne vivait que dans la vente directe (famille
+`complete_order_with_payment`). La famille `fire_counter_order` bornait déjà la
+remise de ligne, et aucune autre fonction n'écrit la remise d'une ligne
+existante. La vente directe refuse désormais une remise de ligne négative ou
+supérieure au sous-total serveur de sa ligne (`check_violation`). La fonction
+de paiement monte d'une version, même contrat ; l'ancienne est retirée et
+l'Edge Function `process-payment` est repointée et redéployée sur dev. pgTAP :
+`supabase/tests/payment_line_discount_cap_server_priced_promos.test.sql`, vert
+sur dev. **Non fait** : l'essai depuis l'écran du POS, et la suite pgTAP
+complète hors CI.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump de la fonction de paiement :
   plafonner la remise de ligne au sous-total serveur de **cette** ligne
@@ -503,6 +518,20 @@ dont le compteur est non nul, avant et après.
 ou catégorie calcule sa remise sur le prix **envoyé par la caisse**, et le
 contrôle de cohérence compare deux valeurs issues de ce même prix — il ne détecte
 rien. Zéro promotion active aujourd'hui : la faille est **dormante**.
+
+**État — développé et prouvé en dev le 2026-11-14**, dans le lot money-path
+(branche `fix/lot-money-path-s1-09-s1-12`, même migration que `S1-09`) ; **la
+production ne l'a pas**. **Écart avec la liste de fichiers ci-dessous**, relevé
+sur les corps live : la fonction d'évaluation n'est pas bumpée. La faille
+tenait à son appelant — la vente directe lui passait les articles au prix
+envoyé par la caisse. Elle les lui passe maintenant au prix résolu par le
+serveur, la même base que le sous-total qu'elle lui donnait déjà. L'appel
+direct de la fonction d'évaluation par la caisse ne sert qu'à l'aperçu : la
+porte d'argent est le paiement. Le paiement d'une commande déjà créée était
+conforme, il évalue depuis les lignes enregistrées. pgTAP du même fichier que
+`S1-09` : prix client falsifié à 100 000 avec une remise déclarée de 10 000 →
+refusé ; avec 1 000 → accepté, 1 000 appliqués. Relevé de production du même
+jour : aucune promotion n'existe.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump de la fonction d'évaluation des
