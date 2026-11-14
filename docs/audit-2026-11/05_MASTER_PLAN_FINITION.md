@@ -53,11 +53,11 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 
 | Sprint | En production | En cours | Retirée | Restent | Total |
 |---|---|---|---|---|---|
-| Sprint 1 | 13 | 2 | 1 | 6 | 22 |
+| Sprint 1 | 14 | 1 | 1 | 6 | 22 |
 | Sprint 2 | 0 | 0 | 0 | 13 | 13 |
 | Sprint 3 | 3 | 1 | 0 | 20 | 24 |
 | Sprint 4 | 0 | 0 | 0 | 11 | 11 |
-| **Total** | **16** | **3** | **1** | **50** | **70** |
+| **Total** | **17** | **2** | **1** | **50** | **70** |
 
 ### Fait — en production
 
@@ -70,6 +70,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | `S1-06` règlements B2B | 2026-11-11, PR #692 | — |
 | `S1-07` compte désactivé | 2026-11-12, PR #695 | Le parcours à l'écran avec un compte connecté |
 | `S1-09` plafond de remise de ligne | 2026-11-14, PR #700 | Premières ventes réelles, puis retrait de l'ancienne version de la fonction de paiement ; essai à l'écran du POS |
+| `S1-11` produit non suivi | 2026-11-14, PR #703 | Une vente réelle d'un produit non suivi |
 | `S1-12` promotions aux prix serveur | 2026-11-14, PR #700 | Idem `S1-09`, même livraison |
 | `S1-13` injections PostgREST | 2026-11-12, PR #695 | — |
 | `S1-14` adresse des tâches planifiées | 2026-11-14, PR #701 | Le secret de production, à poser avec l'installation des tâches |
@@ -85,7 +86,6 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
 | `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
-| `S1-11` produit non suivi | Prouvé en dev, PR #703 | Fusion de la PR, puis migration en production |
 | `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
 
 ### Retirée
@@ -102,7 +102,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 
 ### Ordre retenu pour la suite du Sprint 1
 
-1. `S1-11` en production, après fusion de la PR #703.
+1. `S1-11` — fait, voir son paragraphe.
 2. `S1-18` — **décision de Mamat du 2026-11-14** : la liste fermée reçoit
    `expired`, `leftover`, `damaged` et `other`, commune à la production, au
    stock et à la vitrine ; les pertes passées gardent leur texte et sont
@@ -574,10 +574,11 @@ de cause (arbitrage lot 7).
 quand même son compteur décrémenté à la vente : la valeur devient fantôme, et un
 produit non suivi est **déjà en négatif** en production.
 
-**État — développé et prouvé en dev le 2026-11-14**, branche
-`fix/s1-11-untracked-counter`, migration
-`20261114000004_untracked_products_keep_counter_on_sale.sql` appliquée sur la
-base dev seulement ; **la production ne l'a pas**. Trois helpers internes du
+**État — en production le 2026-11-14**, PR #703, migration
+`20261114000004_untracked_products_keep_counter_on_sale.sql` appliquée sur les
+deux bases ; relevé avant et après dans `../runbooks/etat-environnements.md` :
+47 produits non suivis à compteur non nul, dont un négatif, inchangés. Reste à
+constater une vente réelle d'un produit non suivi. Trois helpers internes du
 chemin de vente sont remplacés en place : vente, restitution (annulation et
 remboursement) et perte sur commande annulée. Le compteur d'un produit non suivi
 ne bouge plus ; le mouvement de stock reste écrit, il porte le coût des ventes.

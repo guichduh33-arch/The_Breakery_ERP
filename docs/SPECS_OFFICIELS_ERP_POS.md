@@ -445,11 +445,14 @@ pas — quand le stock de départ est nul ou négatif. Il se pondère contre le 
 bloqué** pour une commande B2B quel que soit le réglage (ADR-036), et bloqué en
 production sauf forçage sous permission dédiée (ADR-008).
 
-**FAIT** — Un produit dont le suivi est désactivé voit **quand même** son
-compteur décrémenté à la vente : la valeur devient fantôme. Un produit non suivi
-est déjà en négatif.
+**FAIT** — Depuis le 2026-11-14, sur les deux bases, une vente, une annulation,
+un remboursement ou une perte sur commande annulée ne change plus le compteur
+d'un produit dont le suivi est désactivé. Le mouvement de stock reste écrit : il
+porte le coût des ventes. Le blocage B2B du stock négatif ne vise que les
+produits suivis. Les compteurs dérivés avant cette date restent tels quels
+(décision de Mamat du 2026-11-14) : 47 produits non suivis à compteur non nul en
+production ce jour-là, dont un négatif.
 **RÈGLE** — Le compteur d'un produit non suivi ne doit plus bouger.
-**À LIVRER** — Rendre la décrémentation conditionnelle au suivi.
 
 ### 8.2 Péremption et lots — **ABANDONNÉ**
 
