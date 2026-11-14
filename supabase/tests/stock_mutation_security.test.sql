@@ -75,7 +75,7 @@ INSERT INTO audit_results SELECT ok(NOT has_column_privilege('authenticated','pr
 INSERT INTO audit_results SELECT ok(NOT has_schema_privilege('authenticated','stock_private','USAGE'),'Request registry schema is private');
 INSERT INTO audit_results SELECT ok(NOT has_table_privilege('authenticated','stock_movements','INSERT,UPDATE,DELETE,TRUNCATE'),'Ledger remains append-only to clients');
 INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.adjust_stock_v4(uuid,numeric,text,uuid)','EXECUTE'),'Anon cannot adjust');
-INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.waste_stock_v4(uuid,numeric,text,uuid)','EXECUTE'),'Anon cannot waste');
+INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.waste_stock_v5(uuid,numeric,public.waste_reason,text,uuid)','EXECUTE'),'Anon cannot waste');
 INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.record_incoming_stock_v6(uuid,numeric,uuid,numeric,text,uuid)','EXECUTE'),'Anon cannot receive');
 INSERT INTO audit_results SELECT ok(to_regprocedure('public.adjust_stock_v1(uuid,numeric,text,uuid)') IS NULL,'Old adjust API removed');
 INSERT INTO audit_results SELECT throws_ok(

@@ -40,7 +40,7 @@ SELECT ok(current_setting('breakery.t26_pass')::boolean,
   'T26: adjust_stock_v4 rejects key reuse with a different reason (original movement unchanged)');
 
 -- =========================================================================
--- T27 — waste_stock_v4 with short reason (< 3 chars) -> reason_required
+-- T27 — waste_stock with short reason (< 3 chars) -> reason_required
 -- =========================================================================
 DO $$
 BEGIN
@@ -55,11 +55,11 @@ SELECT throws_ok(
      ) $$,
   NULL,
   'reason_required',
-  'T27: waste_stock_v4 rejects reason shorter than 3 chars with reason_required'
+  'T27: waste_stock rejects reason shorter than 3 chars with reason_required'
 );
 
 -- =========================================================================
--- T28 — waste_stock_v4 qty > current_stock -> insufficient_stock P0002
+-- T28 — waste_stock qty > current_stock -> insufficient_stock P0002
 -- Uses PGTAP-PROD-LOW (stock=5) to keep PGTAP-PROD-1 state independent.
 -- =========================================================================
 DO $$
@@ -75,7 +75,7 @@ SELECT throws_ok(
      ) $$,
   'P0002',
   'insufficient_stock',
-  'T28: waste_stock_v4 rejects qty > current_stock with insufficient_stock (distinct product)'
+  'T28: waste_stock rejects qty > current_stock with insufficient_stock (distinct product)'
 );
 
 -- =========================================================================

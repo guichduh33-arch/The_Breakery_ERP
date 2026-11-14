@@ -141,7 +141,7 @@ INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_stock_v1(),'Owner r
 INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->>'current_stock')::numeric FROM jsonb_array_elements(public.get_operational_products_v3()) e
  WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),19::numeric,'Owner sees the B2B-adjusted exact stock');
 RESET ROLE;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.submit_display_day_closing_v1(date,jsonb,uuid)','EXECUTE'),'Daily submission denies anonymous execution');
+INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.submit_display_day_closing_v2(date,jsonb,uuid)','EXECUTE'),'Daily submission denies anonymous execution');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT has_table_privilege('authenticated','public.display_day_closing_items','SELECT'),'Raw daily rows cannot leak theoretical snapshots');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname ~ '^get_(sales_by_product|product_sales_lines)_v[1-4]$'),'Legacy product report bypasses are removed');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.get_operational_products_v3()','EXECUTE'),'Operational catalogue denies anonymous execution');

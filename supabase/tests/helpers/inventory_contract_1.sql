@@ -241,7 +241,7 @@ SELECT ok(
   'T8: record_incoming_stock_v6 still exists (non-purchase entries kept)');
 
 -- =========================================================================
--- T9 — waste_stock_v4 with qty > on-hand -> insufficient_stock P0002
+-- T9 — waste_stock with qty > on-hand -> insufficient_stock P0002
 -- =========================================================================
 DO $$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -257,11 +257,11 @@ SELECT throws_ok(
      ) $$,
   'P0002',
   'insufficient_stock',
-  'T9: waste_stock_v4 rejects qty > current_stock with insufficient_stock'
+  'T9: waste_stock rejects qty > current_stock with insufficient_stock'
 );
 
 -- =========================================================================
--- T10 — waste_stock_v4 happy path
+-- T10 — waste_stock happy path
 -- =========================================================================
 DO $t10$
 DECLARE
@@ -291,7 +291,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t10$;
 SELECT ok(current_setting('breakery.t10_pass')::boolean,
-  'T10: waste_stock_v4 decrements stock by qty and inserts negative movement');
+  'T10: waste_stock decrements stock by qty and inserts negative movement');
 
 -- =========================================================================
 -- T11 — RLS: direct INSERT into stock_movements blocked for `authenticated`

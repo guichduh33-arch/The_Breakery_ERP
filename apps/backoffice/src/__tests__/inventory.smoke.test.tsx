@@ -7,7 +7,7 @@
 //      absent sans purchasing.po.create (Q3 audit 2026-07-27 : receive_stock_v1
 //      droppée, la réception passe par l'achat direct compté /inventory/incoming)
 //   2. Row action menu n'offre plus « Receive stock »
-//   3. Open Waste → fill form → submit → waste_stock_v4 RPC called
+//   3. Open Waste → fill form → submit → stock declaration (waste) RPC called
 //   4. ADMIN role (re-render with elevated perms) → Adjust visible →
 //      open modal → submit → adjust_stock_v4 RPC called
 
@@ -201,7 +201,7 @@ describe('Inventory smoke E2E', () => {
     expect(w.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
   });
 
-  it('MANAGER flow: open Waste from row → submit → waste_stock_v4 RPC fired', { timeout: 20_000 }, async () => {
+  it('MANAGER flow: open Waste from row → submit → waste declaration RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Croissant'), { timeout: 15_000 });
@@ -218,12 +218,13 @@ describe('Inventory smoke E2E', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v3');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
         p_product_id: 'p-2',
-        p_quantity:   3,
-        p_reason:     'Expired',
+        p_quantity:     3,
+        p_operation:    'waste',
+        p_waste_reason: 'expired',
       });
     });
   });
@@ -249,7 +250,7 @@ describe('Inventory smoke E2E', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v3');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
         p_product_id: 'p-1',

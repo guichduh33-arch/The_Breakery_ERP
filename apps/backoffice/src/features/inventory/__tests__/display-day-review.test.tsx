@@ -30,4 +30,19 @@ describe('Confidential daily display review', () => {
     expect(screen.getByText('pending')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Variance' })).toBeInTheDocument();
   });
+  // S1-18 — seul le texte arrive : un code de la liste prend son libellé, une note ou un ancien texte reste tel quel.
+  it.each([
+    ['expired', 'Expired'],
+    ['leftover', 'Leftover'],
+    ['Dropped on the floor', 'Dropped on the floor'],
+  ])('shows the waste reason text %s as %s', async (text, expected) => {
+    state.role = 'SUPER_ADMIN';
+    state.rpc.mockResolvedValue({ data: { is_owner: true, closing_id: 'closing', revision: 1,
+      recorded_at: '2026-11-05T12:00:00Z', history: [], items: [{ product_id: 'product', product_name: 'Brown Bread',
+        unit: 'pcs', reference_basis: 'display', expected_qty: 8, remaining_qty: 6, variance: -2,
+        waste_qty: 1, waste_reason: text, waste_status: 'pending' }] }, error: null });
+    mount();
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    if (text !== expected) expect(screen.queryByText(text)).not.toBeInTheDocument();
+  });
 });

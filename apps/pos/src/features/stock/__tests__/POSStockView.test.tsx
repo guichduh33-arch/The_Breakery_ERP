@@ -5,10 +5,11 @@
 // auth store so we can verify header chips, empty state, and back nav.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, renderHook, act, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, renderHook, act, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { toast } from 'sonner';
 import { DisplayGestureError } from '../hooks/useReturnToKitchen';
 import { useDisplayStockGestures } from '../hooks/useDisplayStockGestures';
+import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS } from '../wasteReasons';
 import { MemoryRouter } from 'react-router-dom';
 import type * as ReactRouterDom from 'react-router-dom';
 import POSStockView from '../POSStockView';
@@ -188,11 +189,11 @@ describe('POSStockView', () => {
     fireEvent.click(screen.getByRole('button', { name: /waste/i }));
     expect(screen.getByTestId('waste-display-modal')).toBeInTheDocument();
 
-    // Confirm is disabled until a reason (>= 3 chars) is entered.
+    // Confirm is disabled until a reason from the closed list is chosen.
     const confirm = screen.getByTestId('waste-display-confirm');
     expect(confirm).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'unsold' } });
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'leftover' } });
     expect(confirm).not.toBeDisabled();
     fireEvent.click(confirm);
 
@@ -200,9 +201,43 @@ describe('POSStockView', () => {
     expect(wasteMutate.mock.calls[0]?.[0]).toMatchObject({
       productId: 'p1',
       quantity: 1,
-      reason: 'unsold',
+      wasteReason: 'leftover',
+      note: '',
     });
     await waitFor(() => expect(screen.queryByTestId('waste-display-modal')).not.toBeInTheDocument());
+  });
+
+  it('feeds the waste reason select from the closed list and requires a note for Other', async () => {
+    withProduct();
+    fireEvent.click(screen.getByRole('button', { name: 'Waste' }));
+    const select = screen.getByLabelText('Reason');
+    const options = within(select).getAllByRole('option').map((option) => [(option as HTMLOptionElement).value, option.textContent]);
+    expect(options).toEqual([['', 'Select a reason'],
+      ...WASTE_REASON_OPTIONS.map((code) => [code, WASTE_REASON_LABELS[code]])]);
+    expect(options).toHaveLength(11);
+    const confirm = screen.getByTestId('waste-display-confirm');
+    fireEvent.change(select, { target: { value: 'other' } });
+    expect(confirm).toBeDisabled();
+    const note = screen.getByLabelText(/Note \(required/);
+    fireEvent.change(note, { target: { value: 'ab' } });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(note, { target: { value: '  Dropped tray  ' } });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    await waitFor(() => expect(wasteMutate).toHaveBeenCalledTimes(1));
+    expect(wasteMutate.mock.calls[0]?.[0]).toMatchObject({ productId: 'p1', wasteReason: 'other', note: 'Dropped tray' });
+  });
+
+  it('accepts an optional note of at least 3 characters for a listed reason', () => {
+    withProduct();
+    fireEvent.click(screen.getByRole('button', { name: 'Waste' }));
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'damaged' } });
+    const confirm = screen.getByTestId('waste-display-confirm');
+    expect(confirm).toBeEnabled();
+    fireEvent.change(screen.getByLabelText(/Note \(optional/), { target: { value: 'ab' } });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Note \(optional/), { target: { value: 'abc' } });
+    expect(confirm).toBeEnabled();
   });
 
   function withProduct() {
@@ -233,12 +268,12 @@ describe('POSStockView', () => {
     withProduct();
     fireEvent.click(screen.getByRole('button', { name: 'Waste' }));
     fireEvent.change(screen.getByLabelText('Wasted quantity'), { target: { value: '0.375' } });
-    fireEvent.change(screen.getByLabelText(/Reason/), { target: { value: 'unsold' } });
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'damaged' } });
     fireEvent.click(screen.getByTestId('waste-display-confirm'));
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(screen.getByLabelText('Wasted quantity')).toHaveValue(0.375);
     expect(screen.getByLabelText('Wasted quantity')).toBeEnabled();
-    expect(screen.getByLabelText(/Reason/)).toHaveValue('unsold');
+    expect(screen.getByLabelText('Reason')).toHaveValue('damaged');
     fireEvent.change(screen.getByLabelText('Wasted quantity'), { target: { value: '0.125' } });
     fireEvent.click(screen.getByTestId('waste-display-confirm'));
     await waitFor(() => expect(screen.queryByTestId('waste-display-modal')).not.toBeInTheDocument());
@@ -254,11 +289,22 @@ describe('POSStockView', () => {
     await act(async () => { await result.current.submit('receive', row(), 1.375, 'receive'); });
     await act(async () => {
       expect(await result.current.submit('receive', row(), 6, 'receive')).toBe(false);
-      expect(await result.current.submit('waste', row(), 1.375, 'receive')).toBe(false);
+      expect(await result.current.submit('waste', row(), 1.375, 'receive', 'damaged')).toBe(false);
     });
     expect(receiveMutate).toHaveBeenCalledOnce();
     expect(wasteMutate).not.toHaveBeenCalled();
     expect(result.current.pending[0]).toMatchObject({ quantity: 1.375, reason: 'receive' });
+  });
+
+  it('never sends a display waste without a listed reason or with Other and no note', async () => {
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => {
+      expect(await result.current.submit('waste', row(), 1, 'unsold')).toBe(false);
+      expect(await result.current.submit('waste', row(), 1, '', 'other')).toBe(false);
+      expect(await result.current.submit('waste', row(), 1, 'ab', 'damaged')).toBe(false);
+    });
+    expect(wasteMutate).not.toHaveBeenCalled();
+    expect(result.current.pending).toHaveLength(0);
   });
 
   it('rejects excessive precision and an empty absolute count', () => {

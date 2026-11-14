@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Button, FullScreenModal, Input } from '@breakery/ui';
+import { Button, FullScreenModal, Input, Select } from '@breakery/ui';
 import { todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { usePOSStockProducts } from '../hooks/usePOSStockProducts';
 import { useDisplayDayClosing, type DisplayDayItem } from '../hooks/useDisplayDayClosing';
 import { isDisplayQuantity } from '../quantity';
+import {
+  isValidWasteNote,
+  isWasteReason,
+  MAX_WASTE_NOTE,
+  MIN_WASTE_NOTE,
+  NOTE_REQUIRED_REASON,
+  WASTE_REASON_LABELS,
+  WASTE_REASON_OPTIONS,
+  wasteReasonTextLabel,
+  type WasteReason,
+} from '../wasteReasons';
 
 interface CountRow {
   id: string;
@@ -12,7 +23,11 @@ interface CountRow {
   unit: string;
   remaining: string;
   waste: string;
-  reason: string;
+  /** S1-18 — motif de la liste fermée et note facultative, saisis pour une perte. */
+  reason: WasteReason | '';
+  note: string;
+  /** Motif d'un comptage déjà enregistré : texte serveur, affiché en lecture seule. */
+  recordedReason: string | null;
   wasteStatus: string | null;
 }
 
@@ -37,34 +52,50 @@ export function DisplayDayClosingModal({ onClose }: { onClose: () => void }) {
     if (initialized.current === identity) return;
     initialized.current = identity;
     const catalogue = products.data ?? [];
-    const source = pending?.items ?? saved?.items;
-    setRows(source ? source.map((item) => {
+    const fresh = { reason: '' as const, note: '', recordedReason: null };
+    const recordedOf = (id: string) => saved?.items.find((candidate) => candidate.product_id === id);
+    const row = (item: { product_id: string; remaining_qty: number; waste_qty: number }) => {
       const product = catalogue.find((candidate) => candidate.id === item.product_id);
-      const recorded = saved?.items.find((candidate) => candidate.product_id === item.product_id);
+      const recorded = recordedOf(item.product_id);
       return { id: item.product_id, name: recorded?.product_name ?? product?.name ?? 'Display product',
         unit: recorded?.unit ?? product?.unit ?? 'pcs', remaining: String(item.remaining_qty),
-        waste: String(item.waste_qty), reason: item.waste_reason ?? '', wasteStatus: recorded?.waste_status ?? null };
-    }) : catalogue.map((product) => ({ id: product.id, name: product.name, unit: product.unit,
-      remaining: '', waste: '0', reason: '', wasteStatus: null })));
+        waste: String(item.waste_qty), wasteStatus: recorded?.waste_status ?? null };
+    };
+    // Une tentative de comptage neuf garde son motif et sa note ; une correction
+    // et un comptage enregistré montrent le motif tel que le serveur l'a gardé.
+    setRows(pending?.closingId === null
+      ? pending.items.map((item) => ({ ...row(item), reason: item.waste_reason ?? '', note: item.waste_note ?? '',
+        recordedReason: null }))
+      : pending
+        ? pending.items.map((item) => ({ ...row(item), ...fresh,
+          recordedReason: recordedOf(item.product_id)?.waste_reason ?? null }))
+        : saved
+          ? saved.items.map((item) => ({ ...row(item), ...fresh, recordedReason: item.waste_reason }))
+          : catalogue.map((product) => ({ id: product.id, name: product.name, unit: product.unit,
+            remaining: '', waste: '0', wasteStatus: null, ...fresh })));
     setCorrecting(pending?.closingId !== null && pending?.closingId !== undefined);
     setCorrectionReason(pending?.correctionReason ?? '');
     setConfirmation(null);
   }, [day, saved, pending, products.data, products.isPending, closing.query.isPending]);
 
-  function update(id: string, field: 'remaining' | 'waste' | 'reason', value: string) {
-    setRows((previous) => previous.map((row) => row.id === id ? { ...row, [field]: value } : row));
+  function update(id: string, patch: Partial<Pick<CountRow, 'remaining' | 'waste' | 'reason' | 'note'>>) {
+    setRows((previous) => previous.map((row) => row.id === id ? { ...row, ...patch } : row));
   }
+  // Une correction ne renvoie que les restes : les motifs déjà enregistrés ne se ressaisissent pas.
   const validRows = rows.length > 0 && rows.every((row) => row.remaining !== ''
     && isDisplayQuantity(Number(row.remaining)) && row.waste !== '' && isDisplayQuantity(Number(row.waste))
-    && (Number(row.waste) === 0 || row.reason.trim().length >= 3));
+    && (correcting || Number(row.waste) === 0 || (row.reason !== '' && isValidWasteNote(row.reason, row.note))));
   const canSubmit = closing.canCount && validRows && !closing.storageError
     && !closing.query.isError && !products.isError && !closing.query.isPending && !products.isPending
     && (!correcting || correctionReason.trim().length >= 3);
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canSubmit && pending === null) return;
-    const items: DisplayDayItem[] = rows.map((row) => ({ product_id: row.id,
-      remaining_qty: Number(row.remaining), waste_qty: Number(row.waste), waste_reason: row.reason.trim() || null }));
+    const items: DisplayDayItem[] = rows.map((row) => {
+      const reason = correcting || Number(row.waste) <= 0 || row.reason === '' ? null : row.reason;
+      return { product_id: row.id, remaining_qty: Number(row.remaining), waste_qty: Number(row.waste),
+        waste_reason: reason, waste_note: reason === null ? null : row.note.trim() || null };
+    });
     try {
       await closing.mutation.mutateAsync(pending ?? { businessDay: day, items,
         closingId: correcting ? saved?.closing_id ?? null : null, correctionReason });
@@ -104,17 +135,30 @@ export function DisplayDayClosingModal({ onClose }: { onClose: () => void }) {
               <label className="space-y-1 text-sm">Remaining — {row.name}
                 <Input type="number" inputMode="decimal" data-vkp="numeric" min="0" step="0.001" required
                   value={row.remaining} disabled={locked || readOnly}
-                  onChange={(event) => update(row.id, 'remaining', event.target.value)} />
+                  onChange={(event) => update(row.id, { remaining: event.target.value })} />
               </label>
               <label className="space-y-1 text-sm">Waste — {row.name}
                 <Input type="number" inputMode="decimal" data-vkp="numeric" min="0" step="0.001" required
                   value={row.waste} disabled={locked || readOnly || correcting}
-                  onChange={(event) => update(row.id, 'waste', event.target.value)} />
+                  onChange={(event) => update(row.id, { waste: event.target.value })} />
               </label>
-              {Number(row.waste) > 0 && <label className="space-y-1 text-sm sm:col-span-2">Waste reason — {row.name}
-                <Input value={row.reason} minLength={3} maxLength={500} required disabled={locked || readOnly || correcting}
-                  onChange={(event) => update(row.id, 'reason', event.target.value)} />
-              </label>}
+              {Number(row.waste) > 0 && row.recordedReason !== null
+                && <p className="text-sm sm:col-span-2">Waste reason — <span className="text-text-secondary">{wasteReasonTextLabel(row.recordedReason)}</span></p>}
+              {Number(row.waste) > 0 && row.recordedReason === null && <>
+                <label className="space-y-1 text-sm">Waste reason — {row.name}
+                  <Select value={row.reason} required disabled={locked || readOnly || correcting}
+                    onChange={(event) => update(row.id, { reason: isWasteReason(event.target.value) ? event.target.value : '' })}>
+                    <option value="">Select a reason</option>
+                    {WASTE_REASON_OPTIONS.map((code) => <option key={code} value={code}>{WASTE_REASON_LABELS[code]}</option>)}
+                  </Select>
+                </label>
+                <label className="space-y-1 text-sm">{row.reason === NOTE_REQUIRED_REASON ? 'Note (required)' : 'Note (optional)'} — {row.name}
+                  <Input value={row.note} maxLength={MAX_WASTE_NOTE} required={row.reason === NOTE_REQUIRED_REASON}
+                    minLength={MIN_WASTE_NOTE} disabled={locked || readOnly || correcting}
+                    aria-invalid={row.reason !== '' && !isValidWasteNote(row.reason, row.note)}
+                    onChange={(event) => update(row.id, { note: event.target.value })} />
+                </label>
+              </>}
               {row.wasteStatus && <p className="text-sm text-text-secondary sm:col-span-2">Waste approval · {row.wasteStatus}</p>}
             </section>
           ))}

@@ -101,7 +101,7 @@ describe('AdjustModal', () => {
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
     expect(screen.queryByText(/2 kg →/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v2', expect.objectContaining({ p_operation: 'adjust', p_quantity: 1.375 })));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v3', expect.objectContaining({ p_operation: 'adjust', p_quantity: 1.375 })));
   });
 
   it('locks uncertain details and retries with the identical key and payload', async () => {
@@ -168,7 +168,7 @@ describe('AdjustModal', () => {
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('submit_stock_declaration_v2');
+    expect(call[0]).toBe('submit_stock_declaration_v3');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   22,
@@ -176,6 +176,8 @@ describe('AdjustModal', () => {
       p_reason:     'Manual recount after closing',
     });
     expect(call[1]).toHaveProperty('p_idempotency_key');
+    // Un ajustement n'envoie jamais de motif de perte : le serveur le refuserait.
+    expect(call[1]).not.toHaveProperty('p_waste_reason');
   });
 
   it('shows error banner when RPC returns a forbidden error', async () => {

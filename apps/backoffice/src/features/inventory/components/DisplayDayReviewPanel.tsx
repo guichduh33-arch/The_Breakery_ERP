@@ -5,6 +5,7 @@ import { formatQuantity } from '@breakery/utils';
 import { Input } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
+import { wasteReasonTextLabel } from '@/features/inventory-production/wasteReasons.js';
 
 interface DisplayReview {
   closing_id: string;
@@ -61,7 +62,7 @@ export function DisplayDayReviewPanel() {
               <td className="p-2 font-mono">{formatQuantity(item.expected_qty, item.unit)}</td>
               <td className="p-2 font-mono">{formatQuantity(item.remaining_qty, item.unit)}</td>
               <td className="p-2 font-mono">{formatQuantity(item.variance, item.unit)}</td>
-              <td className="p-2">{formatQuantity(item.waste_qty, item.unit)}{item.waste_reason && <span className="block text-text-secondary">{item.waste_reason}</span>}</td>
+              <td className="p-2">{formatQuantity(item.waste_qty, item.unit)}{item.waste_reason && <span className="block text-text-secondary">{wasteReasonTextLabel(item.waste_reason)}</span>}</td>
               <td className="p-2">{item.waste_status ?? 'No waste declared'}</td>
             </tr>)}</tbody>
           </table>

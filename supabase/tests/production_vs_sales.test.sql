@@ -408,8 +408,8 @@ CROSS JOIN (VALUES('inventory.waste'),('display.manage')) p(code)
 ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
 SELECT pg_temp.pvs_as(staff_uid) FROM pvs_ctx;
 CREATE TEMP TABLE pvs_decl AS SELECT
-  (public.submit_stock_declaration_v2('waste',pe,3,'pgtap e2e waste',gen_random_uuid())->>'declaration_id')::uuid AS dw,
-  (public.submit_stock_declaration_v2('display_waste',pv,2,'pgtap e2e display waste',gen_random_uuid())->>'declaration_id')::uuid AS dd
+  (public.submit_stock_declaration_v3('waste',pe,3,'pgtap e2e waste',gen_random_uuid(),'other')->>'declaration_id')::uuid AS dw,
+  (public.submit_stock_declaration_v3('display_waste',pv,2,'pgtap e2e display waste',gen_random_uuid(),'other')->>'declaration_id')::uuid AS dd
 FROM pvs_ctx;
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
 CREATE TEMP TABLE pvs_pending AS SELECT

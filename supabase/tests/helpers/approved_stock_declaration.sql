@@ -14,7 +14,8 @@ BEGIN
    WHEN p_operation='waste' THEN 'inventory.waste' ELSE 'display.manage' END;
  -- La fixture ne donne aucun droit à l'appelant qu'elle est chargée de tester.
  IF v_actor IS NULL OR NOT has_permission(v_actor,v_permission) THEN
-   RETURN submit_stock_declaration_v2(p_operation,p_product_id,p_quantity,p_reason,COALESCE(p_key,gen_random_uuid()));
+   RETURN submit_stock_declaration_v3(p_operation,p_product_id,p_quantity,p_reason,COALESCE(p_key,gen_random_uuid()),
+     CASE WHEN p_operation IN ('waste','display_waste') THEN 'other'::waste_reason END);
  END IF;
  SELECT auth_user_id INTO STRICT v_owner FROM user_profiles WHERE role_code='SUPER_ADMIN'
    AND is_active AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY id LIMIT 1;
@@ -31,7 +32,8 @@ BEGIN
    ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
  END IF;
  PERFORM pg_temp.authenticate_pin(v_declarant);
- v_declaration:=submit_stock_declaration_v2(p_operation,p_product_id,p_quantity,p_reason,COALESCE(p_key,gen_random_uuid()));
+ v_declaration:=submit_stock_declaration_v3(p_operation,p_product_id,p_quantity,p_reason,COALESCE(p_key,gen_random_uuid()),
+     CASE WHEN p_operation IN ('waste','display_waste') THEN 'other'::waste_reason END);
  IF v_declarant<>v_actor THEN
    IF v_had_override THEN
      UPDATE user_permission_overrides SET is_granted=v_override.is_granted,

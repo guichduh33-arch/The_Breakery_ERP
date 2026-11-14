@@ -9,11 +9,12 @@
 import { useState } from 'react';
 import { deriveStockIncrements } from '@breakery/domain';
 import type { POSStockProductRow } from './usePOSStockProducts';
+import type { WasteChoice } from '../wasteReasons';
 
 export interface StockQuickEntryCallbacks {
   onReceive?: ((qty: number) => Promise<boolean>) | undefined;
   onReturnToKitchen?: ((qty: number) => Promise<boolean>) | undefined;
-  onWaste?: ((qty: number, reason: string) => Promise<boolean>) | undefined;
+  onWaste?: ((qty: number, choice: WasteChoice) => Promise<boolean>) | undefined;
   onAdjust?: ((newQty: number, reason: string) => Promise<boolean>) | undefined;
 }
 
@@ -33,7 +34,7 @@ export interface StockQuickEntry {
   submitPreset: (preset: number) => Promise<boolean>;
   submitReceive: () => Promise<boolean>;
   submitReturn: () => Promise<boolean>;
-  confirmWaste: (wasteQty: number, reason: string) => Promise<boolean>;
+  confirmWaste: (wasteQty: number, choice: WasteChoice) => Promise<boolean>;
   confirmAdjust: (newQty: number, reason: string) => Promise<boolean>;
 }
 
@@ -74,9 +75,9 @@ export function useStockQuickEntry(
     if (ok) setQtyRaw(0);
     return ok;
   };
-  const confirmWaste = async (wasteQty: number, reason: string): Promise<boolean> => {
+  const confirmWaste = async (wasteQty: number, choice: WasteChoice): Promise<boolean> => {
     if (!cb.onWaste) return false;
-    const ok = await cb.onWaste(wasteQty, reason);
+    const ok = await cb.onWaste(wasteQty, choice);
     if (ok) { setQtyRaw(0); setWasteOpen(false); }
     return ok;
   };

@@ -54,22 +54,37 @@ INSERT INTO day_results(tap) SELECT is((SELECT expected_qty FROM stock_private.d
 
 SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM day_actors WHERE role_code='CASHIER'));
 SET LOCAL ROLE authenticated;
-INSERT INTO day_payload SELECT 'submit',public.submit_display_day_closing_v1(current_date,
- jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','Discarded at day end'),
- jsonb_build_object('product_id',fresh_id,'remaining_qty',6,'waste_qty',1,'waste_reason','Damaged fresh item'),
+INSERT INTO day_payload SELECT 'submit',public.submit_display_day_closing_v2(current_date,
+ jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','leftover','waste_note','Discarded at day end'),
+ jsonb_build_object('product_id',fresh_id,'remaining_qty',6,'waste_qty',1,'waste_reason','damaged'),
  jsonb_build_object('product_id',(SELECT id FROM day_display_baseline),'remaining_qty',31,'waste_qty',0)),submit_key) FROM day_ids;
-INSERT INTO day_results(tap) SELECT ok((public.submit_display_day_closing_v1(current_date,
- jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','Discarded at day end'),
- jsonb_build_object('product_id',fresh_id,'remaining_qty',6,'waste_qty',1,'waste_reason','Damaged fresh item'),
+INSERT INTO day_results(tap) SELECT ok((public.submit_display_day_closing_v2(current_date,
+ jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','leftover','waste_note','Discarded at day end'),
+ jsonb_build_object('product_id',fresh_id,'remaining_qty',6,'waste_qty',1,'waste_reason','damaged'),
  jsonb_build_object('product_id',(SELECT id FROM day_display_baseline),'remaining_qty',31,'waste_qty',0)),submit_key)->>'idempotent_replay')::boolean,
  'Retry of daily submission is idempotent') FROM day_ids;
 INSERT INTO day_payload SELECT 'read',public.get_display_day_closing_v1(current_date);
 INSERT INTO day_results(tap) SELECT ok(NOT EXISTS(SELECT 1 FROM jsonb_array_elements(value->'items') x
  WHERE x ? 'expected_qty' OR x ? 'variance' OR x ? 'reference_basis'),'Cashier cannot see theoretical/reference snapshots') FROM day_payload WHERE name='read';
-INSERT INTO day_results(tap) SELECT throws_ok(format('SELECT public.submit_display_day_closing_v1(current_date,%L::jsonb,%L::uuid)',
- jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',8,'waste_qty',2,'waste_reason','Discarded at day end')),submit_key),
+INSERT INTO day_results(tap) SELECT throws_ok(format('SELECT public.submit_display_day_closing_v2(current_date,%L::jsonb,%L::uuid)',
+ jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',8,'waste_qty',2,'waste_reason','leftover','waste_note','Discarded at day end')),submit_key),
  '22023','idempotency_conflict','Changed submission cannot reuse the first key') FROM day_ids;
+-- S1-18 : le motif d'une perte vient de la liste fermée.
+INSERT INTO day_results(tap) SELECT throws_ok(format('SELECT public.submit_display_day_closing_v2(current_date,%L::jsonb,%L::uuid)',
+ jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','Spoiled')),gen_random_uuid()),
+ '22023','invalid_display_quantity_or_reason','Daily waste reason outside the closed list is refused') FROM day_ids;
+INSERT INTO day_results(tap) SELECT throws_ok(format('SELECT public.submit_display_day_closing_v2(current_date,%L::jsonb,%L::uuid)',
+ jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',7,'waste_qty',2,'waste_reason','other')),gen_random_uuid()),
+ '22023','invalid_display_quantity_or_reason','Daily waste reason "other" requires a note') FROM day_ids;
 RESET ROLE;
+INSERT INTO day_results(tap) SELECT is((SELECT waste_reason_code::text||'|'||waste_reason FROM public.display_day_closing_items
+ WHERE closing_id=(SELECT (value->>'closing_id')::uuid FROM day_payload WHERE name='submit') AND product_id=general_id),
+ 'leftover|Discarded at day end','Daily waste keeps its closed-list reason and its note') FROM day_ids;
+INSERT INTO day_results(tap) SELECT is((SELECT waste_reason_code::text||'|'||waste_reason FROM public.display_day_closing_items
+ WHERE closing_id=(SELECT (value->>'closing_id')::uuid FROM day_payload WHERE name='submit') AND product_id=fresh_id),
+ 'damaged|damaged','Daily waste without note stores the reason as its text') FROM day_ids;
+INSERT INTO day_results(tap) SELECT is((SELECT array_agg(waste_reason::text ORDER BY waste_reason) FROM public.stock_declarations
+ WHERE product_id IN(general_id,fresh_id)),ARRAY['leftover','damaged'],'Daily waste declarations carry the closed-list reason') FROM day_ids;
 INSERT INTO day_results(tap) SELECT is((SELECT current_stock FROM public.products WHERE id=general_id),20::numeric,'Remaining count and pending waste never change general stock') FROM day_ids;
 INSERT INTO day_results(tap) SELECT is((SELECT quantity FROM public.display_stock WHERE product_id=general_id),18::numeric,'Only explicit waste withdraws display quantity') FROM day_ids;
 INSERT INTO day_results(tap) SELECT is((SELECT current_stock FROM public.products WHERE id=fresh_id),100::numeric,'Fresh remaining count does not regularize frozen general stock') FROM day_ids;
