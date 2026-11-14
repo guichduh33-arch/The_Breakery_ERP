@@ -26,6 +26,25 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 14 novembre 2026, 20 h 40 — compteur des produits non suivis `S1-11`
+
+Relevé du 14 novembre 2026 à 20 h 40, UTC+8. Observé directement. PR #703.
+Aucune commande, aucun paiement ni aucun mouvement de stock n'a été créé en
+production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `708b5751`. CI et pgTAP de la PR #703 verts avant fusion ; CI de `master` verte sur ce SHA | — |
+| Backend production, avant | 0 session de caisse ouverte, dernière commande à 17 h 34. Les trois helpers `_record_sale_stock_v1`, `_restore_sale_stock_v1` et `_record_cancel_waste_stock_v1` ont l'empreinte attendue par la migration (`43b76a7c…`, `41310d19…`, `59341f76…`). 47 produits non suivis à compteur non nul, dont 1 négatif | — |
+| Backend production, livraison | Migration `20261114000004` appliquée, texte du dépôt. Les trois helpers sont remplacés en place : définitions égales au dev (`495f5122…`, `316bcfef…`, `9a32de1d…`), EXECUTE pour `postgres` et `service_role` seulement, `anon` et `authenticated` sans droit | — |
+| Backend production, après | 47 produits non suivis à compteur non nul, dont 1 négatif : inchangé, comme décidé | Aucune vente réelle n'est passée par les nouveaux helpers au moment du relevé |
+| BO et POS production | Non republiés : le lot ne change aucun fichier d'application | — |
+
+Retour arrière, si nécessaire : recréer les trois helpers depuis leur corps
+d'avant, en retirant la condition `AND COALESCE(track_inventory, true)` et en
+remettant `ELSIF v_track OR v_is_b2b THEN` dans `_record_sale_stock_v1`. Les
+empreintes d'avant ci-dessus servent de contrôle.
+
 ## Complément du 14 novembre 2026, fin de soirée — adresse des tâches planifiées `S1-14`
 
 Relevé du 14 novembre 2026 après 19 h 40, UTC+8. Observé directement. PR #701.
