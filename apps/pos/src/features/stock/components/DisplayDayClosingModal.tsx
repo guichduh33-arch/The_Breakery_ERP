@@ -13,7 +13,7 @@ import {
   NOTE_REQUIRED_REASON,
   WASTE_REASON_LABELS,
   WASTE_REASON_OPTIONS,
-  wasteReasonTextLabel,
+  recordedWasteReasonLabel,
   type WasteReason,
 } from '../wasteReasons';
 
@@ -54,6 +54,8 @@ export function DisplayDayClosingModal({ onClose }: { onClose: () => void }) {
     const catalogue = products.data ?? [];
     const fresh = { reason: '' as const, note: '', recordedReason: null };
     const recordedOf = (id: string) => saved?.items.find((candidate) => candidate.product_id === id);
+    const recordedLabel = (item?: { waste_reason: string | null; waste_reason_code?: WasteReason | null }) =>
+      item ? recordedWasteReasonLabel(item.waste_reason_code, item.waste_reason) : null;
     const row = (item: { product_id: string; remaining_qty: number; waste_qty: number }) => {
       const product = catalogue.find((candidate) => candidate.id === item.product_id);
       const recorded = recordedOf(item.product_id);
@@ -68,9 +70,9 @@ export function DisplayDayClosingModal({ onClose }: { onClose: () => void }) {
         recordedReason: null }))
       : pending
         ? pending.items.map((item) => ({ ...row(item), ...fresh,
-          recordedReason: recordedOf(item.product_id)?.waste_reason ?? null }))
+          recordedReason: recordedLabel(recordedOf(item.product_id)) }))
         : saved
-          ? saved.items.map((item) => ({ ...row(item), ...fresh, recordedReason: item.waste_reason }))
+          ? saved.items.map((item) => ({ ...row(item), ...fresh, recordedReason: recordedLabel(item) }))
           : catalogue.map((product) => ({ id: product.id, name: product.name, unit: product.unit,
             remaining: '', waste: '0', wasteStatus: null, ...fresh })));
     setCorrecting(pending?.closingId !== null && pending?.closingId !== undefined);
@@ -143,7 +145,7 @@ export function DisplayDayClosingModal({ onClose }: { onClose: () => void }) {
                   onChange={(event) => update(row.id, { waste: event.target.value })} />
               </label>
               {Number(row.waste) > 0 && row.recordedReason !== null
-                && <p className="text-sm sm:col-span-2">Waste reason — <span className="text-text-secondary">{wasteReasonTextLabel(row.recordedReason)}</span></p>}
+                && <p className="text-sm sm:col-span-2">Waste reason — <span className="text-text-secondary">{row.recordedReason}</span></p>}
               {Number(row.waste) > 0 && row.recordedReason === null && <>
                 <label className="space-y-1 text-sm">Waste reason — {row.name}
                   <Select value={row.reason} required disabled={locked || readOnly || correcting}

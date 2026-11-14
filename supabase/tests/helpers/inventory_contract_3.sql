@@ -37,7 +37,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t26$;
 SELECT ok(current_setting('breakery.t26_pass')::boolean,
-  'T26: adjust_stock_v4 rejects key reuse with a different reason (original movement unchanged)');
+  'T26: adjust_stock_v5 rejects key reuse with a different reason (original movement unchanged)');
 
 -- =========================================================================
 -- T27 — waste_stock with short reason (< 3 chars) -> reason_required

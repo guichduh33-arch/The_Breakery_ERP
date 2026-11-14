@@ -8061,7 +8061,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_stock_v4: {
+      adjust_stock_v5: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -8117,7 +8117,7 @@ export type Database = {
         }
         Returns: Json
       }
-      correct_display_day_count_v1: {
+      correct_display_day_count_v2: {
         Args: {
           p_closing_id: string
           p_counts: Json
@@ -8277,7 +8277,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_display_day_closing_v1: {
+      get_display_day_closing_v2: {
         Args: { p_business_day: string }
         Returns: Json
       }

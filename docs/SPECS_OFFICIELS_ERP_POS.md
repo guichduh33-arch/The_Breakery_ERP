@@ -516,12 +516,21 @@ de traitement de la file. Pas d'alerte automatique.
 ### 8.6 Motifs de perte
 
 **FAIT** — La production a une liste fermée de motifs : `mis_baked`,
-`poor_proofing`, `cosmetic`, `demo`, `recipe_test`, `tasting`. Le stock et la
-vitrine, eux, utilisent du **texte libre**.
+`poor_proofing`, `cosmetic`, `demo`, `recipe_test`, `tasting`. En production, au
+2026-11-14, le stock et la vitrine utilisent encore du **texte libre**.
+
+**FAIT** — Sur la base dev, depuis le 2026-11-14, la liste reçoit `expired`,
+`leftover`, `damaged` et `other` (décision de Mamat du 2026-11-14) et devient
+commune à la production, au stock et à la vitrine. Une perte de stock, une perte
+de vitrine et une perte du comptage de vitrine du jour portent un motif de cette
+liste et une note facultative ; `other` exige une note. Un motif hors liste est
+refusé par la base. Les pertes d'avant gardent leur texte, sans motif : elles se
+lisent « non précisé ».
 
 **RÈGLE** — Les pertes de stock et de vitrine doivent avoir une **liste fermée**
 de motifs, côté base, comme la production.
-**À LIVRER** — Étendre un type énuméré aux deux chemins.
+**À LIVRER** — La mise en production : base, back-office, puis paquet de la
+caisse.
 
 ### 8.7 Alertes
 

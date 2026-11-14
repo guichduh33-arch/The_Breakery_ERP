@@ -55,9 +55,20 @@ export function isValidWasteNote(reason: WasteReason, note: string): boolean {
 }
 
 /**
- * Motif connu par son seul texte (comptage enregistré) : le serveur y écrit la
- * note, ou le code quand il n'y a pas de note. Un code reconnu prend son
- * libellé ; tout autre texte (note, ou ancien texte libre) s'affiche tel quel.
+ * Motif d'un comptage enregistré : libellé de la liste, suivi de la note
+ * quand elle diffère du code. Sans code (comptage ancien), le texte libre
+ * s'affiche tel quel.
+ */
+export function recordedWasteReasonLabel(code: WasteReason | null | undefined, text: string | null): string | null {
+  const note = text?.trim() ?? '';
+  if (code === null || code === undefined) return note === '' ? null : wasteReasonTextLabel(note);
+  const label = WASTE_REASON_LABELS[code];
+  return note === '' || note === code ? label : `${label} · ${note}`;
+}
+
+/**
+ * Motif connu par son seul texte : un code reconnu prend son libellé ; tout
+ * autre texte (note, ou ancien texte libre) s'affiche tel quel.
  */
 export function wasteReasonTextLabel(text: string): string {
   const trimmed = text.trim();

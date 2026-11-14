@@ -10,7 +10,7 @@
 //   - Locked-product mode (initialProduct provided) hides the typeahead.
 //   - The "Apply" button is disabled until product + non-negative quantity
 //     newQty + 3+-char reason are all valid.
-//   - Submitting calls supabase.rpc('adjust_stock_v4', {...}) with the
+//   - Submitting calls supabase.rpc('adjust_stock', {...}) with the
 //     correct args (productId, newQty, reason, idempotencyKey).
 //   - The delta preview reflects (newQty - current_stock).
 

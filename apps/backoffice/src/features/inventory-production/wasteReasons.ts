@@ -44,13 +44,3 @@ export function formatWasteReason(code: WasteReason | null, text: string | null)
   const label = code === null ? UNSPECIFIED_WASTE_REASON_LABEL : WASTE_REASON_LABELS[code];
   return note === '' || note === code ? label : `${label} · ${note}`;
 }
-
-/**
- * Motif connu par son seul texte (comptage de vitrine) : le serveur y écrit la
- * note, ou le code quand il n'y a pas de note. Un code reconnu prend son
- * libellé ; tout autre texte s'affiche tel quel.
- */
-export function wasteReasonTextLabel(text: string): string {
-  const trimmed = text.trim();
-  return isWasteReason(trimmed) ? WASTE_REASON_LABELS[trimmed] : text;
-}

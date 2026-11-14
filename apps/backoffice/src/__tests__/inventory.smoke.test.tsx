@@ -9,7 +9,7 @@
 //   2. Row action menu n'offre plus « Receive stock »
 //   3. Open Waste → fill form → submit → stock declaration (waste) RPC called
 //   4. ADMIN role (re-render with elevated perms) → Adjust visible →
-//      open modal → submit → adjust_stock_v4 RPC called
+//      open modal → submit → adjust_stock RPC called
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
@@ -229,7 +229,7 @@ describe('Inventory smoke E2E', () => {
     });
   });
 
-  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v4 RPC fired', { timeout: 20_000 }, async () => {
+  it('ADMIN flow: Adjust button visible → submit → adjust_stock RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });

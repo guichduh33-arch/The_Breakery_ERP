@@ -32,9 +32,10 @@ SELECT col_type_is('public', 'display_day_closing_items', 'waste_reason_code', '
   'la ligne de comptage de vitrine porte le motif');
 SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
             WHERE (n.nspname = 'public' AND p.proname IN ('waste_stock_v4','waste_display_stock_v4',
-                     'submit_stock_declaration_v2','submit_display_day_closing_v1'))
+                     'submit_stock_declaration_v2','submit_display_day_closing_v1','adjust_stock_v4',
+                     'get_display_day_closing_v1','correct_display_day_count_v1'))
                OR (n.nspname = 'stock_private' AND p.proname = 'submit_day_waste_v1')), 0,
-  'les versions à texte libre sont retirées');
+  'les versions remplacées sont retirées');
 
 -- Droits.
 SELECT ok(NOT has_function_privilege('anon', 'public.waste_stock_v5(uuid,numeric,public.waste_reason,text,uuid)', 'EXECUTE')
@@ -92,7 +93,7 @@ SELECT throws_ok(
 
 -- L'ajustement garde son contrat.
 SELECT lives_ok(
-  format($q$SELECT adjust_stock_v4(%L::uuid, 8, 'recount after audit', gen_random_uuid())$q$, (SELECT stk FROM _ids)),
+  format($q$SELECT adjust_stock_v5(%L::uuid, 8, 'recount after audit', gen_random_uuid())$q$, (SELECT stk FROM _ids)),
   'ajustement de stock : inchangé');
 SELECT is((SELECT count(*)::int FROM stock_declarations WHERE product_id = (SELECT stk FROM _ids)
             AND operation = 'adjust' AND waste_reason IS NULL), 1,

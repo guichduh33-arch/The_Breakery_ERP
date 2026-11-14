@@ -27,12 +27,17 @@ interface LegacyDisplayDayItem {
   waste_qty: number;
   waste_reason: string | null;
 }
-/** Ligne d'un comptage enregistré : `waste_reason` y est un TEXTE (note, sinon code, sinon ancien texte libre). */
+/**
+ * Ligne d'un comptage enregistré : `waste_reason` y est un TEXTE (note, sinon
+ * code, sinon ancien texte libre) ; `waste_reason_code` est le motif de la
+ * liste, absent d'un comptage ancien.
+ */
 export interface RecordedDisplayDayItem {
   product_id: string;
   remaining_qty: number;
   waste_qty: number;
   waste_reason: string | null;
+  waste_reason_code?: WasteReason | null;
   product_name: string;
   unit: string;
   waste_status: string | null;
@@ -170,7 +175,7 @@ export function useDisplayDayClosing(businessDay: string) {
     queryKey: ['display-day-closing', user?.id, businessDay],
     enabled: !!user && canCount && /^\d{4}-\d{2}-\d{2}$/.test(businessDay),
     queryFn: async (): Promise<DisplayDayRecord | null> => {
-      const { data, error } = await supabase.rpc('get_display_day_closing_v1', { p_business_day: businessDay });
+      const { data, error } = await supabase.rpc('get_display_day_closing_v2', { p_business_day: businessDay });
       if (error) throw new Error(displayDayError(error.message));
       if (data === null) return null;
       if (!record(data) || data.business_day !== businessDay || typeof data.closing_id !== 'string'
@@ -193,7 +198,7 @@ export function useDisplayDayClosing(businessDay: string) {
           const response = attempt.closingId === null
             ? await supabase.rpc('submit_display_day_closing_v2', { p_business_day: attempt.businessDay,
               p_items: attempt.items as unknown as Json, p_idempotency_key: key })
-            : await supabase.rpc('correct_display_day_count_v1', { p_closing_id: attempt.closingId,
+            : await supabase.rpc('correct_display_day_count_v2', { p_closing_id: attempt.closingId,
               p_counts: attempt.items.map((item) => ({ product_id: item.product_id, remaining_qty: item.remaining_qty })),
               p_reason: attempt.correctionReason, p_idempotency_key: key });
           if (!current()) throw new FinancialAttemptError('Your session changed. Reopen the count.');

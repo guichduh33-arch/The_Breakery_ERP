@@ -63,7 +63,7 @@ INSERT INTO day_results(tap) SELECT ok((public.submit_display_day_closing_v2(cur
  jsonb_build_object('product_id',fresh_id,'remaining_qty',6,'waste_qty',1,'waste_reason','damaged'),
  jsonb_build_object('product_id',(SELECT id FROM day_display_baseline),'remaining_qty',31,'waste_qty',0)),submit_key)->>'idempotent_replay')::boolean,
  'Retry of daily submission is idempotent') FROM day_ids;
-INSERT INTO day_payload SELECT 'read',public.get_display_day_closing_v1(current_date);
+INSERT INTO day_payload SELECT 'read',public.get_display_day_closing_v2(current_date);
 INSERT INTO day_results(tap) SELECT ok(NOT EXISTS(SELECT 1 FROM jsonb_array_elements(value->'items') x
  WHERE x ? 'expected_qty' OR x ? 'variance' OR x ? 'reference_basis'),'Cashier cannot see theoretical/reference snapshots') FROM day_payload WHERE name='read';
 INSERT INTO day_results(tap) SELECT throws_ok(format('SELECT public.submit_display_day_closing_v2(current_date,%L::jsonb,%L::uuid)',
@@ -96,7 +96,7 @@ INSERT INTO day_results(tap) SELECT is((SELECT expected_qty FROM public.display_
 INSERT INTO day_results(tap) SELECT is((SELECT quantity FROM public.display_stock WHERE product_id=id),30::numeric,'Informative Opera count does not regularize display') FROM day_display_baseline;
 INSERT INTO day_results(tap) SELECT is((SELECT p.current_stock FROM public.products p WHERE p.id=b.id),b.current_stock,'Informative Opera count does not regularize general stock') FROM day_display_baseline b;
 SET LOCAL ROLE authenticated;
-INSERT INTO day_payload SELECT 'correction',public.correct_display_day_count_v1((SELECT (value->>'closing_id')::uuid FROM day_payload WHERE name='submit'),
+INSERT INTO day_payload SELECT 'correction',public.correct_display_day_count_v2((SELECT (value->>'closing_id')::uuid FROM day_payload WHERE name='submit'),
  jsonb_build_array(jsonb_build_object('product_id',general_id,'remaining_qty',8),jsonb_build_object('product_id',fresh_id,'remaining_qty',5),
  jsonb_build_object('product_id',(SELECT id FROM day_display_baseline),'remaining_qty',29)),
  'Independent recount corrected entry',correction_key) FROM day_ids;
@@ -105,14 +105,19 @@ INSERT INTO day_results(tap) SELECT is((SELECT count(*) FROM public.display_day_
 INSERT INTO day_results(tap) SELECT is((SELECT quantity FROM public.display_stock WHERE product_id=general_id),18::numeric,'Corrected count does not change display') FROM day_ids;
 INSERT INTO day_results(tap) SELECT is((SELECT current_stock FROM public.products WHERE id=general_id),20::numeric,'Corrected count does not change general stock') FROM day_ids;
 INSERT INTO day_results(tap) SELECT is((SELECT count(*) FROM public.stock_declarations WHERE product_id IN(general_id,fresh_id)),2::bigint,'Correction never resubmits waste') FROM day_ids;
+INSERT INTO day_results(tap) SELECT is((SELECT waste_reason_code::text||'|'||waste_reason FROM public.display_day_closing_items
+ WHERE closing_id=(SELECT (value->>'closing_id')::uuid FROM day_payload WHERE name='correction') AND product_id=general_id),
+ 'leftover|Discarded at day end','Correction keeps the closed-list reason and the note of the waste') FROM day_ids;
 INSERT INTO day_results(tap) SELECT throws_ok('UPDATE public.display_day_closings SET recorded_at=now()','55000','display_count_is_immutable','Even privileged rewrites of first count are rejected');
 
 SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM day_actors WHERE role_code='SUPER_ADMIN'));
 SET LOCAL ROLE authenticated;
-INSERT INTO day_payload SELECT 'owner_read',public.get_display_day_closing_v1(current_date);
+INSERT INTO day_payload SELECT 'owner_read',public.get_display_day_closing_v2(current_date);
+INSERT INTO day_results(tap) SELECT is((SELECT x->>'waste_reason_code' FROM jsonb_array_elements(value->'items') x
+ WHERE (x->>'product_id')::uuid=(SELECT general_id FROM day_ids)),'leftover','Recorded count exposes the closed-list reason') FROM day_payload WHERE name='owner_read';
 INSERT INTO day_results(tap) SELECT ok((value->>'is_owner')::boolean AND (value->'items'->0) ? 'expected_qty','Owner sees the frozen theoretical count') FROM day_payload WHERE name='owner_read';
 INSERT INTO day_payload SELECT 'approval',public.approve_stock_declaration_v4(i.waste_declaration_id)
- FROM public.get_display_day_closing_v1(current_date) r,
+ FROM public.get_display_day_closing_v2(current_date) r,
  LATERAL jsonb_to_recordset(r->'items') i(product_id uuid,waste_declaration_id uuid)
  WHERE i.product_id=(SELECT general_id FROM day_ids);
 INSERT INTO day_results(tap) SELECT ok((public.approve_stock_declaration_v4((value->>'declaration_id')::uuid)->>'idempotent_replay')::boolean,

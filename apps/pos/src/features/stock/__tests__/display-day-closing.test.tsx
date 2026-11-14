@@ -57,7 +57,7 @@ beforeEach(() => {
     if (name === 'get_operational_products_v3') return Promise.resolve({ data: [{ id: product, name: 'Croissant', sku: 'CLV-007',
       unit: 'pcs', is_active: true, is_display_item: true, current_stock: null, is_sellable: true,
       display_stock: { quantity: null }, categories: null, category_id: null, min_stock_threshold: 0, retail_price: 10000 }], error: null });
-    if (name === 'get_display_day_closing_v1') return Promise.resolve({ data: api.recorded, error: null });
+    if (name === 'get_display_day_closing_v2') return Promise.resolve({ data: api.recorded, error: null });
     if (name === 'submit_display_day_closing_v2') {
       if (api.submitError) return Promise.resolve({ data: null, error: api.submitError });
       const replay = api.recorded !== null;
@@ -65,7 +65,7 @@ beforeEach(() => {
       if (api.loseResponse) { api.loseResponse = false; return Promise.resolve({ data: null, error: { message: 'Network response lost', code: 'NETWORK' } }); }
       return Promise.resolve({ data: { closing_id: closingId, business_day: todayIsoDate(), revision: 1, idempotent_replay: replay }, error: null });
     }
-    if (name === 'correct_display_day_count_v1') {
+    if (name === 'correct_display_day_count_v2') {
       api.recorded = { ...savedRecord(6), closing_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', revision: 2 };
       return Promise.resolve({ data: { closing_id: api.recorded.closing_id, business_day: todayIsoDate(), revision: 2, idempotent_replay: false }, error: null });
     }
@@ -114,7 +114,7 @@ describe('End-of-day display observations', () => {
     fireEvent.change(screen.getByLabelText('Remaining — Croissant'), { target: { value: '6' } });
     fireEvent.change(screen.getByLabelText('Correction reason'), { target: { value: 'Second physical count' } });
     fireEvent.click(screen.getByRole('button', { name: 'Record correction' }));
-    await waitFor(() => expect(api.rpc).toHaveBeenCalledWith('correct_display_day_count_v1', expect.objectContaining({
+    await waitFor(() => expect(api.rpc).toHaveBeenCalledWith('correct_display_day_count_v2', expect.objectContaining({
       p_closing_id: closingId, p_counts: [{ product_id: product, remaining_qty: 6 }],
       p_reason: 'Second physical count',
     })));
