@@ -961,11 +961,12 @@ clé privée de reprise : une sauvegarde chiffrée dont la clé se perd n'est pa
 sauvegarde.
 **À LIVRER** — Ce chantier, le plus urgent de tous.
 
-**FAIT** — Trois migrations planifient des tâches dont l'adresse est **écrite en
-dur sur le projet de développement**. Inerte uniquement parce qu'aucune tâche
-n'est installée.
 **RÈGLE** — L'adresse du projet passe par un réglage lu en base.
-**À LIVRER** — Avant toute installation de tâche planifiée.
+**FAIT** — Depuis le 2026-11-14, sur les deux bases, les tâches qui appellent une
+Edge Function lisent l'adresse dans un secret par base. Sans ce secret, elles
+n'envoient rien. Les trois anciennes migrations gardent leur adresse en dur ;
+rejouées dans l'ordre, elles sont réécrites par la suivante. Le secret de
+production reste à poser avec l'installation des tâches.
 
 **ABANDONNÉ** — Les notifications par e-mail. Les deux Edge Functions d'envoi ne
 sont pas déployées, aucune clé de prestataire n'est posée, et les tables

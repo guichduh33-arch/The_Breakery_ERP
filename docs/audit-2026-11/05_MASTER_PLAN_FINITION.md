@@ -574,6 +574,24 @@ de cause (arbitrage lot 7).
 quand même son compteur décrémenté à la vente : la valeur devient fantôme, et un
 produit non suivi est **déjà en négatif** en production.
 
+**État — développé et prouvé en dev le 2026-11-14**, branche
+`fix/s1-11-untracked-counter`, migration
+`20261114000004_untracked_products_keep_counter_on_sale.sql` appliquée sur la
+base dev seulement ; **la production ne l'a pas**. Trois helpers internes du
+chemin de vente sont remplacés en place : vente, restitution (annulation et
+remboursement) et perte sur commande annulée. Le compteur d'un produit non suivi
+ne bouge plus ; le mouvement de stock reste écrit, il porte le coût des ventes.
+**Décision de Mamat du 2026-11-14** : les compteurs déjà dérivés restent tels
+quels, aucun mouvement de correction (47 produits non suivis à compteur non nul
+en production ce jour-là, un seul négatif). **Écart avec la décision S09**, qui
+disait la garde B2B sur produit non suivi « sans objet » : elle ne l'était pas,
+un produit non suivi à compteur nul aurait bloqué toute commande B2B. Elle est
+limitée aux produits suivis, comme le dit ADR-036. pgTAP :
+`supabase/tests/untracked_counter_on_sale.test.sql`, 9 assertions, 4 rouges
+avant la migration et 9 vertes après, sur dev ; T14 de
+`sale_stock_unification.test.sql`, qui encodait l'ancien décrément, est mis à
+jour.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — rendre la décrémentation conditionnelle au
   drapeau de suivi (**partir du corps live** de la primitive d'écriture)
@@ -673,7 +691,9 @@ texte ; rejouées dans l'ordre, elles sont réécrites par la nouvelle. Secret p
 sur dev ; la tâche d'envoi des notifications y a répondu 200 sur l'adresse
 lue. pgTAP : `supabase/tests/cron_edge_function_url.test.sql`, 9 assertions
 vertes sur dev, dont une adresse d'un autre projet suivie par le helper ; le
-test rougit si une tâche reprend une adresse en dur. **Non fait** : le secret
+test rougit si une tâche reprend une adresse en dur. **En production depuis le
+2026-11-14 au soir** (PR #701) : helper égal au dev, aucune tâche installée,
+aucun secret, le helper n'y rend donc aucune adresse. **Non fait** : le secret
 de production, à poser avec l'installation des tâches. **Limite relevée** :
 l'en-tête de la tâche des anniversaires porte un secret fixe, recopié tel quel.
 **Source** — Audit 01 §5.5 : trois migrations planifient des tâches dont
