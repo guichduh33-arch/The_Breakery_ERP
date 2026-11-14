@@ -20,8 +20,14 @@ const ROWS = [
 
 const mockUseAuditLogs = vi.fn();
 const exportSpy = vi.hoisted(() => vi.fn());
+const fetchAllSpy = vi.hoisted(() => vi.fn());
+const settingsSpy = vi.hoisted(() => vi.fn());
 vi.mock('@/features/reports/hooks/useAuditLogs.js', () => ({
   useAuditLogs: (filters: unknown) => mockUseAuditLogs(filters) as unknown,
+  fetchAllAuditLogs: (filters: unknown) => fetchAllSpy(filters) as unknown,
+}));
+vi.mock('@/features/settings/hooks/useSettings.js', () => ({
+  useSettings: (category: string) => settingsSpy(category) as unknown,
 }));
 
 vi.mock('@/features/auth/hooks/useLoginUsers.js', () => ({
@@ -60,6 +66,9 @@ describe('AuditPage — filtres + contexte déplié', () => {
     sessionStorage.clear();
     mockUseAuditLogs.mockReset();
     exportSpy.mockClear();
+    fetchAllSpy.mockReset();
+    settingsSpy.mockReset();
+    settingsSpy.mockReturnValue({ data: undefined, refetch: () => Promise.resolve({ data: undefined }) });
     mockUseAuditLogs.mockReturnValue({
       data: { pages: [ROWS] },
       isLoading: false,
@@ -262,6 +271,57 @@ describe('AuditPage — filtres + contexte déplié', () => {
     expect(JSON.stringify(props.pdf.data)).not.toContain('never-');
     expect(props.pdf.data[0]).not.toHaveProperty('metadata');
     expect(props.pdf.data[0]).not.toHaveProperty('payload');
+  });
+
+  describe('export CSV de la période entière', () => {
+    interface CsvProps { csv: { rows: unknown[]; columns: { header: string }[]; filename: string;
+      loadRows: () => Promise<{ row: { id: string }; signal: { severity: string | null }; sequence: number }[]> } }
+    const close = (id: string, variance: number) => ({ ...ROWS[0], id, action: 'shift.close', metadata: { variance } });
+
+    it('recharge toutes les lignes avec la période et les filtres, au-delà des lignes affichées', async () => {
+      // La page ne montre que deux lignes ; la période en contient trois autres.
+      fetchAllSpy.mockResolvedValue([close('30', 8000), close('20', 1000), close('10', 0)]);
+      renderPage('/reports/audit?start=2026-11-14&end=2026-11-14');
+      fireEvent.change(screen.getByTestId('audit-filter-actor'), { target: { value: 'u-1' } });
+      const props = exportSpy.mock.calls.at(-1)?.[0] as CsvProps;
+      expect(props.csv.rows).toEqual([]);
+      expect(props.csv.filename).toBe('audit-log-2026-11-14_2026-11-14');
+      expect(props.csv.columns.slice(0, 13).map((c) => c.header)).toEqual(['Event reference', 'Timestamp', 'Event',
+        'Action code', 'Description', 'Account', 'Account role in event', 'Source', 'Record type', 'Record ID',
+        'Review cue', 'Evidence note', 'Actor ID']);
+      const exported = await props.csv.loadRows();
+      expect(fetchAllSpy).toHaveBeenCalledWith({ dateStart: '2026-11-14', dateEnd: '2026-11-14', actorId: 'u-1' });
+      expect(exported.map((e) => e.row.id)).toEqual(['30', '20', '10']);
+      expect(exported.map((e) => e.sequence)).toEqual([3, 2, 1]);
+      expect(exported.map((e) => e.signal.severity)).toEqual(['medium', 'low', null]);
+    });
+
+    it('applique le seuil de caisse des réglages quand il est lisible', async () => {
+      settingsSpy.mockReturnValue({ data: { category: 'pos', settings: { shift_variance_threshold_abs: 5000 } },
+        refetch: () => Promise.reject(new Error('must not refetch a loaded setting')) });
+      fetchAllSpy.mockResolvedValue([close('30', 8000)]);
+      renderPage();
+      expect(settingsSpy).toHaveBeenCalledWith('pos');
+      const props = exportSpy.mock.calls.at(-1)?.[0] as CsvProps;
+      expect((await props.csv.loadRows())[0]?.signal.severity).toBe('high');
+    });
+
+    it('attend le réglage avant de classer quand il n\'est pas encore chargé, et accepte un seuil à zéro', async () => {
+      settingsSpy.mockReturnValue({ data: undefined,
+        refetch: () => Promise.resolve({ data: { category: 'pos', settings: { shift_variance_threshold_abs: 0 } } }) });
+      fetchAllSpy.mockResolvedValue([close('30', 1000)]);
+      renderPage();
+      const props = exportSpy.mock.calls.at(-1)?.[0] as CsvProps;
+      // Sans l'attente, le seuil par défaut (50 000) classerait cet écart « low ».
+      expect((await props.csv.loadRows())[0]?.signal.severity).toBe('high');
+    });
+
+    it('garde le seuil par défaut quand le réglage est illisible', async () => {
+      fetchAllSpy.mockResolvedValue([close('30', 8000)]);
+      renderPage();
+      const props = exportSpy.mock.calls.at(-1)?.[0] as CsvProps;
+      expect((await props.csv.loadRows())[0]?.signal.severity).toBe('medium');
+    });
   });
 
   it('rend la bannière d\'erreur unifiée du socle quand la requête échoue', () => {

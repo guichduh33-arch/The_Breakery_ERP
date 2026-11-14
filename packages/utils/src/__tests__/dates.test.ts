@@ -1,12 +1,18 @@
 // packages/utils/src/__tests__/dates.test.ts
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { formatDate, formatDateTime, formatDateTimeWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, monthStartIsoDate, businessDateIso } from '../dates';
+import { formatDate, formatDateTime, formatDateTimeWita, formatIsoWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, monthStartIsoDate, businessDateIso } from '../dates';
 
 describe('dates', () => {
   const utc = new Date('2026-05-03T10:30:00Z');  // 18:30 WITA
 
   it('formatDateTimeWita renders WITA', () => {
     expect(formatDateTimeWita(utc)).toBe('2026-05-03 18:30:00');
+  });
+
+  // Export : secondes, millisecondes et décalage explicites, jour métier WITA.
+  it('formatIsoWita renders ISO 8601 with seconds and the WITA offset', () => {
+    expect(formatIsoWita(utc)).toBe('2026-05-03T18:30:00.000+08:00');
+    expect(formatIsoWita('2026-11-14T23:24:30.742436+00:00')).toBe('2026-11-15T07:24:30.742+08:00');
   });
 
   it('formatDateTimeShortWita renders dd MMM yyyy, HH:mm WITA', () => {

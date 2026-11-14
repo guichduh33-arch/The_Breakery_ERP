@@ -24,7 +24,7 @@
 // le désactiver nomme la règle. Le CSV est construit localement (ce gate client
 // est sa seule mesure) ; le PDF garde son verrou serveur dans l'EF generate-pdf.
 
-import { useId, type JSX } from 'react';
+import { useId, useState, type JSX } from 'react';
 import { ChevronDown, Download, FileDown, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@breakery/ui';
@@ -40,6 +40,11 @@ export interface ExportMenuProps<T> {
     rows:     T[];
     columns:  CsvColumn<T>[];
     filename: string;
+    /**
+     * Charge le jeu COMPLET au moment du clic, quand l'écran n'en montre qu'une
+     * partie (journal paginé). Absent : l'export prend `rows` tel quel.
+     */
+    loadRows?: () => Promise<T[]>;
   };
   pdf?: {
     template:         PdfTemplate;
@@ -80,19 +85,27 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
   const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
   const { open, setOpen, rootRef, triggerRef } = useDismissablePanel<HTMLDivElement>();
   const panelId = useId();
+  const [csvLoading, setCsvLoading] = useState(false);
 
   if (csv === undefined && pdf === undefined) return null;
 
   const blocked = !canExport || disabled;
 
-  const handleCsv = (): void => {
-    if (csv === undefined) return;
+  const handleCsv = async (): Promise<void> => {
+    if (csv === undefined || csvLoading) return;
     try {
-      const out = buildCsv(csv.rows, csv.columns);
+      let rows = csv.rows;
+      if (csv.loadRows !== undefined) {
+        setCsvLoading(true);
+        rows = await csv.loadRows();
+      }
+      const out = buildCsv(rows, csv.columns);
       downloadCsv(out, csv.filename);
     } catch (e) {
       toastExportError('CSV', e);
       return;   // le menu reste ouvert : le toast dit pourquoi, le geste reste à portée
+    } finally {
+      setCsvLoading(false);
     }
     setOpen(false);
   };
@@ -153,8 +166,16 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
           className="absolute right-0 z-40 mt-1.5 w-44 rounded-xl border border-border-subtle bg-surface-3 p-1.5 shadow-xl"
         >
           {csv !== undefined && (
-            <button type="button" className={ITEM_CLS} data-testid="export-csv" onClick={handleCsv}>
-              <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+            <button
+              type="button"
+              className={ITEM_CLS}
+              data-testid="export-csv"
+              disabled={csvLoading}
+              onClick={() => { void handleCsv(); }}
+            >
+              {csvLoading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted motion-reduce:animate-none" aria-hidden />
+                : <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />}
               CSV
             </button>
           )}
