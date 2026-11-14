@@ -26,6 +26,25 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 14 novembre 2026 au soir — lot money-path `S1-09` et `S1-12`
+
+Relevé du 14 novembre 2026 entre 17 h 48 et 19 h 20, UTC+8. Observé directement.
+PR #700. Aucune commande ni aucun paiement n'a été créé en production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `04b55bb4` (fusion de #700). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, 17 h 48 | Boutique ouverte : 1 session de caisse, 9 commandes dans l'heure. Livraison reportée | — |
+| Backend production, avant, 18 h 52 | 0 session de caisse ouverte, dernière commande à 17 h 34. Corps de `stock_private.complete_order_with_payment_v30` normalisé égal à l'empreinte épinglée par la migration (`dcf1ae89…`). Edge Function `process-payment` version 4 égale aux fichiers de `master` d'avant le lot | — |
+| Backend production, livraison | Application additive `payment_line_discount_cap_server_priced_promos_additive` : texte de `20261114000002` **sans ses `DROP`**. Les deux `complete_order_with_payment_v33` créées, corps égaux au dev (md5 de `prosrc` `21361069…` public, `6fe8f72a…` privé), mêmes droits, `anon` sans EXECUTE | `public.complete_order_with_payment_v32` et `stock_private.complete_order_with_payment_v30` **restent en place** |
+| Edge Function production, 19 h 19 | `process-payment` redéployée, version 5, `verify_jwt` actif. Les 10 fichiers servis sont égaux à ceux de `master`. `OPTIONS` répond 200, un `POST` sans en-tête d'autorisation répond 401 | Aucun paiement réel n'est passé par la version 5 au moment du relevé |
+| BO et POS production | Non republiés : le lot ne change aucun fichier d'application | — |
+
+Retour arrière, si nécessaire : redéployer `process-payment` sur les fichiers de
+`db37a505^` (appel de `v32`), puis retirer les deux `v33`. Une fois les ventes
+réelles vérifiées sur `v33`, retirer `public.complete_order_with_payment_v32` et
+`stock_private.complete_order_with_payment_v30`, comme le fait la migration.
+
 ## Complément du 14 novembre 2026 — réglages B2B `S1-04`
 
 Relevé du 14 novembre 2026 vers 12 h, UTC+8. Observé directement. PR #698.

@@ -438,7 +438,7 @@ boulanger (constat §9 des specs).
 **État — développé et prouvé en dev le 2026-11-14**, branche
 `fix/lot-money-path-s1-09-s1-12` (lot money-path, avec `S1-12`), migration
 `20261114000002_payment_line_discount_cap_server_priced_promos.sql` appliquée
-sur la base dev seulement ; **la production ne l'a pas**. Relevé du corps live
+sur la base dev, puis en production le 2026-11-14 au soir (voir plus bas). Relevé du corps live
 ce jour-là : le défaut ne vivait que dans la vente directe (famille
 `complete_order_with_payment`). La famille `fire_counter_order` bornait déjà la
 remise de ligne, et aucune autre fonction n'écrit la remise d'une ligne
@@ -449,6 +449,12 @@ l'Edge Function `process-payment` est repointée et redéployée sur dev. pgTAP 
 `supabase/tests/payment_line_discount_cap_server_priced_promos.test.sql`, vert
 sur dev. **Non fait** : l'essai depuis l'écran du POS, et la suite pgTAP
 complète hors CI.
+**En production depuis le 2026-11-14 au soir**, en phase additive, boutique
+fermée : la version nouvelle de la fonction de paiement est créée, corps et
+droits égaux au dev, puis l'Edge Function `process-payment` est redéployée sur
+les fichiers de `master`. **L'ancienne version reste en place** : elle est
+retirée après les premières ventes réelles sur la nouvelle. Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 14 novembre au soir.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — bump de la fonction de paiement :
@@ -520,8 +526,8 @@ contrôle de cohérence compare deux valeurs issues de ce même prix — il ne d
 rien. Zéro promotion active aujourd'hui : la faille est **dormante**.
 
 **État — développé et prouvé en dev le 2026-11-14**, dans le lot money-path
-(branche `fix/lot-money-path-s1-09-s1-12`, même migration que `S1-09`) ; **la
-production ne l'a pas**. **Écart avec la liste de fichiers ci-dessous**, relevé
+(branche `fix/lot-money-path-s1-09-s1-12`, même migration que `S1-09`) ; en
+production depuis le 2026-11-14 au soir, avec `S1-09`. **Écart avec la liste de fichiers ci-dessous**, relevé
 sur les corps live : la fonction d'évaluation n'est pas bumpée. La faille
 tenait à son appelant — la vente directe lui passait les articles au prix
 envoyé par la caisse. Elle les lui passe maintenant au prix résolu par le
