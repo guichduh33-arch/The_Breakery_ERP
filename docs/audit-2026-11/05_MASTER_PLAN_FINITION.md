@@ -53,11 +53,11 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 
 | Sprint | En production | En cours | Retirée | Restent | Total |
 |---|---|---|---|---|---|
-| Sprint 1 | 14 | 1 | 1 | 6 | 22 |
+| Sprint 1 | 14 | 2 | 1 | 5 | 22 |
 | Sprint 2 | 0 | 0 | 0 | 13 | 13 |
 | Sprint 3 | 3 | 1 | 0 | 20 | 24 |
 | Sprint 4 | 0 | 0 | 0 | 11 | 11 |
-| **Total** | **17** | **2** | **1** | **50** | **70** |
+| **Total** | **17** | **3** | **1** | **49** | **70** |
 
 ### Fait — en production
 
@@ -86,6 +86,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
 | `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
+| `S1-18` motifs de perte | Prouvé en dev, branche `feat/s1-18-loss-reasons` | Fusion de la PR ; puis base, back-office et paquet de la caisse en production |
 | `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
 
 ### Retirée
@@ -94,7 +95,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 
 ### Restent
 
-- **Sprint 1** (6) : `S1-08`, `S1-10`, `S1-15`, `S1-16`, `S1-18`, `S1-20`.
+- **Sprint 1** (5) : `S1-08`, `S1-10`, `S1-15`, `S1-16`, `S1-20`.
 - **Sprint 2** (13) : `S2-01` à `S2-13`.
 - **Sprint 3** (20) : `S3-01` à `S3-14`, `S3-16`, `S3-17`, `S3-18`, `S3-20`,
   `S3-23`, `S3-24`.
@@ -799,6 +800,35 @@ ne les agrège plus. Aucun mapping ne les cible.
 **Risque prod** 🟠
 **Source** — Arbitrage §2bis lot 4. La production a une liste fermée de 6
 motifs ; le stock et la vitrine utilisent du **texte libre**.
+
+**État — développé et prouvé en dev le 2026-11-14**, branche
+`feat/s1-18-loss-reasons`, migrations
+`20261114000005_waste_reason_loss_values.sql` et
+`20261114000006_loss_reason_closed_list.sql` appliquées sur la base dev
+seulement ; **la production ne les a pas**. **Décision de Mamat du
+2026-11-14** : le type `waste_reason` reçoit `expired`, `leftover`, `damaged`
+et `other`, liste commune à la production, au stock et à la vitrine ; les
+pertes passées gardent leur texte, sans motif, et se lisent « non précisé ».
+Aucune ligne existante n'est réécrite. Toutes les pertes de stock et de
+vitrine passent par la déclaration de stock : le motif y est exigé, avec une
+note facultative, obligatoire pour `other`. Les familles `waste_stock`,
+`waste_display_stock`, `submit_stock_declaration`, `adjust_stock`,
+`submit_display_day_closing`, `get_display_day_closing` et
+`correct_display_day_count` passent à leur version suivante, les anciennes
+sont retirées. Le back-office (perte de stock, déclarations, revue du comptage)
+et le POS (perte de vitrine, comptage du jour) proposent la liste. pgTAP :
+`supabase/tests/loss_reason_closed_list.test.sql`, 24 assertions vertes sur
+dev avant les corrections de revue ; les cas du comptage du jour sont dans
+`antifraud_display_day.test.sql`. **Limites** : les écrans n'ont pas été vus
+dans un navigateur ; aucune contrainte de table n'impose le motif (les pertes
+en attente d'avant n'en ont pas et leur approbation les met à jour) ; une
+caisse mise à jour avec un comptage en attente dont la première tentative a
+abouti garde cette tentative en attente pour ce jour-là ;
+`types.generated.ts` ne reçoit que le delta du lot, une régénération complète
+depuis la base dev y ajoute des objets d'autres branches. **Livraison** : la
+base retire les anciennes fonctions, que la caisse et le back-office publiés
+appellent encore — application additive d'abord, retrait après la publication
+du back-office et l'installation du paquet de la caisse.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — étendre un type énuméré aux deux chemins

@@ -5,6 +5,8 @@ import { formatQuantity } from '@breakery/utils';
 import { Input } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
+import { formatWasteReason } from '@/features/inventory-production/wasteReasons.js';
+import type { WasteReason } from '@/features/inventory-production/hooks/useRecordProduction.js';
 
 interface DisplayReview {
   closing_id: string;
@@ -12,7 +14,7 @@ interface DisplayReview {
   recorded_at: string;
   items: {
     product_id: string; product_name: string; unit: string; remaining_qty: number;
-    waste_qty: number; waste_reason: string | null; waste_status: string | null;
+    waste_qty: number; waste_reason: string | null; waste_reason_code: WasteReason | null; waste_status: string | null;
     reference_basis: string; expected_qty: number; variance: number;
   }[];
   history: { revision: number; recorded_at: string; correction_reason: string | null }[];
@@ -28,7 +30,7 @@ export function DisplayDayReviewPanel() {
   const review = useQuery({
     queryKey: ['display-day-closing', profileId, day], enabled: owner,
     queryFn: async (): Promise<DisplayReview | null> => {
-      const { data, error } = await supabase.rpc('get_display_day_closing_v1', { p_business_day: day });
+      const { data, error } = await supabase.rpc('get_display_day_closing_v2', { p_business_day: day });
       if (error) throw new Error(error.message);
       if (data === null) return null;
       if (typeof data !== 'object' || Array.isArray(data) || data.is_owner !== true || !Array.isArray(data.items)) {
@@ -61,7 +63,7 @@ export function DisplayDayReviewPanel() {
               <td className="p-2 font-mono">{formatQuantity(item.expected_qty, item.unit)}</td>
               <td className="p-2 font-mono">{formatQuantity(item.remaining_qty, item.unit)}</td>
               <td className="p-2 font-mono">{formatQuantity(item.variance, item.unit)}</td>
-              <td className="p-2">{formatQuantity(item.waste_qty, item.unit)}{item.waste_reason && <span className="block text-text-secondary">{item.waste_reason}</span>}</td>
+              <td className="p-2">{formatQuantity(item.waste_qty, item.unit)}{item.waste_qty > 0 && <span className="block text-text-secondary">{formatWasteReason(item.waste_reason_code ?? null, item.waste_reason)}</span>}</td>
               <td className="p-2">{item.waste_status ?? 'No waste declared'}</td>
             </tr>)}</tbody>
           </table>

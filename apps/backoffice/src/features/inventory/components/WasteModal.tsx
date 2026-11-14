@@ -15,6 +15,10 @@ import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
 import { ProductTypeahead } from './ProductTypeahead.js';
+import type { WasteReason } from '@/features/inventory-production/hooks/useRecordProduction.js';
+import {
+  WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason,
+} from '@/features/inventory-production/wasteReasons.js';
 
 export interface WasteModalProps {
   open:             boolean;
@@ -23,10 +27,11 @@ export interface WasteModalProps {
   onClose:          () => void;
 }
 
-type ReasonPreset = 'Expired' | 'Damaged' | 'Spoiled' | 'Other';
-
-const PRESETS: readonly ReasonPreset[] = ['Expired', 'Damaged', 'Spoiled', 'Other'];
+// S1-18 — le motif vient de la liste fermée `waste_reason` (enum Postgres) ;
+// la note est facultative, sauf pour `other` où elle est exigée.
+const DEFAULT_REASON: WasteReason = 'expired';
 const MAX_REASON = 500;
+const MIN_NOTE = 3;
 
 function stockLevelToTypeaheadRow(row: StockLevelRow): ProductTypeaheadRow {
   return { id: row.product_id, sku: row.sku, name: row.name, current_stock: row.current_stock, unit: row.unit };
@@ -47,8 +52,8 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
     initialProduct !== undefined ? stockLevelToTypeaheadRow(initialProduct) : null,
   );
   const [qty, setQty] = useState<string>('');
-  const [preset, setPreset] = useState<ReasonPreset>('Expired');
-  const [otherReason, setOtherReason] = useState<string>('');
+  const [preset, setPreset] = useState<WasteReason>(DEFAULT_REASON);
+  const [note, setNote] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
   const [attemptLocked, setAttemptLocked] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
@@ -58,8 +63,8 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
       setProduct(initialProduct !== undefined ? stockLevelToTypeaheadRow(initialProduct) : null);
       setQty('');
       setAttemptLocked(false);
-      setPreset('Expired');
-      setOtherReason('');
+      setPreset(DEFAULT_REASON);
+      setNote('');
       setFormError(null);
       setIdempotencyKey(crypto.randomUUID());
     }
@@ -72,8 +77,11 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
   const isQtyPositive = Number.isFinite(numericQty) && numericQty > 0;
   const isQtyValid = isQtyPositive && numericQty <= 9999999.999;
 
-  const finalReason = preset === 'Other' ? otherReason.trim() : preset;
-  const isReasonValid = finalReason.length >= 3 && finalReason.length <= MAX_REASON;
+  const trimmedNote = note.trim();
+  const noteRequired = preset === 'other';
+  const isReasonValid = trimmedNote.length === 0
+    ? !noteRequired
+    : trimmedNote.length >= MIN_NOTE && trimmedNote.length <= MAX_REASON;
 
   const canSubmit = product !== null && isQtyValid && isReasonValid && !wasteMut.isPending;
 
@@ -93,7 +101,8 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
       const res = await wasteMut.mutateAsync({
         productId:      product.id,
         quantity:       numericQty,
-        reason:         finalReason,
+        wasteReason:    preset,
+        ...(trimmedNote.length > 0 ? { note: trimmedNote } : {}),
         idempotencyKey,
       });
       // La modale se refermait EN SILENCE sur un geste irréversible : rien ne
@@ -115,6 +124,12 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             break;
           case 'forbidden':
             setFormError('You no longer have permission to record waste. Please refresh.');
+            break;
+          case 'waste_reason_required':
+            setFormError('Choose a reason from the list.');
+            break;
+          case 'reason_required':
+            setFormError('Add a note of at least 3 characters. A note is required for "Other".');
             break;
           case 'quantity_must_be_positive':
             setFormError('Quantity must be greater than zero.');
@@ -212,35 +227,36 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             <Select
               id={presetId}
               value={preset}
-              onChange={(e) => setPreset(e.target.value as ReasonPreset)}
+              onChange={(e) => { if (isWasteReason(e.target.value)) setPreset(e.target.value); }}
               className="w-full"
             >
-              {PRESETS.map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {WASTE_REASON_OPTIONS.map((r) => (
+                <option key={r} value={r}>{WASTE_REASON_LABELS[r]}</option>
               ))}
             </Select>
           </div>
 
-          {preset === 'Other' && (
-            <div className="space-y-1">
-              <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-                Describe
-              </label>
-              <textarea
-                id={reasonId}
-                value={otherReason}
-                onChange={(e) => setOtherReason(e.target.value)}
-                rows={3}
-                maxLength={MAX_REASON}
-                aria-describedby={reasonHintId}
-                className="w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
-                placeholder="At least 3 characters; appears in the audit trail."
-              />
-              <p id={reasonHintId} className="text-text-secondary text-xs">
-                {otherReason.trim().length}/{MAX_REASON}
-              </p>
-            </div>
-          )}
+          <div className="space-y-1">
+            <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
+              {noteRequired ? 'Note (required)' : 'Note (optional)'}
+            </label>
+            <textarea
+              id={reasonId}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={MAX_REASON}
+              required={noteRequired}
+              aria-required={noteRequired}
+              aria-invalid={!isReasonValid && (noteRequired || trimmedNote.length > 0)}
+              aria-describedby={reasonHintId}
+              className="w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
+              placeholder={noteRequired ? 'At least 3 characters; appears in the audit trail.' : 'Optional; at least 3 characters if given.'}
+            />
+            <p id={reasonHintId} className="text-text-secondary text-xs">
+              {trimmedNote.length}/{MAX_REASON}
+            </p>
+          </div>
 
           {/* Le registre est append-only : l'interface ne propose jamais de
               corriger un mouvement, elle propose d'en émettre un autre. Le dire

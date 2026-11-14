@@ -105,7 +105,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T3 — adjust_stock_v4 happy path 10 -> 15 (+ movement +5, audit_logs row)
+-- T3 — adjust_stock_v5 happy path 10 -> 15 (+ movement +5, audit_logs row)
 -- =========================================================================
 DO $t3$
 DECLARE
@@ -146,7 +146,7 @@ SELECT ok(current_setting('breakery.t3_pass')::boolean,
   'T3: adjust 10->15 yields +5 movement, new_stock=15, audit row with actor_profile_id');
 
 -- =========================================================================
--- T4 — adjust_stock_v4 idempotent replay returns same movement_id
+-- T4 — adjust_stock_v5 idempotent replay returns same movement_id
 -- =========================================================================
 DO $t4$
 DECLARE
@@ -177,10 +177,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t4$;
 SELECT ok(current_setting('breakery.t4_pass')::boolean,
-  'T4: adjust_stock_v4 idempotency_key replay yields one row + same movement_id');
+  'T4: adjust_stock_v5 idempotency_key replay yields one row + same movement_id');
 
 -- =========================================================================
--- T5 — adjust_stock_v4 from MANAGER (no inventory.adjust) -> forbidden P0003
+-- T5 — adjust_stock_v5 from MANAGER (no inventory.adjust) -> forbidden P0003
 -- =========================================================================
 DO $$
 DECLARE v_manager UUID;
@@ -204,7 +204,7 @@ BEGIN
 END $$;
 
 -- =========================================================================
--- T6 — adjust_stock_v4 with p_new_qty < 0
+-- T6 — adjust_stock_v5 with p_new_qty < 0
 -- =========================================================================
 SELECT throws_ok(
   $$ SELECT pg_temp.approved_adjustment(
@@ -212,7 +212,7 @@ SELECT throws_ok(
      ) $$,
   NULL,
   'invalid_quantity',
-  'T6: adjust_stock_v4 rejects p_new_qty < 0'
+  'T6: adjust_stock_v5 rejects p_new_qty < 0'
 );
 
 -- =========================================================================
@@ -241,7 +241,7 @@ SELECT ok(
   'T8: record_incoming_stock_v6 still exists (non-purchase entries kept)');
 
 -- =========================================================================
--- T9 — waste_stock_v4 with qty > on-hand -> insufficient_stock P0002
+-- T9 — waste_stock with qty > on-hand -> insufficient_stock P0002
 -- =========================================================================
 DO $$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -257,11 +257,11 @@ SELECT throws_ok(
      ) $$,
   'P0002',
   'insufficient_stock',
-  'T9: waste_stock_v4 rejects qty > current_stock with insufficient_stock'
+  'T9: waste_stock rejects qty > current_stock with insufficient_stock'
 );
 
 -- =========================================================================
--- T10 — waste_stock_v4 happy path
+-- T10 — waste_stock happy path
 -- =========================================================================
 DO $t10$
 DECLARE
@@ -291,7 +291,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t10$;
 SELECT ok(current_setting('breakery.t10_pass')::boolean,
-  'T10: waste_stock_v4 decrements stock by qty and inserts negative movement');
+  'T10: waste_stock decrements stock by qty and inserts negative movement');
 
 -- =========================================================================
 -- T11 — RLS: direct INSERT into stock_movements blocked for `authenticated`

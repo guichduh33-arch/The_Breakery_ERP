@@ -6,18 +6,28 @@ import { useWasteDisplay } from './useWasteDisplay';
 import { useAdjustDisplay } from './useAdjustDisplay';
 import type { POSStockProductRow } from './usePOSStockProducts';
 import { isDisplayQuantity } from '../quantity';
+import { isValidWasteNote, type WasteReason } from '../wasteReasons';
 
 type Kind = 'receive' | 'return' | 'waste' | 'adjust';
 interface Attempt {
   kind: Kind;
   product: POSStockProductRow;
   quantity: number;
+  /** Raison libre (réception, retour, ajustement) ou note facultative d'une perte. */
   reason: string;
+  /** S1-18 — motif de la liste fermée, exigé pour une perte. */
+  wasteReason?: WasteReason;
   idempotencyKey: string;
   uncertain?: boolean;
 }
 function description(a: Attempt): string {
   return `${a.product.name}: ${a.kind === 'adjust' ? 'set display to' : a.kind} ${a.quantity} ${a.product.unit}`;
+}
+
+function requireWasteReason(a: Attempt): WasteReason {
+  // `submit` garantit le motif ; aucun défaut n'est inventé s'il manque.
+  if (a.wasteReason === undefined) throw new DisplayGestureError('waste_reason_required');
+  return a.wasteReason;
 }
 
 /** Une réponse perdue conserve le geste complet, jamais sa seule clé. */
@@ -44,7 +54,10 @@ export function useDisplayStockGestures(canManage: boolean) {
       const args = { productId: a.product.id, quantity: a.quantity, reason: a.reason, idempotencyKey: a.idempotencyKey };
       const result = a.kind === 'adjust'
         ? await adjust.mutateAsync({ productId: a.product.id, newQty: a.quantity, reason: a.reason, idempotencyKey: a.idempotencyKey })
-        : await (a.kind === 'receive' ? receive : a.kind === 'return' ? returned : waste).mutateAsync(args);
+        : a.kind === 'waste'
+          ? await waste.mutateAsync({ productId: a.product.id, quantity: a.quantity, idempotencyKey: a.idempotencyKey,
+            wasteReason: requireWasteReason(a), note: a.reason })
+          : await (a.kind === 'receive' ? receive : returned).mutateAsync(args);
       const declaration = a.kind === 'adjust' || a.kind === 'waste';
       if (typeof result !== 'object' || result === null || Array.isArray(result)) throw new Error('Unconfirmed response');
       if (declaration) {
@@ -67,7 +80,9 @@ export function useDisplayStockGestures(canManage: boolean) {
         attempts.current.delete(a.product.id);
         toast.error(error.code === 'insufficient_display_stock' ? 'Not enough display stock. Check the quantity.'
           : error.code === 'forbidden' ? 'You do not have permission to manage display stock.'
-            : 'Operation refused. Check the product, quantity and reason.');
+            : error.code === 'reason_required' || error.code === 'waste_reason_required'
+              ? 'Choose a waste reason. "Other" needs a note of at least 3 characters.'
+              : 'Operation refused. Check the product, quantity and reason.');
       } else {
         a.uncertain = true;
         toast.error(`Could not confirm ${description(a)}. Retry this same operation.`);
@@ -78,11 +93,17 @@ export function useDisplayStockGestures(canManage: boolean) {
       refresh();
     }
   }
-  async function submit(kind: Kind, product: POSStockProductRow, quantity: number, reason: string): Promise<boolean> {
+  async function submit(kind: Kind, product: POSStockProductRow, quantity: number, reason: string,
+    wasteReason?: WasteReason): Promise<boolean> {
     if (!canManage || !isDisplayQuantity(quantity) || (kind !== 'adjust' && quantity === 0)) return false;
+    // Une perte sans motif de la liste ne part jamais : le serveur la refuserait.
+    if (kind === 'waste' && (wasteReason === undefined || !isValidWasteNote(wasteReason, reason))) return false;
     const existing = attempts.current.get(product.id);
-    if (existing && (existing.kind !== kind || existing.quantity !== quantity || existing.reason !== reason)) return false;
-    return execute(existing ?? { kind, product, quantity, reason, idempotencyKey: crypto.randomUUID() });
+    if (existing && (existing.kind !== kind || existing.quantity !== quantity || existing.reason !== reason
+      || existing.wasteReason !== wasteReason)) return false;
+    const attempt: Attempt = { kind, product, quantity, reason, idempotencyKey: crypto.randomUUID() };
+    if (wasteReason !== undefined) attempt.wasteReason = wasteReason;
+    return execute(existing ?? attempt);
   }
   return { pending, running, completed, submit, retry: execute, description };
 }

@@ -70,7 +70,7 @@ BEGIN
     UNION ALL SELECT is((SELECT actor_id FROM audit_logs WHERE entity_id=count_id AND action='opname.finalize'),owner_profile,'opname audit records profile distinct from auth');
   PERFORM record_production_v12(p_product_id:=product,p_quantity_produced:=1,p_section_id:=station);
   PERFORM pg_temp.authenticate_pin(counter_auth);
-  result:=submit_stock_declaration_v2('adjust',material,1,'Precision lifecycle declaration',gen_random_uuid());
+  result:=submit_stock_declaration_v3('adjust',material,1,'Precision lifecycle declaration',gen_random_uuid());
   declaration_id:=(result->>'declaration_id')::uuid;
   INSERT INTO precision_lifecycle_results(tap)
     SELECT is((SELECT baseline_quantity FROM stock_declarations WHERE id=declaration_id),0.999834::numeric,'declaration baseline retains fractional stock');

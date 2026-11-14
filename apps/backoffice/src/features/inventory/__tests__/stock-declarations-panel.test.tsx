@@ -17,7 +17,7 @@ const declaration = {
   reason: 'Damaged bag', unit: 'kg', declared_by: 'cashier', declared_by_name: 'Cashier', status: 'pending',
   declared_at: '2026-11-06T18:30:33.80305+08:00', idempotency_key: 'declaration-key',
   reviewed_by: null, reviewed_by_name: null, reviewed_at: null, rejection_reason: null,
-  display_withdrawal_applied: false,
+  display_withdrawal_applied: false, waste_reason: 'damaged',
 } satisfies DeclarationPayload;
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -35,7 +35,7 @@ it('renders the RPC declaration date in WITA without a created_at alias', async 
   const time = await screen.findByText('06 Nov 2026, 18:30');
   expect(time.tagName).toBe('TIME');
   expect(time).toHaveAttribute('dateTime', declaration.declared_at);
-  expect(screen.getByText('Cashier — Damaged bag')).toBeInTheDocument();
+  expect(screen.getByText('Cashier — Damaged · Damaged bag')).toBeInTheDocument();
   expect(mocks.rpc.mock.calls.every(([fn]) => fn === 'get_stock_declarations_v1')).toBe(true);
 });
 it('shows declared quantity and unit without a baseline or resulting stock', async () => {
@@ -90,4 +90,16 @@ it('keeps a legacy display loss distinct from a withdrawal already applied', asy
   mount();
   expect(await screen.findByText('Display withdrawal has not been applied.')).toBeInTheDocument();
   expect(screen.queryByText(/Display quantity already removed/)).not.toBeInTheDocument();
+});
+// S1-18 — le motif d'une perte vient de la liste fermée ; les lignes anciennes n'ont pas de code.
+it.each([
+  ['a loss with a code and no note', { reason: 'expired', waste_reason: 'expired' }, 'Cashier — Expired'],
+  ['a loss with a code and a note', { reason: 'Freezer failure', waste_reason: 'other' }, 'Cashier — Other · Freezer failure'],
+  ['an old loss without a code', { reason: 'Spoiled overnight', waste_reason: null }, 'Cashier — Unspecified · Spoiled overnight'],
+  ['an old display loss without a code', { operation: 'display_waste', reason: 'Dropped', waste_reason: null }, 'Cashier — Unspecified · Dropped'],
+  ['a stock count, which keeps its free text', { operation: 'adjust', reason: 'Recount after delivery', waste_reason: null }, 'Cashier — Recount after delivery'],
+] as const)('labels the reason of %s', async (_case, patch, expected) => {
+  mocks.rpc.mockResolvedValue({ data: [{ ...declaration, ...patch }], error: null });
+  mount();
+  expect(await screen.findByText(expected)).toBeInTheDocument();
 });

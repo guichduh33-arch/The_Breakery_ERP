@@ -1,15 +1,27 @@
 // apps/pos/src/features/stock/components/WasteDisplayModal.tsx
 //
 // POS display-stock isolation — modal de saisie d'une PERTE vitrine.
-// Remplace le window.prompt historique. Collecte quantité + raison, puis
-// délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v4).
+// Remplace le window.prompt historique. Collecte quantité + motif, puis
+// délègue au callback onConfirm(qty, choice) (le parent câble la famille
+// `waste_display_stock`).
+// S1-18 — le motif vient de la liste fermée `waste_reason` ; la note est
+// facultative, sauf pour `other` où elle est exigée (au moins 3 caractères).
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { Button, CenterModal } from '@breakery/ui';
+import { Button, CenterModal, Select } from '@breakery/ui';
 import { isDisplayQuantity } from '../quantity';
-
-const MIN_REASON = 3;
+import {
+  isValidWasteNote,
+  isWasteReason,
+  MAX_WASTE_NOTE,
+  MIN_WASTE_NOTE,
+  NOTE_REQUIRED_REASON,
+  WASTE_REASON_LABELS,
+  WASTE_REASON_OPTIONS,
+  type WasteChoice,
+  type WasteReason,
+} from '../wasteReasons';
 
 export interface WasteDisplayModalProps {
   open: boolean;
@@ -20,7 +32,7 @@ export interface WasteDisplayModalProps {
   defaultQty: number;
   isPending: boolean;
   locked?: boolean;
-  onConfirm: (qty: number, reason: string) => Promise<boolean>;
+  onConfirm: (qty: number, choice: WasteChoice) => Promise<boolean>;
 }
 
 export function WasteDisplayModal({
@@ -34,7 +46,8 @@ export function WasteDisplayModal({
   onConfirm,
 }: WasteDisplayModalProps): JSX.Element {
   const [qty, setQty] = useState<number | ''>((defaultQty > 0 ? defaultQty : 1));
-  const [reason, setReason] = useState<string>('');
+  const [reason, setReason] = useState<WasteReason | ''>('');
+  const [note, setNote] = useState<string>('');
   const wasOpen = useRef(false);
 
   // Re-seed when (re)opened for a fresh gesture.
@@ -42,16 +55,18 @@ export function WasteDisplayModal({
     if (open && !wasOpen.current && !locked) {
       setQty((defaultQty > 0 ? defaultQty : 1));
       setReason('');
+      setNote('');
     }
     wasOpen.current = open;
   }, [open, defaultQty, locked]);
 
-  const reasonOk = reason.trim().length >= MIN_REASON;
+  const noteRequired = reason === NOTE_REQUIRED_REASON;
+  const reasonOk = reason !== '' && isValidWasteNote(reason, note);
   const canConfirm = qty !== '' && isDisplayQuantity(qty) && qty > 0 && reasonOk && !isPending;
 
   async function handleConfirm(): Promise<void> {
     if (!canConfirm) return;
-    if (await onConfirm(qty, reason.trim())) onOpenChange(false);
+    if (await onConfirm(qty, { reason, note: note.trim() })) onOpenChange(false);
   }
 
   return (
@@ -110,15 +125,35 @@ export function WasteDisplayModal({
 
         <section className="space-y-2">
           <label htmlFor="waste_reason" className="text-xs uppercase tracking-wide text-text-secondary">
-            Reason (min. {MIN_REASON} characters)
+            Reason
           </label>
-          <input
+          <Select
             id="waste_reason"
-            type="text"
             disabled={isPending || locked}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. end-of-day unsold, damaged…"
+            onChange={(e) => setReason(isWasteReason(e.target.value) ? e.target.value : '')}
+            className="h-touch-comfy"
+          >
+            <option value="">Select a reason</option>
+            {WASTE_REASON_OPTIONS.map((code) => (
+              <option key={code} value={code}>{WASTE_REASON_LABELS[code]}</option>
+            ))}
+          </Select>
+        </section>
+
+        <section className="space-y-2">
+          <label htmlFor="waste_note" className="text-xs uppercase tracking-wide text-text-secondary">
+            {noteRequired ? `Note (required, min. ${MIN_WASTE_NOTE} characters)` : `Note (optional, min. ${MIN_WASTE_NOTE} characters)`}
+          </label>
+          <input
+            id="waste_note"
+            type="text"
+            disabled={isPending || locked}
+            value={note}
+            maxLength={MAX_WASTE_NOTE}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={noteRequired ? 'Describe the reason' : 'Optional detail'}
+            aria-invalid={reason !== '' && !isValidWasteNote(reason, note)}
             className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           />
         </section>

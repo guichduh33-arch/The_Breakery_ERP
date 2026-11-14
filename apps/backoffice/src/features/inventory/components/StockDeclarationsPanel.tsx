@@ -7,14 +7,22 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
+import { formatWasteReason } from '@/features/inventory-production/wasteReasons.js';
 
 type Declaration = Pick<Database['public']['Tables']['stock_declarations']['Row'],
-  'id' | 'operation' | 'quantity' | 'reason' | 'declared_by' | 'status' | 'declared_at' | 'display_withdrawal_applied'> & {
+  'id' | 'operation' | 'quantity' | 'reason' | 'declared_by' | 'status' | 'declared_at' | 'display_withdrawal_applied' | 'waste_reason'> & {
   product_name: string;
   product_sku: string;
   declared_by_name: string;
   unit: string;
 };
+
+const LOSS_OPERATIONS = new Set(['waste', 'display_waste']);
+// Une perte affiche son motif de la liste fermée (ou « Unspecified » pour une
+// ligne ancienne, texte libre conservé) ; un ajustement garde son texte libre.
+function reasonText(row: Declaration): string {
+  return LOSS_OPERATIONS.has(row.operation) ? formatWasteReason(row.waste_reason ?? null, row.reason) : row.reason;
+}
 
 const OPERATION_LABELS: Record<string, string> = { adjust: 'Physical stock count', waste: 'Stock loss', display_adjust: 'Display count', display_waste: 'Display loss' };
 
@@ -66,7 +74,7 @@ export function StockDeclarationsPanel() {
                 : 'Display withdrawal has not been applied.'}
             </p>
           )}
-          <p className="text-sm text-text-secondary">{row.declared_by_name} — {row.reason}</p>
+          <p className="text-sm text-text-secondary">{row.declared_by_name} — {reasonText(row)}</p>
           <time className="block text-xs text-text-muted" dateTime={row.declared_at}>{formatDateTimeShortWita(row.declared_at)}</time>
           {owner && row.status === 'pending' && row.declared_by !== user?.id && (
             <div className="flex flex-wrap items-end gap-2">

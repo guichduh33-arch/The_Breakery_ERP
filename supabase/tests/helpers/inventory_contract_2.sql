@@ -377,7 +377,7 @@ SELECT ok(current_setting('breakery.t24_pass')::boolean,
   'T24: get_stock_levels_v6 bucket low excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
--- T25 — adjust_stock_v4 p_new_qty=0 is allowed (sets stock exactly to 0).
+-- T25 — adjust_stock_v5 p_new_qty=0 is allowed (sets stock exactly to 0).
 -- Setup: PGTAP-PROD-1 to 5; adjust to 0; expect movement quantity = -5.
 -- =========================================================================
 DO $t25$
@@ -409,4 +409,4 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t25$;
 SELECT ok(current_setting('breakery.t25_pass')::boolean,
-  'T25: adjust_stock_v4(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');
+  'T25: adjust_stock_v5(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');

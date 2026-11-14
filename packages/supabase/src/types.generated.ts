@@ -76,6 +76,7 @@ export type Database = {
           waste_declaration_id: string | null
           waste_qty: number
           waste_reason: string | null
+          waste_reason_code: Database["public"]["Enums"]["waste_reason"] | null
         }
         Insert: {
           closing_id: string
@@ -87,6 +88,7 @@ export type Database = {
           waste_declaration_id?: string | null
           waste_qty: number
           waste_reason?: string | null
+          waste_reason_code?: Database["public"]["Enums"]["waste_reason"] | null
         }
         Update: {
           closing_id?: string
@@ -98,6 +100,7 @@ export type Database = {
           waste_declaration_id?: string | null
           waste_qty?: number
           waste_reason?: string | null
+          waste_reason_code?: Database["public"]["Enums"]["waste_reason"] | null
         }
         Relationships: [
           {
@@ -295,6 +298,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
+          waste_reason: Database["public"]["Enums"]["waste_reason"] | null
         }
         Insert: {
           baseline_quantity: number
@@ -312,6 +316,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          waste_reason?: Database["public"]["Enums"]["waste_reason"] | null
         }
         Update: {
           baseline_quantity?: number
@@ -329,6 +334,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          waste_reason?: Database["public"]["Enums"]["waste_reason"] | null
         }
         Relationships: [
           {
@@ -8055,7 +8061,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_stock_v4: {
+      adjust_stock_v5: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -8111,7 +8117,7 @@ export type Database = {
         }
         Returns: Json
       }
-      correct_display_day_count_v1: {
+      correct_display_day_count_v2: {
         Args: {
           p_closing_id: string
           p_counts: Json
@@ -8271,7 +8277,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_display_day_closing_v1: {
+      get_display_day_closing_v2: {
         Args: { p_business_day: string }
         Returns: Json
       }
@@ -8796,7 +8802,7 @@ export type Database = {
         Args: { p_new_unit: string; p_product_id: string }
         Returns: Json
       }
-      submit_display_day_closing_v1: {
+      submit_display_day_closing_v2: {
         Args: {
           p_business_day: string
           p_idempotency_key: string
@@ -8804,13 +8810,14 @@ export type Database = {
         }
         Returns: Json
       }
-      submit_stock_declaration_v2: {
+      submit_stock_declaration_v3: {
         Args: {
           p_idempotency_key: string
           p_operation: string
           p_product_id: string
           p_quantity: number
           p_reason: string
+          p_waste_reason?: Database["public"]["Enums"]["waste_reason"]
         }
         Returns: Json
       }
@@ -8863,21 +8870,23 @@ export type Database = {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }
-      waste_display_stock_v4: {
+      waste_display_stock_v5: {
         Args: {
           p_idempotency_key?: string
+          p_note?: string
           p_product_id: string
           p_quantity: number
-          p_reason?: string
+          p_waste_reason: Database["public"]["Enums"]["waste_reason"]
         }
         Returns: Json
       }
-      waste_stock_v4: {
+      waste_stock_v5: {
         Args: {
           p_idempotency_key?: string
+          p_note?: string
           p_product_id: string
           p_quantity: number
-          p_reason: string
+          p_waste_reason: Database["public"]["Enums"]["waste_reason"]
         }
         Returns: Json
       }
@@ -11538,6 +11547,10 @@ export type Database = {
         | "demo"
         | "recipe_test"
         | "tasting"
+        | "expired"
+        | "leftover"
+        | "damaged"
+        | "other"
       z_report_status: "draft" | "signed" | "voided"
     }
     CompositeTypes: {
@@ -11784,6 +11797,10 @@ export const Constants = {
         "demo",
         "recipe_test",
         "tasting",
+        "expired",
+        "leftover",
+        "damaged",
+        "other",
       ],
       z_report_status: ["draft", "signed", "voided"],
     },

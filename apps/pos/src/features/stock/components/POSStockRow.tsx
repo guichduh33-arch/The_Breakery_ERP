@@ -13,6 +13,7 @@ import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
 import { useStockQuickEntry } from '../hooks/useStockQuickEntry';
 import { StockGestureModals } from './StockGestureModals';
 import { isDisplayQuantity } from '../quantity';
+import type { WasteChoice } from '../wasteReasons';
 
 export interface POSStockRowProps {
   product: POSStockProductRow;
@@ -20,7 +21,7 @@ export interface POSStockRowProps {
   retryPending?: boolean;
   onReceive?: ((qty: number) => Promise<boolean>) | undefined;
   onReturnToKitchen?: ((qty: number) => Promise<boolean>) | undefined;
-  onWaste?: ((qty: number, reason: string) => Promise<boolean>) | undefined;
+  onWaste?: ((qty: number, choice: WasteChoice) => Promise<boolean>) | undefined;
   onAdjust?: ((newQty: number, reason: string) => Promise<boolean>) | undefined;
 }
 

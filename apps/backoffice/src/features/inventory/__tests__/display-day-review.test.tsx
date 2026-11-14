@@ -30,4 +30,20 @@ describe('Confidential daily display review', () => {
     expect(screen.getByText('pending')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Variance' })).toBeInTheDocument();
   });
+  // S1-18 — le motif de la liste s'affiche par son libellé, suivi de la note ;
+  // un comptage ancien, sans motif, garde son texte sous « Unspecified ».
+  it.each([
+    ['expired', 'expired', 'Expired'],
+    ['leftover', 'Tray 3 dropped', 'Leftover · Tray 3 dropped'],
+    [null, 'Dropped on the floor', 'Unspecified · Dropped on the floor'],
+  ])('shows the waste reason code %s with text %s as %s', async (code, text, expected) => {
+    state.role = 'SUPER_ADMIN';
+    state.rpc.mockResolvedValue({ data: { is_owner: true, closing_id: 'closing', revision: 1,
+      recorded_at: '2026-11-05T12:00:00Z', history: [], items: [{ product_id: 'product', product_name: 'Brown Bread',
+        unit: 'pcs', reference_basis: 'display', expected_qty: 8, remaining_qty: 6, variance: -2,
+        waste_qty: 1, waste_reason: text, waste_reason_code: code, waste_status: 'pending' }] }, error: null });
+    mount();
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(state.rpc).toHaveBeenCalledWith('get_display_day_closing_v2', expect.anything());
+  });
 });
