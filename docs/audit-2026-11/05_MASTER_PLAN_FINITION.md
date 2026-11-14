@@ -218,8 +218,14 @@ n'écrase aucun réglage saisi. Relevé du même jour, en lecture seule, des tab
 à enregistrement unique (contrainte `CHECK (id = 1)`) : il y en a deux.
 `b2b_settings` : 0 ligne en production, 1 en dev. `business_config` : 1 ligne
 sur les deux bases. pgTAP : `supabase/tests/b2b_settings_singleton.test.sql`,
-5 assertions vertes sur dev. **Non fait** : application en production, puis
-ouverture de la page de réglages B2B sur le back-office publié.
+5 assertions vertes sur dev.
+
+**En production depuis le 2026-11-14 à midi** (PR #698, `master` à
+`d014d9e8`) : migration appliquée, la table porte sa ligne aux valeurs par
+défaut, et la fonction de lecture la rend sous l'identité d'un propriétaire.
+Aucune publication du back-office n'était nécessaire. Relevé dans
+`docs/runbooks/etat-environnements.md`. **Reste** : ouvrir la page de réglages
+B2B à l'écran, avec un compte connecté.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — insertion de l'enregistrement unique, avec

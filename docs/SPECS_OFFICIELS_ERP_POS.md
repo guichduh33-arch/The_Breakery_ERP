@@ -785,10 +785,10 @@ encours, **24 285 400 IDR** au total.
 l'encours reste humain ; aucun garde-fou applicatif ne sera ajouté. Le blocage
 dur ne joue que sur les clients dont un plafond est saisi volontairement.
 
-**FAIT** — `b2b_settings` est **vide** en production : la page de réglages B2B
-lève une erreur serveur à chaque ouverture.
-**À LIVRER** — Réinsérer l'enregistrement unique, et vérifier si d'autres
-enregistrements uniques manquent.
+**FAIT** — `b2b_settings` porte son enregistrement unique en production depuis
+le 2026-11-14, avec les valeurs par défaut du dépôt ; la famille
+`get_b2b_settings` le rend. L'autre table à enregistrement unique du schéma,
+`business_config`, porte aussi le sien (relevé du même jour).
 
 **FAIT** — Le stock d'une commande B2B sort **à la saisie**, pas au retrait. 119
 commandes sont en attente.
