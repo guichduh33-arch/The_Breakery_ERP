@@ -209,6 +209,18 @@ période, constater le refus d'écriture, rouvrir, constater que l'écriture pas
 **Source** — Audit 01 §5.2 : `b2b_settings` est **vide** en production ; la page
 de réglages B2B lève une erreur serveur à chaque ouverture.
 
+**État — développé et prouvé en dev le 2026-11-14**, branche
+`fix/s1-04-b2b-settings-singleton`, migration
+`20261114000001_reseed_b2b_settings_singleton.sql` appliquée sur la base dev
+seulement, où elle est sans effet (la ligne y existe) ; **la production ne l'a
+pas**. Elle réinsère la ligne avec les valeurs par défaut des colonnes et
+n'écrase aucun réglage saisi. Relevé du même jour, en lecture seule, des tables
+à enregistrement unique (contrainte `CHECK (id = 1)`) : il y en a deux.
+`b2b_settings` : 0 ligne en production, 1 en dev. `business_config` : 1 ligne
+sur les deux bases. pgTAP : `supabase/tests/b2b_settings_singleton.test.sql`,
+5 assertions vertes sur dev. **Non fait** : application en production, puis
+ouverture de la page de réglages B2B sur le back-office publié.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — insertion de l'enregistrement unique, avec
   les valeurs par défaut du dépôt
