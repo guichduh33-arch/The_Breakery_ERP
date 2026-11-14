@@ -35,7 +35,10 @@ BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.financial.read')
-    AND has_permission(up.auth_user_id, 'reports.sales.read') LIMIT 1;
+    AND has_permission(up.auth_user_id, 'reports.sales.read')
+  -- Le proprietaire d'abord : seul lui voit un jour non cloture, et un LIMIT 1
+  -- sans tri rend un profil different selon le plan d'execution.
+  ORDER BY (up.role_code = 'SUPER_ADMIN' AND up.is_active) DESC LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $$;
 
@@ -88,7 +91,10 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+    AND has_permission(up.auth_user_id, 'reports.financial.read')
+  -- Le proprietaire d'abord : seul lui voit un jour non cloture, et un LIMIT 1
+  -- sans tri rend un profil different selon le plan d'execution.
+  ORDER BY (up.role_code = 'SUPER_ADMIN' AND up.is_active) DESC LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
@@ -127,7 +133,10 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+    AND has_permission(up.auth_user_id, 'reports.financial.read')
+  -- Le proprietaire d'abord : seul lui voit un jour non cloture, et un LIMIT 1
+  -- sans tri rend un profil different selon le plan d'execution.
+  ORDER BY (up.role_code = 'SUPER_ADMIN' AND up.is_active) DESC LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
@@ -163,7 +172,10 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+    AND has_permission(up.auth_user_id, 'reports.financial.read')
+  -- Le proprietaire d'abord : seul lui voit un jour non cloture, et un LIMIT 1
+  -- sans tri rend un profil different selon le plan d'execution.
+  ORDER BY (up.role_code = 'SUPER_ADMIN' AND up.is_active) DESC LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
