@@ -26,6 +26,24 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 14 novembre 2026 — réglages B2B `S1-04`
+
+Relevé du 14 novembre 2026 vers 12 h, UTC+8. Observé directement. PR #698.
+Aucune commande, aucun paiement ni aucun réglage métier n'a été saisi en
+production ; la seule écriture est la ligne décrite ci-dessous.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `d014d9e8` (fusion de #698). CI et pgTAP de la PR verts avant fusion | pgTAP de la PR, pas un lancement manuel sur le commit de fusion : aucune publication du back-office n'en dépendait |
+| Backend production, avant, 12 h 02 | `b2b_settings` : 0 ligne. Valeurs par défaut des colonnes et contraintes égales au dev, aucun déclencheur sur la table | — |
+| Backend production, livraison | Migration `20261114000001` appliquée : une ligne `id = 1` insérée aux valeurs par défaut (`net_30`, cinq délais proposés, seuil critique 30 jours, trois tranches d'ancienneté) | — |
+| Backend production, usage | `get_b2b_settings_v1` rend la ligne sous l'identité d'un `SUPER_ADMIN` actif | Lecture seule, par requête SQL. La page de réglages B2B n'a pas été ouverte dans un navigateur connecté |
+| BO production | Non republié : le lot ne change aucun fichier du back-office | — |
+
+Retour arrière, si nécessaire : `DELETE FROM public.b2b_settings WHERE id = 1`,
+tant qu'aucun réglage n'a été saisi depuis. La page de réglages retombe alors
+dans l'erreur d'avant la livraison.
+
 ## Complément du 12 novembre 2026 au soir — lot sécurité `S1-07` et `S1-13`
 
 Relevé du 12 novembre 2026 entre 20 h et 22 h, UTC+8. Observé directement.
