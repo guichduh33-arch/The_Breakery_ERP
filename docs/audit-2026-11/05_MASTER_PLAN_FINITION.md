@@ -589,6 +589,23 @@ hors périmètre. Vitest ciblé, avec `--passWithNoTests=false`.
 
 **Risque prod** 🔴 — **prérequis absolu avant toute installation de tâche
 planifiée.**
+**État — développé et prouvé en dev le 2026-11-14**, branche
+`fix/s1-14-cron-project-url`, migration
+`20261114000003_cron_edge_function_url_from_vault.sql` appliquée sur la base dev
+seulement ; **la production ne l'a pas**. Relevé du même jour : deux tâches
+appellent une Edge Function par une adresse en dur (anniversaires et envoi des
+notifications) ; la troisième migration citée est celle que la deuxième
+corrigeait. Les deux tâches lisent maintenant l'adresse dans un secret Vault
+par base, `project_url`. Sans ce secret, elles n'envoient aucune requête. La
+migration ne réécrit que les tâches déjà présentes : elle n'en installe aucune
+en production, qui en porte 0. Les trois anciennes migrations gardent leur
+texte ; rejouées dans l'ordre, elles sont réécrites par la nouvelle. Secret posé
+sur dev ; la tâche d'envoi des notifications y a répondu 200 sur l'adresse
+lue. pgTAP : `supabase/tests/cron_edge_function_url.test.sql`, 9 assertions
+vertes sur dev, dont une adresse d'un autre projet suivie par le helper ; le
+test rougit si une tâche reprend une adresse en dur. **Non fait** : le secret
+de production, à poser avec l'installation des tâches. **Limite relevée** :
+l'en-tête de la tâche des anniversaires porte un secret fixe, recopié tel quel.
 **Source** — Audit 01 §5.5 : trois migrations planifient des tâches dont
 l'adresse est **écrite en dur sur le projet de développement**. Inerte
 uniquement parce qu'aucune tâche n'est installée en production.
