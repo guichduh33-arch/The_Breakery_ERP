@@ -36,7 +36,7 @@ Relevé du 15 novembre 2026 entre 13 h 50 et 14 h 20, UTC+8. Observé directemen
 | BO production | Publication par `production-backoffice.yml`, run `43681181421`, source `f46a4eeb`, approbation de l'environnement « Production » par Mamat ; alias `backoffice.the-breakery.com` posé à 13 h 50. Un premier run, `43620957573`, a échoué au contrôle du SHA exact : `master` avait avancé entre son lancement et son approbation. Rien n'avait été publié | Aucune session ouverte sur le back-office publié : les écrans de perte n'y ont pas été vus, et aucune perte n'y a été saisie |
 | BO production, artefact servi | Les fichiers servis par `backoffice.the-breakery.com` nomment la référence Supabase de production, `submit_stock_declaration_v3` et `get_display_day_closing_v2`, et ne nomment plus `submit_stock_declaration_v2` ni `get_display_day_closing_v1` | Lecture des fichiers servis, pas un parcours d'écran |
 | Backend production | Inchangé depuis le relevé de 00 h 35 : nouvelles et anciennes versions présentes | Les huit anciennes versions restent en place |
-| POS production | Paquet de la caisse non reconstruit, non installé | La caisse appelle encore les anciennes versions et envoie du texte libre |
+| POS production | Paquet de la caisse construit à 14 h 06 par `package-shop-release.yml`, run `43683176243`, source `f46a4eeb`, artefact `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1`. **Non installé** en boutique | La caisse appelle encore les anciennes versions et envoie du texte libre |
 
 Suite : installation du paquet de la caisse, puis retrait des huit anciennes
 versions.
