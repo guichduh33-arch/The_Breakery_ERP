@@ -26,6 +26,42 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 15 novembre 2026, 13 h 50 — motifs de perte `S1-18`, back-office publié
+
+Relevé du 15 novembre 2026 entre 13 h 50 et 14 h 20, UTC+8. Observé directement.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `f46a4eeb` : la fusion de #707 (export du journal d'audit, back-office seul, sans changement de base) s'est ajoutée à celle de #706. CI de `master` et pgTAP lancé à la main verts sur ce SHA | — |
+| BO production | Publication par `production-backoffice.yml`, run `43681181421`, source `f46a4eeb`, approbation de l'environnement « Production » par Mamat ; alias `backoffice.the-breakery.com` posé à 13 h 50. Un premier run, `43620957573`, a échoué au contrôle du SHA exact : `master` avait avancé entre son lancement et son approbation. Rien n'avait été publié | Aucune session ouverte sur le back-office publié : les écrans de perte n'y ont pas été vus, et aucune perte n'y a été saisie |
+| BO production, artefact servi | Les fichiers servis par `backoffice.the-breakery.com` nomment la référence Supabase de production, `submit_stock_declaration_v3` et `get_display_day_closing_v2`, et ne nomment plus `submit_stock_declaration_v2` ni `get_display_day_closing_v1` | Lecture des fichiers servis, pas un parcours d'écran |
+| Backend production | Inchangé depuis le relevé de 00 h 35 : nouvelles et anciennes versions présentes | Les huit anciennes versions restent en place |
+| POS production | Paquet de la caisse construit à 14 h 06 par `package-shop-release.yml`, run `43683176243`, source `f46a4eeb`, artefact `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1`. **Non installé** en boutique | La caisse appelle encore les anciennes versions et envoie du texte libre |
+
+Suite : installation du paquet de la caisse, puis retrait des huit anciennes
+versions.
+
+## Complément du 15 novembre 2026, 00 h 35 — motifs de perte `S1-18`, étape additive
+
+Relevé du 15 novembre 2026 entre 00 h 32 et 00 h 40, UTC+8. Observé directement.
+PR #706. Aucune commande, aucun paiement, aucune déclaration ni aucun mouvement
+de stock n'a été créé en production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `6d735128` (fusion de #706). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, avant | 0 session de caisse ouverte, dernière commande le 14 à 17 h 34. Type `waste_reason` à six valeurs. Corps de production des fonctions remplacées égaux à ceux du dev d'avant le lot, après normalisation des retours chariot. 17 déclarations de stock, toutes des pertes de vitrine, 9 en attente | — |
+| Backend production, livraison | Application **additive** : texte de `20261114000005`, puis texte de `20261114000006` **sans ses `DROP`**. Le type reçoit `expired`, `leftover`, `damaged`, `other` ; deux colonnes de motif ; huit fonctions créées, corps égaux au fichier du dépôt (md5 de `prosrc`), EXECUTE pour `authenticated` et `service_role`, `anon` sans droit ; le helper privé réservé à `postgres` | Les anciennes versions **restent en place** : `submit_stock_declaration_v2`, `adjust_stock_v4`, `waste_stock_v4`, `waste_display_stock_v4`, `submit_display_day_closing_v1`, `get_display_day_closing_v1`, `correct_display_day_count_v1`, `stock_private.submit_day_waste_v1` |
+| Backend production, après | 17 déclarations, aucune ne porte de motif : aucune ligne réécrite. Les versions nouvelles de la lecture et de la correction du comptage égalent les anciennes, au motif près | Aucun appel réel n'est passé par les nouvelles fonctions au moment du relevé |
+| BO et POS production | Non republiés à ce relevé : ils appellent encore les anciennes versions, qui acceptent le texte libre | La liste fermée ne s'impose en production qu'après le retrait des anciennes versions |
+
+Suite, dans cet ordre : publication du back-office, installation du paquet de la
+caisse, puis retrait des huit anciennes versions, comme le fait la migration.
+
+Retour arrière, si nécessaire, tant qu'aucune ligne ne porte de motif : retirer
+les huit nouvelles fonctions, puis les deux colonnes. Les quatre valeurs du type
+restent : une valeur d'énumération ne se retire pas, et rien ne l'utilise alors.
+
 ## Complément du 14 novembre 2026, 20 h 40 — compteur des produits non suivis `S1-11`
 
 Relevé du 14 novembre 2026 à 20 h 40, UTC+8. Observé directement. PR #703.

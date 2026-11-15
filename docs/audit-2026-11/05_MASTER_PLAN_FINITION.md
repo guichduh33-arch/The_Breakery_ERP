@@ -86,7 +86,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
 | `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
-| `S1-18` motifs de perte | Prouvé en dev, branche `feat/s1-18-loss-reasons` | Fusion de la PR ; puis base, back-office et paquet de la caisse en production |
+| `S1-18` motifs de perte | PR #706 fusionnée ; en production le 2026-11-15 : base en application additive, back-office publié | Installation du paquet de la caisse en boutique ; puis retrait des anciennes versions en production |
 | `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
 
 ### Retirée
@@ -801,11 +801,16 @@ ne les agrège plus. Aucun mapping ne les cible.
 **Source** — Arbitrage §2bis lot 4. La production a une liste fermée de 6
 motifs ; le stock et la vitrine utilisent du **texte libre**.
 
-**État — développé et prouvé en dev le 2026-11-14**, branche
-`feat/s1-18-loss-reasons`, migrations
+**État — développé et prouvé en dev le 2026-11-14, PR #706 fusionnée ; livraison
+en production commencée le 2026-11-15, non terminée.** Migrations
 `20261114000005_waste_reason_loss_values.sql` et
-`20261114000006_loss_reason_closed_list.sql` appliquées sur la base dev
-seulement ; **la production ne les a pas**. **Décision de Mamat du
+`20261114000006_loss_reason_closed_list.sql` appliquées sur la base dev. En
+production, le 2026-11-15 : la base a reçu les valeurs, les colonnes et les
+nouvelles fonctions **sans le retrait des anciennes**, et le back-office est
+publié depuis `master` à `f46a4eeb`. **Restent** : l'installation du paquet de
+la caisse en boutique, puis le retrait des anciennes versions — tant qu'elles
+existent, la liste fermée ne s'impose pas en production. Relevé :
+`docs/runbooks/etat-environnements.md`. **Décision de Mamat du
 2026-11-14** : le type `waste_reason` reçoit `expired`, `leftover`, `damaged`
 et `other`, liste commune à la production, au stock et à la vitrine ; les
 pertes passées gardent leur texte, sans motif, et se lisent « non précisé ».
