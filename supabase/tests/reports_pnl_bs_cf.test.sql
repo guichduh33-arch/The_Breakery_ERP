@@ -21,7 +21,10 @@ DECLARE v_auth UUID;
 BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+     AND has_permission(up.auth_user_id, 'reports.financial.read')
+   -- Les comptes 114x sont réservés au propriétaire (20261105000028) : un
+   -- LIMIT 1 sans ordre tombait sur un ADMIN selon l'ordre physique de la base.
+   ORDER BY (up.role_code = 'SUPER_ADMIN') DESC, up.created_at LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $fixture$;
