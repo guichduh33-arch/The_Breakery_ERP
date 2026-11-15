@@ -34,10 +34,11 @@ export function describeAuditLog(row: AuditLogRow): string {
   const details = auditRecord(row.payload);
   const reference = context.order_number ?? context.expense_number ?? context.po_number
     ?? context.production_number ?? context.batch_number ?? context.count_number
-    ?? context.payment_number ?? context.source_reference;
+    ?? context.payment_number ?? context.source_reference ?? row.order_number;
   // Le document et le produit ont chacun leur place : un ajout au panier ne montre plus
   // tantôt l'un, tantôt l'autre au même endroit.
-  const subject = context.name ?? context.item_name ?? details.name ?? details.product_name;
+  // Le nom résolu par la lecture complète la trace : un mouvement de stock ne porte que l'identifiant.
+  const subject = context.name ?? context.item_name ?? details.name ?? details.product_name ?? row.product_name;
   const fields = auditFields(row);
   const amount = fields.amount;
   const reason = context.reason ?? context.discount_reason ?? context.cancel_reason

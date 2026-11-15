@@ -91,4 +91,8 @@ export const AUDIT_CSV_COLUMNS: CsvColumn<AuditExportRow>[] = [
   { header: 'Group size',   accessor: (e) => e.signal.groupSize, format: 'number' },
   { header: 'Link key',     accessor: (e) => e.fields.linkKey, format: 'text' },
   { header: 'Evidence code', accessor: (e) => auditEvidenceCode(e.row), format: 'text' },
+  // ── Contexte résolu à la lecture. Le rôle est celui du compte AUJOURD'HUI, l'en-tête le dit. ──
+  { header: 'Account role (current)', accessor: (e) => e.row.actor_role ?? null, format: 'text' },
+  { header: 'Terminal',     accessor: (e) => e.row.device_label ?? null, format: 'text' },
+  { header: 'Terminal sequence', accessor: (e) => e.row.device_seq ?? null, format: 'number' },
 ];

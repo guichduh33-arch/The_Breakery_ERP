@@ -187,6 +187,41 @@ describe('audit export file', () => {
     expect(csv).toContain(',-3,0,');
   });
 
+  it('keeps every column already published in place and adds the resolved context at the far right', () => {
+    const headers = AUDIT_CSV_COLUMNS.map((c) => c.header);
+    expect(headers.slice(13, 36)).toEqual(['Timestamp ISO', 'Sequence', 'Order number', 'Order ID', 'Terminal ID', 'Shift ID',
+      'Table', 'Product', 'Product ID', 'Quantity', 'Unit', 'Amount', 'Payment method', 'Value before', 'Value after',
+      'Reason code', 'Reason note', 'Outcome', 'Severity', 'Signal group', 'Group size', 'Link key', 'Evidence code']);
+    expect(headers.slice(36)).toEqual(['Account role (current)', 'Terminal', 'Terminal sequence']);
+  });
+
+  it('fills an empty cell with the context resolved by the server and never overrides the trace', () => {
+    // Un mouvement de stock ne porte ni produit ni nom ; une mise en attente ne porte pas de numéro.
+    const movement = { ...audit('stock.movement', 'stock_movements', 'sm-1', { movement_type: 'waste', quantity: -2, unit: 'pcs' }),
+      product_id: PRODUCT, product_name: 'Croissant', actor_role: 'MANAGER' };
+    const heldBare = { ...audit('order.held', 'orders', ORDER, {}), order_id: ORDER, order_number: 'T1-0042' };
+    const gesture = { ...pos('payment_started', { method: 'cash' }, { amount: 1000 }),
+      device_id: DEVICE, device_label: 'Counter 1', device_seq: 41 };
+    const traced = { ...pos('item_added', { product_id: PRODUCT, name: 'Trace name' }, { order_number: 'TRACE-1' }),
+      product_name: 'Catalogue name', order_number: 'OTHER-9' };
+    const out = buildAuditExportRows([movement, heldBare, gesture, traced]);
+    expect(out[0]?.fields).toMatchObject({ productId: PRODUCT, product: 'Croissant' });
+    expect(describeAuditLog(movement)).toContain('Croissant');
+    expect(out[1]?.fields).toMatchObject({ orderId: ORDER, orderNumber: 'T1-0042', linkKey: 'order:T1-0042' });
+    expect(describeAuditLog(heldBare)).toContain('T1-0042');
+    expect(out[3]?.fields).toMatchObject({ product: 'Trace name', orderNumber: 'TRACE-1' });
+    const headers = AUDIT_CSV_COLUMNS.map((c) => c.header);
+    const cell = (index: number, header: string): unknown => AUDIT_CSV_COLUMNS[headers.indexOf(header)]?.accessor(out[index]!);
+    expect(cell(0, 'Account role (current)')).toBe('MANAGER');
+    expect(cell(2, 'Terminal')).toBe('Counter 1');
+    expect(cell(2, 'Terminal sequence')).toBe(41);
+    expect(cell(1, 'Terminal')).toBeNull();
+    // Une ligne lue sans contexte résolu sort comme avant, cases vides.
+    const plain = buildAuditExportRows([audit('stock.movement', 'stock_movements', 'sm-2', { movement_type: 'waste' })]);
+    expect(plain[0]?.fields).toMatchObject({ product: null, productId: null, orderNumber: null });
+    expect(AUDIT_CSV_COLUMNS[headers.indexOf('Account role (current)')]?.accessor(plain[0]!)).toBeNull();
+  });
+
   it('numbers events from the oldest to the newest and writes an ISO time with seconds and offset', () => {
     expect(exported.map((e) => e.sequence)).toEqual([6, 5, 4, 3, 2, 1]);
     const csv = buildCsv(exported, AUDIT_CSV_COLUMNS, { bom: false });

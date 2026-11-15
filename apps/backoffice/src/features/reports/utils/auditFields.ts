@@ -106,15 +106,16 @@ export function auditFields(row: AuditLogRow): AuditFields {
       ?? details.amount ?? details.total_amount);
 
   return {
-    orderNumber: first(context.order_number),
-    orderId: ORDER_ENTITIES.has(row.entity_type) ? row.entity_id : first(context.order_id),
-    terminalId: first(context.device_id, context.terminal_id) ?? (row.entity_type === 'pos_device' ? row.entity_id : null),
+    // La trace d'abord ; la valeur résolue par la lecture ne sert qu'à combler un vide.
+    orderNumber: first(context.order_number, row.order_number),
+    orderId: (ORDER_ENTITIES.has(row.entity_type) ? row.entity_id : first(context.order_id)) ?? row.order_id ?? null,
+    terminalId: first(context.device_id, context.terminal_id, row.device_id) ?? (row.entity_type === 'pos_device' ? row.entity_id : null),
     // `session_id` d'une connexion désigne la session du compte, pas le poste de caisse.
     shiftId: SHIFT_ENTITIES.has(row.entity_type) ? row.entity_id
       : first(context.shift_id, context.receiving_session_id, isPos || row.action.startsWith('order.') ? context.session_id : null),
     table: first(details.table_number, context.table_number),
-    product: first(details.name, details.product_name, context.product_name, context.item_name),
-    productId: PRODUCT_ENTITIES.has(row.entity_type) ? row.entity_id : first(context.product_id, details.product_id),
+    product: first(details.name, details.product_name, context.product_name, context.item_name, row.product_name),
+    productId: (PRODUCT_ENTITIES.has(row.entity_type) ? row.entity_id : first(context.product_id, details.product_id)) ?? row.product_id ?? null,
     quantity: auditNumber(context.new_qty ?? details.qty ?? context.quantity ?? details.quantity ?? context.quantity_produced),
     unit: first(context.unit),
     amount,
