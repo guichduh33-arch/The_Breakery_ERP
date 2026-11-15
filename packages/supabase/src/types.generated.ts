@@ -8084,7 +8084,7 @@ export type Database = {
         Returns: Json
       }
       can_view_business_day_v2: { Args: { p_day: string }; Returns: boolean }
-      can_view_financial_entry_v1: {
+      can_view_financial_entry_v2: {
         Args: { p_detail?: boolean; p_entry_id: string }
         Returns: boolean
       }
