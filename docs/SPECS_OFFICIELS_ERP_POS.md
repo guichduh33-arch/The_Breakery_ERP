@@ -719,11 +719,17 @@ le rapprochement lui-même.
 | Production, entrée produit | Produits finis | Coût de production |
 | Ajustement, inventaire | Stock ou charge d'ajustement | Produit d'ajustement ou stock |
 | Réception | Stock général (sous-total + TVA) | Fournisseurs |
-| Paiement fournisseur | Fournisseurs | Caisse ou banque |
+| Paiement fournisseur | Fournisseurs | **petite caisse si espèces**, sinon banque |
 | Dépense approuvée | compte de la catégorie, montant TTC | Fournisseurs si crédit, **sinon petite caisse immédiatement** |
 | Écart de caisse | Perte d'écart | Gain d'écart |
 | Avoir client | selon le geste | Avoirs client |
 | Vente B2B | Clients B2B | Ventes B2B, **taxe à zéro** |
+
+**RÈGLE** — Toute dépense payée en espèces, charge ou paiement fournisseur,
+sort de la **petite caisse** (`1111`), jamais du compte d'encaissements non
+déposés (`1110`). Décision de Mamat du 2026-11-15.
+**FAIT** — Le changement est prospectif : les paiements fournisseurs en espèces
+postés avant lui restent crédités au `1110`.
 
 **FAIT** — Un mouvement dont la valorisation est nulle n'émet **aucune**
 écriture. 14 produits suivis sont à coût zéro.
