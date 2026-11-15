@@ -26,6 +26,22 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 15 novembre 2026, 15 h 30 — vente d'un produit à recette, vitrine, attente de la caisse
+
+Relevé du 15 novembre 2026 vers 15 h 30, UTC+8. Lecture seule sur la base de
+production `yjhhhmjgsmyzyymvixot`. Observé directement. Aucune écriture.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `83c5b374` : la fusion de #709 (lecture du journal d'audit) s'est ajoutée. Son back-office appelle `get_activity_logs_v4` | — |
+| Backend production | Seule `get_activity_logs_v3` existe : la migration `20261115000001_activity_log_resolved_context.sql` n'y est pas appliquée. Les huit anciennes versions des fonctions de perte sont toujours présentes | Le back-office publié vient de `f46a4eeb` et appelle encore la version présente. **Toute publication ou tout paquet construit depuis `master` exige d'abord cette migration en production** |
+| POS production | Paquet `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1` toujours **non installé** : le poste de la boutique est en service, Mamat a demandé d'attendre la fin du service | — |
+| Vente d'un produit à recette | « Beef Cheese Croissant » et « Banh Mi Croissant » ne sont pas suivis en stock ; leur recette contient un « Croissant », suivi et vendu en vitrine. Commandes `T114112026089` (deux vendus) et `T115112026107` (un vendu) : le stock général du Croissant baisse de 2 puis de 1, avec le bœuf, la mozzarella et la béchamel ; le compteur de la vitrine du Croissant baisse des mêmes quantités, motif « POS recipe consumption (pay existing) » | Deux commandes réglées après coup. Aucune vente réglée directement n'a été relue ; les autres chemins de vente appellent le même helper de la famille `_record_sale_stock` |
+| Compteurs du Croissant | Stock général 115, vitrine 279 | Écart **non expliqué**, cause non cherchée : la vitrine dépasse le stock général |
+
+Suite : inchangée pour `S1-18` — installation du paquet de la caisse, puis
+retrait des huit anciennes versions.
+
 ## Complément du 15 novembre 2026, 13 h 50 — motifs de perte `S1-18`, back-office publié
 
 Relevé du 15 novembre 2026 entre 13 h 50 et 14 h 20, UTC+8. Observé directement.
