@@ -45,19 +45,19 @@ du bloc « qualité des rapports », `S3-19` à `S3-24`, sur demande de Mamat.)*
 
 ---
 
-## Avancement au 2026-11-14 au soir
+## Avancement au 2026-11-15 au soir
 
-Relevé du 2026-11-14, tiré des paragraphes **État** de chaque tâche et de
+Relevé du 2026-11-15, tiré des paragraphes **État** de chaque tâche et de
 `../runbooks/etat-environnements.md`. Il se périme au prochain lot : la
 vérité de chaque tâche reste son propre paragraphe **État**.
 
 | Sprint | En production | En cours | Retirée | Restent | Total |
 |---|---|---|---|---|---|
-| Sprint 1 | 14 | 2 | 1 | 5 | 22 |
+| Sprint 1 | 15 | 1 | 1 | 5 | 22 |
 | Sprint 2 | 0 | 0 | 0 | 13 | 13 |
 | Sprint 3 | 3 | 1 | 0 | 20 | 24 |
 | Sprint 4 | 0 | 0 | 0 | 11 | 11 |
-| **Total** | **17** | **3** | **1** | **49** | **70** |
+| **Total** | **18** | **2** | **1** | **49** | **70** |
 
 ### Fait — en production
 
@@ -75,6 +75,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | `S1-13` injections PostgREST | 2026-11-12, PR #695 | — |
 | `S1-14` adresse des tâches planifiées | 2026-11-14, PR #701 | Le secret de production, à poser avec l'installation des tâches |
 | `S1-17` comptes de taxe hors régime | 2026-11-11, PR #692 | La fonction du bilan nomme encore leurs codes |
+| `S1-18` motifs de perte | 2026-11-15, PR #706, paquet `f46a4eeb` | Une perte saisie à l'écran, sur la caisse et sur le back-office ; l'impression d'un ticket après l'installation |
 | `S1-21` addition avant paiement | 2026-11-10, paquet `a35fd5f5` | La preuve sur papier |
 | `S1-22` exemplaires du ticket serveur | 2026-11-10, paquet `a35fd5f5` | La preuve sur papier |
 | `S3-15` comptes de charge par nature | 2026-11-11, PR #692 | — |
@@ -86,7 +87,6 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
 | `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
-| `S1-18` motifs de perte | PR #706 fusionnée ; en production le 2026-11-15 : base en application additive, back-office publié | Installation du paquet de la caisse en boutique ; puis retrait des anciennes versions en production |
 | `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
 
 ### Retirée
@@ -104,7 +104,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 ### Ordre retenu pour la suite du Sprint 1
 
 1. `S1-11` — fait, voir son paragraphe.
-2. `S1-18` — **décision de Mamat du 2026-11-14** : la liste fermée reçoit
+2. `S1-18` — fait, voir son paragraphe. **Décision de Mamat du 2026-11-14** : la liste fermée reçoit
    `expired`, `leftover`, `damaged` et `other`, commune à la production, au
    stock et à la vitrine ; les pertes passées gardent leur texte et sont
    marquées « non précisé ».
@@ -801,15 +801,16 @@ ne les agrège plus. Aucun mapping ne les cible.
 **Source** — Arbitrage §2bis lot 4. La production a une liste fermée de 6
 motifs ; le stock et la vitrine utilisent du **texte libre**.
 
-**État — développé et prouvé en dev le 2026-11-14, PR #706 fusionnée ; livraison
-en production commencée le 2026-11-15, non terminée.** Migrations
+**État — en production le 2026-11-15**, PR #706. Migrations
 `20261114000005_waste_reason_loss_values.sql` et
-`20261114000006_loss_reason_closed_list.sql` appliquées sur la base dev. En
-production, le 2026-11-15 : la base a reçu les valeurs, les colonnes et les
-nouvelles fonctions **sans le retrait des anciennes**, et le back-office est
-publié depuis `master` à `f46a4eeb`. **Restent** : l'installation du paquet de
-la caisse en boutique, puis le retrait des anciennes versions — tant qu'elles
-existent, la liste fermée ne s'impose pas en production. Relevé :
+`20261114000006_loss_reason_closed_list.sql` appliquées sur les deux bases. En
+production, le 2026-11-15, en trois temps : la base a reçu les valeurs, les
+colonnes et les nouvelles fonctions sans le retrait des anciennes ; le
+back-office a été publié depuis `master` à `f46a4eeb` ; le paquet de la caisse
+`f46a4eeb` a été installé en boutique, puis les huit anciennes versions ont été
+retirées. La liste fermée s'impose depuis ce retrait. **Reste à constater** :
+une perte saisie à l'écran, sur la caisse et sur le back-office, et une
+impression après l'installation. Relevé :
 `docs/runbooks/etat-environnements.md`. **Décision de Mamat du
 2026-11-14** : le type `waste_reason` reçoit `expired`, `leftover`, `damaged`
 et `other`, liste commune à la production, au stock et à la vitrine ; les
@@ -830,10 +831,9 @@ en attente d'avant n'en ont pas et leur approbation les met à jour) ; une
 caisse mise à jour avec un comptage en attente dont la première tentative a
 abouti garde cette tentative en attente pour ce jour-là ;
 `types.generated.ts` ne reçoit que le delta du lot, une régénération complète
-depuis la base dev y ajoute des objets d'autres branches. **Livraison** : la
-base retire les anciennes fonctions, que la caisse et le back-office publiés
-appellent encore — application additive d'abord, retrait après la publication
-du back-office et l'installation du paquet de la caisse.
+depuis la base dev y ajoute des objets d'autres branches. **Livraison** : faite en
+application additive d'abord, le retrait des anciennes fonctions après la
+publication du back-office et l'installation du paquet de la caisse.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — étendre un type énuméré aux deux chemins

@@ -26,6 +26,32 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 15 novembre 2026, 21 h 40 — motifs de perte `S1-18`, caisse installée et retrait
+
+Relevé du 15 novembre 2026 entre 21 h 20 et 21 h 40, UTC+8. Observé directement,
+sauf mention contraire. Boutique fermée : aucune session de caisse ouverte,
+dernière commande à 18 h 01.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| POS production, avant | Les deux origines servaient `a35fd5f5` ; tâche « Breakery V3 Production » en marche | — |
+| POS production, installation | Paquet `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1` installé à 21 h 36 par l'installateur du paquet, lancé depuis le terminal de la console de supervision du poste. Empreinte de l'archive sur le poste égale à celle du workflow. Sortie : `SHOP_RELEASE_VERIFIED f46a4eeb4712dd5e1f5f858de96a8bd138764942` | Premier passage réel de cet installateur en boutique. L'archive a voyagé en deux parts, recollées sur le poste |
+| POS production, après | `https://pos.the-breakery.com/health` et `https://pos.the-breakery.com:3001/health` rendent `f46a4eeb` ; tâche en marche. Les fichiers installés nomment la référence Supabase de production, `waste_display_stock_v5` et `submit_display_day_closing_v2` ; ils ne nomment ni `waste_display_stock_v4`, ni `submit_display_day_closing_v1`, ni la référence de dev | Lecture des fichiers installés, pas un parcours d'écran |
+| POS production, écrans | Rechargement de la caisse, de l'écran client et des tablettes **rapporté par Mamat**, non vu | Aucune impression, aucune vente et aucune perte constatées après l'installation |
+| Tablettes | L'application Android embarque son propre bundle : la version 1.21 du 2026-11-09 n'est **pas** mise à jour par ce paquet. Son bundle nomme encore les anciennes fonctions de perte de vitrine et de comptage du jour | Version réellement installée sur les tablettes non relevée ; accès du profil serveur à ces écrans non vérifié. Une perte de vitrine ou un comptage du jour saisi depuis une tablette non mise à jour échouerait |
+| Tablettes, APK 1.22 | Fabriquée à 21 h 49 sur le poste de développement : `com.thebreakery.pos`, version 1.22 (code 23), SHA-256 `9ddf16b50da6a78c69f6e6774d77bbb47228a796be3744f0ac1315e76560d6d4`. Son bundle est celui du paquet de la caisse `f46a4eeb`, repris de l'archive du workflow sans reconstruction : il nomme la référence Supabase de production et les nouvelles fonctions, aucune ancienne. Certificat de signature égal à celui des APK relevées sur les appareils le 2026-10-08 | Aucun appareil joint par `adb` au moment de la fabrication |
+| CS30, APK 1.22 | Installée à 21 h 51 par `adb install -r` sur l'appareil `A59T11BGT3A01119`, qui portait la 1.21 du 2026-11-09. Après : version 1.22 (code 23), fichier installé de même SHA-256 que l'APK fabriquée, date de première installation inchangée. L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Aucune connexion par PIN, aucune commande, aucune impression essayées. — |
+| Galaxy Tab A8, APK 1.22 | Installée à 21 h 52 par `adb install -r` sur l'appareil `R9RT200NJHB` (SM-X205), qui portait la 1.21 du 2026-11-09. Après : version 1.22 (code 23), fichier installé de même SHA-256, date de première installation inchangée. L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Aucune commande, aucune impression essayées. Tout autre appareil Android reste **non mis à jour** tant qu'il n'est pas relevé |
+| Backend production | Appelants relevés avant le retrait : seules les anciennes versions s'appelaient entre elles ; aucun appel dans les applications ni les Edge Functions de `master` à `e4ff8f85`. Les huit anciennes versions retirées à 21 h 39 : `submit_stock_declaration_v2`, `adjust_stock_v4`, `waste_stock_v4`, `waste_display_stock_v4`, `submit_display_day_closing_v1`, `get_display_day_closing_v1`, `correct_display_day_count_v1`, `stock_private.submit_day_waste_v1`. Les huit nouvelles sont présentes | Retrait par requête directe, texte des `DROP` de `20261114000006_loss_reason_closed_list.sql` |
+
+Retour : le lanceur précédent est conservé à côté du lanceur courant, et la
+release `a35fd5f5` reste dans le répertoire des releases. Un retour de la caisse
+à `a35fd5f5` exigerait de recréer d'abord les huit anciennes fonctions : cette
+release les appelle.
+
+Pour la livraison suivante de la caisse : la release précédente devient
+`f46a4eeb4712dd5e1f5f858de96a8bd138764942`, et l'empreinte du lanceur a changé.
+
 ## Complément du 15 novembre 2026, 15 h 30 — vente d'un produit à recette, vitrine, attente de la caisse
 
 Relevé du 15 novembre 2026 vers 15 h 30, UTC+8. Lecture seule sur la base de

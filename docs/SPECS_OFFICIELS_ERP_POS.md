@@ -516,12 +516,10 @@ de traitement de la file. Pas d'alerte automatique.
 ### 8.6 Motifs de perte
 
 **FAIT** — La production a une liste fermée de motifs : `mis_baked`,
-`poor_proofing`, `cosmetic`, `demo`, `recipe_test`, `tasting`. En production, au
-2026-11-15, la base et le back-office publié connaissent la liste étendue
-ci-dessous, mais la caisse installée envoie encore du **texte libre** et la base
-l'accepte : les anciennes versions des fonctions de perte n'y sont pas retirées.
+`poor_proofing`, `cosmetic`, `demo`, `recipe_test`, `tasting`.
 
-**FAIT** — Sur la base dev, depuis le 2026-11-14, la liste reçoit `expired`,
+**FAIT** — Sur la base dev depuis le 2026-11-14, et en production depuis le
+2026-11-15 (base, back-office publié et caisse installée), la liste reçoit `expired`,
 `leftover`, `damaged` et `other` (décision de Mamat du 2026-11-14) et devient
 commune à la production, au stock et à la vitrine. Une perte de stock, une perte
 de vitrine et une perte du comptage de vitrine du jour portent un motif de cette
@@ -531,8 +529,9 @@ lisent « non précisé ».
 
 **RÈGLE** — Les pertes de stock et de vitrine doivent avoir une **liste fermée**
 de motifs, côté base, comme la production.
-**À LIVRER** — La fin de la mise en production : le paquet de la caisse, puis le
-retrait des anciennes versions des fonctions de perte.
+**FAIT** — En production, les anciennes versions des fonctions de perte sont
+retirées depuis le 2026-11-15 : la base n'accepte plus de perte sans motif de la
+liste. Aucune perte n'a encore été saisie à l'écran depuis cette livraison.
 
 ### 8.7 Alertes
 
