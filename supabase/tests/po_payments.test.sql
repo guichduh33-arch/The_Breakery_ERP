@@ -341,9 +341,9 @@ SELECT is(
    WHERE je.reference_type = 'purchase_payment'
      AND je.reference_id = pp.id
      AND jel.credit > 0
-     AND a.code = '1110'),
+     AND a.code = '1111'),
   1,
-  'T8b: cash auto-payment JE credit = account 1110 (PURCHASE_CASH_OUT)'
+  'T8b: cash auto-payment JE credit = account 1111 Petty Cash (PURCHASE_CASH_OUT)'
 );
 
 -- ─── T9: v2 guard — cancelled PO rejected (po_cancelled, P0001) ──────────────
