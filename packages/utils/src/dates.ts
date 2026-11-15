@@ -126,3 +126,11 @@ export function businessDateIso(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
 }
+
+// Horodatage d'export : ISO 8601 avec millisecondes et décalage du fuseau
+// métier (« 2026-11-14T07:24:30.742+08:00 »). Un tableur le garde en texte,
+// donc il ne masque ni les secondes ni le fuseau.
+export function formatIsoWita(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+}

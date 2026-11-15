@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAuditLogs } from '../hooks/useAuditLogs.js';
+import { AUDIT_EXPORT_PAGE_SIZE, fetchAllAuditLogs, useAuditLogs } from '../hooks/useAuditLogs.js';
 import { useSettingsHistory } from '@/features/settings/hooks/useSettingsHistory.js';
 import { useProductAuditLog } from '@/features/products/hooks/useProductAuditLog.js';
 
@@ -39,6 +39,26 @@ describe('audit RPC callers', () => {
     });
     await waitFor(() => expect(result.current.data?.pages.flat().map(r => r.id)).toEqual([3, 2, 1]));
     expect(result.current.hasNextPage).toBe(false);
+  });
+
+  it('reads the whole period for an export, page after page, with the filters and the last cursor', async () => {
+    const full = Array.from({ length: AUDIT_EXPORT_PAGE_SIZE }, (_, i) => row(1000 - i));
+    rpc.mockResolvedValueOnce({ data: full, error: null })
+      .mockResolvedValueOnce({ data: [row(5), row(4)], error: null });
+    const rows = await fetchAllAuditLogs({ dateStart: '2026-09-13', dateEnd: '2026-09-13', action: 'setting.update' });
+    expect(rows).toHaveLength(AUDIT_EXPORT_PAGE_SIZE + 2);
+    const base = { p_limit: AUDIT_EXPORT_PAGE_SIZE, p_action: 'setting.update', p_date_start: '2026-09-13', p_date_end: '2026-09-13' };
+    expect(rpc).toHaveBeenNthCalledWith(1, 'get_activity_logs_v3', base);
+    expect(rpc).toHaveBeenNthCalledWith(2, 'get_activity_logs_v3', {
+      ...base, p_cursor: date + '|' + String(1000 - AUDIT_EXPORT_PAGE_SIZE + 1),
+    });
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails the export instead of returning a partial journal when a page is refused', async () => {
+    rpc.mockResolvedValueOnce({ data: Array.from({ length: AUDIT_EXPORT_PAGE_SIZE }, (_, i) => row(1000 - i)), error: null })
+      .mockResolvedValueOnce({ data: null, error: new Error('permission denied') });
+    await expect(fetchAllAuditLogs({})).rejects.toThrow('permission denied');
   });
 
   it('paginates each settings feed with its own composite cursor', async () => {
