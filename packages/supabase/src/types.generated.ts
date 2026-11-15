@@ -10027,7 +10027,7 @@ export type Database = {
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
       format_type_string: { Args: { "": string }; Returns: string }
-      get_activity_logs_v3: {
+      get_activity_logs_v4: {
         Args: {
           p_action?: string
           p_actor_id?: string
@@ -10042,12 +10042,20 @@ export type Database = {
           action: string
           actor_id: string
           actor_name: string
+          actor_role: string
           created_at: string
+          device_id: string
+          device_label: string
+          device_seq: number
           entity_id: string
           entity_type: string
           id: string
           metadata: Json
+          order_id: string
+          order_number: string
           payload: Json
+          product_id: string
+          product_name: string
           source: string
         }[]
       }

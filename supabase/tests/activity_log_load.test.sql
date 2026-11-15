@@ -39,7 +39,7 @@ BEGIN
     v_started := clock_timestamp();
     SELECT array_agg(r.id ORDER BY r.created_at DESC,r.id DESC),
       (array_agg(r.created_at::text || '|' || r.id ORDER BY r.created_at,r.id))[1]
-    INTO v_ids,v_cursor FROM get_activity_logs_v3(
+    INTO v_ids,v_cursor FROM get_activity_logs_v4(
       p_date_start:='2026-11-07',p_date_end:='2026-11-07',p_limit:=50) r;
     v_elapsed := clock_timestamp()-v_started;
     RETURN NEXT is(cardinality(v_ids),50,'page authentifiée sous charge, appel ' || v_round);
@@ -51,17 +51,17 @@ BEGIN
     v_previous := v_ids;
   END LOOP;
   v_started := clock_timestamp();
-  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v3(
+  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v4(
     p_cursor:=v_cursor,p_date_start:='2026-11-07',p_date_end:='2026-11-07') r;
   RETURN NEXT is(v_count,50,'deuxième page sous charge');
   RETURN NEXT ok(clock_timestamp()-v_started < interval '2 seconds','curseur dans le budget');
   v_started := clock_timestamp();
-  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v3(
+  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v4(
     p_date_start:='2026-11-07',p_date_end:='2026-11-07',p_action:='activity.load_day') r;
   RETURN NEXT is(v_count,50,'filtre audit sous charge');
   RETURN NEXT ok(clock_timestamp()-v_started < interval '2 seconds','filtre audit dans le budget');
   v_started := clock_timestamp();
-  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v3(
+  SELECT count(*)::integer INTO v_count FROM get_activity_logs_v4(
     p_date_start:='2026-11-07',p_date_end:='2026-11-07',p_action:='activity.load_absent') r;
   RETURN NEXT is(v_count,0,'filtre sans résultat sous charge');
   RETURN NEXT ok(clock_timestamp()-v_started < interval '2 seconds','filtre vide dans le budget');

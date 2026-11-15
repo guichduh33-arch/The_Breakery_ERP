@@ -15,6 +15,17 @@ export interface AuditLogRow {
   payload:      unknown;
   source:       string;
   created_at:   string;
+  // Contexte résolu à la lecture par la RPC, vide quand la trace ne permet pas de le retrouver.
+  /** Rôle ACTUEL du compte : aucun rôle n'est stocké dans l'événement. */
+  actor_role?:   string | null;
+  order_id?:     string | null;
+  order_number?: string | null;
+  device_id?:    string | null;
+  device_label?: string | null;
+  /** Rang du geste dans la file locale du terminal. */
+  device_seq?:   number | null;
+  product_id?:   string | null;
+  product_name?: string | null;
 }
 
 export interface AuditLogFilters {
@@ -27,7 +38,7 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v3'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v4'] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 /** Taille de page maximale acceptée par la RPC. */
@@ -59,19 +70,29 @@ export async function fetchAuditLogPage(
   if (filters.dateStart)  args.p_date_start  = filters.dateStart;
   if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
 
-  const { data, error } = await supabase.rpc('get_activity_logs_v3', args);
+  const { data, error } = await supabase.rpc('get_activity_logs_v4', args);
   if (error) throw error;
+  // Les types générés déclarent ces colonnes non nulles ; la RPC les rend vides
+  // dès que la trace ne porte pas l'information.
   return (data ?? []).map((r) => ({
-    id:          r.id,
-    actor_id:    r.actor_id,
-    actor_name:  r.actor_name,
-    action:      r.action,
-    entity_type: r.entity_type,
-    entity_id:   r.entity_id,
-    metadata:    r.metadata,
-    payload:     r.payload,
-    source:      r.source,
-    created_at:  r.created_at,
+    id:           r.id,
+    actor_id:     r.actor_id,
+    actor_name:   r.actor_name,
+    action:       r.action,
+    entity_type:  r.entity_type,
+    entity_id:    r.entity_id,
+    metadata:     r.metadata,
+    payload:      r.payload,
+    source:       r.source,
+    created_at:   r.created_at,
+    actor_role:   r.actor_role ?? null,
+    order_id:     r.order_id ?? null,
+    order_number: r.order_number ?? null,
+    device_id:    r.device_id ?? null,
+    device_label: r.device_label ?? null,
+    device_seq:   r.device_seq ?? null,
+    product_id:   r.product_id ?? null,
+    product_name: r.product_name ?? null,
   }));
 }
 
