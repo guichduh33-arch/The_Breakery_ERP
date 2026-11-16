@@ -45,6 +45,6 @@ export async function printPaidSnapshot(snapshot: PaymentAttempt, orderNumber: s
     const result = await print(role, lines, copies[role] ?? 1);
     return { role, ok: result.success, ...(result.error ? { error: result.error } : {}), itemIds: lines.map((item) => item.id) };
   }));
-  if (resolvedPrinters.has('waiter') && items.length > 0) await print('waiter', items, 1);
+  if (resolvedPrinters.has('waiter') && items.length > 0) await print('waiter', items, copies.waiter ?? 1);
   return results;
 }

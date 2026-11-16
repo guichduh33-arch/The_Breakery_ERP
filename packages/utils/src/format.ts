@@ -19,9 +19,10 @@ const _compactFmt = new Intl.NumberFormat('id-ID', {
   maximumFractionDigits: 2,
 });
 
-// Quantités : jamais plus de 3 décimales (unités fractionnables), et l'arrondi
+// Quantités : 3 décimales par défaut, 9 pour les quantités de stock calculées ; l'arrondi
 // est fait par Intl lui-même — pas de toFixed qui fabrique des zéros morts.
 const _qtyFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
+const _qtyPreciseFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 9 });
 const _qtyIntFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
 // Le compact id-ID sépare la valeur du suffixe (jt/rb) par une espace
@@ -78,15 +79,22 @@ const COUNT_UNITS = new Set([
   'unit',
 ]);
 
+export interface FormatQuantityOptions {
+  /** Précision d'affichage uniquement ; ne change aucune règle de saisie. */
+  maximumFractionDigits?: 3 | 9;
+}
+
 export function formatQuantity(
   value: number | string | null | undefined,
   unit: string | null | undefined,
+  options?: FormatQuantityOptions,
 ): string {
   const n = toFiniteNumber(value);
   if (n === null) return '—';
   const unitCode = unit?.trim() ?? '';
   const isCount = COUNT_UNITS.has(unitCode.toLowerCase());
-  const body = isCount ? _qtyIntFmt.format(n) : _qtyFmt.format(n);
+  const fractionFormatter = options?.maximumFractionDigits === 9 ? _qtyPreciseFmt : _qtyFmt;
+  const body = isCount ? _qtyIntFmt.format(n) : fractionFormatter.format(n);
   return unitCode ? `${body} ${unitCode}` : body;
 }
 

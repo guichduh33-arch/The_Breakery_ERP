@@ -74,14 +74,14 @@ made:=create_product_v5(jsonb_build_object(
 'track_inventory',true,'deduct_stock',false,'is_display_item',false,
 'is_active',true,'available_for_sale',true,'visible_on_pos',true));
 c.product_id:=(made#>>'{product,id}')::uuid;
-PERFORM record_stock_movement_v1(c.product_id,'adjustment_in',10,
+PERFORM record_stock_movement_v2(c.product_id,'adjustment_in',10,
 'Replay stock',p_unit_cost:=5000,
 p_idempotency_key:=gen_random_uuid(),p_unit:='pcs',
 p_metadata:=jsonb_build_object('reference_type','test_fixture','reference_id',c.product_id));
 INSERT INTO pos_sessions(opened_by,opening_cash,status)
 VALUES(c.profile,100000,'open') RETURNING id INTO c.shift_id;
 SELECT total INTO sale_amount FROM _pb1_split_v1(44000);
-made:=complete_order_with_payment_v32(
+made:=complete_order_with_payment_v33(
 p_session_id:=c.shift_id,p_order_type:='take_out',
 p_items:=jsonb_build_array(jsonb_build_object(
 'product_id',c.product_id,'quantity',2,'unit_price',22000,'modifiers','[]'::jsonb)),

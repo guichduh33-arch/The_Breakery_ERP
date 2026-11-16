@@ -21,6 +21,9 @@ DECLARE
   v_id uuid;
   v_before integer;
   v_cursor text;
+  v_context uuid := gen_random_uuid();
+  v_movement uuid;
+  v_move_product uuid;
 BEGIN
   SELECT id, auth_user_id, full_name INTO STRICT v_actor, v_auth, v_name
   FROM user_profiles WHERE role_code = 'SUPER_ADMIN' AND is_active AND deleted_at IS NULL
@@ -32,20 +35,20 @@ BEGIN
     '{"before":1,"after":2}', '2026-11-04T12:00:00+08:00' FROM generate_series(1,55);
   INSERT INTO pos_events(client_event_id,event_type,occurred_at,device_id,actor_id,order_id,order_number_snap,payload)
   VALUES(gen_random_uuid(),'item_added','2026-11-04T12:00:00+08:00',v_device,v_actor,v_entity,'TEST-ACTIVITY','{"name":"Coffee"}');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_action:='test.activity',p_limit:=200)),55,'tous les audits sont consultables');
-  RETURN NEXT is((SELECT actor_name FROM get_activity_logs_v3(p_action:='test.activity',p_limit:=1)),v_name,'nom résolu par identifiant de profil');
-  RETURN NEXT is((SELECT payload FROM get_activity_logs_v3(p_action:='test.activity',p_limit:=1)),'{"before":1,"after":2}'::jsonb,'diff distinct du contexte');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_limit:=50)),50,'première page bornée');
-  SELECT created_at::text || '|' || id INTO v_cursor FROM get_activity_logs_v3(p_entity_id:=v_entity,p_limit:=50)
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_action:='test.activity',p_limit:=200)),55,'tous les audits sont consultables');
+  RETURN NEXT is((SELECT actor_name FROM get_activity_logs_v4(p_action:='test.activity',p_limit:=1)),v_name,'nom résolu par identifiant de profil');
+  RETURN NEXT is((SELECT payload FROM get_activity_logs_v4(p_action:='test.activity',p_limit:=1)),'{"before":1,"after":2}'::jsonb,'diff distinct du contexte');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_limit:=50)),50,'première page bornée');
+  SELECT created_at::text || '|' || id INTO v_cursor FROM get_activity_logs_v4(p_entity_id:=v_entity,p_limit:=50)
   ORDER BY created_at,id LIMIT 1;
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_limit:=50,p_cursor:=v_cursor)),6,'curseur commun sans perte aux timestamps identiques');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_action:='pos.item_added')),1,'gestes POS visibles avec filtre action');
-  RETURN NEXT is((SELECT source FROM get_activity_logs_v3(p_entity_id:=v_entity,p_action:='pos.item_added')),'pos','source client explicitement distincte');
-  RETURN NEXT is((SELECT metadata->>'order_number' FROM get_activity_logs_v3(p_entity_id:=v_entity,p_action:='pos.item_added')),'TEST-ACTIVITY','numéro de commande POS conservé');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_actor_id:=gen_random_uuid())),0,'filtre auteur appliqué');
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_date_end:='2026-11-03')),0,'bornes métier sur les deux sources');
-  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v3(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon exclu');
-  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v3(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'RLS conservée par SECURITY INVOKER');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_limit:=50,p_cursor:=v_cursor)),6,'curseur commun sans perte aux timestamps identiques');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_action:='pos.item_added')),1,'gestes POS visibles avec filtre action');
+  RETURN NEXT is((SELECT source FROM get_activity_logs_v4(p_entity_id:=v_entity,p_action:='pos.item_added')),'pos','source client explicitement distincte');
+  RETURN NEXT is((SELECT metadata->>'order_number' FROM get_activity_logs_v4(p_entity_id:=v_entity,p_action:='pos.item_added')),'TEST-ACTIVITY','numéro de commande POS conservé');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_actor_id:=gen_random_uuid())),0,'filtre auteur appliqué');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_date_end:='2026-11-03')),0,'bornes métier sur les deux sources');
+  RETURN NEXT ok(NOT has_function_privilege('anon','public.get_activity_logs_v4(text,integer,uuid,text,text,uuid,text,text)','EXECUTE'),'anon exclu');
+  RETURN NEXT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_activity_logs_v4(text,integer,uuid,text,text,uuid,text,text)'::regprocedure),'RLS conservée par SECURITY INVOKER');
 
   INSERT INTO suppliers(id,code,name) VALUES(v_supplier,'AUDIT-' || v_supplier,'Audit supplier');
   UPDATE suppliers SET name='Audit supplier updated' WHERE id=v_supplier;
@@ -105,14 +108,46 @@ BEGIN
   UPDATE order_items SET prep_started_at=NULL,served_at=NULL WHERE id=v_item;
   RETURN NEXT is((SELECT count(*)::integer FROM audit_logs WHERE entity_id=v_item AND action LIKE 'kds.%'),v_before+2,'rappel sans fausse transition positive');
 
+  -- Contexte résolu à la lecture : la trace n'est pas modifiée, la lecture retrouve le reste.
+  SELECT sm.id, sm.product_id INTO STRICT v_movement, v_move_product FROM stock_movements sm
+  JOIN products p ON p.id = sm.product_id AND p.deleted_at IS NULL LIMIT 1;
+  INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata,created_at) VALUES
+    (v_actor,'test.context_order','orders',v_order,'{}','2026-11-05T10:00:00+08:00'),
+    (v_actor,'test.context_numbered','orders',v_order,'{"order_number":"TRACE-NUMBER"}','2026-11-05T10:00:00+08:00'),
+    (v_actor,'test.context_product','display_movement',v_context,jsonb_build_object('product_id',v_product),'2026-11-05T10:00:00+08:00'),
+    (v_actor,'test.context_movement','stock_movements',v_movement,'{}','2026-11-05T10:00:00+08:00'),
+    (NULL,'test.context_free_text','activity_test',v_context,'{"product_id":"not-an-id","order_id":"T1-0042"}','2026-11-05T10:00:00+08:00');
+  INSERT INTO pos_events(client_event_id,event_type,occurred_at,device_id,device_seq,actor_id,order_id,payload)
+  VALUES(gen_random_uuid(),'order_held','2026-11-05T10:00:00+08:00',v_device,7,v_actor,v_order,jsonb_build_object('product_id',v_product));
+  RETURN NEXT is((SELECT order_number FROM get_activity_logs_v4(p_action:='test.context_order')),
+    (SELECT order_number FROM orders WHERE id=v_order),'numéro de commande retrouvé par identifiant');
+  RETURN NEXT is((SELECT order_id FROM get_activity_logs_v4(p_action:='test.context_order')),v_order,'identifiant de commande dans sa colonne');
+  RETURN NEXT is((SELECT order_number FROM get_activity_logs_v4(p_action:='test.context_numbered')),'TRACE-NUMBER','le numéro porté par la trace prime');
+  RETURN NEXT is((SELECT actor_role FROM get_activity_logs_v4(p_action:='test.context_order')),'SUPER_ADMIN','rôle actuel du compte');
+  RETURN NEXT is((SELECT product_name FROM get_activity_logs_v4(p_action:='test.context_product')),
+    (SELECT name FROM products WHERE id=v_product),'nom du produit porté par la trace');
+  RETURN NEXT is((SELECT product_id FROM get_activity_logs_v4(p_action:='test.context_movement')),v_move_product,'produit retrouvé par le mouvement de stock');
+  RETURN NEXT is((SELECT product_name FROM get_activity_logs_v4(p_action:='test.context_movement')),
+    (SELECT name FROM products WHERE id=v_move_product),'nom du produit du mouvement de stock');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_action:='test.context_free_text')
+    WHERE product_id IS NULL AND order_id IS NULL AND actor_role IS NULL AND product_name IS NULL),1,'valeur libre sans échec ni invention');
+  RETURN NEXT is((SELECT device_label || '|' || device_seq || '|' || order_number FROM get_activity_logs_v4(p_entity_id:=v_order,p_action:='pos.order_held')
+    WHERE device_id=v_device AND order_id=v_order AND product_id=v_product),
+    'Audit test device|7|' || (SELECT order_number FROM orders WHERE id=v_order),'terminal, rang local et commande du geste POS');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_action:='test.activity',p_limit:=200)
+    WHERE order_id IS NOT NULL OR order_number IS NOT NULL OR device_id IS NOT NULL OR product_id IS NOT NULL),0,'aucun contexte prêté à une ligne qui n''en porte pas');
+  RETURN NEXT ok(to_regprocedure('public.get_activity_logs_v3(text,integer,uuid,text,text,uuid,text,text)') IS NULL,'version précédente retirée');
+
   INSERT INTO pos_sessions(opened_by,opening_cash,status,closed_at,closed_by,closing_cash)
   VALUES(v_actor,0,'closed',now(),v_actor,0) RETURNING id INTO v_id;
   RETURN NEXT ok(EXISTS(SELECT 1 FROM audit_logs WHERE entity_id=v_id AND action='shift.open'),'ouverture caisse tracée côté serveur');
   EXECUTE 'SET LOCAL ROLE authenticated';
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_limit:=200)),56,'administrateur connecté consulte les deux sources sous RLS');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_limit:=200)),56,'administrateur connecté consulte les deux sources sous RLS');
+  RETURN NEXT ok((SELECT order_number IS NOT NULL AND actor_role='SUPER_ADMIN' FROM get_activity_logs_v4(p_action:='test.context_order')),'contexte résolu sous RLS pour un compte autorisé');
+  RETURN NEXT ok((SELECT product_name IS NOT NULL FROM get_activity_logs_v4(p_action:='test.context_movement')),'produit du mouvement résolu sous RLS');
   PERFORM set_config('request.jwt.claims','{}',true);
   PERFORM set_config('request.jwt.claim.sub','',true);
-  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v3(p_entity_id:=v_entity,p_limit:=200)),0,'session absente sans accès aux traces');
+  RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity,p_limit:=200)),0,'session absente sans accès aux traces');
   EXECUTE 'RESET ROLE';
 END;
 $$;

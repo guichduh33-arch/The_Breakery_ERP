@@ -84,7 +84,7 @@ describe('paiement — identité vérifiée avant les accès métier', () => {
     const response = await invoke('Bearer test', false);
     expect(response.status).toBe(200);
     expect(mocks.verify).toHaveBeenCalledOnce();
-    expect(mocks.rpc).toHaveBeenCalledWith('complete_order_with_payment_v32', expect.any(Object));
+    expect(mocks.rpc).toHaveBeenCalledWith('complete_order_with_payment_v33', expect.any(Object));
   });
   it('lie les compteurs PIN au caissier vérifié', async () => {
     expect((await invoke()).status).toBe(401);

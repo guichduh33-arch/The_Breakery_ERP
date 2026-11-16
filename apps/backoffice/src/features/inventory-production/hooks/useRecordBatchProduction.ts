@@ -49,6 +49,7 @@ export type RecordBatchProductionErrorCode =
   | 'invalid_item_shape'
   | 'item_missing_product_id'
   | 'quantity_must_be_positive'
+  | 'quantity_below_stock_precision'
   | 'waste_must_be_non_negative'
   | 'waste_reason_required'
   | 'invalid_waste_reason'
@@ -132,6 +133,7 @@ function classify(message: string): RecordBatchProductionErrorCode {
   if (message.includes('invalid_item_shape'))              return 'invalid_item_shape';
   if (message.includes('item_missing_product_id'))         return 'item_missing_product_id';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
+  if (message.includes('quantity_below_stock_precision')) return 'quantity_below_stock_precision';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
   if (message.includes('waste_reason_required'))           return 'waste_reason_required';
   if (message.includes('invalid_waste_reason'))            return 'invalid_waste_reason';
@@ -175,7 +177,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v13', {
+      const { data, error } = await supabase.rpc('record_batch_production_v14', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

@@ -21,6 +21,13 @@
 // Grain de la tendance : SEMAINE (arbitrage Mamat) — trente jours découpés en
 // deux séries journalières seraient du bruit ; la donnée reste servie au jour
 // (by_day) et l'agrégation en semaines est un pli d'affichage.
+//
+// S3-22 (2026-11-11) — la page reçoit le socle de filtres : type de commande,
+// moyen de paiement, table (mêmes clés d'URL et mêmes libellés que Sales by
+// Product). Le serveur les applique à tous les chiffres — période, fenêtre
+// précédente, décrochage — sauf au drapeau « nouveau client », qui reste lu
+// sur toutes les commandes de la boutique. Le filtre de type de CLIENT reste
+// dans la barre d'outils : il ne porte pas sur la commande.
 
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -42,11 +49,17 @@ import { ParetoChart } from '@/features/reports/components/charts/ParetoChart.js
 import {
   StackedBarsChart, type StackedSeries,
 } from '@/features/reports/components/charts/StackedBarsChart.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
 import { useSortedRows, type SortSpec } from '@/features/reports/hooks/useSortedRows.js';
 import {
   useSalesByCustomer, type CustomerSalesRow,
 } from '@/features/reports/hooks/useSalesByCustomer.js';
+import type { SalesOrderFilters } from '@/features/reports/utils/salesFilters.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 import {
@@ -115,9 +128,17 @@ export default function SalesByCustomerPage(): JSX.Element {
   const { start, end } = period;
   const [typeFilter, setTypeFilter] = useUrlState('customer_type', '');
 
+  const filters = useReportFilters(SALES_ORDER_FILTER_DEFS);
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } =
+    filters.values;
+  const orderFilters = useMemo<SalesOrderFilters>(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
+
   const report = useSalesByCustomer({
     start, end,
     customerType: typeFilter === 'retail' || typeFilter === 'b2b' ? typeFilter : null,
+    filters: orderFilters,
   });
 
   const rows    = useMemo(() => report.data?.by_customer ?? [], [report.data]);
@@ -226,11 +247,36 @@ export default function SalesByCustomerPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     `${formatCount(rows.length)} customer${rows.length === 1 ? '' : 's'}`,
     'identified sales, vs the previous window of same length',
+    // Dans la ligne méta, donc dans l'annonce live de ReportShell : changer de
+    // filtre réécrit les chiffres, et il faut le dire.
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
+
+  // Le drapeau « new » ne suit pas les filtres de commande (choix serveur) :
+  // la page le dit dès qu'un filtre est actif, sinon « returning » sans ligne
+  // précédente se lirait comme une erreur.
+  const filterNote = activeCount > 0 ? (
+    <div className="space-y-1">
+      {paymentMethod !== '' && <PaymentFilterNote />}
+      <p className="text-xs text-text-secondary" role="note" data-testid="new-customer-filter-note">
+        &quot;New&quot; means a first order at the shop, across every order type
+        and payment method: filters do not change it.
+      </p>
+    </div>
+  ) : undefined;
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={SALES_ORDER_FILTER_DEFS}
+      filters={filters}
+      note={filterNote}
+    />
+  );
 
   const toolbar = (
     <>
@@ -261,12 +307,13 @@ export default function SalesByCustomerPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={report.error}
       isEmpty={!report.isLoading && report.data !== undefined
         && rows.length === 0 && churned.length === 0}
       emptyState={{
         title: 'No identified sale',
-        description: 'No order carried a customer in the selected date range and type.',
+        description: 'No order carried a customer in the selected date range, type and filters.',
       }}
       kpis={
         <KpiBand isLoading={report.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>

@@ -19,7 +19,7 @@ it('excludes hidden, inactive and child products while preserving masked sellabi
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
   expect(result.current.data).toHaveLength(1);
   expect(result.current.data?.[0]).toMatchObject({ id: 'p1', current_stock: null, is_sellable: true });
-  expect(mocks.rpc).toHaveBeenCalledWith('get_operational_products_v2');
+  expect(mocks.rpc).toHaveBeenCalledWith('get_operational_products_v3');
 });
 it('keeps a parent grouped when its active variants are hidden', async () => {
   mocks.rpc.mockResolvedValue({ data: [{ ...product, has_variants: true }], error: null });

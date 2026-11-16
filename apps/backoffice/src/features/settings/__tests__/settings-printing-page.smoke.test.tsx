@@ -8,8 +8,19 @@ import SettingsPrintingPage from '@/pages/settings/SettingsPrintingPage.js';
 
 const rpcCalls: { fn: string; args: unknown }[] = [];
 let mockSettings: Record<string, boolean | number> = {};
+// S1-22 — colonne business_config.kot_copies_waiter, lue directement.
+let mockWaiterCopies: number | null = 1;
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
+    from: (table: string) => ({
+      select: () => ({
+        limit: () => ({
+          maybeSingle: () => Promise.resolve(table === 'business_config'
+            ? { data: mockWaiterCopies === null ? null : { kot_copies_waiter: mockWaiterCopies }, error: null }
+            : { data: null, error: { message: `unexpected table ${table}` } }),
+        }),
+      }),
+    }),
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
       if (fn === 'get_settings_by_category_v10') {
@@ -118,5 +129,36 @@ describe('SettingsPrintingPage', () => {
       p_value: true,
       p_category: 'printing',
     });
+  });
+
+  it('S1-22 — renders the waiter ticket copies and saves them through set_kot_copies_waiter_v1', async () => {
+    canUpdate = true;
+    mockSettings = {};
+    mockWaiterCopies = 2;
+    rpcCalls.length = 0;
+    render(wrap(<SettingsPrintingPage />));
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/^waiter printer$/i).value).toBe('2'),
+    );
+
+    fireEvent.change(screen.getByLabelText(/^waiter printer$/i), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: /save 1 change/i }));
+
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_kot_copies_waiter_v1')).toBe(true));
+    expect(rpcCalls.find((c) => c.fn === 'set_kot_copies_waiter_v1')?.args).toEqual({ p_copies: 0 });
+    // La valeur ne passe jamais par le chemin générique des réglages.
+    expect(rpcCalls.some((c) => c.fn === 'set_setting_v13')).toBe(false);
+  });
+
+  it('S1-22 — defaults the waiter ticket copies to 1 when the row is absent', async () => {
+    canUpdate = true;
+    mockSettings = {};
+    mockWaiterCopies = null;
+    render(wrap(<SettingsPrintingPage />));
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/^waiter printer$/i).value).toBe('1'),
+    );
+    expect(screen.getByRole('button', { name: /no changes/i })).toBeDisabled();
+    mockWaiterCopies = 1;
   });
 });

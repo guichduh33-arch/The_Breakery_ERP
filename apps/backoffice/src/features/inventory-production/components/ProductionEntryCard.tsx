@@ -21,6 +21,8 @@ import {
 import { validateProductionEntry, type EntryRow } from '../productionEntryValidation.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { IngredientAggregatePreview } from './IngredientAggregatePreview.js';
+import { formatStockQuantity } from '@/features/inventory/stockQuantity.js';
+import { STOCK_PRECISION_MESSAGE } from '../stockPrecision.js';
 import {
   FOCUS_RING_INK, INK_BTN_PRIMARY, INK_BTN_SECONDARY, INK_FIELD_BOX, INK_FIELD_BOX_CELL,
 } from '../inkPanel.js';
@@ -152,6 +154,10 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           if (err.code === 'insufficient_stock' && Array.isArray(err.missingDetail)) {
             setShortages(err.missingDetail as { material_name: string; shortfall: number; unit: string }[]);
             setFormError('Insufficient stock for one or more ingredients.');
+          } else if (err.code === 'quantity_below_stock_precision') {
+            setForceNegative(false);
+            setShortages(null);
+            setFormError(STOCK_PRECISION_MESSAGE);
           } else if (err.code === 'force_negative_forbidden') {
             setForceNegative(false);
             setFormError('You are not allowed to force a production below stock.');
@@ -271,7 +277,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           {shortages !== null && (
             <ul className="mt-1 list-disc pl-5" data-testid="production-shortages">
               {shortages.map((s, i) => (
-                <li key={i}>{s.material_name} short {s.shortfall} {s.unit}</li>
+                <li key={i}>{s.material_name} short {formatStockQuantity(s.shortfall, s.unit)}</li>
               ))}
             </ul>
           )}

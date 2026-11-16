@@ -102,4 +102,32 @@ describe('buildDrilldownUrl', () => {
       buildDrilldownUrl('order_list', '', { served_by: 'u-1', status: 'completed' }),
     ).toBe('/backoffice/orders?served_by=u-1&status=completed');
   });
+
+  it('T19 (S3-21) order_list with table_number + period, encoded', () => {
+    expect(
+      buildDrilldownUrl('order_list', '', { table_number: 'Patio 9', start: '2027-01-01', end: '2027-01-31' }),
+    ).toBe('/backoffice/orders?table_number=Patio+9&start=2027-01-01&end=2027-01-31');
+  });
+
+  it('T20 (S3-22) sales_by_product with category_id + period, id ignored', () => {
+    expect(
+      buildDrilldownUrl('sales_by_product', 'ignored', {
+        category_id: 'cat-1', start: '2026-06-01', end: '2026-06-07',
+      }),
+    ).toBe('/backoffice/reports/sales-by-product?category_id=cat-1&start=2026-06-01&end=2026-06-07');
+  });
+
+  it('T21 (S3-22) purchase_items with supplier_id + period', () => {
+    expect(
+      buildDrilldownUrl('purchase_items', '', {
+        supplier_id: 's-1', start: '2026-05-13', end: '2026-06-12',
+      }),
+    ).toBe('/backoffice/reports/purchase-items?supplier_id=s-1&start=2026-05-13&end=2026-06-12');
+  });
+
+  it('T22 (S3-22) purchase_items with a single day', () => {
+    expect(
+      buildDrilldownUrl('purchase_items', '', { start: '2026-06-05', end: '2026-06-05' }),
+    ).toBe('/backoffice/reports/purchase-items?start=2026-06-05&end=2026-06-05');
+  });
 });

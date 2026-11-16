@@ -34,16 +34,16 @@ BEGIN
   UPDATE public.purchase_order_items SET unit_factor_to_base=10 WHERE po_id IN (po,duplicate_po);
   SELECT id INTO STRICT line FROM public.purchase_order_items WHERE po_id=po;
   SELECT id INTO STRICT duplicate_line FROM public.purchase_order_items WHERE po_id=duplicate_po;
-  result := public.receive_purchase_order_v5(po,
+  result := public.receive_purchase_order_v6(po,
     jsonb_build_array(jsonb_build_object('po_item_id',line,'received_quantity',1)),k);
   INSERT INTO receipt_fixture VALUES(product,po,line,duplicate_po,duplicate_line,k,result,NULL,NULL);
 END $$;
 
 SELECT ok(to_regprocedure('public.receive_purchase_order_v4(uuid,jsonb,uuid)') IS NULL,
   'previous receipt signature is removed');
-SELECT ok(NOT has_function_privilege('anon','public.receive_purchase_order_v5(uuid,jsonb,uuid)','EXECUTE')
-  AND has_function_privilege('authenticated','public.receive_purchase_order_v5(uuid,jsonb,uuid)','EXECUTE')
-  AND has_function_privilege('service_role','public.receive_purchase_order_v5(uuid,jsonb,uuid)','EXECUTE'),
+SELECT ok(NOT has_function_privilege('anon','public.receive_purchase_order_v6(uuid,jsonb,uuid)','EXECUTE')
+  AND has_function_privilege('authenticated','public.receive_purchase_order_v6(uuid,jsonb,uuid)','EXECUTE')
+  AND has_function_privilege('service_role','public.receive_purchase_order_v6(uuid,jsonb,uuid)','EXECUTE'),
   'receipt keeps its authenticated/service grants and denies inherited anon access');
 SELECT is((SELECT first_result->>'status' FROM receipt_fixture),'partial',
   'one of two boxes leaves the PO partial');
@@ -66,7 +66,7 @@ SELECT ok((SELECT j.total_debit=1110 AND j.total_credit=1110 FROM public.journal
   'existing reception JE remains balanced and includes PPN');
 SELECT is((SELECT count(*)::int FROM public.purchase_payments pp,receipt_fixture f
   WHERE pp.purchase_order_id=f.po),0,'credit receipt creates no automatic payment');
-UPDATE receipt_fixture f SET replay_result=public.receive_purchase_order_v5(f.po,
+UPDATE receipt_fixture f SET replay_result=public.receive_purchase_order_v6(f.po,
   jsonb_build_array(jsonb_build_object('po_item_id',f.line,'received_quantity',1)),f.first_key);
 SELECT ok((SELECT replay_result->>'grn_id'=first_result->>'grn_id'
   AND (replay_result->>'idempotent_replay')::boolean FROM receipt_fixture),
@@ -74,7 +74,7 @@ SELECT ok((SELECT replay_result->>'grn_id'=first_result->>'grn_id'
 SELECT is((SELECT count(*)::int FROM public.stock_movements m,receipt_fixture f
   WHERE m.metadata->>'grn_id'=f.first_result->>'grn_id'),1,'replay creates no second stock movement');
 
-UPDATE receipt_fixture f SET second_result=public.receive_purchase_order_v5(f.po,
+UPDATE receipt_fixture f SET second_result=public.receive_purchase_order_v6(f.po,
   jsonb_build_array(jsonb_build_object('po_item_id',f.line,'received_quantity',1)),gen_random_uuid());
 SELECT is((SELECT second_result->>'status' FROM receipt_fixture),'received',
   'second box completes the PO');
@@ -85,11 +85,11 @@ SELECT is((SELECT p.cost_price FROM public.products p,receipt_fixture f WHERE p.
 SELECT is((SELECT sum(g.total) FROM public.goods_receipt_notes g,receipt_fixture f WHERE g.po_id=f.po),
   2220::numeric,'partial GRNs retain the original full PO total');
 
-SELECT throws_ok($q$ SELECT public.receive_purchase_order_v5(f.duplicate_po,
+SELECT throws_ok($q$ SELECT public.receive_purchase_order_v6(f.duplicate_po,
   jsonb_build_array(jsonb_build_object('po_item_id',f.duplicate_line,'received_quantity',1),
     jsonb_build_object('po_item_id',upper(f.duplicate_line::text),'received_quantity',1)),gen_random_uuid())
   FROM receipt_fixture f $q$,'P0001','duplicate_po_item','duplicate UUID lines are refused with an idempotency key');
-SELECT throws_ok($q$ SELECT public.receive_purchase_order_v5(f.duplicate_po,
+SELECT throws_ok($q$ SELECT public.receive_purchase_order_v6(f.duplicate_po,
   jsonb_build_array(jsonb_build_object('po_item_id',f.duplicate_line,'received_quantity',1),
     jsonb_build_object('po_item_id',f.duplicate_line,'received_quantity',1)),NULL)
   FROM receipt_fixture f $q$,'P0001','duplicate_po_item','duplicate lines are refused without an idempotency key');

@@ -213,9 +213,18 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   it.each(['review', 'finalized'] as const)('keeps theoretical quantities private for ADMIN in %s', (status) => {
     currentRole = 'ADMIN';
     detail = makeDetail(status);
+    detail.items[0] = { ...detail.items[0]!, expected_qty: 0.999834, counted_qty: 1, variance: 0.000166 };
     renderPage();
     expect(screen.queryByTestId('cell-expected')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cell-variance')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/0,999834|0,000166/)).not.toBeInTheDocument();
+  });
+  it('shows owner review quantities without rounding a small variance to zero', () => {
+    detail = makeDetail('review');
+    detail.items[0] = { ...detail.items[0]!, expected_qty: 0.999834, counted_qty: 1, variance: 0.000166 };
+    renderPage();
+    expect(screen.getByTestId('cell-expected')).toHaveTextContent('0,999834 kg');
+    expect(screen.getByTestId('cell-variance')).toHaveTextContent('+0,000166 kg');
   });
 });

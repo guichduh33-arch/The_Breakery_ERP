@@ -13,7 +13,7 @@ export type OperationalProduct = Omit<ProductRow, 'current_stock'> & {
 
 // Le serveur décide de la visibilité ; NULL n'est jamais converti en stock zéro.
 export async function getOperationalProducts(): Promise<OperationalProduct[]> {
-  const { data, error } = await supabase.rpc('get_operational_products_v2');
+  const { data, error } = await supabase.rpc('get_operational_products_v3');
   if (error) throw new Error(error.message);
   if (!Array.isArray(data)) throw new Error('Invalid product catalogue response');
   return data as unknown as OperationalProduct[];

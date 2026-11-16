@@ -11,6 +11,7 @@ import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriod
 import { useCloseFiscalPeriod } from '../hooks/useCloseFiscalPeriod.js';
 import { fiscalPeriodLabel } from '../utils/fiscalPeriodLabel.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { todayIsoDate } from '@breakery/utils';
 
 export interface FiscalPeriodModalProps {
   onClose: () => void;
@@ -44,6 +45,14 @@ export function FiscalPeriodModal({
     (p) => p.status === 'open' || (p.status === 'closed' && true /* allow re-lock */),
   );
   const selectedPeriod = (periods.data ?? []).find((p) => p.id === periodId) ?? null;
+  // Le contrôle de période est appelé par tous les émetteurs d'écriture,
+  // vente comprise : fermer le mois en cours arrête la caisse. On le dit
+  // avant le PIN, pas après le premier ticket refusé.
+  const today = todayIsoDate();
+  const closesCurrentPeriod = selectedPeriod !== null
+    && selectedPeriod.status === 'open'
+    && selectedPeriod.period_start <= today
+    && today <= selectedPeriod.period_end;
 
   function handleNext() {
     setError(null);
@@ -158,8 +167,20 @@ export function FiscalPeriodModal({
                   ? '—'
                   : fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}
               </strong>.
-              This action is audit-logged and cannot be undone via UI.
+              {lock
+                ? 'This action is audit-logged. A locked period can never be reopened.'
+                : 'This action is audit-logged. Only the business owner can reopen a closed period.'}
             </div>
+            {closesCurrentPeriod && (
+              <div
+                role="alert"
+                className="rounded border border-red bg-red-soft px-3 py-2 text-xs text-red"
+                data-testid="fp-modal-current-period-warning"
+              >
+                This period contains today. While it is closed, the POS cannot
+                record sales, and no purchase, expense or stock entry can be posted.
+              </div>
+            )}
             <label className="flex flex-col text-sm">
               Manager PIN (6 digits)
               <Input

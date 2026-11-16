@@ -28,6 +28,11 @@ vi.mock('@/features/tablet/hooks/useMyTabletOrders', () => ({
 vi.mock('@/features/tablet/hooks/useTabletOrderStatusListener', () => ({
   useTabletOrderStatusListener: () => undefined,
 }));
+// S1-21 — l'action « Print bill » (react-query + imprimantes) a son propre test
+// (tablet-print-bill.test.tsx) ; ce test ne porte que sur la bannière.
+vi.mock('@/features/tablet/components/TabletBillAction', () => ({
+  TabletBillAction: () => null,
+}));
 
 function wrap(node: ReactNode, state: unknown): ReactNode {
   return <MemoryRouter initialEntries={[{ pathname: '/tablet/orders', state }]}>{node}</MemoryRouter>;

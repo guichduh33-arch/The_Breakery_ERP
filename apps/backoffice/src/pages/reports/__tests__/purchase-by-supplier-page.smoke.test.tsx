@@ -147,6 +147,20 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     expect(within(table).getByText('80,00%')).toBeInTheDocument();
   });
 
+  it('S3-22 — chaque fournisseur ouvre Purchase Items filtré sur lui, sur la période servie', async () => {
+    renderPage('/backoffice/reports/purchase-by-supplier?start=2024-01-01&end=2026-06-12');
+    const table = await loadedTable();
+    // La RPC a borné la plage : le lien porte la période SERVIE, celle des chiffres.
+    expect(within(table).getByRole('link', { name: 'Bali Flour' })).toHaveAttribute(
+      'href',
+      '/backoffice/reports/purchase-items?supplier_id=s-1&start=2026-05-13&end=2026-06-12',
+    );
+    expect(within(table).getByRole('link', { name: 'Bali Dairy' })).toHaveAttribute(
+      'href',
+      '/backoffice/reports/purchase-items?supplier_id=s-2&start=2026-05-13&end=2026-06-12',
+    );
+  });
+
   it('ventilates the spend by supplier instead of drawing a donut', async () => {
     injectRpcError = false;
     renderPage();

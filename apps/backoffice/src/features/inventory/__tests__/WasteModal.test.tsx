@@ -3,13 +3,22 @@
 //
 // Contract:
 //   - Quantity > current_stock is rejected client-side (disabled submit + inline error)
-//   - Reason preset "Other" reveals a textarea (3+ chars required)
-//   - Submit calls waste_stock_v4 with productId, quantity (positive), reason, idempotencyKey
+//   - Reason comes from the closed `waste_reason` list (S1-18); the note is
+//     optional, required (3+ chars) for "Other"
+//   - Submit calls the `submit_stock_declaration` family with productId,
+//     quantity (positive), the reason code, the note and idempotencyKey
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WasteModal } from '../components/WasteModal.js';
+
+// Ordre de l'enum Postgres `waste_reason` (types générés) et libellés attendus.
+const EXPECTED_REASONS = [
+  ['mis_baked', 'Mis-baked'], ['poor_proofing', 'Poor proofing'], ['cosmetic', 'Cosmetic defect'],
+  ['demo', 'Demonstration'], ['recipe_test', 'Recipe test'], ['tasting', 'Tasting'],
+  ['expired', 'Expired'], ['leftover', 'Leftover'], ['damaged', 'Damaged'], ['other', 'Other'],
+];
 
 const mockRpc = vi.fn();
 interface RpcResult { data: unknown; error: { message: string } | null }
@@ -81,10 +90,17 @@ describe('WasteModal', () => {
     mockToast.info.mockReset();
   });
 
-  it('renders with locked product and preset Expired by default', () => {
+  it('renders with locked product and reason Expired by default', () => {
     renderModal(STOCK_ROW);
     expect(screen.getByText(/Record waste — Waste Sample/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Reason$/i)).toHaveValue('Expired');
+    expect(screen.getByLabelText(/^Reason$/i)).toHaveValue('expired');
+    expect(screen.getByRole('option', { name: 'Expired', selected: true })).toBeInTheDocument();
+  });
+
+  it('feeds the reason select from the waste_reason enum with English labels', () => {
+    renderModal(STOCK_ROW);
+    const select = screen.getByLabelText<HTMLSelectElement>(/^Reason$/i);
+    expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual(EXPECTED_REASONS);
   });
 
   it('preserves decimal quantities and units in the payload and confirmation', async () => {
@@ -93,7 +109,7 @@ describe('WasteModal', () => {
     fireEvent.change(screen.getByLabelText(/Quantity wasted.*kg/i), { target: { value: '0.125' } });
     expect(screen.queryByText(/2 kg →/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v2', expect.objectContaining({ p_operation: 'waste', p_quantity: 0.125 })));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v3', expect.objectContaining({ p_operation: 'waste', p_quantity: 0.125 })));
     await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('Owner approval is required')));
   });
 
@@ -125,21 +141,54 @@ describe('WasteModal', () => {
     expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeEnabled();
   });
 
-  it('Other preset reveals describe textarea (>= 3 chars required)', () => {
+  it('Other without a note blocks submit; a 3+ char note unblocks it', () => {
     renderModal(STOCK_ROW);
-    fireEvent.change(screen.getByLabelText(/^Reason$/i), { target: { value: 'Other' } });
+    fireEvent.change(screen.getByLabelText(/^Reason$/i), { target: { value: 'other' } });
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '2' } });
 
-    // Submit disabled because the Describe textarea is empty
     const submit = screen.getByRole('button', { name: 'Submit for approval' });
     expect(submit).toBeDisabled();
+    const note = screen.getByLabelText(/Note \(required\)/i);
+    expect(note).toBeRequired();
 
-    const desc = screen.getByLabelText(/Describe/i);
-    fireEvent.change(desc, { target: { value: 'Custom shrinkage' } });
+    fireEvent.change(note, { target: { value: 'ab' } });
+    expect(submit).toBeDisabled();
+    fireEvent.change(note, { target: { value: 'Custom shrinkage' } });
     expect(submit).toBeEnabled();
   });
 
-  it('submits with positive quantity + preset reason + idempotencyKey', async () => {
+  it('rejects a note shorter than 3 characters on any reason', () => {
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '2' } });
+    const note = screen.getByLabelText(/Note \(optional\)/i);
+    expect(note).not.toBeRequired();
+    fireEvent.change(note, { target: { value: 'x ' } });
+    expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
+  });
+
+  it('sends the reason code and the trimmed note', async () => {
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd-1', status: 'pending' }, error: null });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/^Reason$/i), { target: { value: 'other' } });
+    fireEvent.change(screen.getByLabelText(/^Note/i), { target: { value: '  Freezer failure  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
+    expect(mockRpc.mock.calls[0]).toEqual(['submit_stock_declaration_v3', expect.objectContaining({
+      p_operation: 'waste', p_waste_reason: 'other', p_reason: 'Freezer failure',
+    })]);
+  });
+
+  it('surfaces the server refusal of a missing note', async () => {
+    mockRpc.mockReturnValue({ data: null, error: { message: 'reason_required' } });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await waitFor(() => { expect(screen.getByRole('alert')).toHaveTextContent(/note of at least 3 characters/i); });
+  });
+
+  it('submits with positive quantity + default reason code, no note + idempotencyKey', async () => {
     mockRpc.mockReturnValue({ data: { declaration_id: 'd-1', status: 'pending' }, error: null });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
@@ -147,12 +196,13 @@ describe('WasteModal', () => {
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('submit_stock_declaration_v2');
+    expect(call[0]).toBe('submit_stock_declaration_v3');
     expect(call[1]).toMatchObject({
-      p_product_id: 'p-1',
-      p_quantity:   3,
-      p_operation: 'waste',
-      p_reason:     'Expired',
+      p_product_id:   'p-1',
+      p_quantity:     3,
+      p_operation:    'waste',
+      p_waste_reason: 'expired',
+      p_reason:       '',
     });
     expect(call[1]).toHaveProperty('p_idempotency_key');
   });

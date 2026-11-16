@@ -54,7 +54,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_table_v3') {
+      if (fn === 'get_sales_by_table_v4') {
         return Promise.resolve({ data: reportPayload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -102,10 +102,10 @@ describe('SalesByTablePage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Sales');
   });
 
-  it('calls get_sales_by_table_v3 with the period bounds', async () => {
+  it('calls get_sales_by_table_v4 with the period bounds', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_table_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_table_v4');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start_date: string; p_end_date: string }])[1];
       expect(args.p_start_date).toBe('2027-01-01');
@@ -158,6 +158,18 @@ describe('SalesByTablePage smoke', () => {
     // Table hors plan de salle : ventes visibles, seats et CA/siège à blanc.
     expect(patio).toHaveTextContent('—');
     expect(patio).toHaveTextContent(/90\.000/);
+  });
+
+  it('(S3-21) links each table to its orders over the same period', async () => {
+    renderPage();
+    await screen.findAllByText('Patio-9');
+    const panel = screen.getByTestId('table-table');
+    expect(within(panel).getByRole('link', { name: 'T-01' })).toHaveAttribute(
+      'href', '/backoffice/orders?table_number=T-01&start=2027-01-01&end=2027-01-31',
+    );
+    expect(within(panel).getByRole('link', { name: 'Patio-9' })).toHaveAttribute(
+      'href', '/backoffice/orders?table_number=Patio-9&start=2027-01-01&end=2027-01-31',
+    );
   });
 
   it('offers the CSV export per table, and no PDF', async () => {

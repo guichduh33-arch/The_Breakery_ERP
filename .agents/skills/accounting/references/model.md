@@ -50,7 +50,7 @@ dédiée — jamais d'INSERT direct dans `journal_entries`.
 | `trg_create_sale_journal_entry_upd` | `orders` AFTER UPDATE OF `status` → `paid` ou `voided` | `create_sale_journal_entry()` |
 | `trg_create_je_for_refund` | `refunds` AFTER INSERT — CONSTRAINT trigger, DEFERRABLE INITIALLY DEFERRED | `fn_create_je_for_refund()` |
 | `trg_create_purchase_je` | `goods_receipt_notes` AFTER INSERT | `create_purchase_journal_entry()` |
-| `tr_20_je_emit` | `stock_movements` AFTER INSERT — types `waste`, `adjustment`, `adjustment_in/out`, `opname_in/out`, `production_in/out` | `tr_stock_movement_je()` |
+| `tr_20_je_emit` | `stock_movements` AFTER INSERT — types `sale`, `sale_void`, `waste`, `adjustment`, `adjustment_in/out`, `opname_in/out`, `production_in/out` ; le compte de stock est celui de l'article (`_stock_inventory_mapping_key` : recette → 1143, sinon 1142) | `tr_stock_movement_je()` |
 
 ### Émetteurs par RPC (la RPC émet elle-même sa JE ou ses lignes)
 
@@ -59,7 +59,7 @@ dédiée — jamais d'INSERT direct dans `journal_entries`.
 | `complete_order_with_payment`, `pay_existing_order` | remise POS, points loyalty | `SALE_DISCOUNT` → 4900, `LOYALTY_LIABILITY` → 2210 |
 | `_emit_expense_je` (appelée par le workflow expenses) | dépense approuvée | charge TTC (PPN foldé) ; `EXPENSE_AP` 2141 / `EXPENSE_CASH_OUT` 1111 |
 | `create_b2b_order`, `cancel_b2b_order` | vente / annulation B2B | `SALE_B2B_REVENUE` → 4131, `B2B_AR` → 1132 |
-| `record_b2b_payment` | règlement B2B | `B2B_PAYMENT_BANK` → 1112 |
+| `record_b2b_payment` | règlement B2B | table moyen-vers-compte de la vente (`_sale_payment_mapping_key`, ADR-013 D3) ; espèces → `CASH_WALLET_UNDEPOSITED` 1110 |
 | `adjust_b2b_balance` | write-off créance B2B | `B2B_AR_ADJUSTMENT` → 6520 |
 | `close_shift` | écart de caisse à la clôture | `SHIFT_CASH_VARIANCE_EXPENSE` → 5910 / `_INCOME` → 4910 |
 | `grant_store_credit`, `expire_store_credit` | avoir accordé / expiré | `STORE_CREDIT_GRANT_EXPENSE` → 6117, `STORE_CREDIT_EXPIRY_INCOME` → 4920 |
@@ -139,14 +139,14 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 |------|-----|--------|-------|
 | **1110** | Cash on Hand | 1 asset | Caisse shift ; `CASH_WALLET_UNDEPOSITED` |
 | **1111** | Petty Cash | 1 asset | `CASH_WALLET_PETTY`, `EXPENSE_CASH_OUT` |
-| **1112** | Bank Operating | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER`, `B2B_PAYMENT_BANK` |
+| **1112** | Bank Operating | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER` (vente et règlement B2B par virement) ; `B2B_PAYMENT_BANK` n'est plus lue par aucun émetteur |
 | **1115** | Cash - QRIS Clearing | 1 asset | `SALE_PAYMENT_QRIS` |
 | **1116** | Cash - Card Clearing | 1 asset | `SALE_PAYMENT_DEBIT` |
 | **1117** | Small Money (Change Float) | 1 asset | `CASH_WALLET_SMALL_MONEY` |
 | **1131** | Accounts Receivable | 1 asset | Créances hors B2B ; aucun mapping, zéro ligne au 2026-08-17 |
 | **1132** | AR - B2B | 1 asset | `B2B_AR` — c'est ICI que vit l'AR réel |
-| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; reçoit le PPN supplier foldé |
-| **1142/1143** | Inventory Raw / Finished | 1 asset | `INVENTORY_RAW_MATERIAL` / `INVENTORY_FINISHED_GOODS` |
+| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; plus alimenté par les réceptions ni les mouvements (import historique seul) |
+| **1142/1143** | Inventory Raw / Finished | 1 asset | `INVENTORY_RAW_MATERIAL` (articles achetés ; reçoit le PPN supplier foldé) / `INVENTORY_FINISHED_GOODS` (articles fabriqués). Coût des ventes : `SALE_COGS` |
 | **1151** | VAT Input — RESERVED | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/005), réactivation hard-bloquée. Les mappings `EXPENSE_VAT_INPUT`/`PURCHASE_VAT_INPUT` y pointent encore mais **aucune fonction ne les résout** |
 | **2110** | PB1 (10%) Payable | 2 liability | `SALE_PB1_TAX` — sortie mensuelle Bapenda |
 | **2141** | Accounts Payable | 2 liability | `PURCHASE_PAYABLE`, `EXPENSE_AP` |

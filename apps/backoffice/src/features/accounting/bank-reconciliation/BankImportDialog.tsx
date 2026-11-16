@@ -77,7 +77,7 @@ export function BankImportDialog({ accounts, existing, onClose, onReady }: {
           {file.sheets.map((s,index) => <option key={s.name} value={index}>{s.name}</option>)}</Select></label>
         <label className="space-y-1 text-sm">Header row<Input type="number" min={1} max={1000} value={mapping.headerRow} onChange={(e) => setColumn('headerRow',Number(e.target.value))} /></label>
         <label className="space-y-1 text-sm">Number format<Select value={mapping.numbers} onChange={(e) => setColumn('numbers',e.target.value)}><option value="dot">1,234.56</option><option value="comma">1.234,56</option></Select></label>
-        <label className="space-y-1 text-sm">Date format<Select value={mapping.dates} onChange={(e) => setColumn('dates',e.target.value)}><option value="iso">YYYY-MM-DD</option><option value="dmy">DD/MM/YYYY</option><option value="mdy">MM/DD/YYYY</option></Select></label>
+        <label className="space-y-1 text-sm">Date format<Select value={mapping.dates} onChange={(e) => setColumn('dates',e.target.value)}><option value="iso">YYYY-MM-DD</option><option value="dmy">DD/MM/YYYY or DD/MM/YY</option><option value="mdy">MM/DD/YYYY or MM/DD/YY</option></Select></label>
         {column('Transaction date','date')}{column('Description','description')}{column('Reference','reference',true)}{column('Running balance','balance',true)}
         <label className="space-y-1 text-sm">Amount columns<Select value={mapping.mode} onChange={(e) => setColumn('mode',e.target.value)}><option value="signed">Signed amount (+ money in)</option><option value="debit-credit">Separate debit and credit</option></Select></label>
         {mapping.mode === 'signed' ? column('Signed amount','amount') : <>{column('Debit','debit')}{column('Credit','credit')}

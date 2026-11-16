@@ -10,7 +10,7 @@ vi.mock('../../functions/_shared/pdf-layout.ts', () => ({
 
 const context = {
   doc: { addPage: () => ({ drawText: mocks.drawText, drawLine: vi.fn(), drawRectangle: vi.fn() }) },
-  font: { getCharacterSet: () => [...Array.from({ length: 256 }, (_, code) => code), 0x2026, 0x2014],
+  font: { getCharacterSet: () => [...Array.from({ length: 224 }, (_, code) => code + 32), 0x2026, 0x2014],
     widthOfTextAtSize: (text: string) => text.length * 4 },
   fontBold: {}, business: { name: 'The Breakery' },
 } as unknown as LayoutContext;
@@ -38,6 +38,24 @@ describe('audit PDF names and descriptions', () => {
     const text = mocks.drawText.mock.calls.map(([value]) => value);
     expect(text).toContain('[U+674E]');
     expect(text).toContain('Item added · [U+8336]');
+  });
+  it.each(['\n', '\r\n'])('keeps %j line breaks as separate lines while escaping unsupported text', async (newline) => {
+    const id = 'audit:12345678-1234-4234-8234-123456789abc';
+    await render(context, [{ id, created_at: '2026-11-04T12:00:00Z',
+      action: 'pos.item_added', description: `Item added · 茶${newline}Quantity verified`,
+      source_label: 'POS activity', review_cue: 'Check receipt', entity_type: 'order',
+      actor_id: 'profile-id', actor_name: '李', actor_context: 'Recorded actor' }], null);
+    const event = mocks.drawText.mock.calls.filter(([, options]) => options.x === 150);
+    expect(event.map(([value]) => value)).toEqual([
+      'Event / review cue', 'Item added · [U+8336]', 'Quantity verified',
+      'POS activity', `Event: ${id}`, 'Review: Check receipt',
+    ]);
+    const actor = mocks.drawText.mock.calls.filter(([, options]) => options.x === 475);
+    expect(actor.map(([value]) => value)).toEqual(['Account', '[U+674E]', 'Recorded actor']);
+    const rowY = event.slice(1).map(([, options]) => options.y);
+    expect(rowY).toEqual(rowY.map((_, i) => rowY[0] - i * 11));
+    expect(actor.slice(1).map(([, options]) => options.y)).toEqual(rowY.slice(0, 2));
+    expect(mocks.drawText.mock.calls.some(([value]) => /\[U\+[AD]\]|[\r\n]/.test(value))).toBe(false);
   });
   it('uses the business date across a UTC midnight boundary', async () => {
     await render(context, [{ id: 'audit:1', created_at: '2026-11-06T23:30:00Z',

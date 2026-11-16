@@ -20,6 +20,8 @@ import { useMemo, type JSX } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
+import { formatStockQuantity } from '@/features/inventory/stockQuantity.js';
+import { productionRequirementQuanta, stockQuantityQuanta, stockQuantaValue, STOCK_PRECISION_MESSAGE } from '../stockPrecision.js';
 
 /**
  * Une ligne de production à prévisualiser. Les quantités sont dans l'unité de
@@ -61,9 +63,7 @@ interface AggregatedRow {
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return '–';
-  // Locale métier, comme les soixante-trois autres appels du back-office.
-  // `en-US` ici rendait « 1,234.56 » à côté d'un « Rp 1.234 » de la même carte.
-  return n.toLocaleString('id-ID', { maximumFractionDigits: 3 });
+  return formatStockQuantity(n);
 }
 
 export function IngredientAggregatePreview({ items }: IngredientAggregatePreviewProps): JSX.Element {
@@ -94,43 +94,57 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const bomDataUpdatedKeys = bomQueries.map((q) => q.dataUpdatedAt).join(',');
 
-  const rows: AggregatedRow[] = useMemo(() => {
-    const acc = new Map<string, { name: string; unit: string; totalQty: number; available: number | null }>();
-    validRows.forEach((row, i) => {
-      const bom = bomQueries[i]?.data;
-      if (!bom) return;
-      const waste = row.quantityWaste ?? 0;
-      const mult = row.quantityProduced + (Number.isFinite(waste) ? waste : 0);
-      if (mult <= 0) return;
-      for (const leaf of bom) {
-        // qty_in_base is in the material's stock unit (kg/lt/pcs), matching
-        // current_stock — using the raw recipe qty (gr/ml) would overstate needs 1000×.
-        const need = leaf.qty_in_base * mult;
-        const existing = acc.get(leaf.material_id);
-        if (existing) {
-          existing.totalQty += need;
-          if (!Number.isFinite(leaf.current_stock)) existing.available = null;
-        } else {
-          acc.set(leaf.material_id, {
-            name: leaf.material_name, unit: leaf.material_unit,
-            totalQty: need, available: owner && Number.isFinite(leaf.current_stock) ? leaf.current_stock : null,
-          });
+  const { rows, precisionError } = useMemo((): { rows: AggregatedRow[]; precisionError: string | null } => {
+    const acc = new Map<string, { name: string; unit: string; totalQty: bigint; available: bigint | null }>();
+    try {
+      validRows.forEach((row, i) => {
+        const bom = bomQueries[i]?.data;
+        if (!bom) return;
+        const waste = row.quantityWaste ?? 0;
+        if (row.quantityProduced + (Number.isFinite(waste) ? waste : 0) <= 0) return;
+        // La RPC BOM agrège déjà ses chemins par matériau. On conserve ce regroupement
+        // avant l'arrondi par item, puis on somme les quanta de tous les items du lot.
+        const itemMaterials = new Map<string, { leaf: BomLeafRow; quantities: number[] }>();
+        for (const leaf of bom) {
+          const material = itemMaterials.get(leaf.material_id);
+          if (material) material.quantities.push(leaf.qty_in_base);
+          else itemMaterials.set(leaf.material_id, { leaf, quantities: [leaf.qty_in_base] });
         }
-      }
-    });
-    return Array.from(acc.entries())
-      .map(([materialId, x]) => {
-        const shortfall = x.available === null ? null : Math.max(0, x.totalQty - x.available);
-        return {
-          materialId, materialName: x.name, materialUnit: x.unit,
-          totalQty: x.totalQty, available: x.available,
-          sufficient: shortfall === null ? null : shortfall === 0, shortfall,
-        };
-      })
-      .sort((a, b) => {
-        if (a.sufficient !== b.sufficient) return a.sufficient ? 1 : -1;
-        return a.materialName.localeCompare(b.materialName);
+        for (const { leaf, quantities } of itemMaterials.values()) {
+          const need = productionRequirementQuanta(quantities, row.quantityProduced, Number.isFinite(waste) ? waste : 0);
+          const existing = acc.get(leaf.material_id);
+          if (existing) {
+            existing.totalQty += need;
+            if (!Number.isFinite(leaf.current_stock)) existing.available = null;
+          } else {
+            acc.set(leaf.material_id, {
+              name: leaf.material_name, unit: leaf.material_unit,
+              totalQty: need, available: owner && leaf.current_stock !== null && Number.isFinite(leaf.current_stock)
+                ? stockQuantityQuanta(leaf.current_stock) : null,
+            });
+          }
+        }
       });
+      const calculatedRows = Array.from(acc.entries())
+        .map(([materialId, x]) => {
+          const difference = x.available === null ? null : x.totalQty - x.available;
+          const shortfall = difference === null ? null : difference > 0n ? difference : 0n;
+          return {
+            materialId, materialName: x.name, materialUnit: x.unit,
+            totalQty: stockQuantaValue(x.totalQty), available: x.available === null ? null : stockQuantaValue(x.available),
+            sufficient: shortfall === null ? null : shortfall === 0n,
+            shortfall: shortfall === null ? null : stockQuantaValue(shortfall),
+          };
+        })
+        .sort((a, b) => {
+          if (a.sufficient !== b.sufficient) return a.sufficient ? 1 : -1;
+          return a.materialName.localeCompare(b.materialName);
+        });
+      return { rows: calculatedRows, precisionError: null };
+    } catch (error) {
+      return { rows: [], precisionError: error instanceof Error && error.message === 'quantity_below_stock_precision'
+        ? STOCK_PRECISION_MESSAGE : 'Could not calculate ingredient requirements.' };
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validRows, bomDataUpdatedKeys, owner]);
 
@@ -150,7 +164,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         )}
       </div>
 
-      {errorMsg !== null && <p role="alert" className="text-xs text-red">{errorMsg}</p>}
+      {(errorMsg ?? precisionError) !== null && <p role="alert" className="text-xs text-red">{errorMsg ?? precisionError}</p>}
 
       {validRows.length === 0 ? (
         <p className="text-sm text-text-secondary">
@@ -158,7 +172,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         </p>
       ) : loading ? (
         <p className="text-sm text-text-secondary">Computing requirements…</p>
-      ) : rows.length === 0 ? (
+      ) : precisionError !== null ? null : rows.length === 0 ? (
         <p className="text-sm text-text-secondary">No recipes resolved yet.</p>
       ) : (
         <>

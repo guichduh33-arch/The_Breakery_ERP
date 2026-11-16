@@ -91,19 +91,29 @@ describe('expense receipt durable recovery',()=>{
   mountUploader();fireEvent.change(screen.getByLabelText('Receipt file'),{target:{files:[file('bad','text/html')]}});
   expect(await screen.findByRole('alert')).toHaveTextContent('JPEG or PDF');expect(rpc).not.toHaveBeenCalled();expect(localStorage.length).toBe(0);
  });
- it('downloads privately and never places the storage path in a public link',async()=>{
-  const create=vi.fn(()=> 'blob:private-receipt'),revoke=vi.fn();
+ it('shows a PDF receipt inline, privately, and downloads the same file',async()=>{
+  const create=vi.fn((_b: Blob)=> 'blob:private-receipt'),revoke=vi.fn();
   Object.defineProperty(URL,'createObjectURL',{configurable:true,value:create});Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:revoke});
   const click=vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>undefined);download.mockResolvedValue({data:new Blob(['private']),error:null});
-  render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/old/receipt.pdf'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
-  expect(screen.queryByRole('link')).not.toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Download receipt'}));
-  await waitFor(()=>expect(click).toHaveBeenCalledOnce());expect(download).toHaveBeenCalledWith('download-expense-receipt',{body:{expense_id:expenseId},headers:{'x-session-token':'session-a-secret'}});expect(revoke).toHaveBeenCalledWith('blob:private-receipt');
+  const view=render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/old/receipt.pdf'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
+  const frame=await screen.findByTitle('Receipt preview');expect(frame).toHaveAttribute('src','blob:private-receipt');
+  expect(create.mock.calls[0]![0].type).toBe('application/pdf');expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  expect(download).toHaveBeenCalledWith('download-expense-receipt',{body:{expense_id:expenseId},headers:{'x-session-token':'session-a-secret'}});
+  fireEvent.click(screen.getByRole('button',{name:'Download receipt'}));expect(click).toHaveBeenCalledOnce();expect(download).toHaveBeenCalledOnce();
+  view.unmount();expect(revoke).toHaveBeenCalledWith('blob:private-receipt');
  });
- it('discards a private download when the session changed during IO',async()=>{
-  const response=deferred<{data:Blob,error:null}>();download.mockReturnValue(response.promise);
+ it('shows an image receipt inline with its image type',async()=>{
+  const create=vi.fn((_b: Blob)=> 'blob:private-image');Object.defineProperty(URL,'createObjectURL',{configurable:true,value:create});
+  Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()});download.mockResolvedValue({data:new Blob(['private']),error:null});
+  render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/old/receipt.JPG'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
+  expect(await screen.findByRole('img',{name:'Receipt'})).toHaveAttribute('src','blob:private-image');expect(create.mock.calls[0]![0].type).toBe('image/jpeg');
+ });
+ it('discards a private preview when the session changed during IO',async()=>{
+  // Le nouvel opérateur relance sa propre lecture : elle reste en vol, seule l'ancienne est résolue.
+  const response=deferred<{data:Blob,error:null}>();download.mockReturnValueOnce(response.promise).mockReturnValue(new Promise(()=>undefined));
   const create=vi.fn();Object.defineProperty(URL,'createObjectURL',{configurable:true,value:create});
   render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/old/receipt.pdf'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
-  fireEvent.click(screen.getByRole('button',{name:'Download receipt'}));act(()=>{financialTestAuth.setState({sessionToken:'new-session'});});
+  await waitFor(()=>expect(download).toHaveBeenCalledOnce());act(()=>{financialTestAuth.setState({sessionToken:'new-session'});});
   await act(async()=>{response.resolve({data:new Blob(['private']),error:null});await response.promise;});expect(create).not.toHaveBeenCalled();
  });
  it('allows a payer to regularize an approved expense with a missing invoice',()=>{

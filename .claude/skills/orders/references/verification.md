@@ -59,7 +59,8 @@ Tests pgTAP (vérité comportementale)
   supabase/tests/realtime_publication_orders.test.sql
 
 Intention & décisions
-  docs/objectifs/ORDERS.md   — l'intention métier du module (ce qui est VOULU)
+  docs/SPECS_OFFICIELS_ERP_POS.md  — §6 Caisse et vente : ce qui EST (FAIT) et ce
+                                     qui est VOULU et validé (RÈGLE, À LIVRER)
   docs/adr/009-cycle-de-vie-ordres.md
   docs/adr/010-verrou-items-envoyes-cuisine.md
   docs/adr/013-comptabilite-integrite-void-refund-remise.md

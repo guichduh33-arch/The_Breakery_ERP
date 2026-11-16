@@ -29,5 +29,7 @@ export { buildTrialBalanceCsv, downloadTrialBalanceCsv } from './components/expo
 export { useFiscalPeriods, type FiscalPeriodRow, FISCAL_PERIODS_KEY } from './hooks/useFiscalPeriods.js';
 export { useCloseFiscalPeriod, type CloseFiscalPeriodArgs } from './hooks/useCloseFiscalPeriod.js';
 export { FiscalPeriodModal, type FiscalPeriodModalProps } from './components/FiscalPeriodModal.js';
+export { useReopenFiscalPeriod, type ReopenFiscalPeriodArgs } from './hooks/useReopenFiscalPeriod.js';
+export { ReopenFiscalPeriodModal, type ReopenFiscalPeriodModalProps } from './components/ReopenFiscalPeriodModal.js';
 export { default as SettingsAccountingPage } from './pages/SettingsAccountingPage.js';
 export { default as AccountingIndexPage } from './pages/AccountingIndexPage.js';

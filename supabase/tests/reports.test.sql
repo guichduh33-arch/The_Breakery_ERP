@@ -5,7 +5,7 @@
 --   T_RPT_01..03  Materialised views exist + are populated + have unique indexes.
 --   T_RPT_04..05  Refresh wrapper functions exist and run.
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
---   T_RPT_07      get_sales_by_category_v4 returns 0 rows on empty data, accepts date range.
+--   T_RPT_07      get_sales_by_category (family) returns 0 rows on empty data, accepts date range.
 --   T_RPT_08      get_stock_variance_v4 (ADR-027 : démarque constatée, sans
 --                 section) returns one row per tracked product with either a
 --                 movement in the default 30-day window or a non-zero stock.
@@ -76,8 +76,8 @@ SELECT is(
 -- T_RPT_07 — sales-by-category date range
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_sales_by_category_v6(CURRENT_DATE - 7, CURRENT_DATE)$$,
-  'T_RPT_07 — get_sales_by_category_v6 accepts a date range'
+  $$SELECT * FROM public.get_sales_by_category_v7(CURRENT_DATE - 7, CURRENT_DATE)$$,
+  'T_RPT_07 — get_sales_by_category_v7 accepts a date range'
 );
 
 -- ============================================================

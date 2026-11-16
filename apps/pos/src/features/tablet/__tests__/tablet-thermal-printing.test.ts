@@ -112,6 +112,19 @@ describe('tablet thermal tickets', () => {
     expect(await printTabletTickets(qc, mixed, 'mixed-1', 'T1-10', 'Made', true)).toBe(true);
     expect(mocks.send).toHaveBeenCalledTimes(4);
   });
+  it('S1-22 — prints the configured number of waiter tickets, and none at zero', async () => {
+    mocks.printers.mockResolvedValue(new Map([['kitchen', { ip_address: '192.168.1.13', port: 9100 }],
+      ['barista', { ip_address: '192.168.1.32', port: 9100 }], ['waiter', { ip_address: '192.168.1.14', port: 9100 }]]));
+    const waiterSends = () => mocks.send.mock.calls.filter((call) => (call[1] as StationTicketPayload).role === 'waiter');
+    mocks.copies.mockResolvedValue({ kitchen: 1, barista: 1, display: 1, waiter: 3 });
+    expect(await printTabletTickets(new QueryClient(), cart, 'waiter-3', 'T1-20', 'Made', false)).toBe(true);
+    expect(waiterSends()).toHaveLength(3);
+    mocks.send.mockClear();
+    mocks.copies.mockResolvedValue({ kitchen: 1, barista: 1, display: 1, waiter: 0 });
+    expect(await printTabletTickets(new QueryClient(), cart, 'waiter-0', 'T1-21', 'Made', false)).toBe(true);
+    expect(waiterSends()).toHaveLength(0);
+    expect(mocks.send).toHaveBeenCalledTimes(2);
+  });
   it('prints the offline waiter recap even when prep copies are zero', async () => {
     const qc = new QueryClient();
     qc.setQueryData(['station-map'], { coffee: ['kitchen'] });

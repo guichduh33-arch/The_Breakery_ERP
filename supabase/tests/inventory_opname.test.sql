@@ -47,8 +47,8 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'create_opname_v3','add_opname_item_v3','set_opname_count_v3',
-      'validate_opname_v2','finalize_opname_v5','cancel_opname_v1',
+      'create_opname_v3','add_opname_item_v4','set_opname_count_v3',
+      'validate_opname_v2','finalize_opname_v6','cancel_opname_v1',
       'next_count_number'
     )),
   7,
@@ -122,10 +122,10 @@ SELECT is(
 
 -- T_OPN_10 — finalize_opname_v5 status guard — call as anonymous (should raise forbidden)
 SELECT throws_ok(
-  $$SELECT finalize_opname_v5(gen_random_uuid())$$,
+  $$SELECT finalize_opname_v6(gen_random_uuid())$$,
   'P0003',
   NULL,
-  'T_OPN_10: finalize_opname_v5 forbids anonymous callers'
+  'T_OPN_10: finalize_opname_v6 forbids anonymous callers'
 );
 
 -- T_OPN_11 — enum values opname_in + opname_out present
@@ -221,7 +221,7 @@ BEGIN
   v_count_id := (v_count->>'count_id')::uuid;
   PERFORM set_config('breakery.opn14_count_id', v_count_id::text, false);
 
-  SELECT add_opname_item_v3(
+  SELECT add_opname_item_v4(
     v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 'T_OPN_14'
   ) INTO v_item;
 
@@ -235,7 +235,7 @@ BEGIN
     (v_expected_returned = 42.500 AND v_expected_stored = 42.500)::text, false);
 END $t_opn_14$;
 SELECT ok(current_setting('breakery.t_opn_14_pass')::boolean,
-  'T_OPN_14: add_opname_item_v3 defaults expected_qty to products.current_stock (42.500)');
+  'T_OPN_14: add_opname_item_v4 defaults expected_qty to products.current_stock (42.500)');
 
 -- =========================================================================
 -- T_OPN_15 — ADR-027 : finalize_opname_v5 émet opname_in/out avec sections
@@ -265,7 +265,7 @@ BEGIN
   PERFORM validate_opname_v2(v_count_id);
 
   PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
-  SELECT finalize_opname_v5(v_count_id) INTO v_finalize;
+  SELECT finalize_opname_v6(v_count_id) INTO v_finalize;
 
   SELECT id, movement_type, quantity, from_section_id, to_section_id
     INTO v_mvt_id, v_mvt_type, v_mvt_qty, v_mvt_from, v_mvt_to
@@ -287,7 +287,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t_opn_15$;
 SELECT ok(current_setting('breakery.t_opn_15_pass')::boolean,
-  'T_OPN_15: finalize_opname_v5 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
+  'T_OPN_15: finalize_opname_v6 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
 
 
 -- =========================================================================
@@ -310,7 +310,7 @@ BEGIN
   SELECT create_opname_v3('T_OPN_16 fixture') INTO v_count;
   v_count_id := (v_count->>'count_id')::uuid;
 
-  SELECT add_opname_item_v3(
+  SELECT add_opname_item_v4(
     v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 'T_OPN_16'
   ) INTO v_item;
   SELECT id INTO v_item_id FROM inventory_count_items
@@ -331,11 +331,11 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
 END $t_opn_16$;
 SELECT throws_ok(
-  format($q$SELECT finalize_opname_v5(%L::uuid)$q$,
+  format($q$SELECT finalize_opname_v6(%L::uuid)$q$,
          current_setting('breakery.opn16_count_id')),
   'P0001',
   'finalize_not_allowed_in_status',
-  'T_OPN_16: finalize_opname_v5 refuses status counting — reveal is not skippable'
+  'T_OPN_16: finalize_opname_v6 refuses status counting — reveal is not skippable'
 );
 SELECT * FROM finish();
 

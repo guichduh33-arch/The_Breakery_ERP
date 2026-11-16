@@ -23,7 +23,7 @@ END $$;
 
 -- 1. Défaut (p_allow_negative absent) : sortie > stock → insufficient_stock (P0002).
 SELECT throws_ok(
-  format($$ SELECT record_stock_movement_v1(
+  format($$ SELECT record_stock_movement_v2(
        p_product_id := %L::uuid, p_movement_type := 'adjustment',
        p_quantity := -5, p_reason := 'test neg block') $$, (SELECT pid FROM _ctx)),
   'P0002', NULL,
@@ -31,7 +31,7 @@ SELECT throws_ok(
 
 -- 2. p_allow_negative := true → la sortie passe (pas d'exception).
 SELECT lives_ok(
-  format($$ SELECT record_stock_movement_v1(
+  format($$ SELECT record_stock_movement_v2(
        p_product_id := %L::uuid, p_movement_type := 'adjustment',
        p_quantity := -5, p_reason := 'test neg allow', p_allow_negative := true) $$,
        (SELECT pid FROM _ctx)),

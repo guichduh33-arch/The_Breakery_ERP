@@ -32,7 +32,7 @@ describe('opname import RPC orchestration', () => {
     const saved = vi.fn();
     await importCountRows('count', [row], saved);
     expect(writeRpc.mock.calls).toEqual([
-      ['add_opname_item_v3', { p_count_id: 'count', p_product_id: 'a' }],
+      ['add_opname_item_v4', { p_count_id: 'count', p_product_id: 'a' }],
       ['set_opname_count_v3', { p_count_item_id: 'item', p_counted_qty: 0, p_notes: '' }],
     ]);
     expect(saved).toHaveBeenCalledTimes(1);

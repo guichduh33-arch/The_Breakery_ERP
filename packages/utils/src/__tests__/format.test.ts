@@ -39,6 +39,13 @@ describe('formatCurrency', () => {
 });
 
 describe('formatQuantity', () => {
+  it('opts into nine decimals without changing the default or count units', () => {
+    expect(formatQuantity(0.000166, 'kg')).toBe('0 kg');
+    expect(formatQuantity(0.000166, 'kg', { maximumFractionDigits: 9 })).toBe('0,000166 kg');
+    expect(formatQuantity(9e-8, null, { maximumFractionDigits: 9 })).toBe('0,00000009');
+    expect(formatQuantity(-1e-9, 'kg', { maximumFractionDigits: 9 })).toBe('-0,000000001 kg');
+    expect(formatQuantity(1.25, 'pcs', { maximumFractionDigits: 9 })).toBe('1 pcs');
+  });
   it('entier strict pour les unités de comptage', () => {
     expect(formatQuantity(5, 'pcs')).toBe('5 pcs');
     expect(formatQuantity(5.0, 'pcs')).toBe('5 pcs');

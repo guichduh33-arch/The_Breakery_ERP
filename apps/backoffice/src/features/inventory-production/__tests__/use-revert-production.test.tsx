@@ -24,7 +24,7 @@ describe('production reversal server result', () => {
     rpc.mockResolvedValue({ data: { production_id: args.productionId }, error: null });
     const { result, invalidate } = setup();
     await act(async () => { await result.current.mutateAsync(args); });
-    expect(rpc).toHaveBeenCalledWith('revert_production_v3', {
+    expect(rpc).toHaveBeenCalledWith('revert_production_v4', {
       p_production_id: args.productionId, p_reason: args.reason,
     });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['inventory-production', 'records'] });

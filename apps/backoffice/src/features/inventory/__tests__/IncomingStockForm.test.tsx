@@ -56,7 +56,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
-        if (fn === 'get_operational_products_v2') return Promise.resolve({ data: MOCK_PRODUCTS, error: null });
+        if (fn === 'get_operational_products_v3') return Promise.resolve({ data: MOCK_PRODUCTS, error: null });
         const out = mockRpc(fn, args) as RpcResult | undefined;
         return Promise.resolve(out ?? { data: { movement_id: 'm-1', product_id: 'p-1', new_current_stock: 110 }, error: null });
       },
@@ -166,7 +166,7 @@ describe('IncomingStockForm', () => {
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
 
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('record_incoming_stock_v5');
+    expect(call[0]).toBe('record_incoming_stock_v6');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   5,

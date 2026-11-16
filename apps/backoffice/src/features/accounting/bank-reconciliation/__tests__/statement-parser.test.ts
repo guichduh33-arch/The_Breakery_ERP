@@ -36,6 +36,15 @@ describe('bank statement money and dates',() => {
     for (const value of [60,0,-1,'2026-02-29','31/04/2026','2026-01-01T00:00:00Z']) expect(() => bankDate(value,'dmy')).toThrow();
     expect(() => bankDate('01/02/2026','iso')).toThrow();
   });
+  it('reads a two-digit year as 20YY, as the bank exports it, and still rejects invalid dates',() => {
+    expect(bankDate('01/10/26','dmy')).toBe('2026-10-01');
+    expect(bankDate('31.10.26','dmy')).toBe('2026-10-31');
+    expect(bankDate('10/31/26','mdy')).toBe('2026-10-31');
+    expect(bankDate('29/02/24','dmy')).toBe('2024-02-29');
+    expect(bankDate('1/2/00','dmy')).toBe('2000-02-01');
+    for (const value of ['29/02/26','31/04/26','32/10/26','01/13/26','01/10/026','01/10/6','01/10-26']) expect(() => bankDate(value,'dmy')).toThrow();
+    expect(() => bankDate('01/10/26','iso')).toThrow();
+  });
 });
 describe('bank statement normalization',() => {
   it('preserves physical source rows, debit direction, references and real cents',() => {
@@ -63,6 +72,25 @@ describe('bank statement normalization',() => {
     expect(result.errors).toEqual([]); expect(result.rows).toHaveLength(2);
     expect(result.rows.map((row) => row.source_row)).toEqual([2,3]);
     expect(result.rows.every((row) => row.balance === null)).toBe(true);
+  });
+  it('imports a bank export with dd/mm/yy text dates, blank rows and dot-decimal debit/credit text',() => {
+    const exported: StatementSheet = { ...sheet,rows: [
+      ['Date','Description','Debit','Credit','Reference','Balance'],
+      ['01/10/26','Opening transfer',null,'250000.00','A1','1250000.00'],
+      [null,null,null,null,null,null],
+      ['02/10/26','Supplier payment','1379998.62',null,'A2','-129998.62'],
+      ['31/10/26','Card settlement',null,'100000.00','A3','-29998.62'],
+    ] };
+    const result = normalizeStatement(exported,{ ...mapping,numbers: 'dot' });
+    expect(result.errors).toEqual([]);
+    expect(result.rows.map((row) => [row.source_row,row.date,row.amount])).toEqual([
+      [2,'2026-10-01','250000.00'],[4,'2026-10-02','-1379998.62'],[5,'2026-10-31','100000.00'],
+    ]);
+  });
+  it('counts one issue per bad row plus one summary line when nothing is valid',() => {
+    const bad = { ...sheet,rows: [sheet.rows[0]!,['01/10/26','A',null,'1.00',null,null],['02/10/26','B',null,'2.00',null,null]] };
+    const result = normalizeStatement(bad,{ ...mapping,numbers: 'dot',dates: 'iso',reference: -1,balance: -1 });
+    expect(result.errors).toEqual(['Row 2: Date does not match the selected format.','Row 3: Date does not match the selected format.','No valid transactions were found.']);
   });
   it('rejects numeric references, descending dates and a transaction outside the declared period',() => {
     expect(normalizeStatement({ ...sheet,rows: [sheet.rows[0]!,['24/10/2026','Payment',100,null,123,null]] },mapping).errors[0]).toContain('text');

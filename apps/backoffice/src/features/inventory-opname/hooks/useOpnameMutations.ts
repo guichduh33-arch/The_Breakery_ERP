@@ -63,7 +63,7 @@ export function useCreateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// add_opname_item_v3
+// add_opname_item
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AddOpnameItemArgs {
@@ -76,7 +76,7 @@ export function useAddOpnameItem() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, AddOpnameItemArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('add_opname_item_v3', {
+      const { data, error } = await rpc()('add_opname_item_v4', {
         p_count_id: args.countId,
         p_product_id: args.productId,
         ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
@@ -139,7 +139,7 @@ export function useValidateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// finalize_opname_v5
+// finalize_opname
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface FinalizeOpnameResult {
@@ -154,13 +154,13 @@ export interface FinalizeOpnameResult {
 
 export function useFinalizeOpname() {
   const qc = useQueryClient();
-  // Idempotency key held across retries; rotated on success. finalize_opname_v5
+  // Idempotency key held across retries; rotated on success. finalize_opname
   // n'accepte QUE le statut `review` — la révélation par validate_opname_v2 est
   // le seul chemin depuis le comptage — mais une clé stable rend le rejeu explicite.
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('finalize_opname_v5', {
+      const { data, error } = await rpc()('finalize_opname_v6', {
         p_count_id: countId,
         p_idempotency_key: idemKey.current,
       });

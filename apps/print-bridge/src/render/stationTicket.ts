@@ -2,6 +2,7 @@
 import type { StationTicketPayload } from '@breakery/domain';
 import type { PrinterLike } from './printerLike.js';
 import { money } from './receipt.js';
+import { renderBill } from './bill.js';
 
 /** Le driver ne réduit pas sa largeur de retour à la ligne avec la police ×2. */
 function printWrapped(p: PrinterLike, text: string, columns: number): void {
@@ -29,6 +30,8 @@ export function renderStationTicket(p: PrinterLike, t: StationTicketPayload): vo
     p.drawLine(); p.println('Closed shift — saved report'); p.newLine(); p.cut();
     return;
   }
+  // S1-21 — l'addition a son propre gabarit (prix + totaux).
+  if (t.kind === 'bill') { renderBill(p, t); return; }
   const largeItems = t.kind === 'prep';
   const normalWidth = p.getWidth?.() ?? 48;
   const largeColumns = Number.isInteger(normalWidth) && normalWidth > 0

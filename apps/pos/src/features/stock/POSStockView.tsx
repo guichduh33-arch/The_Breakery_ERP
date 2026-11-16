@@ -252,7 +252,7 @@ export default function POSStockView(): JSX.Element {
                   retryPending={gestures.pending.some((a) => a.product.id === p.id)}
                   onReceive={hasDisplayManage ? (qty) => gestures.submit('receive', p, qty, 'pos_mise_en_vitrine') : undefined}
                   onReturnToKitchen={hasDisplayManage ? (qty) => gestures.submit('return', p, qty, 'pos_retour_cuisine') : undefined}
-                  onWaste={hasDisplayManage ? (qty, reason) => gestures.submit('waste', p, qty, reason) : undefined}
+                  onWaste={hasDisplayManage ? (qty, choice) => gestures.submit('waste', p, qty, choice.note, choice.reason) : undefined}
                   onAdjust={hasDisplayManage ? (newQty, reason) => gestures.submit('adjust', p, newQty, reason) : undefined}
                 />
               ))}
@@ -267,7 +267,7 @@ export default function POSStockView(): JSX.Element {
                   retryPending={gestures.pending.some((a) => a.product.id === p.id)}
                   onReceive={hasDisplayManage ? (qty) => gestures.submit('receive', p, qty, 'pos_mise_en_vitrine') : undefined}
                   onReturnToKitchen={hasDisplayManage ? (qty) => gestures.submit('return', p, qty, 'pos_retour_cuisine') : undefined}
-                  onWaste={hasDisplayManage ? (qty, reason) => gestures.submit('waste', p, qty, reason) : undefined}
+                  onWaste={hasDisplayManage ? (qty, choice) => gestures.submit('waste', p, qty, choice.note, choice.reason) : undefined}
                   onAdjust={hasDisplayManage ? (newQty, reason) => gestures.submit('adjust', p, newQty, reason) : undefined}
                 />
               ))}

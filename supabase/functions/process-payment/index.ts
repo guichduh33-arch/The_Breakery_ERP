@@ -59,6 +59,11 @@
 // (b) redaction M5 — plus aucun `message` Postgres brut dans les réponses (le
 // classifier POS classe sur `error`), fallthrough via logAndRedact ;
 // (c) oracle PIN harmonisé sur void/refund/cancel (`wrong_pin` nu).
+//
+// S1-09 / S1-12 (2026-11-14): RPC bumped v32 → v33, même contrat. La remise de
+// ligne est refusée hors de [0, sous-total serveur de la ligne], et les
+// promotions sont évaluées aux prix du serveur. Un refus sort en
+// `check_violation` (422) ; un écart de promotion en `promo_amount_mismatch`.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -263,7 +268,7 @@ serve(withPermissionErrors(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v32, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v33, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -323,7 +328,7 @@ serve(withPermissionErrors(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v32', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v33', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,

@@ -71,7 +71,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_customer_v3') {
+      if (fn === 'get_sales_by_customer_v4') {
         return Promise.resolve({ data: reportPayload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -122,7 +122,7 @@ describe('SalesByCustomerPage smoke', () => {
   it('calls the RPC with the bounds AND the domain churn threshold', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_customer_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_customer_v4');
       expect(call).toBeDefined();
       const args = (call as [string, {
         p_start_date: string; p_end_date: string; p_churn_min_orders: number;
@@ -207,7 +207,7 @@ describe('SalesByCustomerPage smoke', () => {
     fireEvent.change(screen.getByLabelText('Customer type filter'), { target: { value: 'b2b' } });
     await waitFor(() => {
       const call = mockRpc.mock.calls
-        .filter(([fn]) => fn === 'get_sales_by_customer_v3')
+        .filter(([fn]) => fn === 'get_sales_by_customer_v4')
         .at(-1);
       const args = (call as [string, { p_customer_type?: string }])[1];
       expect(args.p_customer_type).toBe('b2b');

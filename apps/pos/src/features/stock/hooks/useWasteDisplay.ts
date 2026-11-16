@@ -1,25 +1,31 @@
 // apps/pos/src/features/stock/hooks/useWasteDisplay.ts
 //
 // POS display-stock isolation — closure gesture "Perte".
-// Wraps `waste_display_stock_v4` (gate display.manage): writes off vitrine
-// stock as waste (also decrements BO stock — returns new_bo_stock).
+// Enveloppe la famille `waste_display_stock` (gate display.manage) : déclare une
+// perte vitrine soumise à l'approbation du propriétaire.
+// S1-18 — le motif vient de la liste fermée `waste_reason` ; la note est
+// facultative (au moins 3 caractères si présente, exigée pour `other`).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { POS_STOCK_PRODUCTS_KEY } from './usePOSStockProducts';
 import { DisplayGestureError } from './useReturnToKitchen';
+import type { WasteReason } from '../wasteReasons';
 
 export interface WasteDisplayArgs {
   productId: string;
   quantity: number;
   idempotencyKey: string;
-  reason?: string;
+  wasteReason: WasteReason;
+  note?: string;
 }
 
 function classify(message: string): string {
   if (message.includes('forbidden')) return 'forbidden';
   if (message.includes('insufficient_display_stock')) return 'insufficient_display_stock';
-  if (message.includes('quantity_must_be_positive')) return 'quantity_must_be_positive';
+  if (message.includes('quantity_must_be_positive') || message.includes('invalid_quantity')) return 'quantity_must_be_positive';
+  if (message.includes('waste_reason_required')) return 'waste_reason_required';
+  if (message.includes('reason_required')) return 'reason_required';
   return 'unknown';
 }
 
@@ -30,17 +36,19 @@ export function useWasteDisplay() {
       const rpcArgs: {
         p_product_id: string;
         p_quantity: number;
+        p_waste_reason: WasteReason;
         p_idempotency_key: string;
-        p_reason?: string;
+        p_note?: string;
       } = {
         p_product_id: args.productId,
         p_quantity: args.quantity,
+        p_waste_reason: args.wasteReason,
         p_idempotency_key: args.idempotencyKey,
       };
-      if (args.reason !== undefined && args.reason.trim() !== '') {
-        rpcArgs.p_reason = args.reason.trim();
+      if (args.note !== undefined && args.note.trim() !== '') {
+        rpcArgs.p_note = args.note.trim();
       }
-      const { data, error } = await supabase.rpc('waste_display_stock_v4', rpcArgs);
+      const { data, error } = await supabase.rpc('waste_display_stock_v5', rpcArgs);
       if (error) throw new DisplayGestureError(classify(error.message), error.message);
       return data;
     },

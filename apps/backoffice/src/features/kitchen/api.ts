@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase.js';
 import type { Database, Json } from '@breakery/supabase';
+import { STOCK_PRECISION_MESSAGE } from '../inventory-production/stockPrecision.js';
 
 export type KitchenWasteReason = Database['public']['Enums']['waste_reason'];
 export interface KitchenStation { id: string; name: string }
@@ -36,7 +37,7 @@ export async function getHistory(sectionId: string, day: string, cursor: Kitchen
   return data as unknown as KitchenRecord[];
 }
 export async function submitProduction(request: KitchenRequest): Promise<KitchenReceipt> {
-  const { data, error } = await supabase.rpc('record_kitchen_production_v6', { p_request: request as unknown as Json });
+  const { data, error } = await supabase.rpc('record_kitchen_production_v7', { p_request: request as unknown as Json });
   if (error) throw error;
   return data as unknown as KitchenReceipt;
 }
@@ -58,6 +59,8 @@ export async function saveAccess(userId: string, enabled: boolean, sectionIds: s
 }
 export function kitchenError(error: unknown): string {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
+  if (message.includes('stock_operation_rejected')) return 'This production was rejected. Ask an administrator to review it.';
+  if (message.includes('quantity_below_stock_precision')) return STOCK_PRECISION_MESSAGE;
   if (message.includes('insufficient_stock')) return 'Not enough ingredients in stock. Ask an administrator to check the stock, then try again.';
   if (message.includes('today_only')) return 'This draft is from another day. Ask an administrator to record it for the correct date.';
   if (message.includes('forbidden')) return 'Your access or station assignment has changed. Ask a super admin to check your access.';

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useAdjustStock.ts
 //
-// Calls `adjust_stock_v4` RPC (session 12). Surfaces RPC errors as a typed
+// Calls `adjust_stock` RPC (session 12). Surfaces RPC errors as a typed
 // enum so the modal can map them to inline form errors. Pattern mirrors
 // useAdjustLoyaltyPoints.ts.
 //

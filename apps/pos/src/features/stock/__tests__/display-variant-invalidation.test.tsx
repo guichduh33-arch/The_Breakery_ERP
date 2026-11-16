@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc } }));
 beforeEach(() => {
   mocks.rpc.mockReset();
-  mocks.rpc.mockImplementation((fn: string) => Promise.resolve({ error: null, data: fn === 'waste_display_stock_v4'
+  mocks.rpc.mockImplementation((fn: string) => Promise.resolve({ error: null, data: fn === 'waste_display_stock_v5'
     ? { declaration_id: 'd', status: 'pending', display_withdrawal_applied: true, idempotent_replay: false }
     : { product_id: 'p', new_display_stock: null, effect_id: 'effect', idempotent_replay: false } }));
 });
@@ -25,10 +25,22 @@ it.each(['receive', 'waste', 'adjust', 'return'] as const)('%s invalidates both 
   });
   await act(async () => {
     if (gesture === 'adjust') await result.current.adjust.mutateAsync({ productId: 'p', newQty: 3, reason: 'Physical count', idempotencyKey: 'same-key' });
+    else if (gesture === 'waste') await result.current.waste.mutateAsync({ productId: 'p', quantity: 3, wasteReason: 'damaged', note: ' Dropped tray ', idempotencyKey: 'same-key' });
     else await result.current[gesture].mutateAsync({ productId: 'p', quantity: 3, reason: 'Display update', idempotencyKey: 'same-key' });
   });
   if (gesture === 'adjust') expect(mocks.rpc).toHaveBeenCalledWith('adjust_display_stock_v6', { p_product_id: 'p', p_new_qty: 3, p_reason: 'Physical count', p_idempotency_key: 'same-key' });
+  // S1-18 — la perte vitrine envoie le code de la liste fermée et la note nettoyée.
+  if (gesture === 'waste') expect(mocks.rpc).toHaveBeenCalledWith('waste_display_stock_v5', { p_product_id: 'p', p_quantity: 3, p_waste_reason: 'damaged', p_note: 'Dropped tray', p_idempotency_key: 'same-key' });
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ['products'] });
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
   expect(invalidate).toHaveBeenCalledWith({ queryKey: ['pos-product-variants-batch'] });
+});
+
+it('sends a display waste without a note as the reason code alone', async () => {
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  const { result } = renderHook(() => useWasteDisplay(), {
+    wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+  await act(async () => { await result.current.mutateAsync({ productId: 'p', quantity: 1, wasteReason: 'expired', note: '  ', idempotencyKey: 'key' }); });
+  expect(mocks.rpc).toHaveBeenCalledWith('waste_display_stock_v5', { p_product_id: 'p', p_quantity: 1, p_waste_reason: 'expired', p_idempotency_key: 'key' });
 });

@@ -8,6 +8,13 @@ export function auditNumber(value: unknown): number | null {
   return Number.isFinite(result) ? result : null;
 }
 const SECRET_KEY = /^(?:p_)?(?:pin|manager_pin|new_pin|old_pin|pin_hash|password|password_hash|token|jwt|access_token|refresh_token|session_token|session_token_hash|authorization|api_key|service_role_key|secret|secret_key)$/i;
+export function auditIsSecretKey(key: unknown): boolean {
+  return typeof key === 'string' && SECRET_KEY.test(key);
+}
+/** Texte non vide, sinon null : une chaîne blanche n'est pas une valeur. */
+export function auditText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
 export function auditSafeDetails(value: unknown): string {
   if (value === null || value === undefined) return '—';
   try {

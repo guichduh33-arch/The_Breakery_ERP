@@ -19,6 +19,22 @@ function renderRow(overrides: Partial<OpnameItemRow> = {}, onEditingChange = vi.
 }
 
 describe('opname quantity entry', () => {
+  it('shows the precise revealed expectation and variance without changing manual precision', () => {
+    render(<table><tbody><CountItemRow countId="count-1" item={{ ...item, expected_qty: 0.999834, counted_qty: 1 }}
+      revealed locked /></tbody></table>);
+    expect(screen.getByTestId('cell-expected')).toHaveTextContent('0,999834 kg');
+    expect(screen.getByTestId('cell-variance')).toHaveTextContent('+0,000166 kg');
+  });
+
+  it('keeps a fractional expectation and variance hidden during counting', () => {
+    renderRow({ expected_qty: 0.999834, counted_qty: 1 });
+    expect(screen.queryByText(/0,999834|0,000166/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Counted quantity for Flour')).toHaveAttribute('step', '0.001');
+    fireEvent.change(screen.getByLabelText('Counted quantity for Flour'), { target: { value: '0.000166' } });
+    fireEvent.blur(screen.getByLabelText('Counted quantity for Flour'));
+    expect(mutate).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('up to 3 decimal places');
+  });
   it('keeps validation blocked after a failed save until retry succeeds', () => {
     const onEditingChange = vi.fn();
     renderRow({ counted_qty: 1 }, onEditingChange);

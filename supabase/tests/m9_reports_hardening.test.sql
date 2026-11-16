@@ -19,7 +19,13 @@ BEGIN
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof
   FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.inventory.read') LIMIT 1;
+    -- La lecture des mouvements de stock est réservée au propriétaire
+    -- (`is_business_owner_v1`). Un `LIMIT 1` sans tri ni rôle rendait un
+    -- profil au hasard : la suite rougissait dès que l'ordre physique des
+    -- lignes changeait (une connexion ratée suffit).
+    AND up.is_active AND up.role_code = 'SUPER_ADMIN'
+    AND has_permission(up.auth_user_id, 'reports.inventory.read')
+  ORDER BY up.created_at, up.id LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 

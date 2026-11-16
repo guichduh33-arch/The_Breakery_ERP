@@ -80,7 +80,7 @@ Quand une session porte uniquement sur un sous-domaine (POS, BO, domaine, Supaba
 - `pnpm context:snapshot:domain`
 - `pnpm context:snapshot:supabase`
 
-Le détail des profils et des dépendances est dans [`docs/context-profiles.md`](docs/context-profiles.md).
+La définition des profils et de leurs dépendances vit dans `scripts/agents/context.mjs`. La fiche qui les décrivait a été archivée le 2026-11-09 ; les commandes font foi.
 
 ## Contexte, reprise et outils optionnels
 
@@ -93,10 +93,10 @@ cache temporaire. Le MCP projet fixe la version validée 0.37.0 ; la présence
 d'une configuration ne prouve ni son chargement par le client ni son lancement.
 Le proxy et ses réglages globaux ne sont pas provisionnés par le dépôt.
 
-Le [guide des outils de contexte](docs/runbooks/context-tools.md) détaille les
-preuves, limites de récupération, dépendances locales et rôles de Serena/Ruflo.
-Aucun nouvel outil n'est à installer pour lire le dépôt ; aucune commande
-d'installation ne vaut autorisation de modifier les réglages du client.
+Le guide des outils de contexte a été archivé le 2026-11-09 : ses relevés de
+preuves étaient datés et non revérifiés. Aucun nouvel outil n'est à installer
+pour lire le dépôt ; aucune commande d'installation ne vaut autorisation de
+modifier les réglages du client.
 
 ## Testing
 
@@ -113,10 +113,15 @@ Couverture : 90% domain, 85% utils, 70% ui, smoke tests apps.
 
 - **Loi du dépôt — conventions et patterns critiques** : [`CLAUDE.md`](CLAUDE.md) (**source de vérité**)
 - **Décisions arbitrées, immuables** : [`docs/adr/`](docs/adr/)
-- **Objectif métier par module** : [`docs/objectifs/`](docs/objectifs/)
-- **Référence produit** : [`docs/product/DESCRIPTION.md`](docs/product/DESCRIPTION.md)
+- **Vérité fonctionnelle — ce qui est, ce qui est décidé** : [`docs/SPECS_OFFICIELS_ERP_POS.md`](docs/SPECS_OFFICIELS_ERP_POS.md)
+- **Relevé d'audit du 2026-11-09 et plan de finition** : [`docs/audit-2026-11/`](docs/audit-2026-11/)
 - **Procédures opérationnelles** : [`docs/runbooks/`](docs/runbooks/)
 - **Carte de la documentation + hiérarchie de vérité** : [`docs/README.md`](docs/README.md)
+
+Les fiches d'objectifs par module et la référence produit ont été **archivées le
+2026-11-09** dans `docs/_archive_obsolete/` : elles décrivaient au présent une
+vingtaine de features inexistantes. `docs/SPECS_OFFICIELS_ERP_POS.md` les
+remplace.
 
 ## Conventions
 

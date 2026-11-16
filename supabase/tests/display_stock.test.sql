@@ -156,7 +156,7 @@ SELECT is(current_setting('breakery.t18'), 'true', 'T18 audit_logs.actor_id est 
 -- T12-T15 : REVOKE pairs — anon ne peut exécuter aucune des 4 RPC
 SELECT is(has_function_privilege('anon','public.add_display_stock_v4(uuid,numeric,text,uuid)','EXECUTE'), false, 'T12 anon !exec add');
 SELECT is(has_function_privilege('anon','public.return_display_to_kitchen_v4(uuid,numeric,text,uuid)','EXECUTE'), false, 'T13 anon !exec return');
-SELECT is(has_function_privilege('anon','public.waste_display_stock_v4(uuid,numeric,text,uuid)','EXECUTE'), false, 'T14 anon !exec waste');
+SELECT is(has_function_privilege('anon','public.waste_display_stock_v5(uuid,numeric,public.waste_reason,text,uuid)','EXECUTE'), false, 'T14 anon !exec waste');
 SELECT is(has_function_privilege('anon','public.adjust_display_stock_v6(uuid,numeric,text,uuid)','EXECUTE'), false, 'T15 anon !exec adjust');
 
 SELECT * FROM finish();

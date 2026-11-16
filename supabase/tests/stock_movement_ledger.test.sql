@@ -19,6 +19,11 @@ VALUES (
   1000, 100, 'kg', true
 );
 
+-- S1-05 : une vente valorisée émet désormais son coût des ventes, donc exige
+-- une période fiscale ouverte à sa date. 2025 n'en a pas : on en pose une.
+INSERT INTO fiscal_periods (period_start, period_end, status)
+VALUES ('2025-06-01', '2025-06-30', 'open') ON CONFLICT (period_end) DO NOTHING;
+
 -- Pre-range opening: +10 before p_start (2025-06-01). sale rows carry a reference_id
 -- (chk_stock_movements_reference_required_for_orders).
 INSERT INTO stock_movements (product_id, movement_type, quantity, unit, reference_type, reference_id, reason, created_by, created_at, metadata)

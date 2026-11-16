@@ -10,6 +10,8 @@
 // (created_at | total | status | order_type, asc | desc). Le curseur devient
 // le COUPLE (valeur_de_tri en texte, id) — clés next_cursor_val /
 // next_cursor_id — pour que la pagination survive à n'importe quel tri.
+// S3-21 (2026-11-10) — v8 : chaque ligne porte `paid_at` et `table_number`,
+// et `p_filters.table_number` filtre sur une table (égalité stricte).
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -24,6 +26,10 @@ export interface OrdersListLine {
   status:                 string;
   total:                  number;
   created_at:             string;
+  /** Heure du paiement ; null tant que la commande n'est pas réglée. */
+  paid_at:                string | null;
+  /** Table de la commande (salle) ; null hors service à table. */
+  table_number:           string | null;
   customer_id:            string | null;
   customer_name:          string | null;
   customer_type:          'retail' | 'b2b' | null;
@@ -61,6 +67,7 @@ export interface OrdersListFilters {
   refund_status?:  'none' | 'partial' | 'full';
   hour?:           number;
   terminal_id?:    string;
+  table_number?:   string;
 }
 
 export interface UseOrdersListParams {
@@ -87,12 +94,18 @@ export function toJsonbFilters(filters?: Partial<OrdersListFilters>): Record<str
   return out;
 }
 
+/** Champs v8 : une valeur absente ou non textuelle devient null, jamais
+ *  `undefined` ni un nombre glissé dans une cellule. */
+function toNullableText(v: unknown): string | null {
+  return typeof v === 'string' && v !== '' ? v : null;
+}
+
 export function useOrdersList(params: UseOrdersListParams) {
   return useInfiniteQuery<OrdersListPage, Error>({
     queryKey: ['orders', 'list', params],
     queryFn: async ({ pageParam }) => {
       const cursor = pageParam as OrdersListCursor | null;
-      const { data, error } = await supabase.rpc('get_orders_list_v7', {
+      const { data, error } = await supabase.rpc('get_orders_list_v8', {
         p_start:   params.start,
         p_end:     params.end,
         p_filters: toJsonbFilters(params.filters),
@@ -107,7 +120,15 @@ export function useOrdersList(params: UseOrdersListParams) {
           : {}),
       });
       if (error) throw error as Error;
-      return data as unknown as OrdersListPage;
+      const page = data as unknown as OrdersListPage;
+      return {
+        ...page,
+        lines: (Array.isArray(page.lines) ? page.lines : []).map((l) => ({
+          ...l,
+          paid_at:      toNullableText(l.paid_at),
+          table_number: toNullableText(l.table_number),
+        })),
+      };
     },
     initialPageParam: null as OrdersListCursor | null,
     getNextPageParam: (lastPage) =>

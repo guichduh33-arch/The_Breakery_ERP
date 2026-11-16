@@ -54,15 +54,18 @@ INSERT INTO antifraud_results(tap) SELECT ok(public.request_has_active_pin_sessi
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_stock_v1(),'ADMIN never sees theoretical stock');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_business_day_v2(current_date-365),'Historical dates never unlock stock');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT current_stock FROM public.products LIMIT 1','42501',NULL,'Raw product stock column remains denied');
-INSERT INTO antifraud_results(tap) SELECT is((SELECT e->>'current_stock' FROM jsonb_array_elements(public.get_operational_products_v2()) e
+INSERT INTO antifraud_results(tap) SELECT is((SELECT e->>'current_stock' FROM jsonb_array_elements(public.get_operational_products_v3()) e
  WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),NULL::text,'Operational catalogue masks exact stock');
+INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->'display_stock'->>'quantity')::numeric FROM jsonb_array_elements(public.get_operational_products_v3()) e
+ WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),20::numeric,'ADMIN sees the display counter');
+INSERT INTO antifraud_results(tap) SELECT is(public.get_operational_products_v2(),public.get_operational_products_v3(),'Deprecated v2 relays v3 unchanged');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_sales_day_v1(current_date),'Open shift keeps the sales day private');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v5(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v6(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_daily_sales_v5(current_date::text,current_date::text)','P0003','business_day_not_closed','Newest daily-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_order_v2(order_id),'ADMIN cannot use the paid kitchen exception even with POS permissions') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(sale_je),'Sale JE hidden while originating shift is open') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(receipt_je),'Outstanding receipt JE hidden while receiving shift is open') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(float_je),'Opening float JE hidden before shift close') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(sale_je),'Sale JE hidden while originating shift is open') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(receipt_je),'Outstanding receipt JE hidden while receiving shift is open') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(float_je),'Opening float JE hidden before shift close') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.journal_entries WHERE id=(SELECT sale_je FROM antifraud_ids)),0::bigint,'Direct journal read cannot bypass the shift boundary');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_balance_sheet_v4(current_date)','P0003','stock_visibility_owner_required','Balance-sheet valuation is Owner only');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_profit_loss_v4(current_date,current_date)','P0003','stock_visibility_owner_required','Profit and loss is Owner only');
@@ -77,16 +80,16 @@ INSERT INTO antifraud_results(tap) SELECT ok((public.get_dashboard_overview_v7()
 RESET ROLE;
 UPDATE public.pos_sessions SET status='closed',closed_at=now() WHERE id=(SELECT session_id FROM antifraud_ids);
 SET LOCAL ROLE authenticated;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(receipt_je),'Closing original shift does not release a receipt in a different open shift') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(receipt_je),'Closing original shift does not release a receipt in a different open shift') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_sales_day_v1(current_date),'A remaining open shift keeps the sales day private');
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.pos_sessions WHERE id=(SELECT receiving_session_id FROM antifraud_ids)),0::bigint,'ADMIN cannot read its own open shift through cashier permissions');
 RESET ROLE;
 UPDATE public.pos_sessions SET status='closed',closed_at=now() WHERE id=(SELECT receiving_session_id FROM antifraud_ids);
 SET LOCAL ROLE authenticated;
 INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_sales_day_v1(current_date),'Closed shifts release their sales day without Owner/opname');
-INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v1(sale_je),'Closed shift releases sale JE') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v1(receipt_je),'Closed receiving shift releases outstanding JE') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v1(float_je),'Closed shift releases its float JE') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(sale_je),'Closed shift releases sale JE') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(receipt_je),'Closed receiving shift releases outstanding JE') FROM antifraud_ids;
+INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(float_je),'Closed shift releases its float JE') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_stock_v1(),'Shift closure never unlocks stock');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_stock_levels_v6()','P0003','stock_visibility_owner_required','Stock reader stays Owner only after shift closure');
 RESET ROLE;
@@ -109,12 +112,12 @@ INSERT INTO antifraud_payload SELECT 'edit',public.edit_b2b_order_v3((value->>'o
 INSERT INTO antifraud_results(tap) SELECT ok(value IS NOT NULL,'ADMIN edits a B2B order without POS sale permission') FROM antifraud_payload WHERE name='edit';
 INSERT INTO antifraud_payload SELECT 'pickup',public.update_b2b_pickup_v2((value->>'order_id')::uuid,current_date,true) FROM antifraud_payload WHERE name='b2b';
 INSERT INTO antifraud_results(tap) SELECT ok(value IS NOT NULL,'ADMIN validates B2B delivery without POS sale permission') FROM antifraud_payload WHERE name='pickup';
-INSERT INTO antifraud_payload SELECT 'payment',public.record_b2b_payment_v5((SELECT customer_id FROM antifraud_ids),10000,'transfer',
+INSERT INTO antifraud_payload SELECT 'payment',public.record_b2b_payment_v6((SELECT customer_id FROM antifraud_ids),10000,'transfer',
  p_idempotency_key=>(SELECT payment_key FROM antifraud_ids),p_invoice_ids=>ARRAY[(value->>'order_id')::uuid]) FROM antifraud_payload WHERE name='b2b';
 INSERT INTO antifraud_results(tap) SELECT ok((public.create_b2b_order_v10(customer_id,
  jsonb_build_array(jsonb_build_object('product_id',product_id,'quantity',1,'unit_price',1)),NULL,NULL,b2b_key)->>'idempotent_replay')::boolean,
  'B2B creation retry after full payment returns its original order') FROM antifraud_ids;
-INSERT INTO antifraud_results(tap) SELECT ok((public.record_b2b_payment_v5((SELECT customer_id FROM antifraud_ids),10000,'transfer',
+INSERT INTO antifraud_results(tap) SELECT ok((public.record_b2b_payment_v6((SELECT customer_id FROM antifraud_ids),10000,'transfer',
  p_idempotency_key=>(SELECT payment_key FROM antifraud_ids),p_invoice_ids=>ARRAY[(value->>'order_id')::uuid])->>'idempotent_replay')::boolean,
  'B2B payment retry after full settlement does not charge again') FROM antifraud_payload WHERE name='b2b';
 INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_order_v2((value->>'order_id')::uuid),'Fully paid B2B invoice remains visible') FROM antifraud_payload WHERE name='b2b';
@@ -123,15 +126,25 @@ RESET ROLE;
 INSERT INTO antifraud_results(tap) SELECT is((SELECT b2b_current_balance FROM public.customers WHERE id=(SELECT customer_id FROM antifraud_ids)),0::numeric,'Full B2B settlement reconciles the customer balance');
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.journal_entries WHERE reference_type='sale' AND reference_id=(SELECT (value->>'order_id')::uuid FROM antifraud_payload WHERE name='b2b')),0::bigint,'B2B payment creates no duplicate POS revenue JE');
 
+SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM antifraud_actors WHERE role_code='CASHIER'));
+SET LOCAL ROLE authenticated;
+INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_stock_v1(),'CASHIER never sees theoretical stock');
+INSERT INTO antifraud_results(tap) SELECT is((SELECT e->>'current_stock' FROM jsonb_array_elements(public.get_operational_products_v3()) e
+ WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),NULL::text,'CASHIER catalogue masks exact stock');
+INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->'display_stock'->>'quantity')::numeric FROM jsonb_array_elements(public.get_operational_products_v3()) e
+ WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),20::numeric,'CASHIER sees the display counter');
+RESET ROLE;
+
 SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM antifraud_actors WHERE role_code='SUPER_ADMIN'));
 SET LOCAL ROLE authenticated;
 INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_stock_v1(),'Owner retains theoretical stock visibility');
-INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->>'current_stock')::numeric FROM jsonb_array_elements(public.get_operational_products_v2()) e
+INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->>'current_stock')::numeric FROM jsonb_array_elements(public.get_operational_products_v3()) e
  WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),19::numeric,'Owner sees the B2B-adjusted exact stock');
 RESET ROLE;
-INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.submit_display_day_closing_v1(date,jsonb,uuid)','EXECUTE'),'Daily submission denies anonymous execution');
+INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.submit_display_day_closing_v2(date,jsonb,uuid)','EXECUTE'),'Daily submission denies anonymous execution');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT has_table_privilege('authenticated','public.display_day_closing_items','SELECT'),'Raw daily rows cannot leak theoretical snapshots');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname ~ '^get_(sales_by_product|product_sales_lines)_v[1-4]$'),'Legacy product report bypasses are removed');
+INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.get_operational_products_v3()','EXECUTE'),'Operational catalogue denies anonymous execution');
 SELECT jsonb_build_object('tap',(SELECT jsonb_agg(tap ORDER BY seq) FROM antifraud_results),
  'finish',(SELECT jsonb_agg(f) FROM finish() f)) AS results;
 ROLLBACK;

@@ -62,7 +62,8 @@ export async function render(
   // Mesurer le texte au lieu de couper la raison ou le montant après 30 caractères.
   const wrap = (text: string, width: number): string[] => {
     const lines: string[] = [];
-    for (const paragraph of pdfText(text).split(/\r?\n/)) {
+    // Séparer les paragraphes avant d'échapper les caractères absents de la police.
+    for (const paragraph of text.split(/\r?\n/).map(pdfText)) {
       let line = '';
       for (const character of paragraph) {
         if (line && ctx.font.widthOfTextAtSize(line + character, 8) > width) {

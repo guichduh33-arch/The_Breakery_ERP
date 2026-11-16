@@ -8,6 +8,7 @@ describe('droits des liens de rapports', () => {
     ['cashier-variance', 'reports.financial.read', 'reports.read'],
     ['off-hours-sales', 'reports.audit.read', 'reports.sales.read'],
     ['production-yield', 'reports.inventory.read', 'inventory.read'],
+    ['production-vs-sales', 'reports.inventory.read', 'reports.sales.read'],
   ] as const)('%s suit le droit exigé par sa page', (path, required, insufficient) => {
     const to = `/backoffice/reports/${path}`;
     const destinations = (allowed: PermissionCode) => flattenDestinations(

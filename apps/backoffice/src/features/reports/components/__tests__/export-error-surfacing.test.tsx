@@ -147,6 +147,42 @@ describe('export failures reach the user', () => {
     expect(toastError).toHaveBeenCalledWith('CSV export failed: bad row');
   });
 
+  // Journal paginé : le CSV charge le jeu complet au clic (`loadRows`).
+  it('ExportMenu — CSV exports the rows loaded on demand, not the rows on screen', async () => {
+    const seen: string[] = [];
+    const loadRows = vi.fn().mockResolvedValue([{ a: 'full-1' }, { a: 'full-2' }]);
+    render(wrap(<ExportMenu csv={{
+      rows: [{ a: 'screen-only' }],
+      columns: [{ header: 'A', accessor: (r: { a: string }) => { seen.push(r.a); return r.a; } }],
+      filename: 'test-csv',
+      loadRows,
+    }} />));
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    await waitFor(() => expect(seen).toEqual(['full-1', 'full-2']));
+    expect(loadRows).toHaveBeenCalledTimes(1);
+    expect(toastError).not.toHaveBeenCalled();
+    // Export réussi : le menu se referme.
+    await waitFor(() => expect(screen.queryByTestId('export-csv')).toBeNull());
+  });
+
+  it('ExportMenu — a failed full load is said, and no partial file is built', async () => {
+    const accessor = vi.fn();
+    render(wrap(<ExportMenu csv={{
+      rows: [{ a: 'screen-only' }],
+      columns: [{ header: 'A', accessor }],
+      filename: 'test-csv',
+      loadRows: () => Promise.reject(new Error('The period holds too many entries for one export.')),
+    }} />));
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith(
+      'CSV export failed: The period holds too many entries for one export.',
+    ));
+    expect(accessor).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId('export-csv')).not.toBeDisabled());
+  });
+
   // NE PAS SUPPRIMER : seul garant que le traitement d'erreur n'a pas déplacé
   // le chemin de succès (URL signée ouverte, mêmes flags, aucun toast parasite).
   it('SUCCESS path unchanged — signed_url still opened, no toast', async () => {

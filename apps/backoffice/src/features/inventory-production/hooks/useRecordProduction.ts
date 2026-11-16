@@ -36,6 +36,7 @@ export type WasteReason = Database['public']['Enums']['waste_reason'];
 export type RecordProductionErrorCode =
   | 'forbidden'
   | 'quantity_must_be_positive'
+  | 'quantity_below_stock_precision'
   | 'waste_must_be_non_negative'
   | 'waste_reason_required'
   | 'unit_conversion_missing'
@@ -118,6 +119,7 @@ function classify(message: string): RecordProductionErrorCode {
   if (message.includes('force_negative_forbidden'))        return 'force_negative_forbidden';
   if (message.includes('forbidden'))                       return 'forbidden';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
+  if (message.includes('quantity_below_stock_precision')) return 'quantity_below_stock_precision';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
   if (message.includes('waste_reason_required'))           return 'waste_reason_required';
   if (message.includes('product_not_found'))               return 'product_not_found';
@@ -175,7 +177,7 @@ export function useRecordProduction() {
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v11', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v12', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;

@@ -69,7 +69,9 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
    `order_has_payments` dès qu'une ligne `b2b_payment_allocations` existe, et exige
    `status='b2b_pending'` en entrée. Corollaire : une commande B2B `paid` ne passe jamais
    par cette porte, donc jamais de JE fantôme côté void.
-9. **JE mapping** : `CASH_WALLET_UNDEPOSITED` → 1110 (cash B2B, hors tiroir POS) ; `B2B_PAYMENT_BANK` → 1112 (bank) ;
+9. **JE mapping** : `CASH_WALLET_UNDEPOSITED` → 1110 (cash B2B, hors tiroir POS) ; les autres moyens lisent la table
+   moyen-vers-compte de la vente (`_sale_payment_mapping_key` : QRIS → attente QRIS, carte → attente carte,
+   virement → banque) ;
    `B2B_AR` → 1132 ; `SALE_B2B_REVENUE` → 4131 ; `B2B_AR_ADJUSTMENT` → 6520
    (Bad Debt / AR Write-off, contrepartie des ajustements). Pas de PB1 sur les commandes
    B2B (ADR-005, NON-PKP / PBJT). `reference_type` autorisés côté `journal_entries` :

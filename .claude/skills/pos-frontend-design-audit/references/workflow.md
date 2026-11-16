@@ -44,9 +44,11 @@ Transforme les constats en propositions au **format ticket** (voir plus bas), cl
 ### Étape 6 — Proposer le résidu durable
 Le rapport est un **artefact intermédiaire** : c'est l'échafaudage du raisonnement, il meurt avec la session. Ce qui doit survivre a **déjà** un domicile gouverné. Termine toujours en **proposant**, explicitement :
 
-- **les tickets non implémentés → backlog d'une fiche `docs/objectifs/`** : nomme la fiche (`POS.md`, `ORDERS.md`, `KDS.md`, `CUSTOMER_DISPLAY.md`, `TABLET_ORDERING.md`, `CASH_REGISTER.md`…) et rédige les lignes telles qu'elles doivent y figurer, avec le marqueur de priorité que ces fiches portent déjà (🔴🟠🟡🟢) ;
+- **les tickets non implémentés → `docs/SPECS_OFFICIELS_ERP_POS.md`** : nomme la section visée (§6 Caisse et vente, §7 Cuisine/tablette/écran client, §13 Promotions et combos…) et rédige les lignes telles qu'elles doivent y figurer, chacune sous la marque `À LIVRER`. Un ticket non encore arbitré par Mamat se range en `OUVERT`, jamais en `À LIVRER` ;
 - **une décision de design arbitrée → un ADR**, si l'audit en a produit une — un arbitrage de fond, pas une préférence ;
-- **une intention de design → la fiche objectif** du module concerné.
+- **une intention de design → la section correspondante des specs**, sous `À LIVRER`.
+
+Les anciennes fiches `docs/objectifs/` sont **archivées depuis le 2026-11-09** : ne rien y écrire, ne pas les lire.
 
 Dans une demande d’audit seul, rendre les propositions en conversation. Si la
 documentation fait partie du résultat demandé, l’agent rédige, fait relire et

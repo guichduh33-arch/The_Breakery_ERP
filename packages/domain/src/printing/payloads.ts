@@ -16,6 +16,27 @@ export interface StationTicketItem {
   quantity: number;
   modifiers?: string[];
   note?: string;
+  /**
+   * S1-21 — montant de la ligne sur l'addition (`kind: 'bill'`), après sa
+   * remise de ligne. Optionnel et additif : un pont plus ancien l'ignore et
+   * imprime la ligne sans prix ; les tickets de préparation ne le portent pas.
+   */
+  line_total?: number;
+}
+
+/**
+ * Totaux imprimés sous les lignes. `discount` et `tax_inclusive` sont des
+ * ajouts S1-21, optionnels : un pont plus ancien ne lit que les trois premiers.
+ * Lecture : Σ lignes − discount (+ tax si exclusive) = total.
+ */
+export interface StationTicketTotals {
+  subtotal: number;
+  tax: number;
+  total: number;
+  /** Promotions + points fidélité + remise panier ; absent ou 0 → non imprimé. */
+  discount?: number;
+  /** true : la taxe est incluse dans les prix (libellé « incl. »). */
+  tax_inclusive?: boolean;
 }
 
 export interface StationTicketPayload {
@@ -30,7 +51,7 @@ export interface StationTicketPayload {
   items: StationTicketItem[];
   /** Spec A Bloc 4 — 2nd-phase append : le template rend un header "ADDITIONAL ORDER". */
   additional?: boolean;
-  totals?: { subtotal: number; tax: number; total: number };
+  totals?: StationTicketTotals;
   payment?: { method: string; amount: number; change_given: number };
 }
 

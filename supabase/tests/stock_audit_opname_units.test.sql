@@ -20,7 +20,7 @@ BEGIN
 
   v_count := (create_opname_v3('Audit stock') ->> 'count_id')::uuid;
   RETURN NEXT throws_ok(format('SELECT validate_opname_v2(%L)', v_count), 'P0001', 'empty_count', 'Inventaire vide refusé');
-  v_item := (add_opname_item_v3(v_count, v_product) ->> 'item_id')::uuid;
+  v_item := (add_opname_item_v4(v_count, v_product) ->> 'item_id')::uuid;
   RETURN NEXT throws_ok(format('SELECT validate_opname_v2(%L)', v_count), 'P0001', 'missing_counts', 'Ligne non comptée refusée');
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, -1)', v_item), 'P0001', 'counted_qty_invalid', 'Négatif refusé');
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, 1.0001)', v_item), 'P0001', 'counted_qty_invalid', 'Précision excédentaire refusée');
@@ -34,8 +34,8 @@ BEGIN
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, 4)', v_item), 'P0001', 'set_count_not_allowed_in_status', 'Écriture après révélation refusée');
   RETURN NEXT is((SELECT counted_qty FROM inventory_count_items WHERE id = v_item), 0::numeric, 'Refus sans modification du comptage');
 
-  PERFORM record_incoming_stock_v5(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
-  PERFORM record_incoming_stock_v5(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v6(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v6(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 12, 'Audit positive', gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 11, 'Audit negative', gen_random_uuid());
   v_json := get_movement_aggregates_v5(p_product_id := v_product, p_movement_type := 'adjustment');

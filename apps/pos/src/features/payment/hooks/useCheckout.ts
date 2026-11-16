@@ -93,7 +93,7 @@ export function useCheckout() {
       }
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v32 / pay_existing_order_v25). The client no
+      // (complete_order_with_payment_v33 / pay_existing_order_v25). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,

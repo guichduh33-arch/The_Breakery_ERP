@@ -25,7 +25,15 @@
 //  3. Le partage de coût perd son `text-white` en dur (une couleur hors thème)
 //     et ses étiquettes sur fond coloré, illisibles sur les segments étroits.
 //
-// Params URL : `start` / `end` / `cmp`.
+// S3-22 (2026-11-10) — filtre CATÉGORIE DE PRODUIT (`category_id`), déjà
+// accepté par `get_purchase_cogs_breakdown_v1` : le corps restreint les lignes
+// de bon de commande à `products.category_id` = la catégorie, et le total, la
+// ventilation et la série journalière partent du même jeu. Il ne touche QUE les
+// achats : le `p_category_id` de `get_expenses_by_category_v1` est une
+// catégorie de DÉPENSE, un autre référentiel — on ne le lui passe pas. L'écran
+// le dit sous la barre, sinon « Total spend » se lirait comme filtré.
+//
+// Params URL : `start` / `end` / `cmp` / `category_id`.
 
 import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
@@ -43,6 +51,9 @@ import {
   StackedBarsChart, type StackedSeries,
 } from '@/features/reports/components/charts/StackedBarsChart.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import { useReportFilters, type ReportFilterDef } from '@/features/reports/hooks/useReportFilters.js';
+import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
 import { usePurchaseCogsBreakdown } from '@/features/reports/hooks/usePurchaseCogsBreakdown.js';
 import { useExpensesByCategory } from '@/features/reports/hooks/useExpensesByCategory.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
@@ -63,12 +74,26 @@ interface DailyCost {
   [k: string]: string | number;
 }
 
-const csvColumns: CsvColumn<DailyCost>[] = [
-  { header: 'Date',            accessor: (r) => r.date,          format: 'text' },
-  { header: 'Purchases (IDR)', accessor: (r) => r.cogs,          format: 'idr-round100' },
-  { header: 'OpEx (IDR)',      accessor: (r) => r.opex,          format: 'idr-round100' },
-  { header: 'Total (IDR)',     accessor: (r) => r.cogs + r.opex, format: 'idr-round100' },
-];
+/** Colonnes du CSV. Filtré, le fichier le dit dans ses en-têtes : sinon il ne
+ *  se distinguerait pas d'un export complet une fois sorti de l'écran. */
+function buildCsvColumns(filtered: boolean): CsvColumn<DailyCost>[] {
+  return [
+    { header: 'Date', accessor: (r) => r.date, format: 'text' },
+    { header: filtered ? 'Purchases (filtered) (IDR)' : 'Purchases (IDR)',
+      accessor: (r) => r.cogs, format: 'idr-round100' },
+    { header: 'OpEx (IDR)', accessor: (r) => r.opex, format: 'idr-round100' },
+    { header: filtered ? 'Total, filtered purchases + all OpEx (IDR)' : 'Total (IDR)',
+      accessor: (r) => r.cogs + r.opex, format: 'idr-round100' },
+  ];
+}
+
+/** Fragment de nom de fichier sûr : minuscules, tirets, 40 caractères au plus
+ *  (même borne que RecipeCostTimelinePage). Vide → marqueur générique. */
+function fileFragment(name: string | undefined): string {
+  const safe = (name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+  return safe === '' ? 'filtered' : safe;
+}
 
 const SPEND_SERIES: StackedSeries[] = [
   { key: 'cogs', name: 'Purchases', color: COGS_BASE },
@@ -99,11 +124,26 @@ export default function CostSpendAnalyticsPage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end, compareRange } = period;
 
-  const cogs = usePurchaseCogsBreakdown({ start, end });
+  const { data: categories } = useAllCategories();
+  const filterDefs = useMemo<readonly ReportFilterDef<'category_id'>[]>(() => [
+    {
+      // Non stricte : les catégories arrivent après le premier rendu.
+      kind: 'select', key: 'category_id', label: 'Purchase category',
+      allLabel: 'All categories',
+      options: (categories ?? []).map((c) => ({ value: c.id, label: c.name })),
+    },
+  ], [categories]);
+  const filters = useReportFilters(filterDefs);
+  const categoryId = filters.values.category_id || null;
+
+  // Le filtre ne part qu'aux achats — jamais aux charges ni au P&L.
+  const cogs = usePurchaseCogsBreakdown({ start, end, categoryId });
   const opex = useExpensesByCategory({ start, end });
   const pnl  = useProfitLoss(start, end);
 
-  const cogsPrev = usePurchaseCogsBreakdown({ start: compareRange.start, end: compareRange.end });
+  const cogsPrev = usePurchaseCogsBreakdown({
+    start: compareRange.start, end: compareRange.end, categoryId,
+  });
   const opexPrev = useExpensesByCategory({ start: compareRange.start, end: compareRange.end });
   const pnlPrev  = useProfitLoss(compareRange.start, compareRange.end);
 
@@ -214,13 +254,40 @@ export default function CostSpendAnalyticsPage(): JSX.Element {
   const meta = [
     periodLabel(start, end),
     'material purchasing (COGS) and operating expenses',
+    ...(categoryId !== null ? ['purchases filtered to one category'] : []),
   ].join(' · ');
+
+  const filterBar = (
+    <ReportFilterBar
+      defs={filterDefs}
+      filters={filters}
+      note={categoryId !== null ? (
+        <p className="text-xs text-text-secondary" role="note" data-testid="category-filter-note">
+          This filter narrows material purchases only. Operating expenses and revenue
+          stay whole, so every figure that combines them with purchases mixes the two
+          scopes: total spend, spend ÷ revenue, the “% of sales” notes, the spend
+          composition chart and its previous total, the cost structure, and the
+          export total.
+        </p>
+      ) : undefined}
+    />
+  );
+
+  // Un export filtré se reconnaît à son nom : `cost-spend-<catégorie>-<période>`,
+  // même forme que `recipe-cost-timeline-<produit>-<période>`.
+  const categoryName = categoryId !== null
+    ? categories?.find((c) => c.id === categoryId)?.name
+    : undefined;
+  const csvColumns = useMemo(() => buildCsvColumns(categoryId !== null), [categoryId]);
+  const csvFilename = categoryId !== null
+    ? `cost-spend-${fileFragment(categoryName)}-${start}_${end}`
+    : `cost-spend-${start}_${end}`;
 
   const toolbar = (
     <>
       <PeriodControl period={period} showCompare />
       <ExportMenu
-        csv={{ rows: series, columns: csvColumns, filename: `cost-spend-${start}_${end}` }}
+        csv={{ rows: series, columns: csvColumns, filename: csvFilename }}
         disabled={series.length === 0}
       />
     </>
@@ -232,6 +299,7 @@ export default function CostSpendAnalyticsPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Financial' }]}
       toolbar={toolbar}
+      filters={filterBar}
       error={error ?? null}
       isEmpty={
         !isLoading && error == null

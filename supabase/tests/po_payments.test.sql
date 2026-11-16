@@ -310,7 +310,7 @@ BEGIN
 
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
-  PERFORM receive_purchase_order_v5(
+  PERFORM receive_purchase_order_v6(
     p_po_id          := v_po_id,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 50)
@@ -342,9 +342,9 @@ SELECT is(
    WHERE je.reference_type = 'purchase_payment'
      AND je.reference_id = pp.id
      AND jel.credit > 0
-     AND a.code = '1110'),
+     AND a.code = '1111'),
   1,
-  'T8b: cash auto-payment JE credit = account 1110 (PURCHASE_CASH_OUT)'
+  'T8b: cash auto-payment JE credit = account 1111 Petty Cash (PURCHASE_CASH_OUT)'
 );
 
 -- ─── T9: v2 guard — cancelled PO rejected (po_cancelled, P0001) ──────────────

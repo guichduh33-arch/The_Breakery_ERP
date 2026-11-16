@@ -21,7 +21,7 @@ describe('Inventory catalogue filtering', () => {
     ], error: null });
     const { result } = renderHook(() => useProductsForInventory('flour'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v2');
+    expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v3');
     expect(result.current.data?.map((p) => p.id)).toEqual(['tracked']);
     expect(result.current.data?.[0]?.current_stock).toBeNull();
   });
@@ -41,7 +41,7 @@ describe('Inventory catalogue filtering', () => {
       const { result } = renderHook(() => useProductsForInventory(term), { wrapper });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data?.map((p) => p.id)).toEqual(['match']);
-      expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v2');
+      expect(api.rpc).toHaveBeenCalledWith('get_operational_products_v3');
     },
   );
 });

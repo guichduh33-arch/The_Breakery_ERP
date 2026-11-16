@@ -1,12 +1,12 @@
 // Journal des audits métier et des gestes POS synchronisés.
-// Pagination serveur commune, tri et exports des lignes chargées.
+// Pagination serveur commune et tri des lignes chargées.
+// Le CSV recharge toute la période : il ne dépend pas de ce que l'écran a déroulé.
 // Le contexte et le diff restent distincts dans les détails dépliables.
 
-import { Fragment, useMemo, useState, type JSX } from 'react';
+import { Fragment, useCallback, useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/BackofficeUi.js';
-import type { CsvColumn } from '@breakery/domain';
 import { formatDateTimeWita } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -17,32 +17,21 @@ import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import { useSortedRows, type SortSpec } from '@/features/reports/hooks/useSortedRows.js';
 import { formatCount, periodLabel } from '@/features/reports/utils/reportFigures.js';
-import { useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
+import { fetchAllAuditLogs, useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
+import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { auditActorName, auditActionLabel, describeAuditLog } from '@/features/reports/utils/auditDescription.js';
 import { auditEntityLabel } from '@/features/reports/utils/auditLabels.js';
-import { auditEvidenceNote, auditReviewCue, auditSourceLabel } from '@/features/reports/utils/auditReview.js';
-import { auditSafeDetails } from '@/features/reports/utils/auditValues.js';
+import { DEFAULT_AUDIT_THRESHOLDS, auditEvidenceNote, auditReviewCue, auditSourceLabel } from '@/features/reports/utils/auditReview.js';
+import { auditNumber, auditSafeDetails } from '@/features/reports/utils/auditValues.js';
+import { AUDIT_CSV_COLUMNS, buildAuditExportRows, type AuditExportRow } from '@/features/reports/utils/auditExport.js';
 import {
   AuditLogFilters,
   EMPTY_AUDIT_LOG_FILTERS,
   type AuditLogFilterValues,
 } from '@/features/reports/components/AuditLogFilters.js';
 
-const csvColumns: CsvColumn<AuditLogRow>[] = [
-  { header: 'Event reference', accessor: (r) => r.id, format: 'text' },
-  { header: 'Timestamp',   accessor: (r) => r.created_at,  format: 'datetime' },
-  { header: 'Event',       accessor: (r) => auditActionLabel(r.action), format: 'text' },
-  { header: 'Action code', accessor: (r) => r.action,      format: 'text' },
-  { header: 'Description', accessor: describeAuditLog,     format: 'text' },
-  { header: 'Account',     accessor: auditActorName,       format: 'text' },
-  { header: 'Account role in event', accessor: (r) => r.action === 'login.failed' ? 'Target account' : 'Recorded actor', format: 'text' },
-  { header: 'Source',      accessor: (r) => auditSourceLabel(r.source), format: 'text' },
-  { header: 'Record type', accessor: (r) => auditEntityLabel(r.entity_type), format: 'text' },
-  { header: 'Record ID',   accessor: (r) => r.entity_id, format: 'text' },
-  { header: 'Review cue',  accessor: auditReviewCue, format: 'text' },
-  { header: 'Evidence note', accessor: auditEvidenceNote, format: 'text' },
-  { header: 'Actor ID',    accessor: (r) => r.actor_id,    format: 'text' },
-];
+// Jeu vide : le CSV passe toujours par `loadRows`, qui lit la période entière.
+const NO_EXPORT_ROWS: AuditExportRow[] = [];
 
 type SortKey = 'timestamp' | 'action' | 'entity' | 'actor';
 
@@ -100,6 +89,26 @@ export default function AuditPage(): JSX.Element {
   } = useAuditLogs(rpcFilters);
 
   const rows = useMemo<AuditLogRow[]>(() => (data?.pages ?? []).flat(), [data]);
+
+  // Le seuil d'écart de caisse suit le réglage existant ; sans droit de lecture
+  // des réglages, la valeur par défaut s'applique.
+  const posSettings = useSettings('pos');
+  const refetchPosSettings = posSettings.refetch;
+  const posSettingsData = posSettings.data;
+  const { actorId, action, entityType } = filters;
+  const loadExportRows = useCallback(async (): Promise<AuditExportRow[]> => {
+    const all = await fetchAllAuditLogs({
+      dateStart: start, dateEnd: end,
+      ...(actorId !== '' ? { actorId } : {}),
+      ...(action !== '' ? { action } : {}),
+      ...(entityType !== '' ? { entityType } : {}),
+    });
+    // Le réglage est attendu avant l'export : la gravité ne dépend pas de l'état du cache.
+    const settings = posSettingsData ?? (await refetchPosSettings()).data;
+    const varianceAbs = auditNumber(settings?.settings.shift_variance_threshold_abs);
+    return buildAuditExportRows(all, varianceAbs !== null && varianceAbs >= 0
+      ? { ...DEFAULT_AUDIT_THRESHOLDS, varianceAbs } : DEFAULT_AUDIT_THRESHOLDS);
+  }, [start, end, actorId, action, entityType, posSettingsData, refetchPosSettings]);
   const sorted = useSortedRows(rows, SORT_SPECS);
 
   const toolbar = (
@@ -107,7 +116,7 @@ export default function AuditPage(): JSX.Element {
       <PeriodControl period={period} />
       <AuditLogFilters value={filters} onChange={setFilters} actors={rows} />
       <ExportMenu
-        csv={{ rows, columns: csvColumns, filename: `audit-log-${start}_${end}` }}
+        csv={{ rows: NO_EXPORT_ROWS, columns: AUDIT_CSV_COLUMNS, filename: `audit-log-${start}_${end}`, loadRows: loadExportRows }}
         pdf={{
           template: 'audit', data: rows.map((row) => ({
             id: row.id, created_at: row.created_at, action: row.action,
@@ -145,7 +154,7 @@ export default function AuditPage(): JSX.Element {
             {formatCount(rows.length)} loaded
           </span>
         }
-        subtitle="Server audits and device reports. Review cues prompt a check; they do not prove fraud. Sorting and exports cover loaded entries only."
+        subtitle="Server audits and device reports. Review cues prompt a check; they do not prove fraud. Sorting and PDF cover loaded entries; CSV exports the whole period."
         isLoading={isLoading}
         testId="audit-log-table"
       >

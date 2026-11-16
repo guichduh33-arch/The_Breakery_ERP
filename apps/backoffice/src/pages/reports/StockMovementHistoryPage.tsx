@@ -16,71 +16,109 @@
 // une surface partagée hors périmètre. Le tri de colonne de cette page est donc
 // celui du tableau, déjà en place.
 //
-// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v1`) est
-// partagé avec la page Inventory. On ne le touche pas.
+// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v4`) est
+// partagé avec la page Inventory. On ne le touche pas : il accepte déjà
+// `productId`, que la page Inventory passe depuis son propre filtre.
 //
-// CE QUI NE CHANGE PAS : le filtre par type de mouvement, en URL-state (R-17) ;
-// la bannière de troncature (plafond serveur), portée par le tableau ; et
-// l'absence de PDF, assumée (DEV-S30-4.X-01) — l'export est CSV, aux 15 colonnes
-// de la fiche de référence.
+// S3-22 (2026-11-10) — les filtres passent sur `ReportFilterBar` : l'ARTICLE
+// (`product_id`, que la RPC acceptait sans que l'écran le propose) et le type
+// de mouvement, tous deux dans l'URL. La liste des types est contrôlée contre
+// l'enum Postgres (`Record` exhaustif) : stricte, elle ne peut rien perdre.
+// L'article est un `select` alimenté par le catalogue opérationnel
+// (`useProducts`) : la recherche d'article de la page Inventory est un
+// composant privé de sa barre, qui ne sait pas réafficher un article lu dans
+// l'URL — elle afficherait un filtre actif invisible.
 //
-// Params URL : `start` / `end` / `movement_type` — les bornes portaient DÉJÀ les
-// noms du socle (`useUrlState('start'/'end')`), aucun repli legacy n'est
-// nécessaire. Seul le défaut change : 29 jours maison → 28 jours du socle.
+// CE QUI NE CHANGE PAS : la bannière de troncature (plafond serveur), portée par
+// le tableau ; et l'absence de PDF, assumée (DEV-S30-4.X-01) — l'export est
+// CSV, aux 15 colonnes de la fiche de référence.
+//
+// Params URL : `start` / `end` / `movement_type` / `product_id`.
 
 import { useMemo, type JSX } from 'react';
-import { selectClassName, cn } from '@breakery/ui';
+import { useSearchParams } from 'react-router-dom';
+import type { Database } from '@breakery/supabase';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import {
+  useReportFilters, type ReportFilterDef, type ReportFilterOption,
+} from '@/features/reports/hooks/useReportFilters.js';
 import { periodLabel } from '@/features/reports/utils/reportFigures.js';
 import { useStockLedger } from '@/features/inventory-movements/hooks/useStockLedger.js';
 import { StockLedgerTable } from '@/features/inventory-movements/components/StockLedgerTable.js';
 import { enrichLedgerLines, stockLedgerCsvColumns } from '@/features/inventory-movements/stockLedgerColumns.js';
-import { useUrlState } from '@/hooks/useUrlState.js';
+import { useProducts } from '@/features/products/hooks/useProducts.js';
 
-// Enum `movement_type` complet (V3) — le sélecteur cadre la fiche.
-const MOVEMENT_TYPES = [
-  'sale', 'sale_void', 'purchase', 'purchase_return', 'incoming',
-  'transfer_in', 'transfer_out', 'production_in', 'production_out',
-  'adjustment', 'adjustment_in', 'adjustment_out',
-  'opname_in', 'opname_out', 'waste', 'cost_price_correction',
-  'reservation_hold', 'reservation_release',
-];
+type MovementType = Database['public']['Enums']['movement_type'];
+
+// Enum `movement_type` complet — le `Record` refuse de compiler si Postgres
+// ajoute ou retire une valeur. L'ordre est celui de lecture du sélecteur.
+const MOVEMENT_TYPE_ORDER: Record<MovementType, number> = {
+  sale: 0, sale_void: 1, purchase: 2, purchase_return: 3, incoming: 4,
+  transfer_in: 5, transfer_out: 6, production: 7, production_in: 8, production_out: 9,
+  adjustment: 10, adjustment_in: 11, adjustment_out: 12,
+  opname_in: 13, opname_out: 14, waste: 15, cost_price_correction: 16,
+  reservation_hold: 17, reservation_release: 18,
+};
+
+const MOVEMENT_TYPE_OPTIONS: readonly ReportFilterOption[] = Object.entries(MOVEMENT_TYPE_ORDER)
+  .sort(([, a], [, b]) => a - b)
+  .map(([t]) => ({ value: t, label: t }));
+
+type FilterKey = 'product_id' | 'movement_type';
 
 export default function StockMovementHistoryPage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end } = period;
-  // R-17 — filtre en URL-state (convention S57) : la vue devient partageable et
-  // survit au rechargement.
-  const [typeFilter, setTypeFilter] = useUrlState('movement_type', '');
+
+  const { data: products } = useProducts();
+  const [params] = useSearchParams();
+  const urlProductId = (params.get('product_id') ?? '').trim();
+
+  const filterDefs = useMemo<readonly ReportFilterDef<FilterKey>[]>(() => [
+    {
+      // Non stricte : la liste arrive après le premier rendu. Les articles
+      // suivis en stock seulement — ceux qui ont une fiche — plus celui que
+      // l'URL désigne, pour qu'un lien vers un article non suivi reste lisible.
+      kind: 'select', key: 'product_id', label: 'Item', allLabel: 'All items', width: 'w-56',
+      options: (products ?? [])
+        .filter((p) => p.track_inventory || p.id === urlProductId)
+        .map((p) => ({
+          value: p.id,
+          label: p.variant_label !== null && p.variant_label !== ''
+            ? `${p.name} — ${p.variant_label}` : p.name,
+        })),
+    },
+    {
+      kind: 'select', key: 'movement_type', label: 'Movement type', allLabel: 'All types',
+      options: MOVEMENT_TYPE_OPTIONS, strict: true,
+    },
+  ], [products, urlProductId]);
+  const filters = useReportFilters(filterDefs);
+  const { product_id: productId, movement_type: typeFilter } = filters.values;
 
   const query = useStockLedger({
-    start, end, movementType: typeFilter || undefined,
+    start, end,
+    productId:    productId || undefined,
+    movementType: typeFilter || undefined,
   });
 
   const result = query.data ?? { lines: [], truncated: false, row_count: 0 };
   const rows = useMemo(() => enrichLedgerLines(result.lines), [result.lines]);
 
+  const activeCount = Object.keys(filters.active).length;
+  const meta = [
+    periodLabel(start, end),
+    'per-product stock card: opening → in/out → balance',
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
+  ].join(' · ');
+
   const toolbar = (
     <>
       <PeriodControl period={period} />
-      {/* <select> natif — le module cadre ses filtres de bandeau ainsi. */}
-      <label className="flex items-center gap-2 text-sm text-text-secondary">
-        <span className="sr-only">Movement type</span>
-        <select
-          className={cn(selectClassName, 'h-9 w-auto')}
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); }}
-          aria-label="Filter by movement type"
-        >
-          <option value="">All types</option>
-          {MOVEMENT_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-      </label>
       <ExportMenu
         csv={{ rows, columns: stockLedgerCsvColumns, filename: `stock-movements-${start}_${end}` }}
         disabled={rows.length === 0}
@@ -91,14 +129,15 @@ export default function StockMovementHistoryPage(): JSX.Element {
   return (
     <ReportShell
       title="Stock Movement History"
-      subtitle={`${periodLabel(start, end)} · per-product stock card: opening → in/out → balance`}
+      subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
       toolbar={toolbar}
+      filters={<ReportFilterBar defs={filterDefs} filters={filters} />}
       error={query.error}
       isEmpty={!query.isLoading && query.error === null && query.data !== undefined && rows.length === 0}
       emptyState={{
         title: 'No stock movements',
-        description: 'No movement was recorded over this period for this movement type.',
+        description: 'No movement was recorded over this period for the selected filters.',
       }}
     >
       <StockLedgerTable rows={rows} truncated={result.truncated} isLoading={query.isLoading} />

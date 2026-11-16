@@ -12,11 +12,16 @@
 //    aplat coloré.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
 const mockRpc = vi.fn();
+const downloadCsv = vi.hoisted(() => vi.fn());
+vi.mock('@breakery/domain', async (importOriginal) => ({
+  ...await importOriginal<Record<string, unknown>>(),
+  downloadCsv,
+}));
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
@@ -69,6 +74,20 @@ vi.mock('@/lib/supabase.js', () => ({
       }
       return Promise.resolve({ data: null, error: null });
     },
+    // S3-22 — `useAllCategories` alimente le filtre catégorie.
+    from: () => ({
+      select: () => ({
+        is: () => ({
+          order: () => Promise.resolve({
+            data: [
+              { id: 'c1', name: 'FLOUR', category_type: 'raw_material' },
+              { id: 'c2', name: 'DAIRY', category_type: 'raw_material' },
+            ],
+            error: null,
+          }),
+        }),
+      }),
+    }),
   },
 }));
 
@@ -87,11 +106,11 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
 const START = '2026-06-01';
 const END   = '2026-06-07';
 
-function renderPage() {
+function renderPage(extra = '') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[`/backoffice/reports/cost-spend?start=${START}&end=${END}`]}>
+      <MemoryRouter initialEntries={[`/backoffice/reports/cost-spend?start=${START}&end=${END}${extra}`]}>
         <CostSpendAnalyticsPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -110,6 +129,7 @@ function windowsOf(fn: string): string[] {
 beforeEach(() => {
   useAuthStore.setState({ permissions: ['reports.export'] });
   mockRpc.mockReset();
+  downloadCsv.mockClear();
   sessionStorage.clear();
 });
 
@@ -157,5 +177,80 @@ describe('CostSpendAnalyticsPage (smoke)', () => {
     expect(screen.getByTestId('breakdown-opex-categories')).toBeInTheDocument();
     const structure = screen.getByTestId('breakdown-cost-structure');
     expect(within(structure).getByRole('img', { name: /Share of total spend/ })).toBeInTheDocument();
+  });
+
+  // S3-22 — la catégorie de PRODUIT ne restreint que les achats : la catégorie
+  // de dépense est un autre référentiel, elle ne doit jamais recevoir cet id.
+  it('S3-22 — category_id lu dans l’URL part aux achats seulement, avec la réserve', async () => {
+    renderPage('&category_id=c1');
+    await waitFor(() => {
+      const cogs = mockRpc.mock.calls.filter(([fn]) => fn === 'get_purchase_cogs_breakdown_v1');
+      expect(cogs.length).toBeGreaterThanOrEqual(2);
+      for (const [, args] of cogs) expect(args).toMatchObject({ p_category_id: 'c1' });
+    });
+    for (const [, args] of mockRpc.mock.calls.filter(([fn]) => fn === 'get_expenses_by_category_v1')) {
+      expect(args).not.toHaveProperty('p_category_id');
+    }
+    const note = screen.getByTestId('category-filter-note');
+    expect(note).toHaveTextContent('This filter narrows material purchases only.');
+    // Tout ce qui mélange achats filtrés et charges / CA entiers est nommé.
+    for (const part of ['total spend', 'spend ÷ revenue', '% of sales', 'spend composition chart',
+      'previous total', 'cost structure', 'export total']) {
+      expect(note).toHaveTextContent(part);
+    }
+    expect(await screen.findByRole('option', { name: 'FLOUR' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Purchase category')).toHaveValue('c1');
+  });
+
+  it('S3-22 — l’export filtré se reconnaît à son nom et à ses en-têtes', async () => {
+    renderPage('&category_id=c1');
+    await screen.findByRole('option', { name: 'FLOUR' });
+    await waitFor(() => { expect(screen.getByTestId('export-menu')).not.toBeDisabled(); });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    expect(downloadCsv).toHaveBeenCalledWith(expect.any(String), `cost-spend-flour-${START}_${END}`);
+    const csv = String(downloadCsv.mock.calls.at(-1)?.[0]);
+    expect(csv).toContain('Purchases (filtered) (IDR)');
+    expect(csv).toContain('Total, filtered purchases + all OpEx (IDR)');
+  });
+
+  it('S3-22 — catégorie inconnue : marqueur générique et option de repli visible', async () => {
+    renderPage('&category_id=gone');
+    await screen.findByRole('option', { name: 'FLOUR' });
+    expect(screen.getByLabelText('Purchase category')).toHaveValue('gone');
+    expect(screen.getByTestId('filter-category_id-unknown')).toHaveTextContent('Unknown (not in list)');
+    await waitFor(() => { expect(screen.getByTestId('export-menu')).not.toBeDisabled(); });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    expect(downloadCsv).toHaveBeenCalledWith(expect.any(String), `cost-spend-filtered-${START}_${END}`);
+  });
+
+  it('S3-22 — sans filtre, l’export garde son nom et ses en-têtes', async () => {
+    renderPage();
+    await waitFor(() => { expect(screen.getByTestId('export-menu')).not.toBeDisabled(); });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    expect(downloadCsv).toHaveBeenCalledWith(expect.any(String), `cost-spend-${START}_${END}`);
+    expect(String(downloadCsv.mock.calls.at(-1)?.[0])).toContain('Purchases (IDR)');
+  });
+
+  it('S3-22 — choisir une catégorie puis « Clear filters » la retire de l’appel', async () => {
+    renderPage();
+    const select = await screen.findByLabelText('Purchase category');
+    await within(select).findByRole('option', { name: 'DAIRY' });
+    expect(screen.queryByTestId('category-filter-note')).toBeNull();
+    fireEvent.change(select, { target: { value: 'c2' } });
+    await waitFor(() => {
+      expect(mockRpc.mock.calls.filter(([fn]) => fn === 'get_purchase_cogs_breakdown_v1').at(-1)?.[1])
+        .toMatchObject({ p_category_id: 'c2' });
+    });
+    fireEvent.click(screen.getByTestId('filters-clear'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('category-filter-note')).toBeNull();
+    });
+    // La clé sans catégorie est déjà en cache (montage) : pas de nouvel appel à
+    // attendre — c'est l'état du filtre, source de l'argument, qui fait foi.
+    expect(screen.getByLabelText('Purchase category')).toHaveValue('');
+    expect(screen.queryByTestId('filters-clear')).toBeNull();
   });
 });

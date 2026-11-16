@@ -5,11 +5,16 @@ on:
   workflow_dispatch:
     inputs:
       sha:
-        description: 'Full SHA of tested master to publish'
+        description: 'Full SHA of tested master to stage or publish'
         required: true
         type: string
       approve_release:
-        description: 'I validated the V3 schema, cutover evidence and this BO release'
+        description: 'I validated the candidate evidence and coordinated this production release'
+        required: true
+        type: boolean
+        default: false
+      stage_only:
+        description: 'Prepare a production deployment without moving the production domains'
         required: true
         type: boolean
         default: false
@@ -32,6 +37,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       RELEASE_SHA: ${{ inputs.sha }}
       RELEASE_APPROVED: ${{ inputs.approve_release }}
+      RELEASE_STAGE_ONLY: ${{ inputs.stage_only }}
       RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
       SUPABASE_PROJECT_REF_PRODUCTION: ${{ vars.SUPABASE_PROJECT_REF_PRODUCTION }}
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -71,8 +77,8 @@ jobs:
 
       - name: Build with production configuration
         run: |
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel pull --yes --environment=production
+          vercel build --prod
           node scripts/release/verify-build.mjs
 
       - name: Identify the exact deployment bundle
@@ -86,8 +92,9 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Recheck before publishing the production bundle
+      - name: Recheck and stage or publish the production bundle
         run: |
+          set -euo pipefail
           node scripts/release/preflight.mjs
           node scripts/release/manifest.mjs backoffice --verify
-          vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" --meta "githubCommitSha=$RELEASE_SHA"
+          node scripts/release/deploy-backoffice.mjs

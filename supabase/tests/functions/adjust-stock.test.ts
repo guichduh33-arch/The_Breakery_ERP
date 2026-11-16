@@ -163,7 +163,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v2 RPC —
     expect(Number(result.new_current_stock)).toBe(50);
   });
 
-  it('admin: short reason (<3 chars) is rejected upstream by record_stock_movement_v1', async () => {
+  it('admin: short reason (<3 chars) is rejected upstream by record_stock_movement_v2', async () => {
     const sb = jwtClient(adminToken);
     const { error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,

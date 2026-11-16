@@ -69,6 +69,50 @@ function leaf(overrides: {
 }
 
 describe('IngredientAggregatePreview smoke', () => {
+  it.each([[0.000166, '0,000166 kg'], [9e-8, '0,00000009 kg']])('shows tiny ingredient need %s', async (quantity, expected) => {
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'tiny', material_name: 'Yeast', qty_per_unit: Number(quantity), current_stock: 1 })], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 1 })]);
+    const material = await screen.findByText('Yeast');
+    expect(material.closest('tr')).toHaveTextContent(String(expected));
+    expect(screen.getByTestId('status-ok')).toBeInTheDocument();
+  });
+
+  it('compares the sum of independently rounded roots against stock at the ninth decimal', async () => {
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'tiny', material_name: 'Yeast', qty_per_unit: 0.0000015, current_stock: 3e-9 })], error: null });
+    renderPreview([row({ productId: 'bread-A', quantityProduced: 0.001 }), row({ productId: 'bread-B', quantityProduced: 0.001 })]);
+    const material = await screen.findByText('Yeast');
+    expect(material.closest('tr')).toHaveTextContent('0,000000004 kg');
+    expect(material.closest('tr')).toHaveTextContent('0,000000003 kg');
+    expect(screen.getByTestId('status-short')).toHaveTextContent('short 0,000000001');
+  });
+
+  it('does not fabricate a shortage from decimal addition of produced and waste', async () => {
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 1, current_stock: 0.3 })], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 0.1, quantityWaste: 0.2 })]);
+    await screen.findByText('Flour');
+    expect(screen.getByTestId('status-ok')).toBeInTheDocument();
+    expect(screen.queryByTestId('status-short')).not.toBeInTheDocument();
+  });
+
+  it('aggregates material paths before quantifying a root once', async () => {
+    mockRpc.mockResolvedValue({ data: [
+      leaf({ material_id: 'tiny', material_name: 'Yeast', qty_per_unit: 3e-10, current_stock: 1e-9 }),
+      leaf({ material_id: 'tiny', material_name: 'Yeast', qty_per_unit: 3e-10, current_stock: 1e-9 }),
+    ], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 1 })]);
+    const material = await screen.findByText('Yeast');
+    expect(material.closest('tr')).toHaveTextContent('0,000000001 kg');
+    expect(screen.getByTestId('status-ok')).toBeInTheDocument();
+  });
+
+  it.each(['SUPER_ADMIN', 'ADMIN'])('reports untraceable positive consumption for %s without suggesting stock override', async role => {
+    auth.role = role;
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'tiny', material_name: 'Yeast', qty_per_unit: 4e-10, current_stock: 1 })], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 1 })]);
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('An ingredient requirement is below the supported stock precision. Check the production quantity and recipe units.'));
+    expect(screen.queryByTestId('status-ok')).not.toBeInTheDocument();
+    expect(screen.queryByText('Available')).not.toBeInTheDocument();
+  });
   it.each(['ADMIN', 'MANAGER', 'CASHIER'])('hides availability and shortages for %s even if a cached response contains stock', async (role) => {
     auth.role = role;
     mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 2, current_stock: 1 })], error: null });

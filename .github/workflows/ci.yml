@@ -65,13 +65,29 @@ jobs:
             echo "No new migrations in this diff."
             exit 0
           fi
-          violations=$(echo "$new_migrations" | xargs -r grep -EnH "(CREATE OR REPLACE|CREATE) +FUNCTION +(public\.)?has_permission\b" || true)
+          # Exception UNIQUE, accordée par Mamat le 2026-11-12 pour S1-07
+          # (arbitrage §2bis lot 1 : un compte désactivé perd ses droits) :
+          # cette migration ajoute le seul contrôle `is_active` à
+          # has_permission, qui reste une pure consultation. L'exemption
+          # tient au nom ET au contenu exact du fichier (blob Git) : toute
+          # édition la fait tomber, et aucune autre migration n'en hérite.
+          exempt_file="supabase/migrations/20261112000002_account_deactivation_cuts_rights.sql"
+          exempt_blob="b12cc1ae267f483ebf2093a84af0deb18a17dbba"
+          scanned=""
+          for f in $new_migrations; do
+            if [ "$f" = "$exempt_file" ] && [ "$(git rev-parse "HEAD:$f")" = "$exempt_blob" ]; then
+              echo "  exempt (S1-07): $f"
+            else
+              scanned="$scanned $f"
+            fi
+          done
+          violations=$(echo "$scanned" | xargs -r grep -EnH "(CREATE OR REPLACE|CREATE) +FUNCTION +(public\.)?has_permission\b" || true)
           if [ -n "$violations" ]; then
             echo "::error::has_permission re-CREATE detected in NEW migrations (D10/R14 lock):"
             echo "$violations"
             exit 1
           fi
-          echo "$new_migrations" | sed 's/^/  scanned: /'
+          for f in $scanned; do echo "  scanned: $f"; done
 
       # S50 — Guard types.generated.ts regen (migration → types sync).
       # If a new migration is added in this PR/push, types.generated.ts must

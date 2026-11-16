@@ -26,6 +26,443 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 15 novembre 2026, 21 h 40 — motifs de perte `S1-18`, caisse installée et retrait
+
+Relevé du 15 novembre 2026 entre 21 h 20 et 21 h 40, UTC+8. Observé directement,
+sauf mention contraire. Boutique fermée : aucune session de caisse ouverte,
+dernière commande à 18 h 01.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| POS production, avant | Les deux origines servaient `a35fd5f5` ; tâche « Breakery V3 Production » en marche | — |
+| POS production, installation | Paquet `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1` installé à 21 h 36 par l'installateur du paquet, lancé depuis le terminal de la console de supervision du poste. Empreinte de l'archive sur le poste égale à celle du workflow. Sortie : `SHOP_RELEASE_VERIFIED f46a4eeb4712dd5e1f5f858de96a8bd138764942` | Premier passage réel de cet installateur en boutique. L'archive a voyagé en deux parts, recollées sur le poste |
+| POS production, après | `https://pos.the-breakery.com/health` et `https://pos.the-breakery.com:3001/health` rendent `f46a4eeb` ; tâche en marche. Les fichiers installés nomment la référence Supabase de production, `waste_display_stock_v5` et `submit_display_day_closing_v2` ; ils ne nomment ni `waste_display_stock_v4`, ni `submit_display_day_closing_v1`, ni la référence de dev | Lecture des fichiers installés, pas un parcours d'écran |
+| POS production, écrans | Rechargement de la caisse, de l'écran client et des tablettes **rapporté par Mamat**, non vu | Aucune impression, aucune vente et aucune perte constatées après l'installation |
+| Tablettes | L'application Android embarque son propre bundle : la version 1.21 du 2026-11-09 n'est **pas** mise à jour par ce paquet. Son bundle nomme encore les anciennes fonctions de perte de vitrine et de comptage du jour | Version réellement installée sur les tablettes non relevée ; accès du profil serveur à ces écrans non vérifié. Une perte de vitrine ou un comptage du jour saisi depuis une tablette non mise à jour échouerait |
+| Tablettes, APK 1.22 | Fabriquée à 21 h 49 sur le poste de développement : `com.thebreakery.pos`, version 1.22 (code 23), SHA-256 `9ddf16b50da6a78c69f6e6774d77bbb47228a796be3744f0ac1315e76560d6d4`. Son bundle est celui du paquet de la caisse `f46a4eeb`, repris de l'archive du workflow sans reconstruction : il nomme la référence Supabase de production et les nouvelles fonctions, aucune ancienne. Certificat de signature égal à celui des APK relevées sur les appareils le 2026-10-08 | Aucun appareil joint par `adb` au moment de la fabrication |
+| CS30, APK 1.22 | Installée à 21 h 51 par `adb install -r` sur l'appareil `A59T11BGT3A01119`, qui portait la 1.21 du 2026-11-09. Après : version 1.22 (code 23), fichier installé de même SHA-256 que l'APK fabriquée, date de première installation inchangée. L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Aucune connexion par PIN, aucune commande, aucune impression essayées. — |
+| Galaxy Tab A8, APK 1.22 | Installée à 21 h 52 par `adb install -r` sur l'appareil `R9RT200NJHB` (SM-X205), qui portait la 1.21 du 2026-11-09. Après : version 1.22 (code 23), fichier installé de même SHA-256, date de première installation inchangée. L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Aucune commande, aucune impression essayées. Tout autre appareil Android reste **non mis à jour** tant qu'il n'est pas relevé |
+| Backend production | Appelants relevés avant le retrait : seules les anciennes versions s'appelaient entre elles ; aucun appel dans les applications ni les Edge Functions de `master` à `e4ff8f85`. Les huit anciennes versions retirées à 21 h 39 : `submit_stock_declaration_v2`, `adjust_stock_v4`, `waste_stock_v4`, `waste_display_stock_v4`, `submit_display_day_closing_v1`, `get_display_day_closing_v1`, `correct_display_day_count_v1`, `stock_private.submit_day_waste_v1`. Les huit nouvelles sont présentes | Retrait par requête directe, texte des `DROP` de `20261114000006_loss_reason_closed_list.sql` |
+
+Retour : le lanceur précédent est conservé à côté du lanceur courant, et la
+release `a35fd5f5` reste dans le répertoire des releases. Un retour de la caisse
+à `a35fd5f5` exigerait de recréer d'abord les huit anciennes fonctions : cette
+release les appelle.
+
+Pour la livraison suivante de la caisse : la release précédente devient
+`f46a4eeb4712dd5e1f5f858de96a8bd138764942`, et l'empreinte du lanceur a changé.
+
+## Complément du 15 novembre 2026, 15 h 30 — vente d'un produit à recette, vitrine, attente de la caisse
+
+Relevé du 15 novembre 2026 vers 15 h 30, UTC+8. Lecture seule sur la base de
+production `yjhhhmjgsmyzyymvixot`. Observé directement. Aucune écriture.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `83c5b374` : la fusion de #709 (lecture du journal d'audit) s'est ajoutée. Son back-office appelle `get_activity_logs_v4` | — |
+| Backend production | Seule `get_activity_logs_v3` existe : la migration `20261115000001_activity_log_resolved_context.sql` n'y est pas appliquée. Les huit anciennes versions des fonctions de perte sont toujours présentes | Le back-office publié vient de `f46a4eeb` et appelle encore la version présente. **Toute publication ou tout paquet construit depuis `master` exige d'abord cette migration en production** |
+| POS production | Paquet `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1` toujours **non installé** : le poste de la boutique est en service, Mamat a demandé d'attendre la fin du service | — |
+| Vente d'un produit à recette | « Beef Cheese Croissant » et « Banh Mi Croissant » ne sont pas suivis en stock ; leur recette contient un « Croissant », suivi et vendu en vitrine. Commandes `T114112026089` (deux vendus) et `T115112026107` (un vendu) : le stock général du Croissant baisse de 2 puis de 1, avec le bœuf, la mozzarella et la béchamel ; le compteur de la vitrine du Croissant baisse des mêmes quantités, motif « POS recipe consumption (pay existing) » | Deux commandes réglées après coup. Aucune vente réglée directement n'a été relue ; les autres chemins de vente appellent le même helper de la famille `_record_sale_stock` |
+| Compteurs du Croissant | Stock général 115, vitrine 279 | Écart **non expliqué**, cause non cherchée : la vitrine dépasse le stock général |
+
+Suite : inchangée pour `S1-18` — installation du paquet de la caisse, puis
+retrait des huit anciennes versions.
+
+## Complément du 15 novembre 2026, 13 h 50 — motifs de perte `S1-18`, back-office publié
+
+Relevé du 15 novembre 2026 entre 13 h 50 et 14 h 20, UTC+8. Observé directement.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `f46a4eeb` : la fusion de #707 (export du journal d'audit, back-office seul, sans changement de base) s'est ajoutée à celle de #706. CI de `master` et pgTAP lancé à la main verts sur ce SHA | — |
+| BO production | Publication par `production-backoffice.yml`, run `43681181421`, source `f46a4eeb`, approbation de l'environnement « Production » par Mamat ; alias `backoffice.the-breakery.com` posé à 13 h 50. Un premier run, `43620957573`, a échoué au contrôle du SHA exact : `master` avait avancé entre son lancement et son approbation. Rien n'avait été publié | Aucune session ouverte sur le back-office publié : les écrans de perte n'y ont pas été vus, et aucune perte n'y a été saisie |
+| BO production, artefact servi | Les fichiers servis par `backoffice.the-breakery.com` nomment la référence Supabase de production, `submit_stock_declaration_v3` et `get_display_day_closing_v2`, et ne nomment plus `submit_stock_declaration_v2` ni `get_display_day_closing_v1` | Lecture des fichiers servis, pas un parcours d'écran |
+| Backend production | Inchangé depuis le relevé de 00 h 35 : nouvelles et anciennes versions présentes | Les huit anciennes versions restent en place |
+| POS production | Paquet de la caisse construit à 14 h 06 par `package-shop-release.yml`, run `43683176243`, source `f46a4eeb`, artefact `shop-release-f46a4eeb4712dd5e1f5f858de96a8bd138764942-1`. **Non installé** en boutique | La caisse appelle encore les anciennes versions et envoie du texte libre |
+
+Suite : installation du paquet de la caisse, puis retrait des huit anciennes
+versions.
+
+## Complément du 15 novembre 2026, 00 h 35 — motifs de perte `S1-18`, étape additive
+
+Relevé du 15 novembre 2026 entre 00 h 32 et 00 h 40, UTC+8. Observé directement.
+PR #706. Aucune commande, aucun paiement, aucune déclaration ni aucun mouvement
+de stock n'a été créé en production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `6d735128` (fusion de #706). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, avant | 0 session de caisse ouverte, dernière commande le 14 à 17 h 34. Type `waste_reason` à six valeurs. Corps de production des fonctions remplacées égaux à ceux du dev d'avant le lot, après normalisation des retours chariot. 17 déclarations de stock, toutes des pertes de vitrine, 9 en attente | — |
+| Backend production, livraison | Application **additive** : texte de `20261114000005`, puis texte de `20261114000006` **sans ses `DROP`**. Le type reçoit `expired`, `leftover`, `damaged`, `other` ; deux colonnes de motif ; huit fonctions créées, corps égaux au fichier du dépôt (md5 de `prosrc`), EXECUTE pour `authenticated` et `service_role`, `anon` sans droit ; le helper privé réservé à `postgres` | Les anciennes versions **restent en place** : `submit_stock_declaration_v2`, `adjust_stock_v4`, `waste_stock_v4`, `waste_display_stock_v4`, `submit_display_day_closing_v1`, `get_display_day_closing_v1`, `correct_display_day_count_v1`, `stock_private.submit_day_waste_v1` |
+| Backend production, après | 17 déclarations, aucune ne porte de motif : aucune ligne réécrite. Les versions nouvelles de la lecture et de la correction du comptage égalent les anciennes, au motif près | Aucun appel réel n'est passé par les nouvelles fonctions au moment du relevé |
+| BO et POS production | Non republiés à ce relevé : ils appellent encore les anciennes versions, qui acceptent le texte libre | La liste fermée ne s'impose en production qu'après le retrait des anciennes versions |
+
+Suite, dans cet ordre : publication du back-office, installation du paquet de la
+caisse, puis retrait des huit anciennes versions, comme le fait la migration.
+
+Retour arrière, si nécessaire, tant qu'aucune ligne ne porte de motif : retirer
+les huit nouvelles fonctions, puis les deux colonnes. Les quatre valeurs du type
+restent : une valeur d'énumération ne se retire pas, et rien ne l'utilise alors.
+
+## Complément du 14 novembre 2026, 20 h 40 — compteur des produits non suivis `S1-11`
+
+Relevé du 14 novembre 2026 à 20 h 40, UTC+8. Observé directement. PR #703.
+Aucune commande, aucun paiement ni aucun mouvement de stock n'a été créé en
+production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `708b5751`. CI et pgTAP de la PR #703 verts avant fusion ; CI de `master` verte sur ce SHA | — |
+| Backend production, avant | 0 session de caisse ouverte, dernière commande à 17 h 34. Les trois helpers `_record_sale_stock_v1`, `_restore_sale_stock_v1` et `_record_cancel_waste_stock_v1` ont l'empreinte attendue par la migration (`43b76a7c…`, `41310d19…`, `59341f76…`). 47 produits non suivis à compteur non nul, dont 1 négatif | — |
+| Backend production, livraison | Migration `20261114000004` appliquée, texte du dépôt. Les trois helpers sont remplacés en place : définitions égales au dev (`495f5122…`, `316bcfef…`, `9a32de1d…`), EXECUTE pour `postgres` et `service_role` seulement, `anon` et `authenticated` sans droit | — |
+| Backend production, après | 47 produits non suivis à compteur non nul, dont 1 négatif : inchangé, comme décidé | Aucune vente réelle n'est passée par les nouveaux helpers au moment du relevé |
+| BO et POS production | Non republiés : le lot ne change aucun fichier d'application | — |
+
+Retour arrière, si nécessaire : recréer les trois helpers depuis leur corps
+d'avant, en retirant la condition `AND COALESCE(track_inventory, true)` et en
+remettant `ELSIF v_track OR v_is_b2b THEN` dans `_record_sale_stock_v1`. Les
+empreintes d'avant ci-dessus servent de contrôle.
+
+## Complément du 14 novembre 2026, fin de soirée — adresse des tâches planifiées `S1-14`
+
+Relevé du 14 novembre 2026 après 19 h 40, UTC+8. Observé directement. PR #701.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `c6a69096` (fusion de #701). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, avant | 0 tâche planifiée, aucun secret Vault | — |
+| Backend production, livraison | Migration `20261114000003` appliquée : schéma `scheduling_private` et helper `edge_function_url`, corps égal au dev (md5 de `prosrc` `280478e4…`), EXECUTE pour `postgres` seul, `anon` et `authenticated` sans droit sur le schéma | — |
+| Backend production, usage | 0 tâche après livraison : la migration n'en installe aucune. Le helper rend NULL, faute de secret `project_url` | Le secret se pose avec l'installation des tâches |
+| Backend dev | Secret `project_url` posé sur l'adresse du projet dev. La tâche d'envoi des notifications y répond 200 | — |
+
+Retour arrière, si nécessaire : `DROP SCHEMA scheduling_private CASCADE`, tant
+qu'aucune tâche de production ne l'appelle.
+
+## Complément du 14 novembre 2026 au soir — lot money-path `S1-09` et `S1-12`
+
+Relevé du 14 novembre 2026 entre 17 h 48 et 19 h 20, UTC+8. Observé directement.
+PR #700. Aucune commande ni aucun paiement n'a été créé en production.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `04b55bb4` (fusion de #700). CI et pgTAP de la PR verts avant fusion | — |
+| Backend production, 17 h 48 | Boutique ouverte : 1 session de caisse, 9 commandes dans l'heure. Livraison reportée | — |
+| Backend production, avant, 18 h 52 | 0 session de caisse ouverte, dernière commande à 17 h 34. Corps de `stock_private.complete_order_with_payment_v30` normalisé égal à l'empreinte épinglée par la migration (`dcf1ae89…`). Edge Function `process-payment` version 4 égale aux fichiers de `master` d'avant le lot | — |
+| Backend production, livraison | Application additive `payment_line_discount_cap_server_priced_promos_additive` : texte de `20261114000002` **sans ses `DROP`**. Les deux `complete_order_with_payment_v33` créées, corps égaux au dev (md5 de `prosrc` `21361069…` public, `6fe8f72a…` privé), mêmes droits, `anon` sans EXECUTE | `public.complete_order_with_payment_v32` et `stock_private.complete_order_with_payment_v30` **restent en place** |
+| Edge Function production, 19 h 19 | `process-payment` redéployée, version 5, `verify_jwt` actif. Les 10 fichiers servis sont égaux à ceux de `master`. `OPTIONS` répond 200, un `POST` sans en-tête d'autorisation répond 401 | Aucun paiement réel n'est passé par la version 5 au moment du relevé |
+| BO et POS production | Non republiés : le lot ne change aucun fichier d'application | — |
+
+Retour arrière, si nécessaire : redéployer `process-payment` sur les fichiers de
+`db37a505^` (appel de `v32`), puis retirer les deux `v33`. Une fois les ventes
+réelles vérifiées sur `v33`, retirer `public.complete_order_with_payment_v32` et
+`stock_private.complete_order_with_payment_v30`, comme le fait la migration.
+
+## Complément du 14 novembre 2026 — réglages B2B `S1-04`
+
+Relevé du 14 novembre 2026 vers 12 h, UTC+8. Observé directement. PR #698.
+Aucune commande, aucun paiement ni aucun réglage métier n'a été saisi en
+production ; la seule écriture est la ligne décrite ci-dessous.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `d014d9e8` (fusion de #698). CI et pgTAP de la PR verts avant fusion | pgTAP de la PR, pas un lancement manuel sur le commit de fusion : aucune publication du back-office n'en dépendait |
+| Backend production, avant, 12 h 02 | `b2b_settings` : 0 ligne. Valeurs par défaut des colonnes et contraintes égales au dev, aucun déclencheur sur la table | — |
+| Backend production, livraison | Migration `20261114000001` appliquée : une ligne `id = 1` insérée aux valeurs par défaut (`net_30`, cinq délais proposés, seuil critique 30 jours, trois tranches d'ancienneté) | — |
+| Backend production, usage | `get_b2b_settings_v1` rend la ligne sous l'identité d'un `SUPER_ADMIN` actif | Lecture seule, par requête SQL. La page de réglages B2B n'a pas été ouverte dans un navigateur connecté |
+| BO production | Non republié : le lot ne change aucun fichier du back-office | — |
+
+Retour arrière, si nécessaire : `DELETE FROM public.b2b_settings WHERE id = 1`,
+tant qu'aucun réglage n'a été saisi depuis. La page de réglages retombe alors
+dans l'erreur d'avant la livraison.
+
+## Complément du 12 novembre 2026 au soir — lot sécurité `S1-07` et `S1-13`
+
+Relevé du 12 novembre 2026 entre 20 h et 22 h, UTC+8. Observé directement.
+PR #695. Aucune commande, aucun paiement ni aucun compte n'a été créé ou
+désactivé en production ; les essais ont eu lieu sur dev, en transaction annulée.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `ec4a3707` (fusion de #695). CI et pgTAP verts sur ce commit exact, pgTAP lancé à la main | — |
+| Backend production, avant, 20 h 04 | Corps de `has_permission` et des trois helpers d'identité égaux au dev d'avant modification (md5). 11 profils actifs, aucun inactif, aucune session de caisse ouverte | Un compte inactif aurait perdu ses droits à la livraison : il n'y en avait pas |
+| Backend production, livraison | Migrations `20261112000002` et `20261112000003` appliquées : `has_permission`, `get_current_role`, `get_current_profile_id` et `_current_profile_id` exigent un profil actif ; `set_user_active_v1` créée | Livraison en deux appels, quelques minutes d'écart |
+| Backend production, corps | md5 de `prosrc`, retours chariot retirés, égaux au dev et aux fichiers du dépôt : `has_permission` `5918a8f5…`, `set_user_active_v1` `eeed733e…`, `get_current_role` `a09c1984…`, `get_current_profile_id` `01aa1f50…`, `_current_profile_id` `beb9759b…`. `anon` sans EXECUTE sur `set_user_active_v1` | — |
+| Backend production, usage | Chacun des 11 profils actifs garde au moins une permission de son rôle par `has_permission` | Lecture seule ; aucune désactivation réelle n'a été jouée en production |
+| BO production, 21 h 58 | Publication réussie sur `ec4a3707`, approuvée par Mamat dans l'environnement « Production » de GitHub | — |
+| BO production, bundle servi | `https://backoffice.the-breakery.com` : le bundle chargé nomme `set_user_active_v1` et ne porte que la référence Supabase de production | Lu par téléchargement des fichiers servis, pas dans un onglet connecté. Le parcours du bouton à l'écran n'a pas été joué |
+
+Retour arrière, si nécessaire : recréer `has_permission` depuis
+`20260517000030_refactor_has_permission.sql` (md5 du corps de production avant
+livraison : `34064863…`) et les helpers depuis `20260510000002_init_rls_helpers.sql`
+et la migration qui définit `_current_profile_id` ; retirer `set_user_active_v1`
+seulement après retour du back-office au bundle précédent, qui ne l'appelle pas.
+
+## Complément des 11 et 12 novembre 2026 — lot comptable
+
+Relevé du 11 novembre 2026 au soir, puis du 12 novembre à midi et en début
+d'après-midi, UTC+8. Observé directement. Lot : `S1-03`, `S1-05`, `S1-06`,
+`S1-17`, `S3-15` (PR #691, #692 et #693).
+Aucune commande ni aucun paiement n'a été créé ; les essais ont eu lieu dans des
+transactions annulées.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `01e9de59` (fusion de #692) | — |
+| Backend production, 11 nov. vers 21 h 40 | Aucune session de caisse ouverte, période de novembre ouverte. Appliqué en **phase additive** : réouverture de période, clé `SALE_COGS`, helper du compte de stock par article, fonction de régularisation, déclencheur des mouvements de stock et écriture de réception remplacés, `record_b2b_payment_v6` créée **sans retirer** `v5`, `2142` et `2143` non postables, cinq comptes de charge, catégorie « Office » réaffectée | La sauvegarde la plus récente datait de 03 h 30 le même jour |
+| Backend production, corps | md5 de `prosrc`, retours chariot retirés, égaux au dev et aux fichiers du dépôt : `reopen_fiscal_period_v1` `0401b9fa…`, `_stock_inventory_mapping_key_v1` `39ee54cc…`, `tr_stock_movement_je` `c75a9af9…`, `create_purchase_journal_entry` `0f309097…`, `post_stock_chain_catchup_v1` `2c8bcab9…`, `record_b2b_payment_v6` `c8113f23…`. `anon` sans EXECUTE sur aucune | `record_b2b_payment_v6` a été dérivée du `v5` live par remplacement, puis créée seulement si l'empreinte égalait celle du fichier |
+| Backend production, essai annulé | Vente d'un article fabriqué : débit `5110`, crédit `1143`. Vente d'un article acheté : débit `5110`, crédit `1142` | Deux articles seulement |
+| Backend production, « Office » | Compte `6190` → `6123`, 2 dépenses passées inchangées, trace `expense.category.account_reassigned` au journal d'audit, garde de catégorie de nouveau active | — |
+| Régularisation, à blanc, 11 nov. | 5 966 mouvements de vente sans écriture, coût 37 759 000 ; réceptions reclassées 55 754 502,48 ; écriture équilibrée à 182 628 202,48 | **Non enregistrée.** Elle ne voyait pas les ventes payées sans mouvement de stock. Mesuré le même soir par une requête de lecture sur `orders`, `order_items` et `products`, hors de la fonction : 3 917 commandes payées sans mouvement, coût de fiche 96 935 058, dont 3 915 de l'import historique. Une migration préparée (`20261112000001`) remplace la fonction pour les compter ; **elle n'est pas appliquée en production à ce relevé** |
+| BO production, 12 nov. 12 h 05 | Publication n° 29 réussie sur `01e9de59`, après un premier refus du contrôle préalable faute de passage pgTAP sur ce commit exact (lancé à la main, vert) | Lu dans la liste des déploiements GitHub, pas dans le bundle chargé |
+| Backend production, 12 nov. 12 h 10 | `record_b2b_payment_v5` retirée après la publication | Un onglet du back-office resté ouvert sur l'ancien bundle échouera sur un règlement B2B jusqu'à son rechargement ; aucun règlement B2B n'avait été saisi entre-temps |
+| Backend production, usage, 12 nov. 12 h 09 | 70 ventes payées (7 126 000). 340 mouvements de vente, 337 avec écriture, coût des ventes du jour 2 065 900, aucune écriture déséquilibrée depuis la livraison | Les 3 mouvements sans écriture valent zéro après arrondi |
+| Backend production, 12 nov. 13 h 35 | Migration `20261112000001` appliquée (PR #693, `master` à `ee8b4fa6`) : `post_stock_chain_catchup_v2` créée, `v1` retirée. md5 du corps `04a4f6ea…`, égal au dev et au fichier. `anon` et `authenticated` sans EXECUTE | L'outil a rendu une erreur « already exists » alors que la migration figurait déjà au registre une minute plus tôt : lue comme une seconde tentative automatique. Une session de caisse était ouverte ; aucune fonction de caisse n'est touchée |
+| Régularisation, à blanc, 12 nov. 13 h 37 | 5 969 mouvements de vente sans écriture (18 à coût zéro), coût 37 801 100 ; 3 915 commandes de l'import historique, coût 96 924 700 ; réceptions reclassées 55 754 502,48 ; mouvements reclassés 102 191 500, tous antérieurs à la livraison du 11 nov. Écriture équilibrée à 279 552 702,48 : débit `5110` 134 725 800 et `1142` 144 826 902,48, crédit `1141` 240 643 802,48 et `1143` 38 908 900 | Lignes historiques valant zéro : 615 articles à coût zéro, 545 combos sans composants. Coût actuel des fiches, pas celui du jour de la vente |
+| Régularisation, enregistrée, 12 nov. | Sur accord de Mamat : `JE-20261112-0785`, statut `posted`, datée du 12 nov., mêmes montants et mêmes quatre lignes que le passage à blanc. Auteur : le seul profil `SUPER_ADMIN` actif. Une trace `accounting.stock_chain.catchup_posted` au journal d'audit. Un nouveau passage à blanc répond `already_posted` | Les lignes à coût zéro restent à zéro : les corriger demandera une écriture manuelle complémentaire |
+| Backend production, soldes, 12 nov. après l'écriture | `5110` 137 749 100 ; `1142` 98 161 701,78 ; `1143` 6 067 800 ; `1141` 46 431 023,94. Aucune écriture déséquilibrée, en en-tête comme en lignes | Soldes cumulés de toutes les écritures `posted` ou `locked`, toutes périodes |
+
+Retour arrière, si nécessaire : recréer `tr_stock_movement_je` depuis
+`20260727000246_adjustment_je_emit_types_noop.sql` (md5 du corps de production
+avant livraison : `30fbda51…`, égal à ce fichier) et `create_purchase_journal_entry`
+depuis la migration qui la précède dans le dépôt ; les écritures de coût déjà
+émises resteraient et devraient être contre-passées à la main.
+
+## Complément du 10 novembre 2026 — fonctions de rapport `S3-21` et `S3-22`
+
+Relevé du 10 novembre 2026 en fin d'après-midi, UTC+8. Observé directement.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Git | `master` à `b095fc27` (fusion de #676, qui porte `S3-21` et `S3-22`) ; sa source appelle `get_orders_list_v8`, `get_orders_counters_v6`, `get_product_sales_lines_v7` et `get_sales_by_product_v6` | — |
+| BO production | Dernier déploiement de production : `a35fd5f5`, du 2026-11-09. Les fusions du 10 novembre ne sont **pas publiées** ; ce code appelle encore `get_orders_list_v7`, `get_orders_counters_v5`, `get_product_sales_lines_v5` et `get_sales_by_product_v5` | Lu dans la liste des déploiements GitHub, pas dans le bundle chargé |
+| Backend production | Phase **additive** des migrations `20261110000001` et `20261110000002`, sur décision de Mamat : les quatre fonctions nouvelles sont créées, **aucune ancienne n'est retirée**. Quatre applications : `sales_by_product_filters_aggregate_additive`, `sales_by_product_filters_lines_additive`, `sales_created_paid_table_orders_list_additive`, `sales_created_paid_table_orders_counters_additive` | Le texte appliqué est celui des fichiers, **sans leurs `DROP`** ; `get_product_sales_lines_v6`, intermédiaire, n'est pas créée |
+| Backend production | Corps des quatre fonctions nouvelles **égaux au dev** (md5 de `prosrc` : `d63888b7…`, `29fc8f6f…`, `0db669e8…`, `0a61d206…`) ; mêmes droits qu'en dev, `anon` sans EXECUTE ; les quatre anciennes toujours présentes, corps inchangés | — |
+| Backend production, lecture | Sous l'identité du propriétaire, dans une transaction annulée, sur le 2026-11-08 : liste v7 et v8, mêmes 114 commandes ; compteurs v5 et v6 égaux ; ventes par article v5 et v6 égales, résumé et lignes ; 46 lignes de la liste portent une table | Un seul jour comparé ; aucun appel depuis le back-office |
+
+**Reste dû, dans cet ordre** : publier le back-office depuis `master` (workflow
+« Publish Backoffice Production », approbation de Mamat) ; vérifier la liste des
+commandes et Sales by Product sur le back-office publié ; **puis seulement**
+retirer les quatre anciennes fonctions (`get_orders_list_v7`,
+`get_orders_counters_v5`, `get_product_sales_lines_v5`,
+`get_sales_by_product_v5`), par un retrait ciblé. Les fichiers ne se rejouent
+pas tels quels : le second retire aussi `get_product_sales_lines_v6`, absente
+de la production, et ce `DROP` échouerait. Après ce retrait, la production
+porte le même état final que les deux fichiers.
+Retirer avant de publier casserait le back-office en service. Tant que le
+retrait n'est pas fait, la production porte les deux générations : état
+transitoire voulu, pas une dérive.
+
+La fonction de `S3-19` (`get_production_vs_sales_v1`, migration
+`20261110000003`) est **absente** de la production à ce relevé (lecture du
+catalogue des fonctions) ; sa PR #678 n'est pas fusionnée.
+
+### Même jour, en soirée — publication du back-office et retrait
+
+Relevé du 10 novembre 2026 vers 19 h 30, UTC+8, candidat `a577f82a` (fusions
+#676, #678, #679), sur demande de Mamat de publier tout le travail du jour.
+Observé directement. Ce relevé **clôt** l'état transitoire décrit ci-dessus.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA | `ci.yml` sur `master`, run 42800017228, réussi ; pgTAP lancé à la main, run 42800184564, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production | Migration `production_vs_sales_report` appliquée avant la publication : `get_production_vs_sales_v1`, corps égal au dev (md5 `58bc9622…`), `anon` sans EXECUTE. Additive : rien de retiré | — |
+| Backend production, lecture | Sous l'identité du propriétaire, dans une transaction annulée, du 2026-11-01 au 2026-11-08 : 8 catégories, 8 jours, 52 articles ; produit 2 864, vendu 1 773 dont 238 en B2B, pertes approuvées 0, écart 1 091 | Aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42805598428, réussi, approuvé par Mamat ; déploiement de production sur `a577f82a` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DT-QkAzg.js` (avant : `index-CZtgSqXd.js`). Dans les fichiers servis : les cinq fonctions nouvelles sont appelées, aucune des quatre anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_reports_drop_superseded_versions`, après la publication : `get_orders_list_v7`, `get_orders_counters_v5`, `get_product_sales_lines_v5`, `get_sales_by_product_v5` retirées | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Backend production, état final | Cinq fonctions seulement dans ces familles, corps égaux au dev, `authenticated` avec EXECUTE, `anon` sans | — |
+| API | Appel anonyme de `get_orders_list_v8` et de `get_production_vs_sales_v1` : HTTP 401 | Aucun appel authentifié par l'API |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. La liste des commandes, Sales by Product et Production vs Sales
+restent à ouvrir une fois en production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans les fichiers `20261107000002` (liste et compteurs) et
+`20261105000036` (ventes par article et ses lignes) ; les empreintes des corps
+de production retirés, relevées avant le retrait, sont `0b3b1bd6…`,
+`647328b9…`, `ae37eacf…` et `4ea0817e…`. Un retour demande de recréer ces
+quatre fonctions **puis** de republier le back-office précédent (`a35fd5f5`).
+
+### Nuit du 10 au 11 novembre — bilan Production vs Sales (PR #681)
+
+Relevé de la nuit du 10 au 11 novembre 2026, vers 0 h 45, UTC+8, candidat
+`10a815f8` (fusions #680 et #681), sur demande de Mamat. Observé directement.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA | `ci.yml` sur `master`, run 42827502415, réussi ; pgTAP lancé à la main, run 42841826618, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_production_vs_sales_v1` seule dans sa famille ; tables, vues et gardes lues par la version suivante présentes | — |
+| Backend production | Application additive `production_vs_sales_display_balance_additive`, avant la publication : `get_production_vs_sales_v3` créée, corps égal au dev (md5 `307758e9…`), mêmes droits, `anon` sans EXECUTE | Texte du fichier `20261110000005` **sans son `DROP`** ; `get_production_vs_sales_v2`, intermédiaire, n'est pas créée et le fichier `20261110000004` n'est pas joué |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, du 2026-11-01 au 2026-11-08, anciennes et nouvelle versions côte à côte : produit 2 864 et comptoir 1 535 égaux ; vendu B2B 238 → 599 (commandes livrées, payées ou non) ; pertes 0 → 3 ; 8 catégories, 8 jours, 52 articles ; deux jours portent une clôture de vitrine (06 et 07) ; 290 cellules au non-expliqué inconnu | Un seul intervalle comparé ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42848794540, réussi, approuvé par Mamat ; déploiement de production sur `10a815f8` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-Dc2HyGfM.js` (avant : `index-DT-QkAzg.js`). Dans les fichiers servis : `get_production_vs_sales_v3` appelée, aucune autre version de la famille ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `production_vs_sales_drop_superseded_version`, après la publication : `get_production_vs_sales_v1` retirée | Un onglet du back-office ouvert avant la publication appelle encore l'ancienne : il faut le recharger |
+| Backend production, état final | `get_production_vs_sales_v3` seule dans sa famille, corps égal au dev, `authenticated` avec EXECUTE, `anon` sans | — |
+| API | Appel anonyme de `get_production_vs_sales_v3` : HTTP 401 | Aucun appel authentifié par l'API |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Production vs Sales reste à ouvrir une fois en production, comme la
+liste des commandes et Sales by Product.
+
+**Retour** : le corps retiré n'est pas sauvegardé hors Git. Il se retrouve dans
+le fichier `20261110000003` ; son empreinte en production, relevée avant le
+retrait, est `58bc9622…`. Un retour demande de recréer cette fonction **puis**
+de republier le back-office précédent (`a577f82a`).
+
+### 11 novembre 2026 — filtres de vente, articles de combo, lenteur du propriétaire
+
+Relevé du 11 novembre 2026 en matinée, UTC+8, sur demande de Mamat. Candidat du
+back-office : `d4fdc4f1` (fusions #683 et #684). Correctif de vue : `40d0dd69`
+(fusion #685). Observé directement. Aucun essai créant une écriture, une
+commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `d4fdc4f1` | `ci.yml` sur `master`, run 42884721040, réussi ; pgTAP lancé à la main, run 42931506865, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_sales_by_category_v6`, `get_sales_by_staff_v5` et `get_production_vs_sales_v3` seules dans leurs familles ; le corps de la troisième égal au dev d'avant le bump (md5 `307758e9…`) ; vues et gardes lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `sales_by_category_staff_filters_additive` et `production_vs_sales_combo_components_additive`, avant la publication : `get_sales_by_category_v7`, `get_sales_by_staff_v6` et `get_production_vs_sales_v4` créées, corps égaux au dev (md5 `399c4b1c…`, `5ab8fd92…`, `35a3648c…`), mêmes droits, `anon` sans EXECUTE | Texte des fichiers `20261111000001` à `20261111000003` **sans leur `DROP`** |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, sur 7 jours, anciennes et nouvelles versions côte à côte : ventes par catégorie 20 lignes et 86 557 000 des deux côtés, 17 lignes et 39 325 000 sous le filtre `dine_in` ; ventes par vendeur 4 lignes et 86 557 000 des deux côtés ; production contre ventes, vendu 1 974 → 2 062, dont 88 en combo, non expliqué 200 → 159 | Un seul intervalle comparé ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42937311668, réussi, approuvé par Mamat ; déploiement de production sur `d4fdc4f1` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DJhDSxYs.js`. Dans les fichiers servis : les trois nouvelles versions appelées, aucune des trois anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_filters_and_combo_components_drop_replaced`, après la publication : les trois anciennes versions retirées | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Lenteur, constat | Avant correctif, sous l'identité du propriétaire, production contre ventes sur 7 jours : 42 s (ancienne version) et 23 s (nouvelle), pour une limite de 8 s du rôle `authenticated`. Une lecture complète de `reporting_private.closed_pos_orders_v1` (5 290 commandes) : 1,2 s, le contrôle de visibilité tournant une fois par commande | L'échec à l'écran n'a pas été observé : il est déduit des deux mesures |
+| Preuves du correctif | PR #685 : `pgtap` et `db-gate` réussis, run 42938315631, sur `95a6f47d` | Aucun pgTAP manuel sur `40d0dd69` : le changement ne touche pas le back-office et n'a pas demandé de publication |
+| Backend production | Application `reporting_owner_check_once` : la vue teste le propriétaire une fois par requête. Définition égale au dev (md5 `cc6c9d92…`), aucun droit direct, le propriétaire voit 5 310 commandes sur 5 310 | Texte entier du fichier `20261111000004` |
+| Lenteur, après | Sous l'identité du propriétaire : production contre ventes 4,6 s sur 7 jours (premier appel), 2,3 s sur 30 jours, 4,4 s sur 91 jours ; ventes par catégorie sur 7 jours 0,03 s (avant : 2,2 s) | Mesures uniques ; la marge sous 8 s reste mince pour production contre ventes |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Sales by Category, Sales by Staff et Production vs Sales restent à
+ouvrir une fois en production.
+
+**Limites du correctif de lenteur** : un compte non propriétaire garde le
+contrôle par ligne ; les vues de confidentialité des règlements, des
+remboursements et des sessions gardent le leur.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000023` (ventes par catégorie), `20261105000027`
+(ventes par vendeur) et `20261110000005` (production contre ventes, md5
+`307758e9…`). Un retour des fonctions demande de les recréer **puis** de
+republier le back-office précédent (`10a815f8`). Un retour de la vue se fait en
+rejouant sa définition du fichier `20261105000001` ; il ne dépend pas du
+back-office.
+
+### Même jour, après-midi — filtres des ventes par origine et par client (PR #687)
+
+Relevé du 11 novembre 2026 après-midi, UTC+8, sur demande de Mamat. Candidat
+du back-office : `d2744da4` (fusion #687). Observé directement. Aucun essai
+créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `d2744da4` | `ci.yml` sur `master`, run 42954307200, réussi ; pgTAP lancé à la main, run 42954334692, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_sales_by_origin_v3` et `get_sales_by_customer_v3` seules dans leurs familles ; corps égaux au dev d'avant le bump, fins de ligne mises à part (md5 sans retour chariot `ebc92e68…` et `d8c5e259…`) ; vues et garde lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `sales_by_origin_filters_additive` et `sales_by_customer_filters_additive`, avant la publication : `get_sales_by_origin_v4` et `get_sales_by_customer_v4` créées, corps égaux au dev (md5 `5cc4f206…`, `60dd6fab…`), mêmes commentaire et droits, `anon` sans EXECUTE | Texte des fichiers `20261111000005` et `20261111000006` **sans leur `DROP`** |
+| BO production | Workflow « Publish Backoffice Production », run 42966889206, réussi, approuvé par Mamat ; déploiement de production sur `d2744da4` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-jhCi2DSt.js`. Dans les 321 fichiers servis : les deux nouvelles versions appelées, aucune des deux anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `sales_origin_customer_filters_drop_v3`, après la publication : les deux anciennes versions retirées ; seules les v4 restent | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+| Backend production, lecture | Sous l'identité du propriétaire, sans écriture, sur 7 jours : ventes par origine 84 572 000, dont 39 606 000 sous le filtre `dine_in` ; ventes par client, identifié 6 604 000, dont 771 000 sous le filtre `cash` ; les quatre appels en 0,53 s | Un seul intervalle ; mesure unique |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Sales by Origin et Sales by Customer restent à ouvrir une fois en
+production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000026` (ventes par origine) et `20261105000024`
+(ventes par client). Un retour demande de les recréer **puis** de republier le
+back-office précédent (`d4fdc4f1`).
+
+### Même jour, soir — filtres des ventes de combos et par table (PR #689)
+
+Relevé du 11 novembre 2026 en soirée, UTC+8, sur demande de Mamat. Candidat du
+back-office : `f2249dfb` (fusion #689). Observé directement. Aucun essai créant
+une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `f2249dfb` | `ci.yml` sur `master`, run 42987909552, réussi ; pgTAP lancé à la main, run 42988150709, réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | `get_combo_sales_v4` et `get_sales_by_table_v3` seules dans leurs familles (md5 sans retour chariot `ace5fbb2…` et `22e9f6bf…`) ; vues et garde lues par les versions suivantes présentes | — |
+| Backend production | Applications additives `combo_sales_filters_additive` et `sales_by_table_filters_additive`, avant la publication : `get_combo_sales_v5` et `get_sales_by_table_v4` créées, corps égaux au dev (md5 `c4234732…`, `56af9681…`), mêmes droits, `anon` sans EXECUTE | Texte des fichiers `20261111000007` et `20261111000008` **sans leur `DROP`** |
+| Backend production, lecture | Sous l'identité d'un compte autorisé aux rapports de vente, dans une transaction annulée, sur 7 jours : sans filtre, anciennes et nouvelles versions rendent le même résultat ; combos 7 018 000, dont 5 725 000 sous le filtre `dine_in` ; ventes par table 39 047 000, dont 8 677 000 sous le filtre `cash` | Un seul intervalle ; aucun appel depuis le back-office |
+| BO production | Workflow « Publish Backoffice Production », run 42993676805, réussi, approuvé par Mamat ; déploiement de production sur `f2249dfb` | — |
+| BO production, bundle servi | `backoffice.the-breakery.com` sert `index-DfI1FoNk.js`. Dans les 322 fichiers servis : les deux nouvelles versions appelées, aucune des deux anciennes ; référence du projet de production présente, référence du projet de dev absente | Fichiers téléchargés et relus, pas un parcours connecté |
+| Backend production | Retrait ciblé `combo_table_filters_drop_replaced`, après la publication : les deux anciennes versions retirées ; seules `get_combo_sales_v5` et `get_sales_by_table_v4` restent, `authenticated` avec EXECUTE, `anon` sans | Un onglet du back-office ouvert avant la publication appelle encore les anciennes : il faut le recharger |
+
+**Non fait** : aucun parcours dans le back-office publié avec un compte
+connecté. Combo Sales et Sales by Table restent à ouvrir une fois en
+production.
+
+**Retour** : les corps retirés ne sont pas sauvegardés hors Git. Ils se
+retrouvent dans `20261105000011` (ventes de combos) et `20261105000026` (ventes
+par table). Un retour demande de les recréer **puis** de republier le
+back-office précédent (`d2744da4`).
+
+## Complément du 9 novembre 2026 — rattrapage `S1-02` et sauvegarde
+
+Relevé du 9 novembre 2026, UTC+8. Observé directement, sauf mention contraire.
+Aucun essai créant une écriture, une commande ou un paiement n'a été effectué.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| BO production | Vercel READY sur `e204d57a` (PR #662) ; à ce SHA, la source appelle les 4 RPC du rattrapage | Source relue, pas le bundle compilé |
+| Sauvegarde | Tâche « Breakery V3 Daily Backup » lancée à la main sur `Pos` à 16 h 42, résultat 0 ; archive de production de 59 830 263 octets et son reçu, listage vérifié | Déchiffrement de cette archive non refait ; déclenchement de 03 h 30 non constaté |
+| Backend | Migration `prod_catchup_cash_import_bank_clearing` appliquée à 17 h 10 ; texte reçu identique au fichier (md5) | — |
+| Backend | 5 fonctions et table `cash_journal_import_rows` : corps, droits et politiques égaux au dev ; `post_v4` et `clearing_v2` retirées | — |
+| API | Les 4 RPC répondent `42501` à un appel anonyme ; `clearing_v2` répond `PGRST202` | Aucun appel authentifié |
+| BO, compte connecté | Rapprochement bancaire (« No bank statements ») et trésorerie de caisse, panneau d'import compris, ouverts sans erreur console | Les 4 RPC ne partent qu'avec un relevé ou un import : non exercées, faute d'écriture autorisée |
+
+Retour préparé hors Git, sous `.release-manifests/s1-02-prod-catchup-20261109/` :
+corps exacts de production des deux versions retirées, empreintes vérifiées.
+
+### Même jour — copies du ticket serveur (`S1-22`, PR #670)
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend | Migration `kot_copies_waiter` appliquée en production (version enregistrée `20261109232338`) après fusion de la PR #670 ; texte reçu identique au fichier de `master` (md5) | Additive : rien de retiré, pas de geste de retour nécessaire |
+| Backend | Colonne `business_config.kot_copies_waiter` NOT NULL DEFAULT 1, CHECK 0..5, valeur 1 ; fonction `set_kot_copies_waiter_v1` : corps et droits égaux au dev, `anon` sans EXECUTE ; copies par poste inchangées (1/1/1) | — |
+| API | `set_kot_copies_waiter_v1` répond `42501` à un appel anonyme | Aucun appel authentifié |
+| BO production, avant publication | `e204d57a` (PR #662) : les fusions du jour (#668, #669, #670) n'étaient pas publiées ; la publication est un geste distinct de la fusion | — |
+
+### 10 novembre 2026 — publications et installations
+
+Relevé du 10 novembre 2026 peu après minuit, UTC+8, candidat `a35fd5f5`
+(fusions #668, #669, #670). Preuves de ce SHA : CI `ci.yml` run 42637243405 et
+pgTAP lancé à la main run 42644979774, tous deux réussis.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| BO production | Workflow « Publish Backoffice Production » run 42651670138 réussi, approuvé par Mamat ; `backoffice.the-breakery.com` aliasé sur le déploiement de `a35fd5f5` | — |
+| BO, compte connecté | Settings → Printing affiche la section « Waiter ticket » sans erreur console ; Mamat y a réglé **2** copies à 00 h 16 : ligne d'audit `setting.update` (1 → 2, acteur `mamat`) | Premier appel authentifié réel de `set_kot_copies_waiter_v1` |
+| Tablette Samsung SM-X205 | APK 1.21 / code 22 installée par ADB (`install -r`), signature identique (`100d48b8…`), APK relue sur l'appareil identique à l'APK fabriquée (SHA-256 `c413df1a…`) ; avant : 1.20 / code 21 du 2026-11-08 | Aucune impression ni connexion constatées après mise à jour |
+| CS30 | Même APK 1.21 / code 22, même vérification ; date de première installation conservée (2026-10-08) ; avant : APK identique à celle de la Samsung | Idem |
+| Bundle des APK | Cible production seule (`yjhhhmjgsmyzyymvixot`), aucune référence dev ni V2 ; aucun texte d'interface de la 1.20 absent de la 1.21 | Comparaison de textes, pas de recette fonctionnelle |
+| Paquet PC boutique | Workflow « Package Shop Production » run 42651675723 réussi ; `shop-release.zip`, SHA-256 `1cc5d1ad…` conforme au fichier `.sha256` ; `release.json` : SHA `a35fd5f5`, projet production ; rendu de l'addition et copies du ticket serveur présents | Voir la ligne d'installation ci-dessous |
+| Installation PC boutique `Pos` | Vers 00 h 34, depuis le terminal MeshCentral, par la procédure adaptée « imported-bridge-launcher » (scripts de la livraison du 2026-11-06, seuls SHA attendu et empreinte d'archive changés) : étape *stage* (6 901 fichiers vérifiés), bascule du lanceur, redémarrage de la tâche « Breakery V3 Production », vérification sur les deux origines ; marqueur `CASHIER_RELEASE_VERIFIED_a35fd5f5`, code de sortie 0. Release précédente `ce1d4a39` conservée ; lanceur sauvegardé (`start.cjs.rollback-a35fd5f5…`) | — |
+| Service boutique | `https://pos.the-breakery.com:3001/health` : `ok`, `release_sha` `a35fd5f5` ; page servie : `index-QRgUTh-Z.js`, identique au paquet ; fenêtre du pont : « POS SPA: …\releases\a35fd5f5… », synchronisation de 5 appareils | Rechargement de la page POS de la caisse non confirmé ; aucune impression ni vente constatée |
+| Contrôle du service, 01 h 20 | Depuis le terminal MeshCentral du nœud `Pos`, en lecture seule : `/health` sur `https://pos.the-breakery.com/` **et** `:3001` rend `ok`, `release_sha` `a35fd5f5` ; page servie sur 443 : `index-QRgUTh-Z.js`. Depuis le LAN : les 92 fichiers POS servis sur 3001 sont identiques au paquet ; 443 répond 403 hors du PC lui-même | Écran de la caisse non regardé : rechargement de la page toujours non confirmé |
+
+Le paquet ne s'extrait pas avec `Expand-Archive` (chemins trop longs dans
+`node_modules`) : `tar -xf` l'extrait correctement. L'installeur générique du
+paquet (`install-shop.ps1`) ne reconnaît pas le lanceur actuel, dont les chemins
+sont échappés à la manière de JavaScript : la procédure adaptée a donc servi.
+L'installeur du dépôt est corrigé par la PR #673, fusionnée le 2026-11-10
+(`c173f9fb`) ; voir l'[installation boutique](shop-install.md). Il n'a pas
+encore servi en boutique. Il ne voyage que dans un paquet construit depuis un
+SHA qui contient cette fusion, et il exige une configuration version 2 : le
+paquet `a35fd5f5` porte encore l'ancien installeur.
+
+Numéro de version des APK : les fabrications antérieures portaient un numéro
+jamais commité (1.20 / code 21 sur les appareils, 1.13 / code 14 au dépôt). La
+1.21 / code 22 est commitée (branche `chore/tablet-apk-1.21`).
+
+APK et paquet conservés hors Git, sous `.release-manifests/tablet-apk-1.21-20261109/`
+(nouvelle APK et ancienne 1.20 relue sur la Samsung) et
+`.release-manifests/shop-release-a35fd5f5-20261110/`. Un retour à la 1.20 sur
+les tablettes exigerait une désinstallation, donc la perte de leurs données :
+l'ancienne APK est une trace, pas un retour prêt à l'emploi.
+
 ## Complément du 29 octobre 2026 — mise en service V3
 
 Statut documentaire : contenu validé par Mamat le 29 octobre 2026.

@@ -43,7 +43,7 @@ Le pilier 3 ci-dessous donne le chemin *actuel* ET le chemin *cible* — choisir
 
 Même réflexe pour les **composants** : avant de spécifier un composant neuf, vérifier l'existant (`grep "export" packages/ui/src/index.ts` — ex. `QuantityStepper`, `Numpad`, `OrderTypeTabs`, `Currency`, et le primitif **`Select`** existent déjà) et le skill `breakery-ui-kit`. On améliore/étend l'existant avant de doublonner.
 
-Croiser aussi l'**intention métier** — `docs/objectifs/POS.md` et les ADR applicables — et l'état de l'art des POS de référence (Square, Toast, Storyous, Lightspeed) via WebSearch si la décision est structurante.
+Croiser aussi l'**intention métier** — `docs/SPECS_OFFICIELS_ERP_POS.md` §6 et §7, et les ADR applicables — et l'état de l'art des POS de référence (Square, Toast, Storyous, Lightspeed) via WebSearch si la décision est structurante.
 
 ---
 

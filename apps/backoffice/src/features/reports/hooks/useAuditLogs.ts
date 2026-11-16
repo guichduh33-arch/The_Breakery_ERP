@@ -15,6 +15,17 @@ export interface AuditLogRow {
   payload:      unknown;
   source:       string;
   created_at:   string;
+  // Contexte résolu à la lecture par la RPC, vide quand la trace ne permet pas de le retrouver.
+  /** Rôle ACTUEL du compte : aucun rôle n'est stocké dans l'événement. */
+  actor_role?:   string | null;
+  order_id?:     string | null;
+  order_number?: string | null;
+  device_id?:    string | null;
+  device_label?: string | null;
+  /** Rang du geste dans la file locale du terminal. */
+  device_seq?:   number | null;
+  product_id?:   string | null;
+  product_name?: string | null;
 }
 
 export interface AuditLogFilters {
@@ -27,8 +38,86 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v3'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v4'] as const;
 const DEFAULT_PAGE_SIZE = 50;
+
+/** Taille de page maximale acceptée par la RPC. */
+export const AUDIT_EXPORT_PAGE_SIZE = 200;
+// Garde-fou : 500 pages de 200 lignes. Au-delà, l'export s'arrête et le dit.
+const AUDIT_EXPORT_MAX_PAGES = 500;
+
+type AuditPageFilters = Omit<AuditLogFilters, 'pageSize'>;
+
+/** Une page du journal. Le curseur est « horodatage|identifiant » de la dernière ligne lue. */
+export async function fetchAuditLogPage(
+  filters: AuditPageFilters, cursor: string | null, pageSize: number,
+): Promise<AuditLogRow[]> {
+  const args: {
+    p_cursor?:       string;
+    p_limit?:        number;
+    p_actor_id?:     string;
+    p_action?:       string;
+    p_entity_type?:  string;
+    p_date_start?:   string;
+    p_date_end?:     string;
+  } = {
+    p_limit: pageSize,
+  };
+  if (cursor)             args.p_cursor      = cursor;
+  if (filters.actorId)    args.p_actor_id    = filters.actorId;
+  if (filters.action)     args.p_action      = filters.action;
+  if (filters.entityType) args.p_entity_type = filters.entityType;
+  if (filters.dateStart)  args.p_date_start  = filters.dateStart;
+  if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
+
+  const { data, error } = await supabase.rpc('get_activity_logs_v4', args);
+  if (error) throw error;
+  // Les types générés déclarent ces colonnes non nulles ; la RPC les rend vides
+  // dès que la trace ne porte pas l'information.
+  return (data ?? []).map((r) => ({
+    id:           r.id,
+    actor_id:     r.actor_id,
+    actor_name:   r.actor_name,
+    action:       r.action,
+    entity_type:  r.entity_type,
+    entity_id:    r.entity_id,
+    metadata:     r.metadata,
+    payload:      r.payload,
+    source:       r.source,
+    created_at:   r.created_at,
+    actor_role:   r.actor_role ?? null,
+    order_id:     r.order_id ?? null,
+    order_number: r.order_number ?? null,
+    device_id:    r.device_id ?? null,
+    device_label: r.device_label ?? null,
+    device_seq:   r.device_seq ?? null,
+    product_id:   r.product_id ?? null,
+    product_name: r.product_name ?? null,
+  }));
+}
+
+function nextCursor(page: AuditLogRow[], pageSize: number): string | undefined {
+  if (page.length < pageSize) return undefined; // exhausted
+  const last = page[page.length - 1];
+  return last ? `${last.created_at}|${last.id}` : undefined;
+}
+
+/**
+ * Toutes les lignes de la période et des filtres, sans dépendre de ce que
+ * l'écran a déjà chargé. Un export partiel serait un journal troué.
+ */
+export async function fetchAllAuditLogs(filters: AuditPageFilters): Promise<AuditLogRow[]> {
+  const rows: AuditLogRow[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < AUDIT_EXPORT_MAX_PAGES; page += 1) {
+    const batch = await fetchAuditLogPage(filters, cursor, AUDIT_EXPORT_PAGE_SIZE);
+    rows.push(...batch);
+    const next = nextCursor(batch, AUDIT_EXPORT_PAGE_SIZE);
+    if (next === undefined) return rows;
+    cursor = next;
+  }
+  throw new Error('The period holds too many entries for one export. Narrow the dates or the filters.');
+}
 
 export function useAuditLogs(filters: AuditLogFilters = {}) {
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
@@ -39,45 +128,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
     // les pages déjà déroulées.
     staleTime: 5 * 60_000,
     initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const args: {
-        p_cursor?:       string;
-        p_limit?:        number;
-        p_actor_id?:     string;
-        p_action?:       string;
-        p_entity_type?:  string;
-        p_date_start?:   string;
-        p_date_end?:     string;
-      } = {
-        p_limit: pageSize,
-      };
-      const cursor = pageParam as string | null;
-      if (cursor)             args.p_cursor      = cursor;
-      if (filters.actorId)    args.p_actor_id    = filters.actorId;
-      if (filters.action)     args.p_action      = filters.action;
-      if (filters.entityType) args.p_entity_type = filters.entityType;
-      if (filters.dateStart)  args.p_date_start  = filters.dateStart;
-      if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
-
-      const { data, error } = await supabase.rpc('get_activity_logs_v3', args);
-      if (error) throw error;
-      return (data ?? []).map((r) => ({
-        id:          r.id,
-        actor_id:    r.actor_id,
-        actor_name:  r.actor_name,
-        action:      r.action,
-        entity_type: r.entity_type,
-        entity_id:   r.entity_id,
-        metadata:    r.metadata,
-        payload:     r.payload,
-        source:      r.source,
-        created_at:  r.created_at,
-      }));
-    },
-    getNextPageParam: (lastPage) => {
-      if (lastPage.length < pageSize) return undefined; // exhausted
-      const last = lastPage[lastPage.length - 1];
-      return last ? `${last.created_at}|${last.id}` : undefined;
-    },
+    queryFn: ({ pageParam }) => fetchAuditLogPage(filters, pageParam as string | null, pageSize),
+    getNextPageParam: (lastPage) => nextCursor(lastPage, pageSize),
   });
 }

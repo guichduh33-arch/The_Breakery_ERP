@@ -56,7 +56,10 @@ jobs:
     # `user_permission_override_rpcs`, en fin d'alphabet). La suite grossit à
     # chaque lot et la latence de la base dev varie : le gate vivait sur son
     # plafond. Arbitrage de Mamat, inclus dans #494.
-    timeout-minutes: 45
+    # 2026-11-14 — 60 min : le run complet mesuré 34 min sur #703, puis annulé
+    # à 45 min sur #706 sans une seule assertion rouge, au dernier fichier de
+    # l'alphabet. Même cause. Arbitrage de Mamat, inclus dans #706.
+    timeout-minutes: 60
     # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
     # nightly). Failures now block the PR. Revert to true only if the secret
     # becomes unavailable for fork PRs (rare on this private repo).

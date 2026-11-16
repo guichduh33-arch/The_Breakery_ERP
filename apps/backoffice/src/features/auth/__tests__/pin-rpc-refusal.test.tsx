@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSignZReport } from '../../cash-register/hooks/useSignZReport.js';
 import { useVoidZReport } from '../../cash-register/hooks/useVoidZReport.js';
 import { useCloseFiscalPeriod } from '../../accounting/hooks/useCloseFiscalPeriod.js';
+import { useReopenFiscalPeriod } from '../../accounting/hooks/useReopenFiscalPeriod.js';
 import { useCreateManualJournalEntry } from '../../accounting/hooks/useCreateManualJournalEntry.js';
 import { useCloseFiscalYear } from '../../accounting/hooks/useCloseFiscalYear.js';
 import { useApproveExpense } from '../../expenses/hooks/useExpenseActions.js';
@@ -27,6 +28,10 @@ const attempts: [string, () => () => Promise<unknown>][] = [
   ['period', function usePeriodAttempt() {
     const mutation = useCloseFiscalPeriod();
     return () => mutation.mutateAsync({ periodId: 'period', managerPin: '999999', lock: true });
+  }],
+  ['reopen', function useReopenAttempt() {
+    const mutation = useReopenFiscalPeriod();
+    return () => mutation.mutateAsync({ periodId: 'period', managerPin: '999999' });
   }],
   ['journal', function useJournalAttempt() {
     const mutation = useCreateManualJournalEntry();

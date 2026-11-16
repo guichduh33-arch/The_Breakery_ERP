@@ -18,7 +18,7 @@ UPDATE historical_fixture SET payload=payload||jsonb_build_object('stock_mode','
  'quantity',1,'unit','pcs','unit_price',100000,'line_total',100000,'reconciled',true)))));
 SET LOCAL ROLE authenticated;
 UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
-UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v5(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO dashboard_fixture(label,amount,status,held,legacy,voided_at,created_at) VALUES
  ('old-real',111,'pending_payment',false,false,NULL,now()-interval '90 days'),

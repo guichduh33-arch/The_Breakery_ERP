@@ -12,13 +12,16 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 
 ```
 Intention métier (read first — ce qui est VOULU ; le code dit ce qui EST)
-  docs/objectifs/POS.md
-  docs/objectifs/ORDERS.md
-  docs/objectifs/CASH_REGISTER.md
-  docs/objectifs/KDS.md
-  docs/objectifs/CUSTOMER_DISPLAY.md
-  docs/objectifs/TABLET_ORDERING.md
-  docs/objectifs/PROMOTIONS_AND_COMBOS.md
+  docs/SPECS_OFFICIELS_ERP_POS.md
+    §6  Caisse et vente (chemin de l'argent, statuts, sessions, hors ligne)
+    §7  Cuisine, tablette, écran client, impression
+    §13 Promotions et combos
+  Chaque énoncé porte sa marque : FAIT (vérifié en prod), RÈGLE (décidé),
+  À LIVRER (décidé, pas codé), ABANDONNÉ (ne pas rouvrir), OUVERT (ne pas
+  deviner). Un énoncé non marqué n'autorise rien.
+
+  Les anciennes fiches docs/objectifs/ sont ARCHIVÉES depuis le 2026-11-09 :
+  elles décrivaient au présent des features inexistantes. Ne pas les lire.
 
 Décisions (immuables, font loi — une proposition qui les contredit se signale, elle ne s'implémente pas)
   docs/adr/

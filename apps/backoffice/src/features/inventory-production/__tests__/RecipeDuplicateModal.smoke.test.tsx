@@ -45,7 +45,7 @@ vi.mock('@/lib/supabase.js', () => {
   return {
     supabase: {
       from: (t: string) => buildChain(t),
-      rpc: (fn: string, args: unknown) => fn === 'get_operational_products_v2'
+      rpc: (fn: string, args: unknown) => fn === 'get_operational_products_v3'
         ? Promise.resolve({ data: PRODUCT_ROWS.map((p) => ({ ...p, product_type: 'finished', is_active: true, deleted_at: null })), error: null })
         : rpcImpl(fn, args),
     },

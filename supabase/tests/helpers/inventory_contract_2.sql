@@ -61,11 +61,11 @@ SELECT ok(
   NOT has_function_privilege(
     'authenticated',
     (SELECT oid FROM pg_proc
-       WHERE proname = 'record_stock_movement_v1'
+       WHERE proname = 'record_stock_movement_v2'
          AND pronamespace = 'public'::regnamespace),
     'EXECUTE'
   ),
-  'T15: record_stock_movement_v1 EXECUTE is REVOKED from authenticated role'
+  'T15: record_stock_movement_v2 EXECUTE is REVOKED from authenticated role'
 );
 
 -- =========================================================================
@@ -82,7 +82,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v5(
+  $$ SELECT record_incoming_stock_v6(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        1.000,
        NULL, NULL, 'T16 cashier should fail'
@@ -108,7 +108,7 @@ END $$;
 -- T17 — record_incoming_stock_v4 with quantity = 0 -> quantity_must_be_positive
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v5(
+  $$ SELECT record_incoming_stock_v6(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        0,
        NULL, NULL, 'T17 zero qty'
@@ -140,7 +140,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v5(
+  SELECT record_incoming_stock_v6(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     5.000,
     NULL, NULL, 'T18 free-form receipt'
@@ -171,7 +171,7 @@ SELECT ok(current_setting('breakery.t18_pass')::boolean,
 -- T19 — record_incoming_stock_v4 with soft-deleted supplier -> P0002
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v5(
+  $$ SELECT record_incoming_stock_v6(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        3.000,
        '11111111-2222-3333-4444-777777777777'::uuid,
@@ -207,7 +207,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v5(
+  SELECT record_incoming_stock_v6(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -215,7 +215,7 @@ BEGIN
   SELECT current_stock INTO v_after_first FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v5(
+  SELECT record_incoming_stock_v6(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -238,7 +238,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t20$;
 SELECT ok(current_setting('breakery.t20_pass')::boolean,
-  'T20: record_incoming_stock_v5 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+  'T20: record_incoming_stock_v6 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
 
 -- =========================================================================
 -- T21 — ADR-024 déc. 1 : le total ne voyage plus sur les lignes. Il vient de
@@ -377,7 +377,7 @@ SELECT ok(current_setting('breakery.t24_pass')::boolean,
   'T24: get_stock_levels_v6 bucket low excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
--- T25 — adjust_stock_v4 p_new_qty=0 is allowed (sets stock exactly to 0).
+-- T25 — adjust_stock_v5 p_new_qty=0 is allowed (sets stock exactly to 0).
 -- Setup: PGTAP-PROD-1 to 5; adjust to 0; expect movement quantity = -5.
 -- =========================================================================
 DO $t25$
@@ -409,4 +409,4 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t25$;
 SELECT ok(current_setting('breakery.t25_pass')::boolean,
-  'T25: adjust_stock_v4(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');
+  'T25: adjust_stock_v5(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');

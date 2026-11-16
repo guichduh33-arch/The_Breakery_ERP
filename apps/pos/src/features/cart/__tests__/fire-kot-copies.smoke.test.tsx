@@ -5,7 +5,8 @@
 //   • kitchen = 2 → deux entrées 'prep' kitchen dans le buffer d'impression ;
 //   • barista = 0 → station sautée AVANT la résolution imprimante (aucune
 //     entrée, aucun toast d'erreur — le KDS écran a déjà reçu via la DB) ;
-//   • le ticket waiter consolidé n'est PAS couvert par le réglage (inchangé).
+//   • le ticket waiter consolidé a son propre réglage depuis S1-22 : voir
+//     fire-waiter-copies.smoke.test.tsx (ici, aucune imprimante waiter).
 // Structure calquée sur fire-to-stations.smoke.test.tsx.
 
 /// <reference types="@testing-library/jest-dom" />

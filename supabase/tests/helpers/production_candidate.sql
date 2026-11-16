@@ -10,12 +10,12 @@ BEGIN
     RAISE EXCEPTION 'production_candidate_requires_transaction';
   END IF;
   FOR f IN SELECT * FROM (VALUES
-    ('public.record_production_v11(uuid,numeric,uuid,text,numeric,text,uuid,boolean,numeric,numeric,text,boolean,public.waste_reason)',
-     '4727ad6df3e365fc0495c91ef57bc867'),
-    ('public.record_batch_production_v13(jsonb,jsonb)',
-     '359b9e85ba7935fa7d8c0afc5855e1e8'),
-    ('public.record_kitchen_production_v6(jsonb)',
-     '117bc785ecec71cca55eb621da4e99d7')
+    ('public.record_production_v12(uuid,numeric,uuid,text,numeric,text,uuid,boolean,numeric,numeric,text,boolean,public.waste_reason)',
+     '3de45b16bcc5796f46f6e2a619279961'),
+    ('public.record_batch_production_v14(jsonb,jsonb)',
+     '85a7449079c5644d85f6ee7b8191315b'),
+    ('public.record_kitchen_production_v7(jsonb)',
+     'c045019db83326f41aae94336690c6c1')
   ) AS functions(signature, expected_md5) LOOP
     candidate := to_regprocedure(f.signature);
     IF candidate IS NULL THEN

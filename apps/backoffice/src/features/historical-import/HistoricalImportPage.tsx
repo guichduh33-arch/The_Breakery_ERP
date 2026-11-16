@@ -103,7 +103,7 @@ export default function HistoricalImportPage() {
           },
           apply: async (batch, previewHash) => {
             assertOperator();
-            const { data, error: rpcError } = await supabase.rpc('apply_historical_import_v4', {
+            const { data, error: rpcError } = await supabase.rpc('apply_historical_import_v5', {
               p_payload: batch.payload, p_preview_hash: previewHash, p_client_key: batch.client_key,
             });
             if (rpcError) throw new Error(rpcError.message);

@@ -92,6 +92,18 @@ describe('ReportsIndexPage — search', () => {
     expect(tileCount()).toBeLessThan(5);
   });
 
+  it('finds Production vs Sales in Operations, next to the production reports', () => {
+    renderHub();
+
+    search('production vs');
+
+    const tile = screen.getByRole('link', { name: /Production vs Sales/ });
+    // Sans `<Route>` parent, le lien relatif se résout à la racine du routeur.
+    expect(tile.getAttribute('href')).toMatch(/\/production-vs-sales$/);
+    expect(within(familySection('Operations')).getByRole('link', { name: /Production vs Sales/ }))
+      .toBe(tile);
+  });
+
   it('ignores case and accents', () => {
     renderHub();
 

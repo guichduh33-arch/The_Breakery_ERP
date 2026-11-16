@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, KeyRound, Trash2, UserCog } from 'lucide-react';
+import { ChevronLeft, KeyRound, Trash2, UserCheck, UserCog, UserX } from 'lucide-react';
 import { Button, EmptyState } from '@/components/BackofficeUi.js';
 import { evaluatePinStrength, formatDate, formatDateTime, type PinWeakReason } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -12,6 +12,7 @@ import { useRolesList } from '@/features/users/hooks/useRolesList.js';
 import { useResetUserPin } from '@/features/users/hooks/useResetUserPin.js';
 import { RoleChangeDialog } from '@/features/users/components/RoleChangeDialog.js';
 import { DeleteUserDialog } from '@/features/users/components/DeleteUserDialog.js';
+import { SetUserActiveDialog } from '@/features/users/components/SetUserActiveDialog.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { KitchenAccessPanel } from '@/features/kitchen/KitchenAccessPanel.js';
@@ -31,6 +32,7 @@ export default function UserDetailPage() {
 
   const [showRole,      setShowRole]      = useState<boolean>(false);
   const [showDelete,    setShowDelete]    = useState<boolean>(false);
+  const [showActive,    setShowActive]    = useState<boolean>(false);
   const [pinDraft,      setPinDraft]      = useState<string>('');
   const [currentPin, setCurrentPin] = useState('');
   const [pinError,      setPinError]      = useState<string | null>(null);
@@ -120,6 +122,14 @@ export default function UserDetailPage() {
             <Button variant="ghost" onClick={() => { setShowRole(true); }}>
               <UserCog className="h-4 w-4 mr-1.5" aria-hidden /> Change role
             </Button>
+            {/* Le serveur refuse l'auto-désactivation : ne pas l'offrir. */}
+            {(!u.is_active || !isSelf) && (
+              <Button variant="ghost" onClick={() => { setShowActive(true); }} data-testid="toggle-active-button">
+                {u.is_active
+                  ? <><UserX className="h-4 w-4 mr-1.5" aria-hidden /> Deactivate</>
+                  : <><UserCheck className="h-4 w-4 mr-1.5" aria-hidden /> Reactivate</>}
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={() => { setShowDelete(true); }}
@@ -245,6 +255,15 @@ export default function UserDetailPage() {
           fullName={u.full_name}
           roles={(roles.data ?? []).filter((r) => isSuperAdmin || r.code !== 'SUPER_ADMIN').map((r) => ({ code: r.code, name: r.name }))}
           onClose={() => { setShowRole(false); }}
+        />
+      )}
+
+      {showActive && (
+        <SetUserActiveDialog
+          userId={u.id}
+          fullName={u.full_name}
+          activate={!u.is_active}
+          onClose={() => { setShowActive(false); }}
         />
       )}
 

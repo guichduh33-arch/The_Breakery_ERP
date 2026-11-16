@@ -67,8 +67,9 @@ attente. Ressaisir le PIN si demandé, puis charger le catalogue en ligne avant
 le test hors ligne. La restauration de session après rechargement sans cloud
 reste bloquante au relevé du 19 septembre 2026.
 
-La livraison et les réserves de l'APK 1.2 sont consignées dans le
-[rapport du 19 septembre 2026](../audits/2026-09-19-audit-waiter-caisse.md).
+La livraison et les réserves de l'APK 1.2 ont été consignées dans le rapport
+d'audit du 19 septembre 2026, **archivé le 2026-11-09** : c'est un constat daté,
+pas l'état courant. Le recontrôler avant toute action qui en dépend.
 
 ## Les deux invariants à ne pas casser
 

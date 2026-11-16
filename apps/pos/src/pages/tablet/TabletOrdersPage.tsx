@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { TabletOrderCard } from '@breakery/ui';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { TabletOrderConfirmation } from '@/features/tablet/components/TabletOrderConfirmation';
+import { TabletBillAction } from '@/features/tablet/components/TabletBillAction';
+import { isOpenForBill } from '@/features/tablet/hooks/usePrintTabletBill';
 import type { TabletOrderCardOrder } from '@breakery/ui';
 
 interface TabletOrdersLocationState {
@@ -54,6 +56,10 @@ export default function TabletOrdersPage(): JSX.Element {
                   que seul le flux cancel-item du POS sait faire. Ne pas passer
                   `onCancel` retire le bouton (la carte le conditionne dessus). */}
               <TabletOrderCard order={order as unknown as TabletOrderCardOrder} now={now} />
+              {/* S1-21 — addition chiffrée avant paiement, commandes ouvertes seulement. */}
+              {isOpenForBill(order.status) && (
+                <TabletBillAction orderId={order.id} orderNumber={order.order_number} />
+              )}
             </div>
           );
         })}

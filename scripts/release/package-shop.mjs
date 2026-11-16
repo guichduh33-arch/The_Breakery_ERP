@@ -47,7 +47,7 @@ export async function packageShop(root, output, proof, validationOnly = false) {
   }
   writeFileSync(join(bridge, 'package.json'), JSON.stringify({ private: true, type: 'module', engines: { node: '22.x' } }));
   writeFileSync(join(bridge, 'dist/release-identity.json'), JSON.stringify({ sha: proof.sha, projectRef: PRODUCTION_REF }));
-  for (const name of ['verify-shop.mjs', 'install-shop.ps1', 'Mettre-a-jour.cmd', 'shop-update.example.json']) cpSync(join(root, 'scripts/release', name), join(output, name));
+  for (const name of ['verify-shop.mjs', 'install-shop.mjs', 'install-shop.ps1', 'Mettre-a-jour.cmd', 'shop-update.example.json']) cpSync(join(root, 'scripts/release', name), join(output, name));
   if (files(output).some((path) => /\.(node|dll|exe)$/i.test(path))) throw new Error('Unreviewed native runtime dependency');
   // Cette garde refuse clés privées, env et tokens service-role dans TOUS les fichiers du paquet.
   const entries = inventory(dirname(output), output);

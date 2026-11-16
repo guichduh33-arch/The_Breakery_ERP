@@ -57,9 +57,10 @@ une nouvelle approbation pour une etape technique ou un commit documentaire.
    appelants pour les contrats. Les migrations prouvent une histoire locale,
    pas a elles seules l'etat live ou un deploiement.
 4. Lire le corps des ADR cites lorsqu'une decision concerne le passage. Chercher
-   dans les zones vivantes necessaires (`docs/adr`, `docs/objectifs`,
-   `docs/product`, `docs/runbooks`, code, scripts, workflows et sources agents).
-   Ne jamais explorer la quarantaine ou son tag.
+   dans les zones vivantes necessaires (`docs/adr`,
+   `docs/SPECS_OFFICIELS_ERP_POS.md`, `docs/audit`, `docs/runbooks`, code,
+   scripts, workflows et sources agents). Ne jamais explorer la quarantaine ni
+   son tag, ni `docs/_archive_obsolete` (archivee le 2026-11-09).
 5. Si la preuve exige la DB live, suivre les skills Supabase et metier pertinents
    pour une verification en lecture seule. Aucun test avec mutations, migration
    ou deploiement n'est autorise par ce skill. Si une preuve manque, indiquer

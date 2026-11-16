@@ -1,13 +1,21 @@
 // apps/backoffice/src/features/reports/hooks/useComboSales.ts
 //
-// Query hook pour `get_combo_sales_v4` — les ventes de combos. Une ligne
+// Query hook pour la famille `get_combo_sales` — les ventes de combos. Une ligne
 // combo = combo_components non NULL (pricing serveur ADR-017) ; le prix
 // affiché est le prix effectif TOTAL payé (arbitrage — pas de ventilation
 // base/surcharges). L'uplift (panier avec vs sans combo) et la part du CA se
 // recalculent dans la page depuis les chiffres servis.
+// S3-22 (2026-11-11) — `p_filters` restreint la portée des commandes (type,
+// moyen de paiement, table), mêmes prédicats que `get_sales_by_product`, sur
+// tous les chiffres servis et sur la fenêtre précédente. Sans filtre,
+// l'argument est omis.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+import {
+  salesFiltersKey, toRpcFilters, type SalesOrderFilters,
+} from '../utils/salesFilters.js';
 
 export interface ComboRow {
   product_id: string;
@@ -50,8 +58,9 @@ export interface ComboSalesData {
 }
 
 export interface UseComboSalesParams {
-  start: string;
-  end:   string;
+  start:    string;
+  end:      string;
+  filters?: SalesOrderFilters;
 }
 
 function toNum(v: unknown): number {
@@ -76,16 +85,21 @@ function toPeriod(v: unknown): { start: string; end: string } {
 }
 
 export function useComboSales(params: UseComboSalesParams) {
-  const { start, end } = params;
+  const { start, end, filters } = params;
   return useQuery<ComboSalesData, Error>({
-    queryKey: ['combo-sales', start, end],
+    queryKey: ['combo-sales', start, end, ...salesFiltersKey(filters)],
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_combo_sales_v4', {
+      // `exactOptionalPropertyTypes` : on omet l'arg optionnel plutôt que de
+      // poser `undefined`.
+      const args: { p_start_date: string; p_end_date: string; p_filters?: Json } = {
         p_start_date: start,
         p_end_date:   end,
-      });
+      };
+      const rpcFilters = toRpcFilters(filters);
+      if (rpcFilters !== null) args.p_filters = rpcFilters;
+      const { data, error } = await supabase.rpc('get_combo_sales_v5', args);
       if (error) throw error as Error;
 
       const r       = (data ?? {}) as Record<string, unknown>;

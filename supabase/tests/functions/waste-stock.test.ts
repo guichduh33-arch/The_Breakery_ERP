@@ -63,7 +63,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v2 RPC — 
     expect(error?.message ?? '').toMatch(/insufficient_stock/);
   });
 
-  it('manager: reason missing/short → reason_required (from record_stock_movement_v1)', async () => {
+  it('manager: reason missing/short → reason_required (from record_stock_movement_v2)', async () => {
     const sb = jwtClient(managerToken);
     const { error } = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
