@@ -14,10 +14,16 @@
 --    en attente (is_held) reste permise : elle est conçue pour passer d'un
 --    shift à l'autre (reopen_held_order). Corps repris de close_shift_v13 live
 --    (pg_get_functiondef, identique en dev et en prod au 2026-11-16).
--- 3. close_shift_v13 et close_shift_v10 deviennent des enveloppes vers v14,
---    comme v10 l'était déjà vers v13 (20261102000057_legacy_pos_transition) :
---    un paquet caisse pas encore reconstruit garde sa clôture, et la garde
---    s'applique aussi à lui.
+-- 3. Exception de transition, sur le modèle de 20261102000057_legacy_pos_transition :
+--    close_shift_v13 et close_shift_v10 ne sont PAS supprimées. Elles deviennent
+--    des enveloppes vers v14. La règle « DROP de l'ancienne version dans la même
+--    migration » est volontairement écartée ici : le paquet caisse se déploie
+--    séparément de la base (PC boutique), et un paquet pas encore reconstruit
+--    appelle v13. Un DROP lui retirerait la clôture de caisse ; l'enveloppe lui
+--    applique au contraire la nouvelle garde.
+--    Condition de retrait : la caisse de production sert un paquet construit
+--    depuis un commit contenant cette migration (appel close_shift_v14), vérifié
+--    sur le bundle chargé. Une migration suivante supprime alors v13 et v10.
 
 -- ── 1. Dashboard ─────────────────────────────────────────────────────────────
 
@@ -72,8 +78,10 @@ BEGIN
     INTO v_rows, v_total, v_count, v_late
     FROM open_orders oo;
 
-  -- Ardoises vivantes : même périmètre que la liste de la caisse
-  -- (list_pos_outstanding_v1), sans les B2B qui ont leur propre circuit.
+  -- Ardoises vivantes : mêmes filtres que la liste de la caisse
+  -- (list_pos_outstanding_v1 : hors B2B, reste dû > 0), plus l'exclusion des
+  -- annulées. Lecture par la vue de reporting, comme le plancher : un lecteur
+  -- non propriétaire ne compte que les jours de vente qu'il a le droit de voir.
   SELECT COUNT(*)::INT, COALESCE(SUM(o.total - COALESCE(p.paid, 0)), 0)
     INTO v_tab_count, v_tab_total
     FROM reporting_private.closed_pos_orders_v1 o
@@ -464,7 +472,7 @@ GRANT EXECUTE ON FUNCTION public.close_shift_v14(uuid,numeric,text,uuid,uuid,tex
 
 -- ── 3. Enveloppes de transition ──────────────────────────────────────────────
 -- Un paquet caisse antérieur appelle close_shift_v13 : il passe désormais par
--- la garde de v14. À retirer quand toutes les caisses servent le paquet v14.
+-- la garde de v14. Condition de retrait : voir l'en-tête (point 3).
 
 CREATE OR REPLACE FUNCTION public.close_shift_v13(p_session_id uuid, p_counted_cash numeric, p_notes text DEFAULT NULL::text, p_idempotency_key uuid DEFAULT NULL::uuid, p_approver_id uuid DEFAULT NULL::uuid, p_manager_pin text DEFAULT NULL::text, p_counted_qris numeric DEFAULT NULL::numeric, p_counted_card numeric DEFAULT NULL::numeric, p_denominations jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb
@@ -489,4 +497,4 @@ GRANT EXECUTE ON FUNCTION public.close_shift_v13(uuid,numeric,text,uuid,uuid,tex
 REVOKE ALL ON FUNCTION public.close_shift_v10(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.close_shift_v10(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb) TO authenticated, service_role;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
