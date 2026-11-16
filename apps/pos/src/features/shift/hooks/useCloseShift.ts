@@ -91,12 +91,18 @@ export function useCloseShift() {
       if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
       if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
       if (input.denominations !== undefined)    args.p_denominations = input.denominations;
-      const { data, error } = await supabase.rpc('close_shift_v13', args);
+      const { data, error } = await supabase.rpc('close_shift_v14', args);
       // Un refus retourné permet au serveur de commiter le compteur PIN.
       if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
         throw new Error('Invalid manager PIN');
       }
       if (error) {
+        // close_shift_v14 : une commande ouverte et impayée bloque la clôture.
+        // Le DETAIL porte les numéros : le caissier sait lesquelles traiter.
+        if (error.message.includes('unpaid_orders_open')) {
+          const orders = typeof error.details === 'string' && error.details !== '' ? `: ${error.details}` : '';
+          throw new Error(`Unpaid orders are still open${orders}. Pay them, put them on a tab, hold or void them before closing the shift.`);
+        }
         // S60 (12 D1.4): the above-threshold variance note is enforced
         // server-side (ERRCODE P0001 variance_note_required). The UI
         // already blocks this locally (CloseShiftModal.noteRequired), but a

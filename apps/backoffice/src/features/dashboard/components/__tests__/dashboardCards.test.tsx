@@ -31,8 +31,20 @@ describe('OpenOrdersCard', () => {
     open_count: 3,
     open_total: 402_000,
     over_45_count: 1,
+    outstanding_count: 0,
+    outstanding_total: 0,
     generated_at: '2026-08-06T09:42:00Z',
   };
+
+  it('counts unpaid tabs apart from the floor, and stays silent without any', () => {
+    const { unmount } = wrap(<OpenOrdersCard panel={panel} isLoading={false} isRestricted={false} error={null} />);
+    expect(screen.queryByTestId('open-orders-tabs')).not.toBeInTheDocument();
+    unmount();
+    wrap(<OpenOrdersCard panel={{ ...panel, outstanding_count: 31, outstanding_total: 4_291_000 }} isLoading={false} isRestricted={false} error={null} />);
+    expect(screen.getByTestId('open-orders-tabs')).toHaveTextContent(/31 unpaid tabs/i);
+    // Le plancher garde son propre compte : les ardoises ne s'y ajoutent pas.
+    expect(screen.getByTestId('card-open-orders')).toHaveTextContent(/3 open/i);
+  });
 
   it('escalates the age colour at 30 and 45 minutes', () => {
     wrap(<OpenOrdersCard panel={panel} isLoading={false} isRestricted={false} error={null} />);
