@@ -4,6 +4,7 @@
 -- order, exception-safety (l'écriture métier survit à un enqueue cassé).
 -- Run via API-from-file (BEGIN..ROLLBACK envelope; temp-table capture pattern).
 BEGIN;
+\ir helpers/payment_invoice.sql
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -70,6 +71,10 @@ DO $$ DECLARE v_eid UUID; v_row notification_outbox%ROWTYPE; BEGIN
     RAISE WARNING 't3 skipped: no expense row';
     INSERT INTO _r VALUES ('t3_expense', true);
   ELSE
+    UPDATE expenses
+       SET receipt_url = pg_temp.payment_invoice_fixture('expense', v_eid)
+     WHERE id = v_eid
+       AND NOT _payment_invoice_valid_v1('expense-receipts', receipt_url, 'expenses/' || id || '/');
     UPDATE expenses SET status = 'submitted' WHERE id = v_eid;
     UPDATE expenses SET status = 'approved'  WHERE id = v_eid;
     SELECT * INTO v_row FROM notification_outbox

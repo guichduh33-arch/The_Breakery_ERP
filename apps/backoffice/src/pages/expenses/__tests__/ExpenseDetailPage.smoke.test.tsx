@@ -2,7 +2,7 @@
 //
 // Session 14 / Phase 5.A — smoke for the rebuilt expense detail page.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -43,6 +43,7 @@ const EXPENSE: ExpenseRow = {
   updated_at:       '2026-04-17T00:00:00Z',
   deleted_at:       null,
   is_historical_import:             false,
+  invoice_exempt: false,
   auto_approved:                    false,
   current_approval_step:            0,
   required_approval_steps_snapshot: null,
@@ -78,6 +79,7 @@ vi.mock('@/features/expenses/components/PayDialog.js',     () => ({ PayDialog:  
 let currentPerms = new Set<string>(['expenses.read', 'expenses.approve', 'expenses.pay']);
 vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth}));
 beforeEach(() => {installFinancialBrowser(); resetFinancialSession(); financialTestAuth.setState({hasPermission: p => currentPerms.has(p)});});
+afterEach(() => { Object.assign(EXPENSE, { status: 'submitted', payment_method: 'cash', receipt_url: null, invoice_exempt: false, is_historical_import: false, created_by: null }); });
 
 // Session 59 / Task 6b — stand-in for NewExpensePage that just echoes the
 // navigation state, so the "Duplicate" test can assert on the seed without
@@ -105,6 +107,31 @@ function renderPage(): ReturnType<typeof render> {
 }
 
 describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
+  it('blocks validation of a cash expense until its invoice is confirmed', () => {
+    currentPerms = new Set(['expenses.read', 'expenses.approve']); renderPage();
+    expect(screen.getByRole('button', { name: /^Approve$/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Reject$/ })).toBeEnabled();
+  });
+  it('blocks cash submission because it can approve automatically', () => {
+    Object.assign(EXPENSE, { status: 'draft', created_by: 'profile-a' });
+    currentPerms = new Set(['expenses.read', 'expenses.create']); renderPage();
+    expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
+  });
+  it('allows validation with a JPEG invoice and keeps manual old transactions subject to the rule', () => {
+    EXPENSE.receipt_url = 'expenses/e-1/invoice.jpg';
+    currentPerms = new Set(['expenses.read', 'expenses.approve']); renderPage();
+    expect(screen.getByRole('button', { name: /^Approve$/ })).toBeEnabled();
+  });
+  it('allows the server-proven historical exemption without a file', () => {
+    Object.assign(EXPENSE, { invoice_exempt: true, is_historical_import: true });
+    currentPerms = new Set(['expenses.read', 'expenses.approve']); renderPage();
+    expect(screen.getByRole('button', { name: /^Approve$/ })).toBeEnabled();
+  });
+  it('permits noncash approval but blocks its payment without a file', () => {
+    EXPENSE.payment_method = 'transfer'; currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
+    const first = renderPage(); expect(screen.getByRole('button', { name: /^Approve$/ })).toBeEnabled(); first.unmount();
+    EXPENSE.status = 'approved'; renderPage(); expect(screen.getByRole('button', { name: 'Mark as paid' })).toBeDisabled();
+  });
   it('renders header, financial summary, and details cards', () => {
     currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
     renderPage();

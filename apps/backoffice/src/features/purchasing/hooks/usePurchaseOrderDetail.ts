@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { Database } from '@breakery/supabase';
 
-export type PurchaseOrderRow      = Database['public']['Tables']['purchase_orders']['Row'];
+export type PurchaseOrderRow      = Database['public']['Tables']['purchase_orders']['Row'] & { invoice_path?: string | null; invoice_exempt?: boolean };
 export type PurchaseOrderItemRow  = Database['public']['Tables']['purchase_order_items']['Row'];
 export type GoodsReceiptNoteRow   = Database['public']['Tables']['goods_receipt_notes']['Row'];
 

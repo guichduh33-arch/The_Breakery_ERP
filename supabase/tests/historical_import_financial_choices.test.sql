@@ -1,4 +1,5 @@
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/pin_session.sql
 SELECT plan(5);
 \ir helpers/historical_import.sql

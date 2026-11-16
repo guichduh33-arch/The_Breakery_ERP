@@ -9,6 +9,19 @@ vi.mock('../hooks/useExpenseActions.js', () => ({
 beforeEach(() => mutate.mockReset().mockResolvedValue({ status: 'paid' }));
 
 describe('expense payment method at settlement', () => {
+ it('does not submit while the invoice requirement is unresolved', () => {
+  render(<PayDialog open expenseId="expense-1" recordedPaymentMethod="cash" invoiceBlocked onClose={vi.fn()} />);
+  expect(screen.getByRole('button', { name: 'Mark paid' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Mark paid' })); expect(mutate).not.toHaveBeenCalled();
+ });
+ it('rechecks the invoice guard when it changes while the payment dialog is open', async () => {
+  const onClose=vi.fn();
+  const view=render(<PayDialog open expenseId="expense-1" recordedPaymentMethod="cash" onClose={onClose} />);
+  view.rerender(<PayDialog open expenseId="expense-1" recordedPaymentMethod="cash" invoiceBlocked onClose={onClose} />);
+  fireEvent.click(screen.getByRole('button',{name:'Mark paid'}));expect(mutate).not.toHaveBeenCalled();
+  view.rerender(<PayDialog open expenseId="expense-1" recordedPaymentMethod="cash" invoiceBlocked={false} onClose={onClose} />);
+  fireEvent.click(screen.getByRole('button',{name:'Mark paid'}));await waitFor(()=>expect(mutate).toHaveBeenCalledWith({id:'expense-1'}));
+ });
  it.each([['cash','Cash'],['transfer','Bank transfer'],['card','Card']])(
   'keeps an approved %s expense on its recorded method', async (method,label) => {
    render(<PayDialog open expenseId="expense-1" recordedPaymentMethod={method} onClose={vi.fn()} />);
