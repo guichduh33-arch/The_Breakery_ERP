@@ -31,11 +31,11 @@ export function usePoInvoice(poId: string) {
       }
       const path = snapshot.kind === 'attach'
         ? 'purchase-orders/' + snapshot.poId + '/' + key + (snapshot.mime === 'image/jpeg' ? '.jpg' : '.pdf') : null;
-      const apply = () => supabase.rpc('set_po_invoice_v2' as never, {
+      const apply = () => supabase.rpc('set_po_invoice_v2', {
         p_po_id: snapshot.poId, p_idempotency_key: key,
         ...(path !== null ? { p_storage_path: path } : {}),
         ...(snapshot.expectedPath !== null ? { p_expected_path: snapshot.expectedPath } : {}),
-      } as never);
+      });
       let response = await apply(); assertSession();
       if (snapshot.kind === 'attach' && response.error?.code === 'P0002' && response.error.message === 'invoice_object_not_found') {
         if (!file) throw new FinancialAttemptError('Select the same invoice file to retry the upload. The purchase order is retained.');

@@ -9,7 +9,8 @@ import { ReceiptUploader } from './ReceiptUploader.js';
 import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 // L'EF renvoie `application/octet-stream` : le type d'affichage se déduit de
-// l'extension, déjà bornée par la policy d'insert du bucket (jpg/jpeg/png/webp/pdf).
+// l'extension, bornée par la policy d'insert du bucket (jpg/jpeg/pdf ; png/webp
+// restent lisibles pour les reçus déposés avant ADR-037).
 // Aucun type actif (SVG, HTML) ne peut donc sortir d'ici.
 const PREVIEW_TYPES: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
