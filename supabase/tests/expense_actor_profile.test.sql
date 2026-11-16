@@ -53,6 +53,7 @@
 BEGIN;
 \ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
+\ir helpers/pin_session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -206,6 +207,8 @@ VALUES (
 , pg_temp.expense_term_fixture('a7a70000-0000-0000-0000-0000000000c1', 'ACTORPROF T6 pay'));
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e4');
+-- pay_expense_v6 exige une session PIN active (ADR-037).
+SELECT pg_temp.authenticate_pin('a7a70000-0000-0000-0000-0000000000a2');
 SELECT pay_expense_v6('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
 
 SELECT is(

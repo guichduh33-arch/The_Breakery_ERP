@@ -2,6 +2,9 @@
 BEGIN;
 \ir helpers/invoice_forward.sql
 SELECT no_plan();
+-- Le contexte d'import exige un SUPER_ADMIN en session PIN active, dans cette transaction.
+UPDATE user_profiles SET role_code='SUPER_ADMIN' WHERE id=(SELECT profile_id FROM inf_actor WHERE kind='owner');
+DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM inf_actor WHERE kind='owner')); END $$;
 INSERT INTO inf_state(tag) SELECT unnest(ARRAY['run','document','imported','key']);
 INSERT INTO historical_import_runs(id,client_key,source_system,kind,batch_reference,payload_hash,preview_hash,actor_id,status,created_at)
  SELECT s.id,gen_random_uuid(),'INF-'||s.id,'purchases','Invoice forward import',repeat('a',64),repeat('b',64),

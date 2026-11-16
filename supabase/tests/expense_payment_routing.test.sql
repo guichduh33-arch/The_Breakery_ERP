@@ -14,6 +14,7 @@
 BEGIN;
 \ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
+\ir helpers/pin_session.sql
 SELECT plan(6);
 
 DO $$
@@ -26,8 +27,8 @@ BEGIN
      AND has_permission(up.auth_user_id,'expenses.thresholds.write')
    ORDER BY up.employee_code LIMIT 1;
   IF v_auth IS NULL THEN RAISE EXCEPTION 'Aucun profil porteur de expenses.pay + expenses.thresholds.write'; END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+  -- pay_expense_v6 exige une session PIN active (ADR-037).
+  PERFORM pg_temp.authenticate_pin(v_auth);
 
   SELECT id INTO v_cat FROM expense_categories LIMIT 1;
   SELECT c.id INTO v_free_cat FROM expense_categories c

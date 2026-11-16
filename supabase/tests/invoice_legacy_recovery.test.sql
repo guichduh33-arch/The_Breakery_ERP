@@ -4,10 +4,11 @@ BEGIN;
 SELECT no_plan();
 SELECT pg_temp.invoice_expense('legacy'),pg_temp.invoice_expense('local'),pg_temp.invoice_expense('other');
 INSERT INTO inf_state(tag) SELECT unnest(ARRAY['png','webp','local-key','pdf','bad','backdated','changed','zero','large','foreign']);
-UPDATE inf_state SET path='expenses/'||(SELECT id FROM inf_state WHERE tag=CASE
- WHEN inf_state.tag IN('local-key','pdf') THEN 'local' ELSE 'legacy' END)||'/'||id||CASE
- WHEN tag IN('png','backdated','changed','local-key') THEN '.png' WHEN tag='webp' THEN '.webp' ELSE '.pdf' END
- WHERE tag NOT IN('category','supplier','legacy','local','other');
+-- Alias explicite : sans lui, `inf_state.tag` du CASE désigne la ligne de la sous-requête.
+UPDATE inf_state s SET path='expenses/'||(SELECT e.id FROM inf_state e WHERE e.tag=CASE
+ WHEN s.tag IN('local-key','pdf') THEN 'local' ELSE 'legacy' END)||'/'||s.id||CASE
+ WHEN s.tag IN('png','backdated','changed','local-key') THEN '.png' WHEN s.tag='webp' THEN '.webp' ELSE '.pdf' END
+ WHERE s.tag NOT IN('category','supplier','legacy','local','other');
 INSERT INTO storage.objects(bucket_id,name,owner_id,metadata,created_at)
  SELECT 'expense-receipts',s.path,a.auth_id::text,jsonb_build_object('mimetype',CASE
  WHEN s.tag IN('png','changed','backdated') THEN 'image/png' WHEN s.tag='webp' THEN 'image/webp' ELSE 'application/pdf' END,
