@@ -12,7 +12,9 @@
 -- chevauchement AVANT d'atteindre la validation testée ici — le test mesurerait autre chose.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
+\ir helpers/pin_session.sql
 SELECT plan(6);
 
 DO $$
@@ -25,8 +27,8 @@ BEGIN
      AND has_permission(up.auth_user_id,'expenses.thresholds.write')
    ORDER BY up.employee_code LIMIT 1;
   IF v_auth IS NULL THEN RAISE EXCEPTION 'Aucun profil porteur de expenses.pay + expenses.thresholds.write'; END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+  -- pay_expense_v6 exige une session PIN active (ADR-037).
+  PERFORM pg_temp.authenticate_pin(v_auth);
 
   SELECT id INTO v_cat FROM expense_categories LIMIT 1;
   SELECT c.id INTO v_free_cat FROM expense_categories c
@@ -40,7 +42,7 @@ BEGIN
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing transfer', 100000,
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing transfer'))
   RETURNING id INTO v_exp;
-  v_res := pay_expense_v4(v_exp, 'transfer');
+  v_res := pay_expense_v6(v_exp, 'transfer');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
    WHERE l.journal_entry_id = (v_res->>'payment_je_id')::uuid AND l.credit > 0;
   PERFORM set_config('breakery.transfer_acc', v_credit_code, true);
@@ -51,7 +53,7 @@ BEGIN
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing cash', 50000,
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing cash'))
   RETURNING id INTO v_exp;
-  v_res := pay_expense_v4(v_exp, 'cash');
+  v_res := pay_expense_v6(v_exp, 'cash');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
    WHERE l.journal_entry_id = (v_res->>'payment_je_id')::uuid AND l.credit > 0;
   PERFORM set_config('breakery.cash_acc', v_credit_code, true);
@@ -63,7 +65,7 @@ BEGIN
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing unknown'))
   RETURNING id INTO v_exp;
   BEGIN
-    PERFORM pay_expense_v4(v_exp, 'bitcoin');
+    PERFORM pay_expense_v6(v_exp, 'bitcoin');
     PERFORM set_config('breakery.bad', 'no_raise', true);
   EXCEPTION WHEN OTHERS THEN
     PERFORM set_config('breakery.bad', 'raised', true);

@@ -1,13 +1,12 @@
 name: Playwright E2E
 
-# Build-and-serve-in-CI model (S71). The job builds both apps and serves them
-# on localhost via Playwright's webServer, pointing at the dev V3 backend.
-# No hosted staging URLs, no Vercel.
+# Les applications nécessaires à la suite choisie sont compilées et servies
+# en localhost par Playwright, contre DEV V3. Aucun hébergement staging/Vercel.
 #
 # Required secrets:
 #   VITE_SUPABASE_ANON_KEY   — dev V3 anon (publishable) key (build-time)
 #   E2E_PIN_ADMIN            — 6-digit PIN for E2E owner  (0e2e0000-…-001)
-#   E2E_PIN_CASHIER          — 6-digit PIN for E2E cashier (0e2e0000-…-002)
+#   E2E_PIN_CASHIER          — compte caisse E2E, préparation pour « all » seulement
 #   V3_DEV_PG_POOLER_URL     — pooler connection string (already set 2026-05-16)
 #
 # Exécution manuelle uniquement : ces tests écrivent sur la base dev V3.
@@ -19,6 +18,14 @@ on:
         required: true
         type: boolean
         default: false
+      suite:
+        description: 'Scenarios to execute; purchase-invoices is a targeted BO recipe, not the complete suite'
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - purchase-invoices
 
 concurrency:
   group: e2e-${{ github.event.pull_request.number || github.ref }}
@@ -57,7 +64,20 @@ jobs:
       - name: Install Chromium browser
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Require dev V3 target and supported suite before provisioning
+        env:
+          E2E_SUITE: ${{ inputs.suite }}
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+        run: |
+          node --test scripts/e2e/assert-dev-target.test.mjs
+          node scripts/e2e/assert-dev-target.mjs
+          case "$E2E_SUITE" in
+            all|purchase-invoices) ;;
+            *) echo "::error::Unsupported E2E suite"; exit 1 ;;
+          esac
+
       - name: Provision E2E state (PINs + open shift)
+        if: inputs.suite == 'all'
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
           E2E_PIN_ADMIN: ${{ secrets.E2E_PIN_ADMIN }}
@@ -67,10 +87,27 @@ jobs:
             -v adminpin="$E2E_PIN_ADMIN" -v cashpin="$E2E_PIN_CASHIER" \
             -f scripts/e2e/provision-pins.sql
 
-      - name: Run Playwright tests
-        run: pnpm exec playwright test
+      - name: Provision BO owner PIN only
+        if: inputs.suite == 'purchase-invoices'
         env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          E2E_PIN_ADMIN: ${{ secrets.E2E_PIN_ADMIN }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 \
+            -v adminpin="$E2E_PIN_ADMIN" \
+            -f scripts/e2e/provision-bo-pin.sql
+
+      - name: Run Playwright tests
+        run: |
+          case "$E2E_SUITE" in
+            all) pnpm exec playwright test ;;
+            purchase-invoices) pnpm exec playwright test tests/e2e/po-receive.spec.ts --project=backoffice ;;
+            *) echo "::error::Unsupported E2E suite"; exit 1 ;;
+          esac
+        env:
+          E2E_SUITE: ${{ inputs.suite }}
           CI: 'true'
+          E2E_SKIP_POS_SERVER: ${{ inputs.suite == 'purchase-invoices' && '1' || '0' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           E2E_POS_URL: http://localhost:5173
           E2E_BO_URL: http://localhost:5174
@@ -78,6 +115,7 @@ jobs:
           E2E_PIN_CASHIER: ${{ secrets.E2E_PIN_CASHIER }}
 
       - name: Measure POS route JavaScript
+        if: inputs.suite == 'all'
         run: node scripts/ci/pos-route-bundles.mjs
 
       - name: Upload Playwright report

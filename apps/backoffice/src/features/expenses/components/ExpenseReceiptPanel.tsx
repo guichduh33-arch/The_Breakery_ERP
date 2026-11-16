@@ -6,9 +6,11 @@ import { Card, Button } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import type { ExpenseRow } from '../hooks/useExpensesList.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
+import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 // L'EF renvoie `application/octet-stream` : le type d'affichage se déduit de
-// l'extension, déjà bornée par la policy d'insert du bucket (jpg/jpeg/png/webp/pdf).
+// l'extension, bornée par la policy d'insert du bucket (jpg/jpeg/pdf ; png/webp
+// restent lisibles pour les reçus déposés avant ADR-037).
 // Aucun type actif (SVG, HTML) ne peut donc sortir d'ici.
 const PREVIEW_TYPES: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
@@ -27,8 +29,10 @@ export function ExpenseReceiptPanel({expense, onBusyChange}: {
   const profile = useAuthStore(s => s.user?.id);
   const token = useAuthStore(s => s.sessionToken);
   const permitted = useAuthStore(s => s.hasPermission);
-  const canEdit = expense.status === 'draft' && (permitted('expenses.manage')
-    || (profile === expense.created_by && permitted('expenses.create')));
+  const canRegularize = ['submitted', 'approved'].includes(expense.status);
+  const canEdit = (expense.status === 'draft' || canRegularize) && (permitted('expenses.manage')
+    || (profile === expense.created_by && permitted('expenses.create'))
+    || (canRegularize && permitted('expenses.pay')));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -86,7 +90,12 @@ export function ExpenseReceiptPanel({expense, onBusyChange}: {
       {preview && <Button size="sm" variant="ghost" onClick={download}>Download receipt</Button>}
     </> : <p className="text-sm text-text-secondary">No receipt attached.</p>}
     {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-    <ReceiptUploader expenseId={expense.id} value={expense.receipt_url} editable={canEdit} onBusyChange={onBusyChange} />
+    <p className="text-sm text-text-secondary">{expense.invoice_exempt
+      ? 'Historical import: invoice requirement does not apply.'
+      : expense.payment_method === 'cash' ? INVOICE_APPROVAL_MESSAGE : INVOICE_PAYMENT_MESSAGE} JPEG or PDF, max 5 MB.</p>
+    {canRegularize && canEdit && <p className="text-sm text-text-secondary">Only missing or invalid receipts can be replaced after submission. The server checks the existing file before applying a change.</p>}
+    <ReceiptUploader expenseId={expense.id} value={expense.receipt_url} editable={canEdit}
+      removable={canEdit && expense.status === 'draft'} onBusyChange={onBusyChange} />
   </Card>;
 }
 

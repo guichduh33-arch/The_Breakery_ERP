@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Dialog, DialogDescription, Select } from '@breakery/ui';
 import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { usePayExpense } from '../hooks/useExpenseActions.js';
+import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 export interface PayDialogProps {
   open: boolean;
@@ -10,15 +11,17 @@ export interface PayDialogProps {
   recordedPaymentMethod: string;
   onClose: () => void;
   onSuccess?: () => void;
+  invoiceBlocked?: boolean;
 }
 
-export function PayDialog({ open, expenseId, recordedPaymentMethod, onClose, onSuccess }: PayDialogProps): JSX.Element {
+export function PayDialog({ open, expenseId, recordedPaymentMethod, onClose, onSuccess, invoiceBlocked = false }: PayDialogProps): JSX.Element {
   const [method, setMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
   const mut = usePayExpense();
   const isCredit = recordedPaymentMethod === 'credit';
   const recordedLabel = ({ cash: 'Cash', transfer: 'Bank transfer', card: 'Card' } as Record<string, string>)[recordedPaymentMethod] ?? recordedPaymentMethod;
 
   async function handleSubmit(): Promise<void> {
+    if (invoiceBlocked || mut.isPending) return;
     try {
       await mut.mutateAsync({ id: expenseId, ...(isCredit ? { paymentMethod: method } : {}) });
       onSuccess?.();
@@ -55,12 +58,13 @@ export function PayDialog({ open, expenseId, recordedPaymentMethod, onClose, onS
           <p className="text-sm text-text-secondary">Recorded payment method</p>
           <p className="font-medium text-text-primary">{recordedLabel}</p>
         </div>}
+        {invoiceBlocked && <p role="alert" className="text-sm text-danger">{INVOICE_PAYMENT_MESSAGE}</p>}
         {mut.error !== null && mut.error !== undefined && (
           <div className="text-xs text-red">{mut.error.message}</div>
         )}
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="ink" onClick={() => { void handleSubmit(); }} disabled={mut.isPending}>
+          <Button type="button" variant="ink" onClick={() => { void handleSubmit(); }} disabled={mut.isPending || invoiceBlocked}>
             {mut.isPending ? 'Marking…' : 'Mark paid'}
           </Button>
         </DialogFooter>
