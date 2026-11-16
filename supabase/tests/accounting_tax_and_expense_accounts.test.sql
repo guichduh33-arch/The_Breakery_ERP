@@ -3,7 +3,7 @@
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 -- S1-17 --------------------------------------------------------------------
 SELECT is((SELECT count(*)::int FROM public.accounts
@@ -64,6 +64,11 @@ SELECT is((SELECT count(*)::int FROM public.accounts
 SELECT is((SELECT a.code FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
             WHERE c.code = 'STAFF_MEALS' AND c.is_active),
   '6124', 'the staff meals category is active and targets its account');
+
+-- Tax et Other existent partout, production comprise (2026-11-16).
+SELECT is((SELECT count(*)::int FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
+            WHERE c.is_active AND ((c.code = 'TAX' AND a.code = '6121') OR (c.code = 'OTHER' AND a.code = '6190'))),
+  2, 'the tax and other categories exist, active, on their accounts');
 
 SELECT * FROM finish();
 ROLLBACK;
