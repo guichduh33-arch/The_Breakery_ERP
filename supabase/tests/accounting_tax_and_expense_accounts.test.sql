@@ -3,7 +3,7 @@
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.
 BEGIN;
-SELECT plan(11);
+SELECT plan(13);
 
 -- S1-17 --------------------------------------------------------------------
 SELECT is((SELECT count(*)::int FROM public.accounts
@@ -54,6 +54,16 @@ SELECT is((SELECT count(*)::int FROM public.expense_categories c JOIN public.acc
             WHERE a.code = '6190' AND c.code IN ('TRANSPORT','INSURANCE','TAX','BANK_FEES')
               AND NOT EXISTS (SELECT 1 FROM public.expenses e WHERE e.category_id = c.id)),
   0, 'no unused category of a named nature still falls on other expenses');
+
+-- Repas du personnel (décision du 2026-11-16) : leur compte et leur catégorie.
+SELECT is((SELECT count(*)::int FROM public.accounts
+            WHERE code = '6124' AND account_class = 6 AND account_type = 'expense'
+              AND balance_type = 'debit' AND is_active AND is_postable
+              AND deleted_at IS NULL AND cash_flow_section = 'operating'),
+  1, 'the staff meals account exists, postable, in the operating section');
+SELECT is((SELECT a.code FROM public.expense_categories c JOIN public.accounts a ON a.id = c.account_id
+            WHERE c.code = 'STAFF_MEALS' AND c.is_active),
+  '6124', 'the staff meals category is active and targets its account');
 
 SELECT * FROM finish();
 ROLLBACK;
