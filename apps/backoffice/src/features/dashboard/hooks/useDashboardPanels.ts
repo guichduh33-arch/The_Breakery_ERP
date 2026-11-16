@@ -80,6 +80,9 @@ export interface OpenOrdersPanel {
   open_count: number;
   open_total: number;
   over_45_count: number;
+  /** Ardoises vivantes (paiement plus tard), hors du plancher depuis la v4. */
+  outstanding_count: number;
+  outstanding_total: number;
   generated_at: string;
 }
 
@@ -99,7 +102,7 @@ export function useOpenOrders(enabled = true) {
   const query = useQuery<OpenOrdersPanel, Error>({
     queryKey: OPEN_ORDERS_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_open_orders_v3');
+      const { data, error } = await supabase.rpc('get_dashboard_open_orders_v4');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as OpenOrdersPanel;
     },

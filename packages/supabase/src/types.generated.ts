@@ -8327,7 +8327,7 @@ export type Database = {
         Returns: Json
       }
       get_dashboard_action_queue_v3: { Args: never; Returns: Json }
-      get_dashboard_open_orders_v3: { Args: never; Returns: Json }
+      get_dashboard_open_orders_v4: { Args: never; Returns: Json }
       get_dashboard_overview_v7: { Args: never; Returns: Json }
       get_discounts_loyalty_v3: {
         Args: { p_end_date: string; p_start_date: string }
@@ -9629,6 +9629,20 @@ export type Database = {
         Returns: Json
       }
       close_shift_v13: {
+        Args: {
+          p_approver_id?: string
+          p_counted_card?: number
+          p_counted_cash: number
+          p_counted_qris?: number
+          p_denominations?: Json
+          p_idempotency_key?: string
+          p_manager_pin?: string
+          p_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      close_shift_v14: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
