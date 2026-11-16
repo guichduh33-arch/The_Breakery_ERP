@@ -311,6 +311,14 @@ commandes**.
 **FAIT** — 22 sessions, **2 à cheval sur plusieurs jours**, la plus longue de
 **75 heures**.
 
+**RÈGLE** — Une session ne se clôture pas tant qu'une de ses commandes reste
+ouverte et impayée sans être en ardoise ni en attente : le caissier l'encaisse,
+la met en ardoise, la met en attente ou l'annule d'abord (décision de Mamat du
+2026-11-16, après une commande tablette abandonnée à la clôture du 2026-11-16).
+**FAIT** — La famille `close_shift` porte cette garde côté serveur depuis la
+migration `20261116000004_open_orders_tabs_and_close_shift_guard.sql`. Une
+commande en attente reste permise : l'attente est conçue pour franchir le shift.
+
 **RÈGLE** — Une session ouverte depuis plus de 24 h déclenche une **alerte**, pas
 une clôture automatique : clôturer sans comptage physique créerait un écart pire.
 **RÈGLE** — Une session est unique **par terminal**, et le terminal est

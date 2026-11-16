@@ -11,6 +11,10 @@
 // handoff dessinait « Delivery · Gojek », mais `orders` ne porte aucune colonne
 // de canal de livraison : ce libellé n'a pas de source et se réduit à
 // « Delivery ». On n'invente pas un canal côté client.
+//
+// Les ardoises (paiement plus tard voulu par le caissier) ne sont pas sur le
+// plancher : la v4 du panneau les sort de la liste et les compte à part. Les
+// mélanger faisait passer 31 dettes clients pour 31 tables oubliées.
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -36,6 +40,7 @@ export function OpenOrdersCard({
 }): JSX.Element {
   const rows = panel?.orders ?? [];
   const over45 = panel?.over_45_count ?? 0;
+  const tabs = panel?.outstanding_count ?? 0;
 
   return (
     <DashboardCard
@@ -67,6 +72,14 @@ export function OpenOrdersCard({
                 <span className="font-data tabular-nums">{over45}</span> order{over45 > 1 ? 's' : ''} open over 45 min
               </span>
             </>
+          )}
+          {tabs > 0 && panel !== null && (
+            <span className="text-text-secondary" data-testid="open-orders-tabs">
+              <span className="font-data tabular-nums">{tabs}</span> unpaid tab{tabs > 1 ? 's' : ''} ·{' '}
+              <span className="font-data tabular-nums" title={formatIdr(panel.outstanding_total)}>
+                {formatIdrShort(panel.outstanding_total)}
+              </span>
+            </span>
           )}
           <Link to="/backoffice/orders" className="ml-auto font-medium text-gold">
             Open floor

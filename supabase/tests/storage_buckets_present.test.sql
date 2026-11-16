@@ -13,7 +13,8 @@ SELECT plan(6);
 SELECT results_eq(
   $$SELECT public, file_size_limit::bigint, allowed_mime_types
       FROM storage.buckets WHERE id = 'expense-receipts'$$,
-  $$VALUES (false, 5242880::bigint, ARRAY['image/jpeg','image/png','image/webp','application/pdf'])$$,
+  -- ADR-037 (20261116000010) : JPEG ou PDF seulement pour les nouveaux dépôts.
+  $$VALUES (false, 5242880::bigint, ARRAY['image/jpeg','application/pdf'])$$,
   'expense-receipts bucket exists, private, 5 MB, receipt formats'
 );
 SELECT results_eq(

@@ -260,7 +260,7 @@ describe('CloseShiftModal', () => {
     expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
   });
 
-  it('calls close_shift_v13 with parsed args and chains generate-zreport-pdf EF', async () => {
+  it('calls close_shift_v14 with parsed args and chains generate-zreport-pdf EF', async () => {
     // S66: the modal now also fetches list_login_users_v1 (approver picker) via
     // the same rpc mock — dispatch by function name so each caller gets a
     // correctly-shaped payload.
@@ -304,7 +304,7 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     // ADR-009 déc. 4 — close_shift bumped to v7 (paid|completed readers).
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v13', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v14', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
@@ -467,7 +467,7 @@ describe('CloseShiftModal', () => {
   });
 
   // Lot B (ADR-006 déc. 9) — the QRIS volet aggregates the e-wallets server-side
-  // (close_shift_v13 bucket), so an e-wallet alone must surface the count field.
+  // (close_shift_v14 bucket), so an e-wallet alone must surface the count field.
   it('shows the QRIS volet when only an e-wallet is enabled', () => {
     mockEnabledMethods.mockReturnValueOnce(new Set(['cash', 'gopay']));
     renderModal();

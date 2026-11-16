@@ -2654,6 +2654,7 @@ export type Database = {
           expense_number: string
           expense_term_id: string | null
           id: string
+          invoice_exempt: boolean
           idempotency_key: string | null
           is_historical_import: boolean
           je_id: string | null
@@ -2689,6 +2690,7 @@ export type Database = {
           expense_number: string
           expense_term_id?: string | null
           id?: string
+          invoice_exempt?: boolean
           idempotency_key?: string | null
           is_historical_import?: boolean
           je_id?: string | null
@@ -2724,6 +2726,7 @@ export type Database = {
           expense_number?: string
           expense_term_id?: string | null
           id?: string
+          invoice_exempt?: boolean
           idempotency_key?: string | null
           is_historical_import?: boolean
           je_id?: string | null
@@ -4723,6 +4726,48 @@ export type Database = {
         }
         Relationships: []
       }
+      po_invoice_results: {
+        Row: {
+          actor_id: string
+          created_at: string
+          idempotency_key: string
+          po_id: string
+          request_payload: Json
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          idempotency_key: string
+          po_id: string
+          request_payload: Json
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          idempotency_key?: string
+          po_id?: string
+          request_payload?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_invoice_results_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_invoice_results_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_devices: {
         Row: {
           device_token: string
@@ -6248,6 +6293,8 @@ export type Database = {
           expected_date: string | null
           financial_import_document_id: string | null
           id: string
+          invoice_exempt: boolean
+          invoice_path: string | null
           idempotency_key: string | null
           import_reference: string | null
           is_historical_import: boolean
@@ -6275,6 +6322,8 @@ export type Database = {
           expected_date?: string | null
           financial_import_document_id?: string | null
           id?: string
+          invoice_exempt?: boolean
+          invoice_path?: string | null
           idempotency_key?: string | null
           import_reference?: string | null
           is_historical_import?: boolean
@@ -6302,6 +6351,8 @@ export type Database = {
           expected_date?: string | null
           financial_import_document_id?: string | null
           id?: string
+          invoice_exempt?: boolean
+          invoice_path?: string | null
           idempotency_key?: string | null
           import_reference?: string | null
           is_historical_import?: boolean
@@ -8083,6 +8134,11 @@ export type Database = {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
+      can_upload_expense_invoice_v1: {
+        Args: { p_expense_id: string }
+        Returns: boolean
+      }
+      can_upload_po_invoice_v2: { Args: { p_po_id: string }; Returns: boolean }
       can_view_business_day_v2: { Args: { p_day: string }; Returns: boolean }
       can_view_financial_entry_v2: {
         Args: { p_detail?: boolean; p_entry_id: string }
@@ -8271,7 +8327,7 @@ export type Database = {
         Returns: Json
       }
       get_dashboard_action_queue_v3: { Args: never; Returns: Json }
-      get_dashboard_open_orders_v3: { Args: never; Returns: Json }
+      get_dashboard_open_orders_v4: { Args: never; Returns: Json }
       get_dashboard_overview_v7: { Args: never; Returns: Json }
       get_discounts_loyalty_v3: {
         Args: { p_end_date: string; p_start_date: string }
@@ -9586,6 +9642,20 @@ export type Database = {
         }
         Returns: Json
       }
+      close_shift_v14: {
+        Args: {
+          p_approver_id?: string
+          p_counted_card?: number
+          p_counted_cash: number
+          p_counted_qris?: number
+          p_denominations?: Json
+          p_idempotency_key?: string
+          p_manager_pin?: string
+          p_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       get_shift_close_preview_v1: {
         Args: { p_session_id: string }
         Returns: Json
@@ -10587,7 +10657,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_expense_v4: {
+      pay_expense_v6: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
@@ -11062,11 +11132,20 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      set_expense_receipt_v1: {
+      set_expense_receipt_v3: {
         Args: {
           p_expected_path?: string
           p_expense_id: string
           p_idempotency_key?: string
+          p_storage_path?: string
+        }
+        Returns: Json
+      }
+      set_po_invoice_v2: {
+        Args: {
+          p_expected_path?: string
+          p_idempotency_key?: string
+          p_po_id: string
           p_storage_path?: string
         }
         Returns: Json
@@ -11167,6 +11246,7 @@ export type Database = {
         Args: { p_customer_id: string; p_reason?: string }
         Returns: undefined
       }
+      storage_path_to_po_id_v1: { Args: { p_path: string }; Returns: string }
       storage_path_to_expense_id: { Args: { p_name: string }; Returns: string }
       submit_expense_v3: {
         Args: { p_expense_id: string; p_idempotency_key?: string }

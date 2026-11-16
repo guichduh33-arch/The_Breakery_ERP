@@ -446,3 +446,6 @@ verify_jwt = false
 
 [functions.download-expense-receipt]
 verify_jwt = false
+
+[functions.download-po-invoice]
+verify_jwt = false
