@@ -129,7 +129,7 @@ jobs:
         run: node --test scripts/ci/_live-skill-reference.test.mjs scripts/ci/_staging-safety.test.mjs
 
       - name: Test agent and release tooling
-        run: node --test scripts/agents/*.test.mjs scripts/context-snapshot.test.mjs scripts/ci/db-gate.test.mjs scripts/ci/ci-*.test.mjs
+        run: node --test scripts/agents/*.test.mjs scripts/context-snapshot.test.mjs scripts/ci/db-gate.test.mjs scripts/ci/pgtap-shards.test.mjs scripts/ci/ci-*.test.mjs
 
       - name: Identify delivery scope and required evidence
         env:
