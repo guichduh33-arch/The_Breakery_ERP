@@ -528,6 +528,25 @@ rendent vrai, sous celle d'un compte ADMIN, faux. Relevé dans
 fonctions des états financiers ; puis les fonctions d'écriture qui masquent le
 stock dans leur réponse, et l'Edge Function du PDF confidentiel, qui lisent
 encore l'ancienne fonction d'aide.
+**Paquets 2 et 3 développés et appliqués en dev le 2026-11-18**, branche
+`fix/s1-08-s1-16-s1-20-lot`, migration
+`20261118000001_s1_08_stock_and_statements_reads.sql` (additive) puis
+`20261118000002_s1_08_drop_owner_only_reads.sql` (retrait, après publication du
+back-office). 29 lectures reçoivent une version neuve : 21 de stock, dont le
+grand livre pour ses seuls comptes de stock, le tableau de bord, la nomenclature
+complète et le coût direct des recettes et la recherche d'ingrédients, suivent
+`reports.inventory.read` ; 8 des états financiers (bilan, résultat, flux de
+trésorerie, balance, journal des coffres, marge par produit, PB1 et son calcul)
+suivent `reports.statements.read`. Corps repris du vivant (empreinte vérifiée
+avant génération, puis égalité fichier-base sur les 29). Le back-office ouvre
+ses routes et son menu des états financiers à la permission, et non plus au
+rôle ; l'aperçu des matières d'une fournée montre le stock et le manque à qui
+détient la permission de stock. L'Edge Function du PDF suit les deux
+permissions. **Restent hors de ce lot** : les fonctions d'écriture et de
+paiement qui masquent le stock dans leurs messages d'erreur, la lecture des
+produits opérationnels par la caisse, et les paiements par méthode, rapport et
+PDF, dont la permission n'est pas tranchée (voir l'ADR-039, qui ne les range ni
+dans les états financiers ni dans les rapports d'exploitation).
 
 ---
 
@@ -813,6 +832,21 @@ après.
 
 **Dépend de** — `S1-01`, `S1-14`.
 
+**État — développé et appliqué en dev le 2026-11-18**, branche
+`fix/s1-08-s1-16-s1-20-lot`, migration
+`20261118000003_s1_16_pos_events_partitions.sql`. Relevé du même jour : 22 889
+lignes dans la partition par défaut en production (octobre et novembre), 212 en
+dev (octobre). La migration détache la partition par défaut, crée d'octobre 2026
+à février 2027 par la fonction qui ferme chaque partition, recrée une partition
+par défaut vide et fermée, réinsère les lignes par la table mère, compare le
+comptage, puis supprime l'ancienne table par DROP : aucune ligne n'est supprimée
+une à une. Essai en transaction annulée, puis application en dev : 212 lignes en
+octobre, partition par défaut vide, comptage égal. Une tâche planifiée, sans
+adresse ni secret, crée le 20 de chaque mois les partitions des deux mois
+suivants. Preuve pgTAP `s1_16_pos_events_partitions.test.sql`, 8 sur 8 en dev.
+**Non fait** : la production, à appliquer boutique fermée (le détachement
+bloque l'écriture du journal le temps de la transaction).
+
 ---
 
 ### `[S1-17]` Désactiver les deux comptes de taxe hors régime
@@ -958,6 +992,17 @@ invisibles à tout contrôle, perdues au premier bump.
 **Preuve** — Les 3 ADR sont rédigés, relus en contexte vierge, et référencés
 depuis `../SPECS_OFFICIELS_ERP_POS.md`. Les 3 déclarations en attente sont
 traitées. `node scripts/ci/relative-links.mjs` vert.
+
+**État — rédigé le 2026-11-18**, branche `fix/s1-08-s1-16-s1-20-lot` :
+`../adr/040-exoneration-pb1-ventes-b2b.md`,
+`../adr/041-circuit-declaration-approbation-stock.md`,
+`../adr/042-comportement-cout-moyen-pondere.md`, référencés depuis les règles
+correspondantes de `../SPECS_OFFICIELS_ERP_POS.md`. Écart signalé : les
+décisions ne sont pas aux lots 3, 4 et 6 cités en source, mais au lot 2
+(`G04`), au lot 10 (`S06`) et au bloc documentaire du §13 (`P01`, `P03`) du
+registre ; les ADR citent ces sources. **Non fait** : la cadence de traitement
+de la file des déclarations, qu'aucune décision ne fixe, et le traitement des 3
+déclarations en attente, geste de Mamat.
 
 ---
 

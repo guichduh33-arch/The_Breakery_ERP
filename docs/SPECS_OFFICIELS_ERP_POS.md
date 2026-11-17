@@ -453,7 +453,8 @@ existent. Les écritures passent exclusivement par des fonctions
 réceptions et les entrées de production. Il **se réinitialise** — il ne se pondère
 pas — quand le stock de départ est nul ou négatif. Il se pondère contre le stock
 **au moment de la saisie**, pas à la date de réception.
-**RÈGLE** — Ces deux comportements sont ceux voulus ; ils doivent être écrits.
+**RÈGLE** — Ces deux comportements sont ceux voulus, gravés le 2026-11-18
+([ADR-042](adr/042-comportement-cout-moyen-pondere.md)).
 
 **FAIT** — Le stock négatif est autorisé à la vente (réglage global), **toujours
 bloqué** pour une commande B2B quel que soit le réglage (ADR-036), et bloqué en
@@ -519,13 +520,16 @@ séparation des tâches disparaît de l'inventaire, en connaissance de cause.
 
 **FAIT** — Les ajustements et les pertes de stock passent par un circuit
 **déclaration puis approbation** : le geste ne touche le stock qu'après
-approbation du propriétaire, par une personne différente du déclarant. Cette
-règle ne figure dans aucun document : elle vit dans un commentaire de migration.
-**3 déclarations sont en attente.**
+approbation du propriétaire, par une personne différente du déclarant. La règle
+est gravée depuis le 2026-11-18
+([ADR-041](adr/041-circuit-declaration-approbation-stock.md)).
+**3 déclarations étaient en attente** au relevé du 2026-11-09.
 
-**RÈGLE** — Le circuit est voulu et doit être gravé dans un ADR, avec une cadence
-de traitement de la file. Pas d'alerte automatique.
-**À LIVRER** — L'ADR et le traitement des 3 déclarations en attente.
+**RÈGLE** — Le circuit est voulu, avec une cadence de traitement de la file. Pas
+d'alerte automatique.
+**À LIVRER** — Le traitement des 3 déclarations en attente.
+**OUVERT** — La valeur de la cadence. Et le sort d'une déclaration soumise par
+le seul compte propriétaire, que personne ne peut aujourd'hui approuver.
 
 ### 8.6 Motifs de perte
 
@@ -655,8 +659,10 @@ Le compte 2142 « VAT Output » est actif, postable et agrégé au bilan avec la
 **À LIVRER** — Les deux désactivations.
 
 **RÈGLE** — **La vente B2B n'est pas assujettie à la PB1.** Exonération
-confirmée. Elle doit être gravée dans un ADR : aujourd'hui elle ne vit que dans
-un commentaire de fonction, invisible à tout contrôle.
+confirmée, gravée le 2026-11-18
+([ADR-040](adr/040-exoneration-pb1-ventes-b2b.md)).
+**OUVERT** — Le traitement de la PB1 déjà portée par les commandes B2B de la
+reprise historique.
 **FAIT** — Chiffre d'affaires B2B 63 534 500 IDR, dont 4 181 133 IDR portent une
 PB1 issue de la reprise historique d'octobre.
 
