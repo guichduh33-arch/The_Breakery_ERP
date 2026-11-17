@@ -519,6 +519,11 @@ réelle des mouvements de stock et des journaux par un délégué, avec et sans 
 permission ; pour les six autres tables, seule l'expression de la règle est
 vérifiée. Un délégué lit une table s'il détient aussi la permission ordinaire de
 cette table (ADR-039, Conséquences).
+**Paquet 1 en production le 2026-11-18 à 1 h 30** (UTC+8) : PR #725 fusionnée
+(`9347514b`), migration appliquée, boutique fermée. Règles, fonctions et droits
+relus égaux au dev ; sous l'identité d'un propriétaire, les deux fonctions d'aide
+rendent vrai, sous celle d'un compte ADMIN, faux. Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 18 novembre.
 **Restent** : paquet 2, les fonctions de lecture du stock ; paquet 3, les
 fonctions des états financiers ; puis les fonctions d'écriture qui masquent le
 stock dans leur réponse, et l'Edge Function du PDF confidentiel, qui lisent

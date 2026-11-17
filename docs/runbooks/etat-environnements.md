@@ -26,6 +26,40 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 18 novembre 2026, 1 h 30 — visibilité confidentielle par permission (`S1-08`, paquet 1)
+
+Relevé du 18 novembre 2026 entre 1 h 25 et 1 h 40, UTC+8. Observé directement.
+Boutique fermée : aucune session de caisse ouverte, dernière commande le 17 à
+17 h 40.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, avant | Les neuf règles visées et les fonctions `has_permission`, `can_view_stock_v1`, `can_view_business_day_v2` égales au dev d'avant la migration. `SUPER_ADMIN` (2 comptes actifs) détient `reports.inventory.read` et `reports.audit.read` ; aucun autre rôle ni aucune dérogation individuelle | — |
+| Backend production, migration | `apply_migration` du texte de `20261117000005_s1_08_visibility_permissions_and_policies.sql` (PR #725, fusionnée sur `9347514b` après un pgTAP vert) | — |
+| Backend production, après | Permission `reports.statements.read` au catalogue, détenue par `SUPER_ADMIN` seul. `can_view_stock_v2` et `can_view_statements_v1` présentes, corps égaux au dev, non exécutables par `anon`. Les huit règles restrictives et la règle `admin_read` d'`audit_logs` lisent une permission dans un `(SELECT …)` | — |
+| Backend production, identités | Lecture seule, identité simulée par `request.jwt.claims` : propriétaire → stock et états financiers visibles ; compte ADMIN → ni stock, ni états financiers, ni journaux | Fonctions d'aide appelées directement, sans session PIN : les tables elles-mêmes n'ont pas été lues sous ces identités |
+| Back-office et caisse | Aucune publication : aucun écran ne change dans ce paquet | — |
+
+Retour, relevé sur la production avant la migration : remettre par
+`ALTER POLICY … USING (…)` les expressions précédentes rétablit l'état d'avant.
+
+- `stock_movements.confidentiality_stock_movements`,
+  `display_movements.confidentiality_display_movements`,
+  `audit_logs.confidentiality_audit_logs`,
+  `notification_outbox.confidentiality_notifications` :
+  `can_view_business_day_v2((created_at)::date)`.
+- `pos_events.confidentiality_pos_events` :
+  `can_view_business_day_v2((occurred_at)::date)`.
+- `display_stock.confidentiality_display_stock` :
+  `can_view_business_day_v2(CURRENT_DATE)`.
+- `inventory_count_items.count_items_owner_only` : `is_business_owner_v1()`.
+- `z_reports.confidentiality_zreports` : `EXISTS (SELECT 1 FROM pos_sessions s
+  WHERE s.id = z_reports.shift_id AND can_view_business_day_v2((s.opened_at)::date))`.
+- `audit_logs.admin_read` : `get_current_role() = ANY (ARRAY['SUPER_ADMIN','ADMIN'])`.
+
+Les deux fonctions neuves et la permission peuvent rester : elles n'ouvrent
+rien seules.
+
 ## Complément du 17 novembre 2026, 23 h 15 — inventaire `S1-10`, charte de comptes, bilan v5 et retrait
 
 Relevé du 17 novembre 2026 entre 22 h 00 et 23 h 15, UTC+8. Observé directement,
