@@ -45,7 +45,9 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
         <div className="space-y-3 text-sm text-text-secondary">
           <p>
             <strong>{withVariance.length}</strong> product(s) have a variance.
-            Finalizing records the stock corrections and their applicable accounting entries.
+            Finalizing sets each product&apos;s stock to its counted quantity, including any
+            sales, waste or production recorded since the line was added, and posts the
+            applicable accounting entries.
           </p>
           <p>
             This action is <strong>not reversible</strong>. To correct a counting

@@ -59,7 +59,11 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+    -- Même défaut que T1 : le rapport des règlements exige le propriétaire
+    -- (`financial_reports_owner_required`), un profil au hasard le fait rougir.
+    AND up.is_active AND up.role_code = 'SUPER_ADMIN'
+    AND has_permission(up.auth_user_id, 'reports.financial.read')
+  ORDER BY up.created_at, up.id LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
   INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via)
