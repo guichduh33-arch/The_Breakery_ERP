@@ -20,7 +20,7 @@
 // socle) au lieu de laisser un `undefined` blanchir la page plus loin.
 //
 // Les erreurs Postgres sont normalisées pour `ReportShell` : P0003 porte
-// `stock_visibility_owner_required` (rapport réservé au propriétaire), 42501
+// `stock_visibility_required` (vue du stock non déléguée, ADR-039), 42501
 // devient `permission_denied`. Le reste garde le message du serveur.
 
 import { useQuery } from '@tanstack/react-query';
@@ -253,8 +253,8 @@ export function parseProductionVsSales(raw: unknown): ProductionVsSalesData {
 /** Normalise une erreur PostgREST pour la bannière du socle. */
 export function toReportError(error: { code?: string; message?: string }): Error {
   const message = error.message ?? '';
-  if (error.code === 'P0003' || message.includes('stock_visibility_owner_required')) {
-    return new Error('stock_visibility_owner_required');
+  if (error.code === 'P0003' || message.includes('stock_visibility_')) {
+    return new Error('stock_visibility_required');
   }
   if (error.code === '42501') return new Error('permission_denied');
   return new Error(message !== '' ? message : 'Failed to load report.');
@@ -277,7 +277,7 @@ export function useProductionVsSales(params: UseProductionVsSalesParams) {
       if (categoryId) args.p_category_id = categoryId;
       if (productId) args.p_product_id = productId;
 
-      const { data, error } = await supabase.rpc('get_production_vs_sales_v4', args);
+      const { data, error } = await supabase.rpc('get_production_vs_sales_v5', args);
       if (error) throw toReportError(error);
       return parseProductionVsSales(data);
     },

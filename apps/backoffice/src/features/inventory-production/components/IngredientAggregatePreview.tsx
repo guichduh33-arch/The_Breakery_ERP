@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/IngredientAggregatePreview.tsx
 //
-// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v5.
+// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v6.
 //
 // Monté par ProductionEntryCard (l'écran de production atteignable). Il vivait
 // auparavant sur la page batch, inatteignable sans taper son URL : l'écran
@@ -67,7 +67,8 @@ function fmt(n: number): string {
 }
 
 export function IngredientAggregatePreview({ items }: IngredientAggregatePreviewProps): JSX.Element {
-  const owner = useAuthStore((state) => state.user?.role_code === 'SUPER_ADMIN');
+  // ADR-039 : le stock disponible et le manque suivent la permission de vue du stock.
+  const canSeeStock = useAuthStore((state) => state.hasPermission('reports.inventory.read'));
   const validRows = useMemo(
     () => items.filter((it) => Number.isFinite(it.quantityProduced) && it.quantityProduced > 0),
     [items],
@@ -78,7 +79,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
       queryKey: ['inv-prod', 'bom-full', row.productId] as const,
       staleTime: 30_000,
       queryFn: async (): Promise<BomLeafRow[]> => {
-        const { data, error } = await supabase.rpc('recipe_bom_full_v5', {
+        const { data, error } = await supabase.rpc('recipe_bom_full_v6', {
           p_product_id: row.productId,
           p_max_depth:  5,
         });
@@ -119,7 +120,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
           } else {
             acc.set(leaf.material_id, {
               name: leaf.material_name, unit: leaf.material_unit,
-              totalQty: need, available: owner && leaf.current_stock !== null && Number.isFinite(leaf.current_stock)
+              totalQty: need, available: canSeeStock && leaf.current_stock !== null && Number.isFinite(leaf.current_stock)
                 ? stockQuantityQuanta(leaf.current_stock) : null,
             });
           }
@@ -146,9 +147,9 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         ? STOCK_PRECISION_MESSAGE : 'Could not calculate ingredient requirements.' };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validRows, bomDataUpdatedKeys, owner]);
+  }, [validRows, bomDataUpdatedKeys, canSeeStock]);
 
-  const anyShortage = owner && rows.some((r) => r.sufficient === false);
+  const anyShortage = canSeeStock && rows.some((r) => r.sufficient === false);
 
   return (
     <div data-testid="ingredient-aggregate-preview"
@@ -183,13 +184,13 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <caption className="sr-only">{owner ? 'Required quantity, available stock and shortage status per material' : 'Required quantity per material'}</caption>
+              <caption className="sr-only">{canSeeStock ? 'Required quantity, available stock and shortage status per material' : 'Required quantity per material'}</caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
                   <th scope="col" className="py-1">Material</th>
                   <th scope="col" className="py-1 text-right">Required</th>
-                  {owner && <th scope="col" className="py-1 text-right">Available</th>}
-                  {owner && <th scope="col" className="py-1 text-right">Status</th>}
+                  {canSeeStock && <th scope="col" className="py-1 text-right">Available</th>}
+                  {canSeeStock && <th scope="col" className="py-1 text-right">Status</th>}
                 </tr>
               </thead>
               <tbody>
@@ -199,10 +200,10 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
                     <td className="py-1.5 text-right tabular-nums">
                       {fmt(r.totalQty)} {r.materialUnit}
                     </td>
-                    {owner && <td className="py-1.5 text-right tabular-nums">
+                    {canSeeStock && <td className="py-1.5 text-right tabular-nums">
                       {r.available === null ? '–' : fmt(r.available)} {r.materialUnit}
                     </td>}
-                    {owner && <td className="py-1.5 text-right">
+                    {canSeeStock && <td className="py-1.5 text-right">
                       {r.sufficient === null ? '–' : r.sufficient ? (
                         <span className="text-success" data-testid="status-ok">OK</span>
                       ) : (

@@ -89,7 +89,7 @@ SELECT lives_ok(
 -- calculée par le RPC coïncident.
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v5()),
+  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v6()),
   (SELECT COUNT(*)::INT FROM products p
     WHERE p.deleted_at IS NULL
       AND p.track_inventory = true
@@ -102,7 +102,7 @@ SELECT is(
         OR p.current_stock <> 0
       )
   ),
-  'T_RPT_08 — get_stock_variance_v5 emits one row per tracked product with a movement in the default window or a non-zero stock'
+  'T_RPT_08 — get_stock_variance_v6 emits one row per tracked product with a movement in the default window or a non-zero stock'
 );
 
 -- ============================================================

@@ -73,11 +73,11 @@ SELECT is(
 
 -- Bilan v5
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.get_balance_sheet_v5(date)', 'EXECUTE'),
-  'COA_11 — anon cannot execute get_balance_sheet_v5');
+  NOT has_function_privilege('anon', 'public.get_balance_sheet_v6(date)', 'EXECUTE'),
+  'COA_11 — anon cannot execute get_balance_sheet_v6');
 
 DO $baseline$
-DECLARE v JSONB := get_balance_sheet_v5(CURRENT_DATE);
+DECLARE v JSONB := get_balance_sheet_v6(CURRENT_DATE);
 BEGIN
   PERFORM set_config('coa.fixed_before', v->'assets'->'fixed'->>'total', true);
   PERFORM set_config('coa.other_before', v->'assets'->'current'->>'other', true);
@@ -103,15 +103,15 @@ BEGIN
 END $seed$;
 
 SELECT is(
-  ((get_balance_sheet_v5(CURRENT_DATE))->'assets'->'fixed'->>'total')::NUMERIC
+  ((get_balance_sheet_v6(CURRENT_DATE))->'assets'->'fixed'->>'total')::NUMERIC
     - current_setting('coa.fixed_before')::NUMERIC,
   1000::NUMERIC, 'COA_12 — a 1600 entry lands in fixed assets');
 SELECT is(
-  ((get_balance_sheet_v5(CURRENT_DATE))->'assets'->'current'->>'other')::NUMERIC
+  ((get_balance_sheet_v6(CURRENT_DATE))->'assets'->'current'->>'other')::NUMERIC
     - current_setting('coa.other_before')::NUMERIC,
   500::NUMERIC, 'COA_13 — a 1450 entry lands in other current assets');
 SELECT is(
-  ((get_balance_sheet_v5(CURRENT_DATE))->>'delta')::NUMERIC,
+  ((get_balance_sheet_v6(CURRENT_DATE))->>'delta')::NUMERIC,
   current_setting('coa.delta_before')::NUMERIC,
   'COA_14 — the balance check does not move when new asset accounts are used');
 

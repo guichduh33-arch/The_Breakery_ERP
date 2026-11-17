@@ -333,12 +333,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v7(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_low_only_has_pgtap_low;
 
   SELECT NOT EXISTS (
-    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v7(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_low_only_excludes_threshold_zero;
 
@@ -346,7 +346,7 @@ BEGIN
     (v_low_only_has_pgtap_low AND v_low_only_excludes_threshold_zero)::text, false);
 END $t12$;
 SELECT ok(current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_levels_v6 bucket low includes (current < threshold > 0) and excludes threshold = 0');
+  'T12: get_stock_levels_v7 bucket low includes (current < threshold > 0) and excludes threshold = 0');
 
 -- =========================================================================
 -- T13 — Sequential adjusts on the same row sum correctly via row lock.

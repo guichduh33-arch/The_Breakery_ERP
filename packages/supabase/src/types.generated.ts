@@ -8129,8 +8129,10 @@ export type Database = {
         Args: { p_end: string; p_start: string }
         Returns: undefined
       }
+      assert_statements_visible_v1: { Args: never; Returns: undefined }
       assert_stock_owner_v1: { Args: never; Returns: undefined }
-      calculate_pb1_payable_v5: {
+      assert_stock_visible_v1: { Args: never; Returns: undefined }
+      calculate_pb1_payable_v6: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
@@ -8236,7 +8238,7 @@ export type Database = {
       }
       get_ar_aging_v2: { Args: never; Returns: Json }
       get_b2b_invoice_v3: { Args: { p_order_id: string }; Returns: Json }
-      get_balance_sheet_v5: { Args: { p_as_of_date: string }; Returns: Json }
+      get_balance_sheet_v6: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v6: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
@@ -8253,7 +8255,7 @@ export type Database = {
         }[]
       }
       get_business_day_visibility_v2: { Args: { p_day: string }; Returns: Json }
-      get_cash_flow_v4: {
+      get_cash_flow_v5: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -8269,7 +8271,7 @@ export type Database = {
           balance: number
         }[]
       }
-      get_cash_wallet_ledger_v4: {
+      get_cash_wallet_ledger_v5: {
         Args: {
           p_account_code: string
           p_date_end: string
@@ -8328,9 +8330,9 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_dashboard_action_queue_v3: { Args: never; Returns: Json }
+      get_dashboard_action_queue_v4: { Args: never; Returns: Json }
       get_dashboard_open_orders_v4: { Args: never; Returns: Json }
-      get_dashboard_overview_v7: { Args: never; Returns: Json }
+      get_dashboard_overview_v8: { Args: never; Returns: Json }
       get_discounts_loyalty_v3: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -8339,8 +8341,8 @@ export type Database = {
         Args: { p_business_day: string }
         Returns: Json
       }
-      get_display_stock_activity_v3: { Args: never; Returns: Json }
-      get_general_ledger_v4: {
+      get_display_stock_activity_v4: { Args: never; Returns: Json }
+      get_general_ledger_v5: {
         Args: {
           p_account_id: string
           p_cursor?: Json
@@ -8350,7 +8352,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_gross_margin_by_product_v5: {
+      get_gross_margin_by_product_v6: {
         Args: {
           p_category_id?: string
           p_end_date: string
@@ -8358,7 +8360,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_low_stock_v4: {
+      get_low_stock_v5: {
         Args: never
         Returns: {
           current_qty: number
@@ -8370,7 +8372,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_movement_aggregates_v5: {
+      get_movement_aggregates_v6: {
         Args: {
           p_date_end?: string
           p_date_start?: string
@@ -8408,7 +8410,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pb1_report_v6: {
+      get_pb1_report_v7: {
         Args: { p_period_month: number; p_period_year: number }
         Returns: Json
       }
@@ -8458,11 +8460,11 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_product_analytics_v4: {
+      get_product_analytics_v5: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_dashboard_v7: {
+      get_product_dashboard_v8: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
@@ -8481,7 +8483,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_production_suggestions_v3: {
+      get_production_suggestions_v4: {
         Args: {
           p_lookback_days?: number
           p_priority_high?: number
@@ -8498,7 +8500,7 @@ export type Database = {
           suggested_quantity: number
         }[]
       }
-      get_production_vs_sales_v4: {
+      get_production_vs_sales_v5: {
         Args: {
           p_category_id?: string
           p_end_date: string
@@ -8507,7 +8509,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_profit_loss_v4: {
+      get_profit_loss_v5: {
         Args: {
           p_date_end: string
           p_date_start: string
@@ -8527,7 +8529,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_reorder_suggestions_v3: {
+      get_reorder_suggestions_v4: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
         Returns: {
           avg_daily_usage: number
@@ -8602,7 +8604,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v4: {
+      get_stock_config_issues_v5: {
         Args: never
         Returns: {
           category_name: string
@@ -8617,7 +8619,7 @@ export type Database = {
           track_inventory: boolean
         }[]
       }
-      get_stock_counters_v3: {
+      get_stock_counters_v4: {
         Args: { p_category_id?: string; p_search?: string }
         Returns: {
           low_count: number
@@ -8628,7 +8630,7 @@ export type Database = {
         }[]
       }
       get_stock_declarations_v1: { Args: never; Returns: Json }
-      get_stock_levels_v6: {
+      get_stock_levels_v7: {
         Args: {
           p_bucket?: Database["public"]["Enums"]["stock_bucket"]
           p_category_id?: string
@@ -8652,7 +8654,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_stock_movement_ledger_v4: {
+      get_stock_movement_ledger_v5: {
         Args: {
           p_end: string
           p_limit?: number
@@ -8663,7 +8665,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_movements_v6: {
+      get_stock_movements_v7: {
         Args: {
           p_cursor?: string
           p_end: string
@@ -8674,8 +8676,8 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_position_v3: { Args: { p_as_of?: string }; Returns: Json }
-      get_stock_variance_v5: {
+      get_stock_position_v4: { Args: { p_as_of?: string }; Returns: Json }
+      get_stock_variance_v6: {
         Args: { p_date_end?: string; p_date_start?: string }
         Returns: {
           closing: number
@@ -8692,7 +8694,7 @@ export type Database = {
           wasted: number
         }[]
       }
-      get_trial_balance_v5: {
+      get_trial_balance_v6: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -8723,7 +8725,7 @@ export type Database = {
         }
         Returns: Json
       }
-      recipe_bom_full_v5: {
+      recipe_bom_full_v6: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {
           cost_price: number
@@ -8737,7 +8739,7 @@ export type Database = {
           recipe_unit: string
         }[]
       }
-      recipe_direct_cost_v3: {
+      recipe_direct_cost_v4: {
         Args: { p_product_id: string }
         Returns: {
           cost_price: number
@@ -8819,7 +8821,7 @@ export type Database = {
         }
         Returns: Json
       }
-      search_ingredients_v3: {
+      search_ingredients_v4: {
         Args: { p_kind?: string; p_limit?: number; p_query?: string }
         Returns: {
           cost_price: number

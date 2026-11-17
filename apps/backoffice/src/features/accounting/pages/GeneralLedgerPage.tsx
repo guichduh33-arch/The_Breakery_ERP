@@ -45,7 +45,8 @@ interface AccumulatedLine extends GLLineRaw {
 
 export default function GeneralLedgerPage(): JSX.Element {
   const accounts = useChartOfAccounts();
-  const owner = useAuthStore((state) => state.user?.role_code === 'SUPER_ADMIN');
+  // ADR-039 : les comptes de stock (114x) suivent la permission de vue du stock.
+  const owner = useAuthStore((state) => state.hasPermission('reports.inventory.read'));
   const [searchParams] = useSearchParams();
 
   // S32 — seed initial state from URL params (?account_id=&start=&end=).
@@ -265,7 +266,7 @@ export default function GeneralLedgerPage(): JSX.Element {
         </div>
       )}
 
-      {restrictedAccount && <p role="status">Inventory valuation is available to the owner.</p>}
+      {restrictedAccount && <p role="status">Inventory valuation requires stock report access.</p>}
       {gl.hasNextPage && (
         <Button
           variant="secondary"

@@ -38,7 +38,7 @@ BEGIN
 
   LOOP
     v_iter := v_iter + 1;
-    v_res := get_stock_movements_v6('2026-06-02','2026-06-02', v_prod, NULL, 2, v_cursor);
+    v_res := get_stock_movements_v7('2026-06-02','2026-06-02', v_prod, NULL, 2, v_cursor);
     SELECT array_agg((e->>'id')::uuid) INTO v_page FROM jsonb_array_elements(v_res->'lines') e;
     IF v_page IS NOT NULL THEN v_ids := v_ids || v_page; END IF;
     v_cursor := v_res->>'next_cursor';
@@ -49,7 +49,7 @@ BEGIN
     (array_length(v_ids,1) = 5 AND (SELECT count(DISTINCT x) FROM unnest(v_ids) x) = 5)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.m9_t1')::boolean,
-  'T1: get_stock_movements_v6 keyset — 5 tied-timestamp rows paginate 2-by-2 with no drop/dupe');
+  'T1: get_stock_movements_v7 keyset — 5 tied-timestamp rows paginate 2-by-2 with no drop/dupe');
 
 -- ── T2 : by_day reconciliation ──────────────────────────────────────────────
 SET LOCAL session_replication_role = replica;  -- suppress the sale-JE trigger for an isolated fixture

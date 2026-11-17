@@ -202,18 +202,18 @@ CREATE TEMP TABLE pvs_before AS SELECT (SELECT count(*) FROM public.stock_moveme
   (SELECT count(*) FROM public.audit_logs) AS al, (SELECT count(*) FROM public.journal_entries) AS je;
 
 CREATE TEMP TABLE pvs_r AS SELECT
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13') AS r,
-  public.get_production_vs_sales_v4('1997-03-10','1997-03-10',NULL,pa) AS a1,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,pa) AS fa,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_buns) AS fbuns,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_bread) AS fbread,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,px) AS fx,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',cat_sfg) AS fsfg,
-  public.get_production_vs_sales_v4('1997-03-09','1997-03-13',NULL,pt) AS ft,
-  public.get_production_vs_sales_v4('1997-03-15','1997-03-15') AS sd,
-  public.get_production_vs_sales_v4('1996-01-01','1997-03-13') AS clamp,
-  public.get_production_vs_sales_v4('1997-04-02','1997-04-04') AS apr,
-  public.get_production_vs_sales_v4('1997-04-02','1997-04-04',cat_buns) AS aprbuns
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13') AS r,
+  public.get_production_vs_sales_v5('1997-03-10','1997-03-10',NULL,pa) AS a1,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',NULL,pa) AS fa,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',cat_buns) AS fbuns,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',cat_bread) AS fbread,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',NULL,px) AS fx,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',cat_sfg) AS fsfg,
+  public.get_production_vs_sales_v5('1997-03-09','1997-03-13',NULL,pt) AS ft,
+  public.get_production_vs_sales_v5('1997-03-15','1997-03-15') AS sd,
+  public.get_production_vs_sales_v5('1996-01-01','1997-03-13') AS clamp,
+  public.get_production_vs_sales_v5('1997-04-02','1997-04-04') AS apr,
+  public.get_production_vs_sales_v5('1997-04-02','1997-04-04',cat_buns) AS aprbuns
 FROM pvs_ctx;
 
 INSERT INTO pvs_results(result) SELECT ok(r ?& ARRAY['period','timezone','generated_at','categories','summary',
@@ -379,10 +379,10 @@ INSERT INTO pvs_results(result) SELECT ok(
 
 -- (k) droits.
 INSERT INTO pvs_results(result) SELECT ok(
-  has_function_privilege('authenticated','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
-  AND has_function_privilege('service_role','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE')
-  AND NOT has_function_privilege('public','public.get_production_vs_sales_v4(date,date,uuid,uuid)','EXECUTE'),
+  has_function_privilege('authenticated','public.get_production_vs_sales_v5(date,date,uuid,uuid)','EXECUTE')
+  AND has_function_privilege('service_role','public.get_production_vs_sales_v5(date,date,uuid,uuid)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.get_production_vs_sales_v5(date,date,uuid,uuid)','EXECUTE')
+  AND NOT has_function_privilege('public','public.get_production_vs_sales_v5(date,date,uuid,uuid)','EXECUTE'),
   '(k) authenticated et service_role exécutent, anon et PUBLIC non');
 INSERT INTO pvs_results(result) SELECT ok(
   to_regprocedure('public.get_production_vs_sales_v1(date,date,uuid,uuid)') IS NULL
@@ -391,10 +391,10 @@ INSERT INTO pvs_results(result) SELECT ok(
 
 -- Bornes.
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v4('1997-03-13','1997-03-09')$$,'22023','invalid_date_range',
+  $$SELECT public.get_production_vs_sales_v5('1997-03-13','1997-03-09')$$,'22023','invalid_date_range',
   'fin avant début refusée');
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v4(NULL,'1997-03-09')$$,'22023','start and end dates are required',
+  $$SELECT public.get_production_vs_sales_v5(NULL,'1997-03-09')$$,'22023','start and end dates are required',
   'dates requises');
 
 -- BOUT EN BOUT : une perte et une perte de vitrine passent par les vraies
@@ -413,8 +413,8 @@ CREATE TEMP TABLE pvs_decl AS SELECT
 FROM pvs_ctx;
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
 CREATE TEMP TABLE pvs_pending AS SELECT
-  public.get_production_vs_sales_v4(today,today,NULL,pe) AS w,
-  public.get_production_vs_sales_v4(today,today,NULL,pv) AS d FROM pvs_ctx;
+  public.get_production_vs_sales_v5(today,today,NULL,pe) AS w,
+  public.get_production_vs_sales_v5(today,today,NULL,pv) AS d FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT ok(
   (p.w->'summary'->>'wasted')::numeric=0 AND (p.d->'summary'->>'wasted')::numeric=0
   AND (SELECT count(*) FROM public.stock_declarations s WHERE s.id IN (x.dw,x.dd) AND s.status='pending')=2
@@ -424,8 +424,8 @@ INSERT INTO pvs_results(result) SELECT ok(
 CREATE TEMP TABLE pvs_approved AS SELECT public.approve_stock_declaration_v4(dw) AS w,
   public.approve_stock_declaration_v4(dd) AS d FROM pvs_decl;
 CREATE TEMP TABLE pvs_after AS SELECT
-  public.get_production_vs_sales_v4(today,today,NULL,pe) AS w,
-  public.get_production_vs_sales_v4(today,today,NULL,pv) AS d FROM pvs_ctx;
+  public.get_production_vs_sales_v5(today,today,NULL,pe) AS w,
+  public.get_production_vs_sales_v5(today,today,NULL,pv) AS d FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT is(
   (SELECT string_agg(m.movement_type||'|'||m.reference_type||'|'||(m.reference_id=x.dw)||'|'||trim_scale(m.quantity)||'|'||m.unit,',')
      FROM public.stock_movements m WHERE m.product_id=c.pe),
@@ -483,7 +483,7 @@ SELECT ob,px,'b2b combo',0,1,0,false,NULL,NULL,NULL,false,
   jsonb_build_array(jsonb_build_object('product_id',pa,'quantity',2)) FROM pvs_ctx, pvs_combo;
 
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
-CREATE TEMP TABLE pvs_cr AS SELECT public.get_production_vs_sales_v4('1997-04-07','1997-04-07') AS r;
+CREATE TEMP TABLE pvs_cr AS SELECT public.get_production_vs_sales_v5('1997-04-07','1997-04-07') AS r;
 INSERT INTO pvs_results(result) SELECT is(
   (SELECT pg_temp.pvs_m(e)||'|'||trim_scale((e->>'sold_in_combo')::numeric)::text
      FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid=c.pa),
@@ -521,30 +521,29 @@ INSERT INTO pvs_results(result) SELECT ok(
   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.r->'by_category') e WHERE (e->>'category_id')::uuid=c.cat_buns)
   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.r->'by_product') e WHERE (e->>'product_id')::uuid=c.pb),
   'une catégorie du périmètre supprimée sort du rapport : liste, ventilations et total')
-  FROM (SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13') AS r) x, pvs_ctx c;
+  FROM (SELECT public.get_production_vs_sales_v5('1997-03-09','1997-03-13') AS r) x, pvs_ctx c;
 
--- (j) garde, reproduite de l'état de stock réservé au propriétaire : un
--- non-propriétaire et une absence de session sont arrêtés par l'assertion
--- propriétaire (P0003) AVANT la permission, même s'il détient la permission ;
--- 42501 est le refus d'un propriétaire privé de reports.inventory.read.
+-- (j) garde de la vue du stock (ADR-039) : reports.inventory.read ouvre le
+-- rapport à un non-propriétaire ; sans session, ou propriétaire privé de la
+-- permission, l'assertion de visibilité (P0003) arrête l'appel.
 INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
 SELECT staff_id,'reports.inventory.read',true,'Transactional report grant fixture' FROM pvs_ctx
 ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
 SELECT pg_temp.pvs_as(staff_uid) FROM pvs_ctx;
-INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
-  '(j) non-propriétaire refusé, même avec la permission de rapport');
+INSERT INTO pvs_results(result) SELECT lives_ok(
+  $$SELECT public.get_production_vs_sales_v5('1997-03-09','1997-03-13')$$,
+  '(j) non-propriétaire avec reports.inventory.read : rapport lisible');
 SELECT pg_temp.pvs_as(NULL);
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_owner_required',
+  $$SELECT public.get_production_vs_sales_v5('1997-03-09','1997-03-13')$$,'P0003','stock_visibility_required',
   '(j) absence de session refusée');
 INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
 SELECT owner_id,'reports.inventory.read',false,'Transactional report deny fixture' FROM pvs_ctx
 ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=false,expires_at=NULL;
 SELECT pg_temp.pvs_as(owner_uid) FROM pvs_ctx;
 INSERT INTO pvs_results(result) SELECT throws_ok(
-  $$SELECT public.get_production_vs_sales_v4('1997-03-09','1997-03-13')$$,'42501',
-  'permission denied: reports.inventory.read required','(j) propriétaire sans reports.inventory.read : 42501');
+  $$SELECT public.get_production_vs_sales_v5('1997-03-09','1997-03-13')$$,'P0003',
+  'stock_visibility_required','(j) propriétaire sans reports.inventory.read refusé');
 
 INSERT INTO pvs_results(result) SELECT * FROM finish();
 SELECT result FROM pvs_results ORDER BY n;

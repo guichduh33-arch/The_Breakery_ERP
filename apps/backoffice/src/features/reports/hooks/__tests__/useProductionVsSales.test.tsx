@@ -50,13 +50,13 @@ beforeEach(() => {
 });
 
 describe('useProductionVsSales', () => {
-  it('calls get_production_vs_sales_v4 and omits the unset filters', async () => {
+  it('calls get_production_vs_sales_v5 and omits the unset filters', async () => {
     mockRpc.mockResolvedValue({ data: ENVELOPE, error: null });
     const { result } = renderHook(
       () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v4', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v5', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07',
     });
   });
@@ -68,7 +68,7 @@ describe('useProductionVsSales', () => {
       { wrapper },
     );
     await waitFor(() => { expect(result.current.isSuccess).toBe(true); });
-    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v4', {
+    expect(mockRpc).toHaveBeenCalledWith('get_production_vs_sales_v5', {
       p_start_date: '2026-11-01', p_end_date: '2026-11-07', p_category_id: 'c1', p_product_id: 'p1',
     });
   });
@@ -124,15 +124,15 @@ describe('useProductionVsSales', () => {
     expect(result.current.error?.message).toMatch(/Unexpected report data.*by_product/);
   });
 
-  it('maps the owner-only refusal (P0003) for the shell banner', async () => {
+  it('maps the stock visibility refusal (P0003) for the shell banner', async () => {
     mockRpc.mockResolvedValue({
-      data: null, error: { code: 'P0003', message: 'stock_visibility_owner_required' },
+      data: null, error: { code: 'P0003', message: 'stock_visibility_required' },
     });
     const { result } = renderHook(
       () => useProductionVsSales({ start: '2026-11-01', end: '2026-11-07' }), { wrapper },
     );
     await waitFor(() => { expect(result.current.isError).toBe(true); });
-    expect(result.current.error?.message).toBe('stock_visibility_owner_required');
+    expect(result.current.error?.message).toBe('stock_visibility_required');
   });
 });
 

@@ -58,8 +58,11 @@ function errorText(error: Error): string {
   if (error.message.includes('business_day_not_closed') || error.message.includes('business_day_not_released')) {
     return 'This period includes an open business day. Select closed days to view the report.';
   }
-  if (error.message.includes('stock_visibility_owner_required')) {
-    return 'This report contains confidential stock information and is available to the owner.';
+  if (error.message.includes('stock_visibility_')) {
+    return 'This report contains confidential stock information. Ask the owner for stock report access.';
+  }
+  if (error.message.includes('financial_statements_required')) {
+    return 'This report contains financial statements. Ask the owner for financial statement access.';
   }
   if (error.message === 'permission_denied' || error.message.includes('42501')) {
     return 'You do not have permission to view this report.';
