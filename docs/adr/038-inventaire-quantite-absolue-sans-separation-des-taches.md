@@ -17,9 +17,7 @@ Texte rédigé le 2026-11-17 pour la tâche `S1-10` du master plan de finition.
 
 2. **L'écart du comptage reste visible.** L'écart entre l'attendu et le compté
    reste affiché sur la ligne et conservé avec le mouvement de stock. Il n'est
-   plus ce qui est appliqué. Le mouvement applique la différence entre le compté
-   et le stock lu à la finalisation ; c'est ce mouvement qui porte l'écriture
-   comptable.
+   plus ce qui est appliqué.
 
 3. **Le propriétaire peut finaliser un inventaire qu'il a compté lui-même.**
    La séparation des tâches entre celui qui compte et celui qui finalise quitte
@@ -52,6 +50,14 @@ finalisé.
 
 - La famille `finalize_opname` reçoit une nouvelle version, qui lit le stock de
   chaque produit sous verrou au moment de la finalisation.
+- Conséquence d'implémentation, non tranchée par la décision : le mouvement
+  applique la différence entre le compté et le stock lu à la finalisation, et
+  l'écriture comptable émise par le mouvement de stock se calcule sur cette
+  différence, pas sur l'écart du comptage. Les ventes, pertes et productions
+  intervenues pendant le comptage ont déjà leur propre écriture.
+- Pendant la livraison, l'ancienne version reste appelable avec l'ancien
+  comportement, jusqu'à la publication du back-office qui appelle la nouvelle.
+  Elle est ensuite retirée par une migration distincte.
 - Une ligne sans écart au comptage peut émettre un mouvement, si le stock a bougé
   depuis. Une ligne avec écart peut n'en émettre aucun, si le stock égale déjà le
   compté.
