@@ -1239,6 +1239,46 @@ silence**.
 répertoire : un même module a souvent plusieurs dossiers de tests.
 **Preuve** — Aucun import. Suites vertes. Relevé joint.
 
+**État — développé et vérifié le 2026-11-17**, branche `chore/s2-13-orphelins`,
+base `651fe781`. Écart signalé : la liste des orphelins est au §2 de l'audit 02,
+pas au §3 (le §3 traite des doublons). Relevé fait par `git grep` sur tout le
+dépôt (apps, packages, scripts, workflows, skills, `.design-sync/`), le jour du
+geste.
+**Supprimés** (aucun importeur de production) : les 11 du §2.1 —
+`useAuthPin`, le `UserPicker` du POS (celui du back-office est vivant et reste),
+`CustomerAttachButton`, `DiscountButton`, `LineDiscountButton`,
+`CategorySidebar`, le `CategoryPicker` des dépenses, les composants
+`CustomerListRow`, `PromotionListRow` et `SupplierListRow` (les **types** du même
+nom restent, dans leurs hooks), le dossier `features/devices/` du back-office ;
+du §2.2 — `useVoidServerOrder`, `CustomerAttachedBadge`, `HeldOrdersInboxButton`,
+le `useCreateCustomer` du POS (celui du back-office reste), `useTabletOffline`
+(remplacé par `useTabletConnectionState`) ; du §2.3 — les 4 fichiers de la boîte
+de réception tablette : les commandes tablette s'ouvrent depuis la liste des
+commandes en attente, qui appelle elle-même `pickup_tablet_order`. Retirés avec
+eux : les `vi.mock` de modules supprimés dans deux tests, le bloc de test de
+`useTabletOffline`, les deux fichiers de test de la boîte de réception, la ligne
+de baseline de la garde 1 devenue sans objet, les mentions dans trois skills et
+une eval, et les commentaires qui pointaient vers un fichier supprimé. Reste
+inerte : la clé de cache `pending-tablet-orders`, encore invalidée par plusieurs
+hooks alors qu'aucune requête ne la porte plus ; sans effet, à retirer au
+prochain passage.
+**Gardés** : `ServiceSpeedIndicator` + `useServiceSpeed` (fonction écrite et
+jamais affichée, à trancher) ; `useStockLots` (relève de `S2-01`, décision des
+lots à Mamat) ; `useSetProductTestFlag` (relève de `S2-07`) ; `useUpdateVariant`
+(trou de parcours, décision produit) ; `ProductionRecordList` (orphelin assumé) ;
+`clearKioskPairing` (export d'un fichier vivant, trou de parcours) ; le composant
+`TabletInboxRow` de `packages/ui` (preview versionnée) ; les deux scripts du §9.3
+(`uxui-test-data-cleanup.sql` attend la relecture de Mamat,
+`prepare-backup-task.ps1` est une procédure manuelle). Restent des mentions
+historiques dans `supabase/seed.sql`, une migration et un test pgTAP : zones non
+touchées par ce lot.
+**Preuves** : typecheck 7/7 ; lint des fichiers modifiés propre ; gardes de
+gouvernance vertes ; suite back-office complète 389 fichiers et 2 525 tests
+verts, 1 test ignoré (un `it.skip` préexistant de `suppliers-crud.smoke.test.tsx`,
+non touché) ; tests POS des dossiers touchés 90 fichiers, 557 tests, 0 ignoré ;
+primitives de `packages/ui` 16 fichiers, 52 tests. Suite POS complète : CI
+seulement. Revue indépendante : aucun bloquant, remarques corrigées.
+
 ---
 
 # Sprint 3 — Features manquantes validées
