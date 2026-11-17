@@ -6,8 +6,8 @@ name: pgTAP PR
 # à la SUITE ENTIÈRE. Avant ce lot, 186 des 198 fichiers pgTAP ne tournaient
 # jamais sur PR : chaque lot livré l'était sans filet, et la seule couverture
 # complète était un run nocturne 3×/semaine — donc après merge.
-# Coût mesuré : ~15 min de runner pour 198 fichiers en série.
-# 2026-11-17 — ~45 min pour 369 fichiers : la suite est découpée en morceaux
+# Coût mesuré au lot 1.B : ~15 min de runner pour 198 fichiers en série.
+# 2026-11-17 — mesuré ~45 min pour 369 fichiers : la suite est découpée en morceaux
 # parallèles par scripts/ci/pgtap-shards.mjs (voir le job pgtap-shard).
 #
 # Le run nocturne (pgtap-nightly.yml) reste : il couvre master et la dérive

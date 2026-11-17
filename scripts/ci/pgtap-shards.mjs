@@ -31,6 +31,8 @@ const SHARED_DDL = [
   new RegExp(`^\\s*(?:GRANT|REVOKE)\\b[^;]*\\bON\\s+(?:FUNCTION|TABLE|SCHEMA|ALL\\s+\\w+\\s+IN\\s+SCHEMA)\\s+${SCHEMAS}\\b`, 'im'),
   /^\s*(?:CREATE|ALTER|DROP)\s+POLICY\b/im,
   /^\s*LOCK\s+(?:TABLE\s+)?\w/im,
+  // REFRESH prend ACCESS EXCLUSIVE (EXCLUSIVE avec CONCURRENTLY) jusqu'au ROLLBACK.
+  /^\s*REFRESH\s+MATERIALIZED\s+VIEW\b/im,
 ];
 const stripComments = (sql) => sql.replace(/--[^\n]*/g, '');
 // Les tables temporaires du fichier ne sont visibles que de sa session : un DDL
@@ -55,6 +57,10 @@ export function isExclusive(source) {
   };
   for (const m of sql.matchAll(/^\s*(?:ALTER\s+TABLE|TRUNCATE(?:\s+TABLE)?)\s+(?:IF\s+EXISTS\s+)?((?:ONLY\s+)?[\w."]+)/gim))
     if (touchesShared(m[1])) return true;
+  // Une fonction non qualifiée naît dans le premier schéma du search_path :
+  // seule `pg_temp.` garantit un objet propre à la session.
+  for (const m of sql.matchAll(/^\s*(?:CREATE\s+(?:OR\s+REPLACE\s+)?|DROP\s+|ALTER\s+)(?:FUNCTION|PROCEDURE)\s+(?:IF\s+EXISTS\s+)?([\w."]+)/gim))
+    if (!/^pg_temp\./i.test(m[1])) return true;
   for (const m of sql.matchAll(/^\s*(?:CREATE|DROP)\s+(?:OR\s+REPLACE\s+)?(?:CONSTRAINT\s+)?TRIGGER\b[^;]*?\bON\s+([\w."]+)/gim))
     if (touchesShared(m[1])) return true;
   return false;

@@ -26,14 +26,20 @@ test('plan : ajouter un fichier ne déplace aucun autre fichier', () => {
 test('la vraie suite se découpe au-dessus du plancher', () => {
   const p = plan(readSuite());
   assert.ok(p.total >= 180);
-  assert.ok(p.shards[EXCLUSIVE].includes('recipe_reversal_compatibility.test.sql'));
+  // Relevé du 2026-11-17 : chaque fichier connu pour poser un verrou fort sur
+  // un objet partagé doit rester exclusif.
+  for (const f of ['antifraud_release_prerequisites', 'bank_reconciliation', 'cash_wallets', 'close_fiscal_year_v2',
+    'customers_categorie_obligatoire', 'loyalty_operation_recovery', 'maintenance_functions_acl', 'pb1_dedup_void_refund',
+    'recipe_reversal_compatibility'])
+    assert.ok(p.shards[EXCLUSIVE].includes(`${f}.test.sql`), f);
 });
 test('exclusif : DDL sur objet partagé oui, table temporaire et privilèges cités en texte non', () => {
   for (const sql of ['ALTER TABLE refunds DISABLE TRIGGER USER;', '  ALTER TABLE customers DISABLE TRIGGER t;',
     'CREATE OR REPLACE FUNCTION public.has_permission(p uuid) RETURNS bool', 'DROP FUNCTION IF EXISTS stock_private.f();',
     'CREATE TRIGGER t BEFORE INSERT ON public.audit_logs FOR EACH ROW EXECUTE FUNCTION pg_temp.f();',
     'REVOKE ALL ON FUNCTION public.f() FROM PUBLIC;', 'CREATE POLICY p ON x USING (true);', 'LOCK TABLE public.orders;',
-    '-- pgtap:exclusive\nSELECT 1;'])
+    '-- pgtap:exclusive\nSELECT 1;', 'REFRESH MATERIALIZED VIEW public.mv_sales_daily;',
+    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_pl_monthly;', 'CREATE OR REPLACE FUNCTION has_permission(p uuid) RETURNS bool'])
     assert.equal(isExclusive(sql), true, sql);
   for (const sql of ['CREATE TEMP TABLE hist_ids(id int);\nALTER TABLE hist_ids ADD COLUMN c text;',
     "SELECT ok(NOT has_table_privilege('authenticated','x','UPDATE,TRUNCATE'));", 'GRANT SELECT ON hist_ids TO authenticated;',
