@@ -498,6 +498,32 @@ exhaustive des 37 fonctions jointe à la PR, avec le statut de chacune.
 **Débloque** — Le chiffrage du manque avant fournée devient visible par le
 boulanger (constat §9 des specs).
 
+**État — paquet 1 développé et prouvé en dev le 2026-11-17**, branche
+`fix/s1-08-visibilite-deleguable`. Décision précisée par Mamat le même jour et
+gravée dans l'ADR-039 : le stock suit `reports.inventory.read`, les états
+financiers une permission neuve, `reports.statements.read`, donnée au seul
+propriétaire ; le rôle ADMIN garde ses permissions et ne gagne aucune
+visibilité. Écart signalé au relevé du corps live : les sept règles
+restrictives ne testaient pas directement le rôle, mais passaient par la
+fonction d'aide de la journée métier, elle-même réduite au test de rôle ; cette
+fonction est aussi appelée par des fonctions d'écriture, dont celle du paiement.
+Les règles des tables pointent donc vers des fonctions d'aide neuves, sans
+toucher à l'ancienne. Paquet 1, migration
+`20261117000005_s1_08_visibility_permissions_and_policies.sql` : la permission
+neuve, deux fonctions d'aide (stock, états financiers), les huit règles
+restrictives (les sept de la liste et celle des lignes d'inventaire) et la
+règle permissive des journaux, qui testait encore le rôle. Les journaux suivent
+`reports.audit.read`, les rapports Z les états financiers. Preuve pgTAP
+`s1_08_visibility_permissions.test.sql`, 18 sur 18 en dev le 2026-11-17 : lecture
+réelle des mouvements de stock et des journaux par un délégué, avec et sans la
+permission ; pour les six autres tables, seule l'expression de la règle est
+vérifiée. Un délégué lit une table s'il détient aussi la permission ordinaire de
+cette table (ADR-039, Conséquences).
+**Restent** : paquet 2, les fonctions de lecture du stock ; paquet 3, les
+fonctions des états financiers ; puis les fonctions d'écriture qui masquent le
+stock dans leur réponse, et l'Edge Function du PDF confidentiel, qui lisent
+encore l'ancienne fonction d'aide.
+
 ---
 
 ### `[S1-09]` Plafonner la remise de ligne au sous-total serveur

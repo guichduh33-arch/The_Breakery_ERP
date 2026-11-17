@@ -180,12 +180,11 @@ de `payments.process`).
 
 ### 5.2 Visibilité du stock et des comptes
 
-**FAIT** — Aujourd'hui, `is_business_owner_v1()` ne reconnaît que
-`role_code = 'SUPER_ADMIN'`, donc **un seul compte**. **37 fonctions** l'exigent
-(tous les états de stock, l'inventaire, le bilan, le résultat, la balance, le
-grand livre, la PB1, la marge) et **7 policies restrictives** passent par la même
-porte (`stock_movements`, `display_stock`, `display_movements`, `audit_logs`,
-`pos_events`, `z_reports`, `notification_outbox`).
+**FAIT** — `is_business_owner_v1()` ne reconnaît que `role_code = 'SUPER_ADMIN'`
+(2 comptes actifs en production au relevé du 2026-11-17). Les fonctions de
+lecture du stock et des états financiers l'exigent, directement ou par une
+fonction d'aide : tous les états de stock, l'inventaire, le bilan, le résultat,
+la balance, le grand livre, la PB1, la marge.
 
 **FAIT** — Les 3 comptes `ADMIN` **détiennent** `inventory.read`,
 `reports.financial.read` et `reports.export` : ces permissions sont des lettres
@@ -194,8 +193,15 @@ mortes, la fonction les refuse.
 **RÈGLE** — La visibilité du stock et des états financiers doit se piloter **par
 permission**, pas par rôle codé en dur, pour redevenir déléguable depuis
 l'écran RBAC.
-**À LIVRER** — Remplacer le contrôle de rôle par `reports.inventory.read` et
-`reports.financial.read` dans les 37 fonctions et les 7 policies.
+**À LIVRER** — Remplacer le contrôle de rôle par `reports.inventory.read` pour
+le stock et par `reports.statements.read` pour les états financiers, dans les
+fonctions de lecture concernées (ADR-039, précision de Mamat du 2026-11-17).
+Le rôle ADMIN ne gagne aucune visibilité à la livraison.
+
+**FAIT** — Depuis le paquet 1 de `S1-08` (2026-11-17), les règles d'accès des
+tables confidentielles lisent une permission : `reports.inventory.read` pour le
+stock, `reports.audit.read` pour les journaux, `reports.statements.read` pour
+les rapports Z. Les fonctions de lecture exigent encore le rôle propriétaire.
 
 ### 5.3 Authentification
 
