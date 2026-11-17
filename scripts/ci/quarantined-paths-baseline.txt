@@ -28,7 +28,6 @@
 1	apps/backoffice/src/features/products/hooks/useDeductibleIngredientProducts.ts	superpowers
 1	apps/backoffice/src/features/promotions/components/PromotionDeleteConfirm.tsx	superpowers
 1	apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx	superpowers
-1	apps/backoffice/src/features/promotions/components/PromotionListRow.tsx	superpowers
 1	apps/backoffice/src/features/promotions/hooks/promotionRowMappers.ts	superpowers
 1	apps/backoffice/src/features/promotions/hooks/useCreatePromotion.ts	superpowers
 1	apps/backoffice/src/features/promotions/hooks/useDeletePromotion.ts	superpowers

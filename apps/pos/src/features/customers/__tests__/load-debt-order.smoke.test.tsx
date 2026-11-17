@@ -14,7 +14,7 @@ vi.mock('sonner', () => ({
 }));
 
 // Real schema: the column is `name_snapshot` (there is no `order_items.name`).
-// Mirrors pickup-flow.smoke.test.tsx so this suite catches a 42703-style drift.
+// Keeping the real column name lets this suite catch a 42703-style drift.
 const ORDER_ITEMS = [
   { id: 'item-1', product_id: 'p1', name_snapshot: 'Americano', unit_price: 35000, quantity: 1, modifiers: [], is_cancelled: false },
   { id: 'item-2', product_id: 'p2', name_snapshot: 'Croissant', unit_price: 35000, quantity: 1, modifiers: [], is_cancelled: false },

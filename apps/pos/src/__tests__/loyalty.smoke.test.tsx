@@ -74,7 +74,7 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     expect(screen.getByRole('button', { name: /customer/i })).toBeInTheDocument();
   });
 
-  it('shows CustomerAttachedBadge after attaching a customer', () => {
+  it('shows the attached customer and the detach action after attaching a customer', () => {
     useCartStore.getState().attachCustomer(GOLD_CUSTOMER);
     render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
     expect(screen.getByText('Loyal Gold Customer')).toBeInTheDocument();

@@ -1,7 +1,6 @@
 vi.mock('@/features/settings/hooks/useTaxConfig', () => ({ useTaxConfig: () => ({ taxRate: 0.1, taxInclusive: true }) }));
 vi.mock('@/features/settings/hooks/usePOSPresets', () => ({ usePOSPresets: () => ({ presets: { discountPresets: [] } }) }));
 vi.mock('@/features/shift/hooks/useShift', () => ({ useCurrentShift: () => ({ isLoading: false }) }));
-vi.mock('@/features/inbox/hooks/usePendingTabletOrders', () => ({ usePendingTabletOrders: () => ({ data: [] }) }));
 /// <reference types="@testing-library/jest-dom" />
 // A reopened FIRED order ("addition ouverte") can be put back on hold with no
 // changes. After reopen the order sits on the terminal (pickedUpOrderId set, all
@@ -45,12 +44,8 @@ vi.mock('@/features/discounts/hooks/useApplyCartDiscount', () => ({
 vi.mock('@/features/discounts/hooks/useVerifyManagerPin', () => ({
   useVerifyManagerPin: () => vi.fn(),
 }));
-vi.mock('@/features/cart/hooks/useVoidServerOrder', () => ({
-  useVoidServerOrder: () => vi.fn(),
-}));
 // Stub the heavy child buttons/modals so we only exercise BottomActionBar logic.
 vi.mock('@/features/tables/components/TableSelectorButton', () => ({ TableSelectorButton: () => null }));
-vi.mock('@/features/inbox/components/TabletInboxButton', () => ({ TabletInboxButton: () => <button>Tablet orders</button> }));
 vi.mock('@/features/cart/SendToKitchenButton', () => ({ SendToKitchenButton: () => null }));
 vi.mock('@/features/cart/PrintBillButton', () => ({ PrintBillButton: () => null }));
 vi.mock('@/features/cart/HeldOrdersModal', () => ({
