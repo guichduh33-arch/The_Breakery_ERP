@@ -160,7 +160,9 @@ export function useFinalizeOpname() {
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('finalize_opname_v6', {
+      // ADR-038 : la finalisation pose le stock à la quantité comptée, lue
+      // contre le stock vivant ; le propriétaire peut finaliser son propre comptage.
+      const { data, error } = await rpc()('finalize_opname_v7', {
         p_count_id: countId,
         p_idempotency_key: idemKey.current,
       });
