@@ -49,7 +49,7 @@ export function ValidateOpnameDialog({
         <DialogHeader>
           <DialogTitle>Submit count for owner review?</DialogTitle>
           <DialogDescription className="sr-only">
-            Submit this count for independent owner review and lock counted quantities.
+            Submit this count for owner review and lock counted quantities.
           </DialogDescription>
         </DialogHeader>
 

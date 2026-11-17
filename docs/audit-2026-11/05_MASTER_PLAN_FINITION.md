@@ -566,6 +566,15 @@ finalise un inventaire qu'il a compté lui-même.
 **Note** — La séparation des tâches disparaît de l'inventaire, en connaissance
 de cause (arbitrage lot 7).
 
+**État — développé et prouvé en dev le 2026-11-17**, branche
+`fix/s1-10-opname-absolu`. Décision gravée dans l'ADR-038. Migration
+`20261117000001_finalize_opname_v7_absolute.sql` : nouvelle version de la
+famille `finalize_opname`, additive ; l'ancienne reste jusqu'à la publication du
+back-office. Preuve pgTAP `opname_finalize_absolute.test.sql`, 17 sur 17 en dev
+le 2026-11-17 : compté 10, stock passé de 4 à 7 pendant le comptage, résultat
+10 ; inventaire compté et finalisé par le propriétaire. L'écran appelle la
+nouvelle version et ne parle plus de revue « indépendante ».
+
 ---
 
 ### `[S1-11]` Ne plus décrémenter un produit non suivi
