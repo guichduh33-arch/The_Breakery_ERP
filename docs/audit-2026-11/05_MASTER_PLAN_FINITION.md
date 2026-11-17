@@ -542,7 +542,11 @@ avant génération, puis égalité fichier-base sur les 29). Le back-office ouvr
 ses routes et son menu des états financiers à la permission, et non plus au
 rôle ; l'aperçu des matières d'une fournée montre le stock et le manque à qui
 détient la permission de stock. L'Edge Function du PDF suit les deux
-permissions. **Restent hors de ce lot** : les fonctions d'écriture et de
+permissions. **Limite, conforme à l'ADR-039** : la plupart des lectures de
+stock gardent la confidentialité de la journée en cours ; un délégué n'y voit le
+stock qu'une fois la journée close. Le manque avant fournée devient visible au
+délégué dans l'aperçu des matières et la recherche d'ingrédients, qui n'ont pas
+ce verrou ; les listes et alertes de stock, non. **Restent hors de ce lot** : les fonctions d'écriture et de
 paiement qui masquent le stock dans leurs messages d'erreur, la lecture des
 produits opérationnels par la caisse, et les paiements par méthode, rapport et
 PDF, dont la permission n'est pas tranchée (voir l'ADR-039, qui ne les range ni

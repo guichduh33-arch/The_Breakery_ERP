@@ -8130,7 +8130,6 @@ export type Database = {
         Returns: undefined
       }
       assert_statements_visible_v1: { Args: never; Returns: undefined }
-      assert_stock_owner_v1: { Args: never; Returns: undefined }
       assert_stock_visible_v1: { Args: never; Returns: undefined }
       calculate_pb1_payable_v6: {
         Args: { p_period_end: string; p_period_start: string }

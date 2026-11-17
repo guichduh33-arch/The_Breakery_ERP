@@ -34,6 +34,9 @@ DECLARE
   v_left   bigint;
   v_month  date;
 BEGIN
+  -- Une transaction longue qui tiendrait le journal ferait attendre toute la
+  -- caisse derrière le détachement : mieux vaut échouer vite et réessayer.
+  PERFORM set_config('lock_timeout', '5s', true);
   SELECT count(*) INTO v_before FROM public.pos_events;
 
   ALTER TABLE public.pos_events DETACH PARTITION public.pos_events_default;
