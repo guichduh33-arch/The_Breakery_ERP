@@ -8215,6 +8215,10 @@ export type Database = {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
+      finalize_opname_v7: {
+        Args: { p_count_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       fire_counter_order_v12: {
         Args: {
           p_client_uuid: string

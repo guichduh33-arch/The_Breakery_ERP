@@ -52,7 +52,7 @@ export function useTabletOrderStatusListener() {
             // La colonne est `name_snapshot` (figée à la commande) — il n'y a
             // PAS de `order_items.name`. Lire `name` renvoyait toujours
             // undefined : le toast annonçait « Item ready: item », sans jamais
-            // dire QUOI. Voir la note de usePickupTabletOrder.
+            // dire QUOI.
             name_snapshot?:  string;
             kitchen_status?: string;
           };

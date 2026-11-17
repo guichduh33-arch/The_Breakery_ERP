@@ -19,6 +19,19 @@ export function isInvoicePath(path: string | null | undefined, prefix: string): 
   return typeof path === 'string' && path.startsWith(prefix) && /\.(jpe?g|pdf)$/.test(path);
 }
 
+// Les EF de téléchargement renvoient `application/octet-stream` : le type
+// d'affichage se déduit de l'extension, bornée par les policies d'insert des
+// buckets (jpg/jpeg/pdf ; png/webp restent lisibles pour les reçus déposés
+// avant ADR-037). Aucun type actif (SVG, HTML) ne peut donc sortir d'ici.
+const PREVIEW_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
+};
+
+export function invoicePreviewType(path: string): string | null {
+  const extension = /\.([a-z]+)$/i.exec(path)?.[1]?.toLowerCase();
+  return extension ? PREVIEW_TYPES[extension] ?? null : null;
+}
+
 export const INVOICE_PAYMENT_MESSAGE = 'Attach a JPEG or PDF invoice before recording payment.';
 export const INVOICE_APPROVAL_MESSAGE = 'Attach a JPEG or PDF invoice before validating this cash expense.';
 

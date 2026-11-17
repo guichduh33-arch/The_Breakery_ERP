@@ -1,6 +1,5 @@
 // apps/pos/src/features/shift/hooks/useLanDevices.ts
 // Session 33 / Wave 3.7 — fetch active POS terminals for OpenShiftModal selector.
-// Mirror of apps/backoffice/src/features/devices/hooks/useLanDevices.ts.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';

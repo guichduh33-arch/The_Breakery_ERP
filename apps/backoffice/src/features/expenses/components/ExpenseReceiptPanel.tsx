@@ -6,20 +6,7 @@ import { Card, Button } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import type { ExpenseRow } from '../hooks/useExpensesList.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
-import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
-
-// L'EF renvoie `application/octet-stream` : le type d'affichage se déduit de
-// l'extension, bornée par la policy d'insert du bucket (jpg/jpeg/pdf ; png/webp
-// restent lisibles pour les reçus déposés avant ADR-037).
-// Aucun type actif (SVG, HTML) ne peut donc sortir d'ici.
-const PREVIEW_TYPES: Record<string, string> = {
-  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
-};
-
-export function receiptPreviewType(path: string): string | null {
-  const extension = /\.([a-z]+)$/i.exec(path)?.[1]?.toLowerCase();
-  return extension ? PREVIEW_TYPES[extension] ?? null : null;
-}
+import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE, invoicePreviewType } from '@/lib/invoiceFiles.js';
 
 interface Preview { url: string; type: string; path: string }
 
@@ -47,7 +34,7 @@ export function ExpenseReceiptPanel({expense, onBusyChange}: {
     setBusy(false); setError(null); setPreview(null);
     const path = expense.receipt_url;
     if (!path) return;
-    const type = receiptPreviewType(path);
+    const type = invoicePreviewType(path);
     if (!type) return;
     let url: string | null = null;
     let live = true;

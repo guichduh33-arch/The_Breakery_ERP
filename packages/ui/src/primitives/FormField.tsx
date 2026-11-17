@@ -8,7 +8,7 @@
 // id / required / aria-invalid / aria-describedby dans le contrôle enfant.
 //
 // Le contrôle enfant doit accepter ces props (Input, Select natifs, ou un
-// composant qui les forwarde — cf. CategoryPicker). Un seul enfant par champ.
+// composant qui les forwarde). Un seul enfant par champ.
 
 import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { cn } from '../lib/cn.js';

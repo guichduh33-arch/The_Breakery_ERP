@@ -3,7 +3,6 @@
 // Session 13 / Phase 4.D — Tablet polish.
 //
 // Smoke + behaviour tests for the offline polish primitives :
-//   - useTabletOffline reacts to window online/offline events.
 //   - useTabletMenuCache writes through to localStorage on query updates
 //     and reads back a valid snapshot.
 //   - OfflineBanner mounts / unmounts based on the `isOnline` prop and
@@ -13,7 +12,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OfflineBanner } from '../components/OfflineBanner';
-import { useTabletOffline } from '../hooks/useTabletOffline';
 import type { TabletConnection } from '../hooks/useTabletConnectionState';
 import {
   useTabletMenuCacheRead,
@@ -28,7 +26,7 @@ if (typeof crypto.randomUUID !== 'function') {
   });
 }
 
-// Stub fetch — useTabletOffline pings Supabase. Default = success.
+// Stub fetch — default = success.
 const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
@@ -104,32 +102,6 @@ describe('OfflineBanner', () => {
     expect(banner).toHaveTextContent(/no network/i);
     expect(banner).toHaveTextContent(/cannot be sent/i);
     expect(banner).not.toHaveTextContent(/still reach the kitchen/i);
-  });
-});
-
-describe('useTabletOffline', () => {
-  it('starts isOnline=true when navigator.onLine is true', () => {
-    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
-    const { result } = renderHook(() => useTabletOffline());
-    expect(result.current.isOnline).toBe(true);
-  });
-
-  it('flips to offline when an `offline` event fires', () => {
-    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
-    const { result } = renderHook(() => useTabletOffline());
-    act(() => { window.dispatchEvent(new Event('offline')); });
-    expect(result.current.isOnline).toBe(false);
-  });
-
-  it('flips back to online when an `online` event fires', () => {
-    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
-    const { result } = renderHook(() => useTabletOffline());
-    expect(result.current.isOnline).toBe(false);
-    act(() => { window.dispatchEvent(new Event('online')); });
-    // Note: ping result is still pending in our mock, but ping defaults to
-    // success via fetchMock, so once the effect resolves the value will
-    // also be online. We assert at least the nav signal flipped here.
-    // (We don't await the ping — that's covered in the cache test.)
   });
 });
 
