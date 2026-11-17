@@ -14,6 +14,14 @@
 --      de l'exercice), 4900 → 4950 (4900 = remises), 5100 → 5120 (5100 = groupe
 --      COGS), 5200 → 5300 (le rapport de résultat range tout 52x en « Waste »).
 --      4200 → 4131 et 3200 → 3110 relèvent du cas 1 : même sens, code existant.
+--      4300 → 4140 : le code est libre, mais le rapport de résultat ne range en
+--      « Sales » que les 41x ; ces ventes y ont leur place.
+--
+-- 7100 et 7110 (produits financiers) sont en classe 4 : ils entrent dans le
+-- total des produits et le résultat net, sans poste de détail dédié.
+-- 5120 (achats matières) n'est alimenté par aucun émetteur : le coût des ventes
+-- vient des mouvements de stock. Y passer un achat déjà entré en stock le
+-- compterait deux fois.
 --
 -- Écart volontaire de libellé : 6121 devient « Taxes & duties (Bapenda) », sans
 -- « PB1 ». La PB1 collectée vit en 2110 et son reversement au Bapenda débite
@@ -21,7 +29,9 @@
 --
 -- Section de flux de trésorerie posée explicitement à chaque INSERT (le défaut
 -- `operating` ferait compter un compte de trésorerie deux fois) : immobilisations
--- → investing ; emprunts, prêt à l'associé (ses prélèvements, soldés en
+-- → investing, sauf 1690 (amortissements cumulés) → operating, comme sa dotation
+-- 6950 : sinon chaque dotation, sans trésorerie, déplacerait un flux fictif
+-- entre deux sections ; emprunts, prêt à l'associé (ses prélèvements, soldés en
 -- dividende), dettes d'associés, dividendes → financing ; le reste → operating.
 --
 -- Les catégories de dépenses neuves pointent vers les nouveaux comptes de
@@ -61,14 +71,14 @@ INSERT INTO accounts (code, name, account_class, account_type, balance_type,
   ('1460', 'Receivable from PT ABT (expenses paid on its behalf)',   1, 'asset',     'debit',  true, true, true, 'operating'),
   ('1600', 'Fixed assets – equipment & furniture',                   1, 'asset',     'debit',  true, true, true, 'investing'),
   ('1610', 'Production machinery & equipment',                       1, 'asset',     'debit',  true, true, true, 'investing'),
-  ('1690', 'Accumulated depreciation',                               1, 'asset',     'credit', true, true, true, 'investing'),
+  ('1690', 'Accumulated depreciation',                               1, 'asset',     'credit', true, true, true, 'operating'),
   ('2200', 'Loans & financial debts (repayments)',                   2, 'liability', 'credit', true, true, true, 'financing'),
   ('2250', 'Debt – loan in Ines''s name (on behalf of the company)', 2, 'liability', 'credit', true, true, true, 'financing'),
   ('2300', 'Payable to shareholder (loan received)',                 2, 'liability', 'credit', true, true, true, 'financing'),
   ('2400', 'Payable to landlord – remaining lease balance',          2, 'liability', 'credit', true, true, true, 'operating'),
   ('2990', 'Suspense account (to be classified)',                    2, 'liability', 'credit', true, true, true, 'operating'),
   ('3310', 'Dividends paid',                                         3, 'equity',    'debit',  true, true, true, 'financing'),
-  ('4300', 'Custom orders / events / transfers sales',               4, 'revenue',   'credit', true, true, true, 'operating'),
+  ('4140', 'Custom orders / events / transfers sales',               4, 'revenue',   'credit', true, true, true, 'operating'),
   ('4950', 'Other operating income',                                 4, 'revenue',   'credit', true, true, true, 'operating'),
   ('5120', 'Raw materials & food purchases',                         5, 'expense',   'debit',  true, true, true, 'operating'),
   ('5300', 'Packaging purchases',                                    5, 'expense',   'debit',  true, true, true, 'operating'),

@@ -169,14 +169,15 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 > ⚠️ **Charte de la société (décision de Mamat du 2026-11-17).** La charte s'intègre sans
 > renuméroter le système : un compte de même sens garde son code et prend le libellé de
 > la charte ; un code de la charte déjà pris avec un autre sens part sur un code voisin
-> (prêt Ines 2250, dividendes 3310, autres produits 4950, achats matières 5120,
-> emballages 5300). 2210, 3200, 3300, 4900 et 5100 gardent leur sens système. Lire
+> (prêt Ines 2250, dividendes 3310, ventes sur commande 4140, autres produits 4950,
+> achats matières 5120, emballages 5300). 2210, 3200, 3300, 4900 et 5100 gardent leur sens système. Lire
 > l'en-tête de `20261117000002_coa_company_chart.sql` avant d'ajouter un compte.
 
-> ⚠️ **Les rapports rangent par préfixe de code.** Bilan (famille `get_balance_sheet`,
-> depuis la v5) : 111x trésorerie, 113x créances, 114x stocks, 16xx immobilisations, tout
-> autre actif en « other current ». Résultat (famille `get_profit_loss`) : 51x =
-> « Production », 52x = « Waste ». Un code neuf hors de ces plages tombe dans un total
+> ⚠️ **Les rapports rangent par préfixe de code.** Bilan (famille `get_balance_sheet`) :
+> 111x trésorerie, 113x créances, 114x stocks, 16xx immobilisations, tout autre actif en
+> « other current » (règle posée le 2026-11-17 ; avant, seuls 111x à 115x comptaient).
+> Résultat (famille `get_profit_loss`) : 41x = « Sales », 51x = « Production »,
+> 52x = « Waste ». 7100/7110 entrent dans le total des produits sans poste dédié. Un code neuf hors de ces plages tombe dans un total
 > sans poste dédié : vérifier le rangement avant de choisir un code.
 
 > ⚠️ **`113x` = créances, `114x` = stocks.** Plusieurs RPC financières filtrent sur

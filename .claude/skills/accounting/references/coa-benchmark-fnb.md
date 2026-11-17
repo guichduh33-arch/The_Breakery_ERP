@@ -86,13 +86,15 @@ son émetteur (voir invariants).
 
 ### Comptes
 
+> **Tranché par la charte de la société (2026-11-17)** : les immobilisations vivent en
+> 1600 (équipement et mobilier) et 1610 (machines de production), en section
+> `investing` ; les amortissements cumulés en 1690 et la dotation en 6950, tous deux en
+> `operating`, pour qu'une dotation sans trésorerie ne déplace aucun flux entre
+> sections. 6120 porte la rémunération de la direction. Le bloc ci-dessous reste le
+> repère de méthode, pas la codification à créer.
+
 | Code | Nom | Classe | postable | cash_flow_section | Contenu |
 |---|---|---|---|---|---|
-> **Tranché par la charte de la société (2026-11-17)** : les immobilisations vivent en
-> 1600 (équipement et mobilier), 1610 (machines de production) et 1690 (amortissements
-> cumulés), la dotation en 6950 ; 6120 porte la rémunération de la direction. Le bloc
-> ci-dessous reste le repère de méthode, pas la codification à créer.
-
 | 1500 | Fixed Assets (groupe) | 1 | non | investing | regroupement |
 | 1510 | Equipment - Production (Peralatan Produksi) | 1 | oui | investing | fours, pétrins, laminoirs, froid pro |
 | 1520 | Furniture & Fixtures | 1 | oui | investing | mobilier salle, vitrines |
@@ -137,12 +139,12 @@ applicable et remplace l'usage du drawing 3110. Fiscalité et garde-fous détail
 
 ### Comptes proposés
 
-| Code | Nom | Classe | postable | cash_flow_section | Rôle |
-|---|---|---|---|---|---|
 > **Tranché par la charte de la société (2026-11-17)** : le prêt à l'associé vit en 1450
 > (section `financing`) et les dividendes versés en 3310. Dans le cycle ci-dessous, lire
 > 1450 à la place de 1135.
 
+| Code | Nom | Classe | postable | cash_flow_section | Rôle |
+|---|---|---|---|---|---|
 | 1135 | Shareholder Loan (Piutang Pemegang Saham) | 1 | oui | financing | prélèvements de l'année (DR à chaque sortie de cash) |
 | 2150 | Dividend Payable (Utang Dividen) | 2 | oui | financing | déclaré au RUPS, apuré par compensation |
 | 2115 | PPh Payable - Dividend (final 10 %) | 2 | oui | operating | retenue à la source à reverser |

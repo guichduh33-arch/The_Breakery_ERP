@@ -9,7 +9,7 @@
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(14);
+SELECT plan(15);
 
 DO $fixture$
 DECLARE v_auth UUID;
@@ -26,13 +26,13 @@ END $fixture$;
 SELECT is(
   (SELECT count(*)::int FROM accounts WHERE is_active AND is_postable AND code IN (
     '1400','1410','1450','1460','1600','1610','1690','2200','2250','2300','2400','2990',
-    '3310','4300','4950','5120','5300','6110','6120','6350','6400','6450','6600','6810',
+    '3310','4140','4950','5120','5300','6110','6120','6350','6400','6450','6600','6810',
     '6950','6960','7100','7110')),
   28, 'COA_01 — the 28 new company accounts exist, active and postable');
 SELECT is(
   (SELECT string_agg(code, ',' ORDER BY code) FROM accounts
     WHERE code IN ('1600','1610','1690') AND cash_flow_section = 'investing'),
-  '1600,1610,1690', 'COA_02 — fixed assets are investing');
+  '1600,1610', 'COA_02 — fixed assets are investing, accumulated depreciation is not');
 SELECT is(
   (SELECT string_agg(code, ',' ORDER BY code) FROM accounts
     WHERE code IN ('1450','2200','2250','2300','3310') AND cash_flow_section = 'financing'),
@@ -45,6 +45,9 @@ SELECT is(
   (SELECT account_class::int FROM accounts WHERE code = '7100'), 4,
   'COA_05 — financial income 7100 is a revenue (class 4) account');
 SELECT is(
+  (SELECT cash_flow_section::text FROM accounts WHERE code = '1690'), 'operating',
+  'COA_05b — accumulated depreciation follows its operating depreciation expense');
+SELECT is(
   (SELECT balance_type FROM accounts WHERE code = '1690'), 'credit',
   'COA_06 — accumulated depreciation carries a credit balance');
 
@@ -55,9 +58,10 @@ SELECT is(
 SELECT is(
   (SELECT account_code FROM accounting_mappings WHERE mapping_key = 'SALE_DISCOUNT'), '4900',
   'COA_08 — 4900 still holds sales discounts');
-SELECT is(
-  (SELECT name FROM accounts WHERE code = '3200'), 'Retained Earnings (Laba Ditahan)',
-  'COA_09 — 3200 is still retained earnings (year-end close target)');
+SELECT ok(
+  (SELECT account_class = 3 AND balance_type = 'credit' AND is_postable AND is_active
+     FROM accounts WHERE code = '3200'),
+  'COA_09 — 3200 is still a postable credit equity account (year-end close target)');
 
 -- Catégories de dépenses
 SELECT is(
