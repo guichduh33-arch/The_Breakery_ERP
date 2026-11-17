@@ -184,7 +184,7 @@ SELECT ok((SELECT (e->>'balance')::numeric = 100 AND (e->>'opening_balance')::nu
     WHERE e->>'code' IN ('4991','6991')),
   'T18 — TB 2099 : 3200 porte le report cumule 100 (600-500), 4991/6991 rouvrent a 0');
 SELECT ok((SELECT (l->>'balance')::numeric = 100
-     FROM jsonb_array_elements((get_balance_sheet_v4('2098-12-31'))->'lines') l
+     FROM jsonb_array_elements((get_balance_sheet_v5('2098-12-31'))->'lines') l
     WHERE l->>'code'='3200'),
   'T19 — BS 31/12/2098 : 3200 Retained Earnings = 100 (CYE YTD retombe a 0, aucun changement BS requis)');
 

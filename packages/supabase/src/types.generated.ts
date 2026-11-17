@@ -8211,10 +8211,6 @@ export type Database = {
         }
         Returns: Json
       }
-      finalize_opname_v6: {
-        Args: { p_count_id: string; p_idempotency_key?: string }
-        Returns: Json
-      }
       finalize_opname_v7: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
@@ -8238,7 +8234,6 @@ export type Database = {
       }
       get_ar_aging_v2: { Args: never; Returns: Json }
       get_b2b_invoice_v3: { Args: { p_order_id: string }; Returns: Json }
-      get_balance_sheet_v4: { Args: { p_as_of_date: string }; Returns: Json }
       get_balance_sheet_v5: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v6: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }

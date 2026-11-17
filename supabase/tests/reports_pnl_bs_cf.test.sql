@@ -37,8 +37,8 @@ SELECT has_function(
   'T_RPT_FIN_01 — get_profit_loss_v4 exists'
 );
 SELECT has_function(
-  'public', 'get_balance_sheet_v4', ARRAY['date'],
-  'T_RPT_FIN_02 — get_balance_sheet_v4 exists'
+  'public', 'get_balance_sheet_v5', ARRAY['date'],
+  'T_RPT_FIN_02 — get_balance_sheet_v5 exists'
 );
 SELECT has_function(
   'public', 'get_cash_flow_v4', ARRAY['date','date'],
@@ -59,7 +59,7 @@ SELECT has_function(
 DO $baseline$
 BEGIN
   PERFORM set_config('breakery.cye_before',
-    ((get_balance_sheet_v4(CURRENT_DATE))->'equity'->>'current_year_earnings'), true);
+    ((get_balance_sheet_v5(CURRENT_DATE))->'equity'->>'current_year_earnings'), true);
   -- S77 : même réparation pour T_RPT_FIN_05..07 — la base dev vivante poste de
   -- vraies JE le jour même (ventes POS, suite vitest), les absolus 100/40/40 ne
   -- tenaient que sur base vierge. Capture avant seed, assertions en DELTA.
@@ -141,13 +141,13 @@ SELECT is(
 -- T_RPT_FIN_08..09 — Balance Sheet math + balanced
 -- ============================================================
 SELECT is(
-  ((get_balance_sheet_v4(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC
+  ((get_balance_sheet_v5(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC
     - current_setting('breakery.cye_before')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_08 — Balance Sheet CYE moved by seeded net profit (+40)'
 );
 SELECT ok(
-  ((get_balance_sheet_v4(CURRENT_DATE))->>'balanced')::BOOLEAN,
+  ((get_balance_sheet_v5(CURRENT_DATE))->>'balanced')::BOOLEAN,
   'T_RPT_FIN_09 — Balance Sheet is balanced (A = L + E + CYE)'
 );
 
