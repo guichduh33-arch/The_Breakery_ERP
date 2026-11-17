@@ -88,6 +88,11 @@ son émetteur (voir invariants).
 
 | Code | Nom | Classe | postable | cash_flow_section | Contenu |
 |---|---|---|---|---|---|
+> **Tranché par la charte de la société (2026-11-17)** : les immobilisations vivent en
+> 1600 (équipement et mobilier), 1610 (machines de production) et 1690 (amortissements
+> cumulés), la dotation en 6950 ; 6120 porte la rémunération de la direction. Le bloc
+> ci-dessous reste le repère de méthode, pas la codification à créer.
+
 | 1500 | Fixed Assets (groupe) | 1 | non | investing | regroupement |
 | 1510 | Equipment - Production (Peralatan Produksi) | 1 | oui | investing | fours, pétrins, laminoirs, froid pro |
 | 1520 | Furniture & Fixtures | 1 | oui | investing | mobilier salle, vitrines |
@@ -134,6 +139,10 @@ applicable et remplace l'usage du drawing 3110. Fiscalité et garde-fous détail
 
 | Code | Nom | Classe | postable | cash_flow_section | Rôle |
 |---|---|---|---|---|---|
+> **Tranché par la charte de la société (2026-11-17)** : le prêt à l'associé vit en 1450
+> (section `financing`) et les dividendes versés en 3310. Dans le cycle ci-dessous, lire
+> 1450 à la place de 1135.
+
 | 1135 | Shareholder Loan (Piutang Pemegang Saham) | 1 | oui | financing | prélèvements de l'année (DR à chaque sortie de cash) |
 | 2150 | Dividend Payable (Utang Dividen) | 2 | oui | financing | déclaré au RUPS, apuré par compensation |
 | 2115 | PPh Payable - Dividend (final 10 %) | 2 | oui | operating | retenue à la source à reverser |
@@ -155,10 +164,11 @@ Ces écritures sont des événements de gouvernance annuels : `create_manual_je`
 
 ## Invariants de codification (à respecter dans toute proposition)
 
-- Plages : 11xx courant / 15xx immobilisations (à créer) / 21xx fiscal / 214x
-  fournisseurs / 215x dividendes (à créer) / 22xx dettes clients / 31xx capital /
-  4xxx produits / 5xxx COGS / 6xxx opex. `113x` = créances (1135 prêt actionnaire
-  inclus), `114x` = stocks — jamais l'inverse.
+- Plages : 11xx courant / 14xx autres actifs courants (avances, loyer payé d'avance,
+  prêts consentis) / 16xx immobilisations / 21xx fiscal / 214x fournisseurs / 215x
+  dividendes (à créer) / 22xx dettes clients et emprunts / 31xx capital / 4xxx et 7xxx
+  produits (classe 4) / 5xxx COGS / 6xxx opex. `113x` = créances, `114x` = stocks —
+  jamais l'inverse.
 - `cash_flow_section` **explicite** : trésorerie → `none`, immobilisations → `investing`,
   equity → `financing`, reste → `operating`. Le DEFAULT `operating` silencieux est le
   piège n°1.

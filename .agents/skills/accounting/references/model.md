@@ -108,7 +108,7 @@ n'existent pas dans l'enum :
 | `cash` | `SALE_PAYMENT_CASH` | 1110 Cash on Hand |
 | `qris`, `gopay`, `ovo`, `dana` | `SALE_PAYMENT_QRIS` | 1115 QRIS Clearing |
 | `card`, `edc` | `SALE_PAYMENT_DEBIT` (clé `SALE_PAYMENT_CREDIT_CARD` pointe aussi 1116) | 1116 Card Clearing |
-| `transfer` | `SALE_PAYMENT_TRANSFER` | 1112 Bank Operating |
+| `transfer` | `SALE_PAYMENT_TRANSFER` | 1112 Bank Mandiri |
 | `store_credit` | `SALE_PAYMENT_STORE_CREDIT` | 2220 Customer Store Credit Payable (ADR-013 D4) |
 | (inconnue) | `SALE_PAYMENT_CASH` | fallback silencieux — un nouveau moyen de paiement non ajouté au helper part en caisse |
 
@@ -139,7 +139,7 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 |------|-----|--------|-------|
 | **1110** | Cash on Hand | 1 asset | Caisse shift ; `CASH_WALLET_UNDEPOSITED` |
 | **1111** | Petty Cash | 1 asset | `CASH_WALLET_PETTY`, `EXPENSE_CASH_OUT` |
-| **1112** | Bank Operating | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER` (vente et règlement B2B par virement) ; `B2B_PAYMENT_BANK` n'est plus lue par aucun émetteur |
+| **1112** | Bank Mandiri (current account) | 1 asset | `CASH_MOVEMENT_BANK`, `SALE_PAYMENT_TRANSFER` (vente et règlement B2B par virement) ; `B2B_PAYMENT_BANK` n'est plus lue par aucun émetteur |
 | **1115** | Cash - QRIS Clearing | 1 asset | `SALE_PAYMENT_QRIS` |
 | **1116** | Cash - Card Clearing | 1 asset | `SALE_PAYMENT_DEBIT` |
 | **1117** | Small Money (Change Float) | 1 asset | `CASH_WALLET_SMALL_MONEY` |
@@ -152,11 +152,11 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 | **2141** | Accounts Payable | 2 liability | `PURCHASE_PAYABLE`, `EXPENSE_AP` |
 | **2210** | Loyalty Liability | 2 liability | `LOYALTY_LIABILITY` — dette de points |
 | **2220** | Customer Store Credit Payable | 2 liability | Avoirs client (ADR-013 D4) |
-| **3100 / 3110** | Owner Capital / Owner's Drawing | 3 equity | `CASH_MOVEMENT_OWNER_CAPITAL` / `OWNER_DRAWING` |
+| **3100 / 3110** | Share capital & partner contributions / Partner current account / drawings | 3 equity | `CASH_MOVEMENT_OWNER_CAPITAL` / `OWNER_DRAWING` |
 | **3200** | Retained Earnings | 3 equity | Cible du carry-forward de la clôture annuelle |
 | **3300** | Current Year Earnings | 3 equity | `is_postable=false`, jamais mouvementé — agrégat d'affichage |
-| **4100** | Sales Revenue | 4 revenue | `SALE_POS_REVENUE` — **pas 4111**, qui existe mais n'est mappé nulle part |
-| **4131** | B2B Revenue | 4 revenue | `SALE_B2B_REVENUE` |
+| **4100** | Counter sales (B2C: card, QR, cash) | 4 revenue | `SALE_POS_REVENUE` — **pas 4111**, qui existe mais n'est mappé nulle part |
+| **4131** | B2B sales (hotels, villas, cafés, restaurants) | 4 revenue | `SALE_B2B_REVENUE` |
 | **4900** | Sales Discounts | 4 contra-rev | `SALE_DISCOUNT` (le mappé) |
 | **4910 / 5910** | Cash Variance Gain / Loss | 4 / 6 | variance de shift ; 5910 a un code « classe 5 » mais `account_class = 6` |
 | **4920 / 6117** | Store Credit Breakage / Grant | 4 / 6 opex | expiration / octroi d'avoirs |
@@ -165,6 +165,19 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 | **6520** | Bad Debt / AR Write-off | 6 opex | `B2B_AR_ADJUSTMENT` |
 
 **Pièges du plan de comptes :**
+
+> ⚠️ **Charte de la société (décision de Mamat du 2026-11-17).** La charte s'intègre sans
+> renuméroter le système : un compte de même sens garde son code et prend le libellé de
+> la charte ; un code de la charte déjà pris avec un autre sens part sur un code voisin
+> (prêt Ines 2250, dividendes 3310, autres produits 4950, achats matières 5120,
+> emballages 5300). 2210, 3200, 3300, 4900 et 5100 gardent leur sens système. Lire
+> l'en-tête de `20261117000002_coa_company_chart.sql` avant d'ajouter un compte.
+
+> ⚠️ **Les rapports rangent par préfixe de code.** Bilan (famille `get_balance_sheet`,
+> depuis la v5) : 111x trésorerie, 113x créances, 114x stocks, 16xx immobilisations, tout
+> autre actif en « other current ». Résultat (famille `get_profit_loss`) : 51x =
+> « Production », 52x = « Waste ». Un code neuf hors de ces plages tombe dans un total
+> sans poste dédié : vérifier le rangement avant de choisir un code.
 
 > ⚠️ **`113x` = créances, `114x` = stocks.** Plusieurs RPC financières filtrent sur
 > `code LIKE '113%'` / `'114%'` : les confondre fait lire un rapport juste comme un
