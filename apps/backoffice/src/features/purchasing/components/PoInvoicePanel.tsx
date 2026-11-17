@@ -60,10 +60,12 @@ export function PoInvoicePanel({ po, hasPayments, fullyPaid, paymentsKnown, onBu
     let url: string | null = null;
     let live = true;
     void (async () => {
-      const session = captureFinancialSession();
-      const current = () => live && mounted.current && observed.current === identity && session.current();
-      setBusy(true);
+      // La capture de session reste dans le try : une erreur n'y devient jamais un rejet non géré.
+      let session: ReturnType<typeof captureFinancialSession> | null = null;
+      const current = () => live && mounted.current && observed.current === identity && session?.current() === true;
       try {
+        session = captureFinancialSession();
+        setBusy(true);
         const response = await supabase.functions.invoke<Blob>('download-po-invoice', {
           body: { po_id: po.id }, headers: { 'x-session-token': token ?? '' },
         });
