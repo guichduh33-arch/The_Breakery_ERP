@@ -39,11 +39,6 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
-// useLanDevices : no terminals (don't trip the page on missing data)
-vi.mock('@/features/devices/hooks/useLanDevices.js', () => ({
-  useLanDevices: () => ({ data: [], isLoading: false, error: null }),
-}));
-
 // useAuthStore : grant all permissions so row actions render
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>

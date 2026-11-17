@@ -103,7 +103,7 @@ apps/backoffice/src/
   features/
     expenses/
       components/      ApprovalTimeline.tsx, ApproveDialog.tsx, RejectDialog.tsx,
-                       PayDialog.tsx, ExpenseForm.tsx, CategoryPicker.tsx,
+                       PayDialog.tsx, ExpenseForm.tsx,
                        ReceiptUploader.tsx, ExpenseCategoryHistory.tsx,
                        ExpenseConsequenceRail.tsx, ThresholdResolutionBadge.tsx,
                        ExpenseStatusBadge.tsx

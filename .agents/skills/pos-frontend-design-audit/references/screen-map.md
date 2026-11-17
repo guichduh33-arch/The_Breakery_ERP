@@ -118,15 +118,13 @@ verrouillé.
 
 **Commandes en attente / ardoises / client**
 - `features/cart/HeldOrdersModal.tsx` — liste de cartes en attente, tap pour restaurer.
-- `features/heldOrders/components/` — **`AttachTabCustomerButton.tsx`, `HeldOrdersInboxButton.tsx`**
+- `features/heldOrders/components/` — **`AttachTabCustomerButton.tsx`**
   (il n'y a plus de `HoldOrderButton`) + hooks (`useHeldOrdersQuery`, `useHeldOrdersRealtime`,
   `useReopenHeldOrder`, `useDiscardHeldOrder`, `useAttachTabCustomer`).
-- `features/customers/` — `CustomerDebtsPanel.tsx`, `components/CustomerAttachButton.tsx`,
-  `CustomerAttachedBadge.tsx`, `avatarTint.ts`.
+- `features/customers/` — `CustomerDebtsPanel.tsx`, `avatarTint.ts`.
 
 **Remises & PIN manager**
-- `features/discounts/components/` — `DiscountButton.tsx`, `LineDiscountButton.tsx` ;
-  `managerPinHolder.ts` ; hooks `useApplyCartDiscount`, `useApplyLineDiscount`,
+- `features/discounts/` — `managerPinHolder.ts` ; hooks `useApplyCartDiscount`, `useApplyLineDiscount`,
   `useVerifyManagerPin`. Les primitives `DiscountModal` / `PinVerificationModal` viennent de
   `@breakery/ui`.
 
@@ -190,8 +188,7 @@ verrouillé.
   points de progression, sélecteur d'utilisateur inline, chip « Switch »). Il n'existe **plus**
   de `features/auth/PinPad.tsx` ; le pavé virtuel générique (`VirtualKeypadProvider`,
   `NumpadVirtual`) vient de `@breakery/ui` et n'est délibérément pas utilisé ici.
-- `features/auth/` — `ChangePinModal.tsx`, `TerminalLockedOverlay.tsx`, `UserPicker.tsx`
-  (voir « fichiers sans importeur » plus bas), `sessionDeathWatch.ts`, `sessionRefresh.ts`,
+- `features/auth/` — `ChangePinModal.tsx`, `TerminalLockedOverlay.tsx`, `sessionDeathWatch.ts`, `sessionRefresh.ts`,
   hooks (`useLoginUsers`…).
 
 **Tablette (WAITER) — spécifique**
@@ -203,10 +200,11 @@ verrouillé.
   `TabletCartPanel.tsx` (`w-[340px]`, repliable à `w-20` sauf en paysage — au 2026-08-31),
   `OrderTypeToggle.tsx`, `TabletOrderConfirmation.tsx`, `OfflineBanner.tsx`.
 
-**Boîte de réception comptoir (commandes tablette)**
-- `features/inbox/components/` — `TabletInboxButton.tsx`, `TabletInboxModal.tsx` ;
-  hooks `usePendingTabletOrders`, `usePickupTabletOrder`, `usePickedUpOrderSync`
-  (monté par `Pos.tsx`), `useCloseCancelledTabletOrder`.
+**Commandes tablette au comptoir**
+- Elles s'ouvrent depuis `features/cart/HeldOrdersModal.tsx` : `useReopenHeldOrder` réclame
+  la commande tablette puis la charge. La boîte de réception dédiée a été retirée le
+  2026-11-17 (S2-13). Restent dans `features/inbox/` : `usePickedUpOrderSync` (monté par
+  `Pos.tsx`), `useCloseCancelledTabletOrder` et `fetchOrderSnapshot.ts`.
 
 **Réseau local, hors-ligne & télémétrie (rendu ambiant à juger)**
 - `features/lan/` — `HubPresenceMount.tsx`, `hubBusClient.ts`, `hubConnectionStore.ts`,
@@ -239,12 +237,12 @@ verrouillé.
   **`RadioGroup`, `Checkbox`, `Popover`, `Tooltip` n'existent toujours pas** — prévois le
   fallback natif avant de proposer un import.
 
-## Fichiers sans importeur (au 2026-08-31)
+## Fichiers sans importeur
 
-Deux composants n'ont aucun site d'appel : `features/products/CategorySidebar.tsx` (le rail
-vivant est `CategoryNav.tsx`) et `features/auth/UserPicker.tsx` (le sélecteur vivant est inline
-dans `pages/Login.tsx`). **Ne pose jamais un constat de design sur eux** — un correctif y serait
-mort-né. Vérifie l'importeur avant de juger un composant que la carte ne relie à aucune route.
+Les deux composants sans site d'appel relevés le 2026-08-31 (le rail de catégories doublant
+`CategoryNav.tsx`, le sélecteur d'utilisateur doublant celui de `pages/Login.tsx`) ont été
+supprimés le 2026-11-17 (S2-13). **Ne pose jamais un constat de design sur un composant sans
+importeur** — un correctif y serait mort-né. Vérifie l'importeur avant de juger un composant que la carte ne relie à aucune route.
 
 ## Fichiers à lire en premier (haut rendement pour un audit design)
 

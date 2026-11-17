@@ -56,10 +56,10 @@ Reference map (V3 dev `ikcyvlovptebroadgtvd`, ancrages re-vérifiés le 2026-08-
 | Famille RPC / EF | Caller (hook / module — ancre stable) | Role |
 |---|---|---|
 | `complete_order_with_payment` | EF `supabase/functions/process-payment`, elle-même appelée par `useCheckout` (branche panier neuf). **Le POS n'appelle jamais cette RPC directement.** | New cart → order + items + payments + sale JE, atomic. Sale stock via l'unique helper de stock de vente (famille `_record_sale_stock`) : un produit `is_display_item` décrémente `products.current_stock` **et** `display_stock`. |
-| `pay_existing_order` | `useCheckout`, branche `pickedUpOrderId` | Pays an order **already persisted** — trois provenances : ramassage tablette (`usePickupTabletOrder`), commande comptoir *fired*, commande *held* réouverte (`useReopenHeldOrder`). Multi-tender. |
+| `pay_existing_order` | `useCheckout`, branche `pickedUpOrderId` | Pays an order **already persisted** — trois provenances : commande tablette (réclamée puis chargée par `useReopenHeldOrder`), commande comptoir *fired*, commande *held* réouverte (`useReopenHeldOrder`). Multi-tender. |
 | `fire_counter_order` | `useFireToStations` ; aussi la branche « append » de `useCheckout` (lignes ajoutées après le dernier fire) | Envoi comptoir : **persiste la commande et ses lignes côté serveur AVANT d'imprimer** les tickets de station (ADR-022). C'est le vrai aller-retour DB de l'envoi en cuisine. |
 | `create_tablet_order` | `useCreateTabletOrder` | Waiter submits a table order. Idempotent via `p_client_uuid`, clés dans `tablet_order_idempotency_keys`. |
-| `pickup_tablet_order` | `usePickupTabletOrder` | POS claims a tablet order from the inbox (pas de suffixe de version). |
+| `pickup_tablet_order` | `useReopenHeldOrder`, branche commande tablette | POS claims a tablet order from the held-orders list (pas de suffixe de version). |
 | `evaluate_promotions` | `useEvaluatePromotions` | Returns applied promos + free items. Pure-TS fallback in `packages/domain/src/promotions`. |
 | `mark_item_served` | `useMarkItemServed` | KDS bumps an item ready/served (pas de suffixe de version). |
 | `hold_fired_order` · `reopen_held_order` · `discard_held_order` | `useHoldFiredOrder` (dans `features/cart/hooks`), `useReopenHeldOrder` et `useDiscardHeldOrder` (dans `features/heldOrders/hooks`) | Parking **serveur** d'une commande déjà envoyée en cuisine. La liste se lit sur la table `orders` via `useHeldOrdersQuery`. |
@@ -78,7 +78,7 @@ POS terminal: build cart                         Waiter tablet: build cart at ta
  │  add items + modifiers (cartStore)             │  create_tablet_order (idempotent)
  │  evaluate_promotions                             │        │
  │        │                                        ▼        ▼
- │        │                    pending-tablet-orders-… ──► POS inbox (usePickupTabletOrder)
+ │        │                    held-orders-… ────────────► POS held (useReopenHeldOrder)
  │        ▼                                                         │
  │   fire to stations ──► kds-{station}-… ──► KDS screen            │
  │   (useFireToStations → fire_counter_order :        │ mark_item_served
@@ -119,7 +119,6 @@ Realtime is where multi-device flows quietly break. **Channel names must be uniq
 |---|---|---|
 | KDS | `useKdsRealtime` | `kds-{station}-{uuid}` |
 | Customer display | `useDisplayRealtime` | `display-{screenId}-{uuid}` |
-| Inbox tablette | `usePendingTabletOrders` | `pending-tablet-orders-{uuid}` |
 | Held orders | `useHeldOrdersRealtime` | `held-orders-{uuid}` |
 | Occupation des tables | `useTableOccupancy` | `table_occupancy_realtime-{uuid}` |
 | Statut commande tablette | `useTabletOrderStatusListener` | `tablet-order-status-{uuid}` |

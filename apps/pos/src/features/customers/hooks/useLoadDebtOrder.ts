@@ -3,8 +3,8 @@
 // Session 60 — Task 1 (fiche 02 D1.1) — pay an outstanding retail "ardoise"
 // (counter-fired order left unpaid) directly from `/pos/debts`.
 //
-// Mirror of `usePickupTabletOrder` (apps/pos/src/features/inbox/hooks/
-// usePickupTabletOrder.ts): loads the persisted order_items into the cart and
+// Modelled on the former tablet-inbox pickup hook (removed in S2-13; tablet
+// orders are now reopened from HeldOrdersModal): loads the persisted order_items into the cart and
 // sets `pickedUpOrderId`, which routes `useCheckout` to `pay_existing_order_v13`.
 // Unlike the tablet pickup, this order was already counter-fired (fully
 // printed) — every line is marked BOTH locked AND printed so useCheckout's

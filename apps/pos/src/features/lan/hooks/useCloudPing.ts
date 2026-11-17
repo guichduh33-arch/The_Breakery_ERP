@@ -6,8 +6,9 @@
 // Deux signaux, comme useTabletOffline :
 //   1. navigator.onLine (instantané mais optimiste) ;
 //   2. ping HEAD /auth/v1/health toutes les 15 s (5 s timeout) — le vrai test.
-// cloudOnline = les DEUX sont bons. useTabletOffline reste intact (bannière
-// tablette) — ce hook est monté une fois par shell (Pos/Kds/Tablet/Display).
+// cloudOnline = les DEUX sont bons. useTabletOffline a été retiré (S2-13) :
+// la bannière tablette lit useTabletConnectionState. Ce hook est monté une
+// fois par shell (Pos/Kds/Tablet/Display).
 
 import { useEffect } from 'react';
 import { useCloudStatusStore } from '../cloudStatusStore';
