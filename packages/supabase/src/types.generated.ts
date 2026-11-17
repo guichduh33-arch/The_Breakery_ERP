@@ -9864,7 +9864,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_pos_events_partition_v1: {
+      create_pos_events_partition_v2: {
         Args: { p_month: string }
         Returns: string
       }

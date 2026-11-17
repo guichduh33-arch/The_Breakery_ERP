@@ -847,7 +847,12 @@ comptage, puis supprime l'ancienne table par DROP : aucune ligne n'est supprimé
 une à une. Essai en transaction annulée, puis application en dev : 212 lignes en
 octobre, partition par défaut vide, comptage égal. Une tâche planifiée, sans
 adresse ni secret, crée le 20 de chaque mois les partitions des deux mois
-suivants. Preuve pgTAP `s1_16_pos_events_partitions.test.sql`, 8 sur 8 en dev.
+suivants. Écart vu par la CI : la fonction de création ne posait pas la règle
+de session PIN des tables publiques. La migration
+`20261118000004_s1_16_partition_pin_policy.sql` la pose sur chaque partition,
+crée la version suivante de la fonction, qui la pose aussi, et y branche la
+tâche. Preuve pgTAP `s1_16_pos_events_partitions.test.sql`, 10 sur 10 en dev,
+et la garde des règles PIN verte.
 **Non fait** : la production, à appliquer boutique fermée (le détachement
 bloque l'écriture du journal le temps de la transaction).
 
