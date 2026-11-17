@@ -203,7 +203,7 @@ verrouillé.
 **Commandes tablette au comptoir**
 - Elles s'ouvrent depuis `features/cart/HeldOrdersModal.tsx` : `useReopenHeldOrder` réclame
   la commande tablette puis la charge. La boîte de réception dédiée a été retirée le
-  2026-11-17 (S2-13). Restent dans `features/inbox/` : `usePickedUpOrderSync` (monté par
+  2026-11-17. Restent dans `features/inbox/` : `usePickedUpOrderSync` (monté par
   `Pos.tsx`), `useCloseCancelledTabletOrder` et `fetchOrderSnapshot.ts`.
 
 **Réseau local, hors-ligne & télémétrie (rendu ambiant à juger)**
@@ -241,7 +241,7 @@ verrouillé.
 
 Les deux composants sans site d'appel relevés le 2026-08-31 (le rail de catégories doublant
 `CategoryNav.tsx`, le sélecteur d'utilisateur doublant celui de `pages/Login.tsx`) ont été
-supprimés le 2026-11-17 (S2-13). **Ne pose jamais un constat de design sur un composant sans
+supprimés le 2026-11-17. **Ne pose jamais un constat de design sur un composant sans
 importeur** — un correctif y serait mort-né. Vérifie l'importeur avant de juger un composant que la carte ne relie à aucune route.
 
 ## Fichiers à lire en premier (haut rendement pour un audit design)
