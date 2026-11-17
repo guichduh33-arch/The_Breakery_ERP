@@ -64,10 +64,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_balance_sheet_v4'
+      AND p.proname = 'get_balance_sheet_v5'
       AND p.prosecdef = true
   ),
-  'T4 — get_balance_sheet_v4 existe et SECURITY DEFINER'
+  'T4 — get_balance_sheet_v5 existe et SECURITY DEFINER'
 );
 
 SELECT ok(

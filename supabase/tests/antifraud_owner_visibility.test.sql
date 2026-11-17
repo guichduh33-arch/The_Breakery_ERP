@@ -67,7 +67,7 @@ INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(receipt_je),'Outstanding receipt JE hidden while receiving shift is open') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(float_je),'Opening float JE hidden before shift close') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.journal_entries WHERE id=(SELECT sale_je FROM antifraud_ids)),0::bigint,'Direct journal read cannot bypass the shift boundary');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_balance_sheet_v4(current_date)','P0003','stock_visibility_owner_required','Balance-sheet valuation is Owner only');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_balance_sheet_v5(current_date)','P0003','stock_visibility_owner_required','Balance-sheet valuation is Owner only');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_profit_loss_v4(current_date,current_date)','P0003','stock_visibility_owner_required','Profit and loss is Owner only');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_movement_aggregates_v5(p_date_start=>current_date-1,p_date_end=>current_date)','P0003','stock_visibility_owner_required','Closed dates never unlock stock movement aggregates');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT * FROM public.get_cash_wallet_ledger_v4(''1141'',current_date,current_date)','P0003','stock_visibility_owner_required','Cash ledger cannot expose inventory accounts');

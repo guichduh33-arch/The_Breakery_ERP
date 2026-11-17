@@ -47,7 +47,7 @@ DECLARE
   v_lines JSONB;
   v_first JSONB;
 BEGIN
-  SELECT get_balance_sheet_v4('2030-12-31'::date)->'lines' INTO v_lines;
+  SELECT get_balance_sheet_v5('2030-12-31'::date)->'lines' INTO v_lines;
   v_first := v_lines->0;
   IF v_first IS NULL THEN
     PERFORM set_config('breakery.t2_pass', 'skipped_empty', false);
@@ -59,7 +59,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t2_pass') IN ('pass', 'skipped_empty'),
-  'T2: get_balance_sheet_v4 lines (new array) contain account_id key'
+  'T2: get_balance_sheet_v5 lines (new array) contain account_id key'
 );
 
 SELECT * FROM finish();

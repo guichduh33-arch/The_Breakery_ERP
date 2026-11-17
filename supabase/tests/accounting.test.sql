@@ -373,11 +373,11 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
-       AND p.proname = 'get_balance_sheet_v4'
+       AND p.proname = 'get_balance_sheet_v5'
        AND p.prosecdef
        AND pg_get_functiondef(p.oid) LIKE '%reports.financial.read%'
   ),
-  'T30: get_balance_sheet_v4 existe, SECURITY DEFINER, gatee reports.financial.read'
+  'T30: get_balance_sheet_v5 existe, SECURITY DEFINER, gatee reports.financial.read'
 );
 
 -- ---------------------------------------------------------------------------
