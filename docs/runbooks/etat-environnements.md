@@ -26,6 +26,25 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 17 novembre 2026, 23 h 15 — inventaire `S1-10`, charte de comptes, bilan v5 et retrait
+
+Relevé du 17 novembre 2026 entre 22 h 00 et 23 h 15, UTC+8. Observé directement,
+sauf mention contraire. Boutique fermée au moment du retrait : aucune session de
+caisse ouverte, aucun inventaire en cours, dernière commande à 17 h 40.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, migrations | Présentes dans l'historique de la base de production : `finalize_opname_v7_absolute`, `coa_company_chart`, `balance_sheet_v5_fixed_assets` (PR #719 et #722), et quatre migrations de factures du même jour | Gestes d'application **non observés** par ce relevé : seule leur présence est lue |
+| Backend production, fonctions | `finalize_opname_v7` et `get_balance_sheet_v5` présentes, corps égaux au dev (`md5` du source sans retour chariot). Aucune fonction SQL ne nomme `finalize_opname_v6` ni `get_balance_sheet_v4` | — |
+| Back-office production | Run « Publish Backoffice Production » `44080901277` sur `60c20d79`, réussi, de 20 h 12 à 20 h 40 (lu sur GitHub). Bundle servi par `backoffice.the-breakery.com` relu en entier (324 fichiers JS) : `finalize_opname_v7` et `get_balance_sheet_v5` présents ; `finalize_opname_v6`, `get_balance_sheet_v4` et la référence dev absents ; la référence de production présente. Fichier d'entrée inchangé entre 22 h et 23 h 15 | Lecture du bundle, pas un parcours d'écran : aucun inventaire finalisé, aucun bilan ouvert |
+| Backend production, retrait | À 23 h 15, `apply_migration` du texte de `20261117000004_drop_finalize_opname_v6_balance_sheet_v4.sql` (PR #723, fusionnée sur `a3039af7` après un pgTAP vert). Après : seules `finalize_opname_v7(uuid,uuid)` et `get_balance_sheet_v5(date)` restent dans ces deux familles | — |
+| Dev | Même retrait appliqué avant l'ouverture de la PR #723 | — |
+| POS production | Non relevé ce soir. La PR #720 (`S2-13`, fichiers orphelins) touche du code du POS : elle ne change aucun appel, et la caisse n'a pas été réinstallée | — |
+
+Retour : recréer `finalize_opname_v6` ou `get_balance_sheet_v4` à partir de leur
+migration d'origine n'est utile qu'avec un back-office antérieur à `60c20d79` ;
+le back-office publié n'appelle plus ces versions.
+
 ## Complément du 15 novembre 2026, 21 h 40 — motifs de perte `S1-18`, caisse installée et retrait
 
 Relevé du 15 novembre 2026 entre 21 h 20 et 21 h 40, UTC+8. Observé directement,

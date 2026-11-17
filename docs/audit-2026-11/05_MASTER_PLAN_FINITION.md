@@ -108,7 +108,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
    `expired`, `leftover`, `damaged` et `other`, commune à la production, au
    stock et à la vitrine ; les pertes passées gardent leur texte et sont
    marquées « non précisé ».
-3. `S1-10` — décisions S04 et lot 7 déjà rendues.
+3. `S1-10` — fait, voir son paragraphe.
 4. `S1-08` — seul, en au moins trois paquets.
 5. `S1-16` — débloquée par `S1-14`.
 6. `S1-15` — dépend de `S1-01`, encore en cours : elle ne part pas sans elle.
@@ -574,6 +574,13 @@ back-office. Preuve pgTAP `opname_finalize_absolute.test.sql`, 17 sur 17 en dev
 le 2026-11-17 : compté 10, stock passé de 4 à 7 pendant le comptage, résultat
 10 ; inventaire compté et finalisé par le propriétaire. L'écran appelle la
 nouvelle version et ne parle plus de revue « indépendante ».
+**En production le 2026-11-17** : PR #719 fusionnée, migration présente en
+production, back-office publié sur `60c20d79` ; son bundle appelle la nouvelle
+version et ne nomme plus l'ancienne. L'ancienne version est retirée le même
+soir, en dev puis en production (PR #723, migration
+`20261117000004_drop_finalize_opname_v6_balance_sheet_v4.sql`). Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 17 novembre. **Non fait** :
+un inventaire réel finalisé à l'écran.
 
 ---
 
