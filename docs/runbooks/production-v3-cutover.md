@@ -184,7 +184,9 @@ Le lancer séparément, après autorisation, sur master au SHA choisi, hors des
 autres tests écrivant sur dev. Tout nouveau commit exige de nouvelles preuves.
 Ce contrôle reste une preuve sur dev, pas un audit du schéma production.
 
-Le run pgTAP doit comporter les jobs `pgtap` et `db-gate` réussis. Sur PR,
+Le run pgTAP doit comporter les jobs `pgtap` et `db-gate` réussis. Le job
+`pgtap` agrège les morceaux parallèles de la suite : il échoue si un morceau
+échoue ou si un fichier du plan n'a pas été exécuté. Sur PR,
 `db-gate` peut aussi réussir avec une non-applicabilité justifiée par le diff
 complet ; cette dispense ne s'applique jamais au lancement manuel du candidat.
 Erreur de classification, annulation, preuve absente ou job applicable ignoré
