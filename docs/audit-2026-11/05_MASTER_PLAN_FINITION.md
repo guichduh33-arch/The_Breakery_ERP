@@ -1813,8 +1813,9 @@ sans pouvoir rouvrir).
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 11. Aujourd'hui le **seul**
 son existant est celui de l'écran cuisine.
 
-**État — sortie du lot caisse le 2026-11-18, sur demande de Mamat.** Rien n'est
-développé. L'intention reste celle des specs tant que Mamat ne l'abandonne pas.
+**État — reportée le 2026-11-18 par Mamat**, sortie du lot caisse. Rien n'est
+développé. Décision de Mamat : la tâche est remise à plus tard, pas abandonnée ;
+l'intention des specs reste valable.
 
 **Fichiers**
 - Le poste de caisse du POS et son abonnement temps réel
