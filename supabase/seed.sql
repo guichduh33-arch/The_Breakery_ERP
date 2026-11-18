@@ -27,8 +27,7 @@ INSERT INTO permissions (code, module, action, description) VALUES
   ('products.create',         'products', 'create',        'Créer un produit'),
   ('products.update',         'products', 'update',        'Modifier un produit'),
   ('users.create',            'users',    'create',        'Créer un utilisateur'),
-  ('users.update',            'users',    'update',        'Modifier un utilisateur'),
-  ('users.view_audit',        'users',    'view_audit',    'Voir les logs d''audit')
+  ('users.update',            'users',    'update',        'Modifier un utilisateur')
 ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================

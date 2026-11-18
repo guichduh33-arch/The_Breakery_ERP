@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabase.js';
 export function isRestricted(e: unknown): boolean {
   const code = (e as { code?: string } | null)?.code;
   const msg  = e instanceof Error ? e.message : String(e);
-  return code === '42501' || /permission denied|stock_visibility_owner_required/i.test(msg);
+  return code === '42501' || /permission denied|stock_visibility_(owner_)?required|financial_statements_required/i.test(msg);
 }
 
 const COALESCE_MS = 2_000;
@@ -158,7 +158,7 @@ export function useDisplayStockActivity(enabled = true) {
   const query = useQuery<DisplayStockPanel, Error>({
     queryKey: DISPLAY_STOCK_ACTIVITY_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_display_stock_activity_v3');
+      const { data, error } = await supabase.rpc('get_display_stock_activity_v4');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as DisplayStockPanel;
     },

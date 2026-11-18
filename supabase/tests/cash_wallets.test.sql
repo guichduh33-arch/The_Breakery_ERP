@@ -76,14 +76,14 @@ END $$;
 SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1110'), 'balances include 1110');
 SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1117'), 'balances include 1117');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v4('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v5('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'petty ledger returns at least the transfer row');
 SELECT is(
-  (SELECT in_amount FROM get_cash_wallet_ledger_v4('1111', CURRENT_DATE-1, CURRENT_DATE+1)
+  (SELECT in_amount FROM get_cash_wallet_ledger_v5('1111', CURRENT_DATE-1, CURRENT_DATE+1)
    WHERE remark LIKE '%replenish%' LIMIT 1),
   100000::numeric, 'petty In row = 100000');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v4('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v5('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'undeposited ledger executes and returns rows');
 
 -- ── Task 9: analysis RPC ──────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ SELECT throws_ok(
   $q$ SELECT * FROM get_cash_wallet_balances_v4() $q$,
   '42501', NULL, 'balances refuse sans accounting.cash.read');
 SELECT throws_ok(
-  $q$ SELECT * FROM get_cash_wallet_ledger_v4('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,
+  $q$ SELECT * FROM get_cash_wallet_ledger_v5('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,
   '42501', NULL, 'ledger refuse sans accounting.cash.read');
 SELECT throws_ok(
   $q$ SELECT get_cash_wallet_analysis_v3(CURRENT_DATE-31, CURRENT_DATE+1) $q$,

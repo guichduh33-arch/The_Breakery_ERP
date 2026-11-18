@@ -38,7 +38,7 @@ BEGIN
 
   LOOP
     v_iter := v_iter + 1;
-    v_res := get_stock_movements_v6('2026-06-02','2026-06-02', v_prod, NULL, 2, v_cursor);
+    v_res := get_stock_movements_v7('2026-06-02','2026-06-02', v_prod, NULL, 2, v_cursor);
     SELECT array_agg((e->>'id')::uuid) INTO v_page FROM jsonb_array_elements(v_res->'lines') e;
     IF v_page IS NOT NULL THEN v_ids := v_ids || v_page; END IF;
     v_cursor := v_res->>'next_cursor';
@@ -49,7 +49,7 @@ BEGIN
     (array_length(v_ids,1) = 5 AND (SELECT count(DISTINCT x) FROM unnest(v_ids) x) = 5)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.m9_t1')::boolean,
-  'T1: get_stock_movements_v6 keyset — 5 tied-timestamp rows paginate 2-by-2 with no drop/dupe');
+  'T1: get_stock_movements_v7 keyset — 5 tied-timestamp rows paginate 2-by-2 with no drop/dupe');
 
 -- ── T2 : by_day reconciliation ──────────────────────────────────────────────
 SET LOCAL session_replication_role = replica;  -- suppress the sale-JE trigger for an isolated fixture
@@ -59,7 +59,11 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-    AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+    -- Même défaut que T1 : le rapport des règlements exige le propriétaire
+    -- (`financial_reports_owner_required`), un profil au hasard le fait rougir.
+    AND up.is_active AND up.role_code = 'SUPER_ADMIN'
+    AND has_permission(up.auth_user_id, 'reports.financial.read')
+  ORDER BY up.created_at, up.id LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
   INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via)

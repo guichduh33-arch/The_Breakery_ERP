@@ -350,9 +350,9 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $$;
 SELECT ok(
-  (SELECT (calculate_pb1_payable_v5(DATE '2026-01-01', DATE '2026-12-31'))
+  (SELECT (calculate_pb1_payable_v6(DATE '2026-01-01', DATE '2026-12-31'))
           ? 'pb1_payable'),
-  'T28: calculate_pb1_payable_v5 returns object with pb1_payable key (VAT→PB1, ADR-005)'
+  'T28: calculate_pb1_payable_v6 returns object with pb1_payable key (VAT→PB1, ADR-005)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -373,11 +373,11 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
-       AND p.proname = 'get_balance_sheet_v4'
+       AND p.proname = 'get_balance_sheet_v6'
        AND p.prosecdef
        AND pg_get_functiondef(p.oid) LIKE '%reports.financial.read%'
   ),
-  'T30: get_balance_sheet_v4 existe, SECURITY DEFINER, gatee reports.financial.read'
+  'T30: get_balance_sheet_v6 existe, SECURITY DEFINER, gatee reports.financial.read'
 );
 
 -- ---------------------------------------------------------------------------

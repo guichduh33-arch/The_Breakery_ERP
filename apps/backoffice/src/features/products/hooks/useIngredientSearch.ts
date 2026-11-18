@@ -2,7 +2,7 @@
 //
 // Session 15 / Phase 3.A — IngredientPicker query hook.
 //
-// Wraps `search_ingredients_v3` (DB RPC) for autocomplete usage. The hook
+// Wraps `search_ingredients_v4` (DB RPC) for autocomplete usage. The hook
 // itself is debounce-free — debouncing is the caller's concern (the
 // `IngredientPicker` component owns its own 200ms debounce). The hook only
 // short-circuits single-character queries via the `enabled` flag.
@@ -28,7 +28,7 @@ export function useIngredientSearch(
     enabled: trimmed.length === 0 || trimmed.length >= 2,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('search_ingredients_v3', {
+      const { data, error } = await supabase.rpc('search_ingredients_v4', {
         p_query: trimmed,
         p_kind:  kind,
         p_limit: limit,

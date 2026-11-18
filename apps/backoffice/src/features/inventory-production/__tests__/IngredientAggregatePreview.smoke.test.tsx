@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-production/__tests__/IngredientAggregatePreview.smoke.test.tsx
-// Session 17 / Phase 2.A — Rewired to mock recipe_bom_full_v5 (server-side cascade).
+// Session 17 / Phase 2.A — Rewired to mock recipe_bom_full_v6 (server-side cascade).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -10,8 +10,16 @@ import {
 } from '../components/IngredientAggregatePreview.js';
 
 const mockRpc = vi.fn();
-const auth = vi.hoisted(() => ({ role: 'SUPER_ADMIN' }));
-vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (selector: (s: { user: { role_code: string } }) => unknown) => selector({ user: { role_code: auth.role } }) }));
+// ADR-039 : la vue du stock suit `reports.inventory.read`. Le propriétaire la
+// détient ; un autre rôle ne la détient que si elle lui est déléguée (`grants`).
+const auth = vi.hoisted(() => ({ role: 'SUPER_ADMIN', grants: [] as string[] }));
+vi.mock('@/stores/authStore.js', () => ({
+  useAuthStore: (selector: (s: { user: { role_code: string }; hasPermission: (code: string) => boolean }) => unknown) =>
+    selector({
+      user: { role_code: auth.role },
+      hasPermission: (code: string) => auth.role === 'SUPER_ADMIN' || auth.grants.includes(code),
+    }),
+}));
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
@@ -42,7 +50,7 @@ function renderPreview(items: IngredientPreviewLine[]) {
   );
 }
 
-// BomLeafRow shape returned by recipe_bom_full_v5
+// BomLeafRow shape returned by recipe_bom_full_v6
 function leaf(overrides: {
   material_id: string;
   material_name: string;
@@ -124,6 +132,15 @@ describe('IngredientAggregatePreview smoke', () => {
     expect(screen.queryByTestId('status-short')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+  it('shows availability and shortages to a delegate holding the stock permission', async () => {
+    auth.role = 'MANAGER';
+    auth.grants = ['reports.inventory.read'];
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 2, current_stock: 1 })], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 3 })]);
+    await screen.findByText('Flour');
+    expect(screen.getByText('Available')).toBeInTheDocument();
+    expect(screen.getByTestId('status-short')).toBeInTheDocument();
+  });
   it('does not treat a masked stock value as zero', async () => {
     mockRpc.mockResolvedValue({ data: [{ ...leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 2 }), current_stock: null }], error: null });
     renderPreview([row({ productId: 'bread', quantityProduced: 3 })]);
@@ -134,7 +151,7 @@ describe('IngredientAggregatePreview smoke', () => {
   beforeEach(() => {
     mockRpc.mockReset();
     auth.role = 'SUPER_ADMIN';
-    auth.role = 'SUPER_ADMIN';
+    auth.grants = [];
   });
 
   it('renders empty-state hint when no items are valid', () => {
@@ -142,7 +159,7 @@ describe('IngredientAggregatePreview smoke', () => {
     expect(screen.getByText(/Add a product and enter a quantity/i)).toBeInTheDocument();
   });
 
-  it('calls recipe_bom_full_v5 once per root and aggregates across two items sharing a material', async () => {
+  it('calls recipe_bom_full_v6 once per root and aggregates across two items sharing a material', async () => {
     // croissant : flour=0.05/unit, butter=0.02/unit, chocolate=0.05/unit (server-side flattened from dough sub-recipe)
     // pain_au_choco : flour=0.075/unit, butter=0.03/unit, chocolate=0.03/unit
     // Producing 10 croissants + 20 pain_au_choco:
@@ -151,7 +168,7 @@ describe('IngredientAggregatePreview smoke', () => {
     //   chocolate = 10×0.05 + 20×0.03  = 0.5 + 0.6 = 1.1
 
     mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
-      if (fn !== 'recipe_bom_full_v5') return Promise.resolve({ data: [], error: null });
+      if (fn !== 'recipe_bom_full_v6') return Promise.resolve({ data: [], error: null });
       if (args.p_product_id === 'prod-croissant') {
         return Promise.resolve({ data: [
           leaf({ material_id: 'mat-flour',     material_name: 'Flour',     material_unit: 'kg', qty_per_unit: 0.05,  current_stock: 10 }),
@@ -178,10 +195,10 @@ describe('IngredientAggregatePreview smoke', () => {
       expect(screen.getByText('Flour')).toBeInTheDocument();
     });
 
-    // recipe_bom_full_v5 called exactly twice — once per root product
+    // recipe_bom_full_v6 called exactly twice — once per root product
     expect(mockRpc).toHaveBeenCalledTimes(2);
-    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v5', { p_product_id: 'prod-croissant',     p_max_depth: 5 });
-    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v5', { p_product_id: 'prod-pain-au-choco', p_max_depth: 5 });
+    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v6', { p_product_id: 'prod-croissant',     p_max_depth: 5 });
+    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v6', { p_product_id: 'prod-pain-au-choco', p_max_depth: 5 });
 
     // 3 leaf materials rendered — dough sub-recipe must NOT appear
     expect(screen.getByText('Flour')).toBeInTheDocument();
@@ -202,7 +219,7 @@ describe('IngredientAggregatePreview smoke', () => {
   it('flags shortage when current_stock < totalQty for a material', async () => {
     // croissant produces 10 units; flour need = 10 × 0.05 = 0.5 kg; stock = 0.3 kg → short
     mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
-      if (fn !== 'recipe_bom_full_v5') return Promise.resolve({ data: [], error: null });
+      if (fn !== 'recipe_bom_full_v6') return Promise.resolve({ data: [], error: null });
       if (args.p_product_id === 'prod-croissant') {
         return Promise.resolve({ data: [
           leaf({ material_id: 'mat-flour', material_name: 'Flour', material_unit: 'kg', qty_per_unit: 0.05, current_stock: 0.3 }),
@@ -223,7 +240,7 @@ describe('IngredientAggregatePreview smoke', () => {
 
   it('shows OK status when stock covers requirements', async () => {
     mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
-      if (fn !== 'recipe_bom_full_v5') return Promise.resolve({ data: [], error: null });
+      if (fn !== 'recipe_bom_full_v6') return Promise.resolve({ data: [], error: null });
       if (args.p_product_id === 'prod-A') {
         return Promise.resolve({ data: [
           leaf({ material_id: 'mat-x', material_name: 'Mat X', material_unit: 'g', qty_per_unit: 100, current_stock: 1000 }),
@@ -261,7 +278,7 @@ describe('IngredientAggregatePreview smoke', () => {
     //   chocolate = 10×0.05  + 20×0.03  = 0.5  + 0.6  = 1.1
 
     mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
-      if (fn !== 'recipe_bom_full_v5') return Promise.resolve({ data: [], error: null });
+      if (fn !== 'recipe_bom_full_v6') return Promise.resolve({ data: [], error: null });
       if (args.p_product_id === 'prod-croissant') {
         return Promise.resolve({ data: [
           leaf({ material_id: 'mat-flour',     material_name: 'Flour',     material_unit: 'kg', qty_per_unit: 0.05,  current_stock: 100 }),

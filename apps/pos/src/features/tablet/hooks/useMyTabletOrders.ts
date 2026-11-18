@@ -25,9 +25,8 @@ export interface TabletOrderRow {
  *  la fiche commande complète vit au POS. */
 const MAX_TABLET_ORDERS = 50;
 
-/** Filet de rattrapage, aligné sur les surfaces voisines (usePendingTabletOrders
- *  côté caisse, useKdsOrders côté cuisine, useTableOccupancy côté salle : 30 s
- *  partout). Ce hook était le SEUL consommateur de `order_items` sans filet —
+/** Filet de rattrapage, aligné sur les surfaces voisines (useKdsOrders côté
+ *  cuisine, useTableOccupancy côté salle : 30 s partout). Ce hook était le SEUL consommateur de `order_items` sans filet —
  *  quand la table s'est retrouvée hors de `supabase_realtime`, les deux autres
  *  ont continué de tourner au ralenti et la salle, elle, n'a plus rien reçu.
  *  Le realtime reste le chemin nominal ; ceci couvre le blip Wi-Fi et la

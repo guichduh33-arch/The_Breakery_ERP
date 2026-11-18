@@ -4,7 +4,7 @@
 -- DEV-S20-3.A-01..05 deviations in the migration header.
 BEGIN;
 
-SELECT plan(4);
+SELECT plan(3);
 
 -- A1 : cash_movements policy uses cash_register.read OR reports.financial.read
 --      (spec: cashier.view OR reports.financial.read — DEV-S20-3.A-01)
@@ -38,16 +38,6 @@ SELECT ok(
     WHERE schemaname='public' AND tablename='notification_outbox'
       AND policyname='notification_outbox_select_authenticated'),
   'notification_outbox_select_authenticated is permission-gated'
-);
-
--- A5 : stock_reservations uses inventory.read (spec: inventory.view — DEV-S20-3.A-04)
-SELECT ok(
-  (SELECT qual ILIKE '%has_permission%inventory.read%'
-           OR qual ILIKE '%has_permission%inventory.view%'
-     FROM pg_policies
-    WHERE schemaname='public' AND tablename='stock_reservations'
-      AND policyname='stock_reservations_select_auth'),
-  'stock_reservations_select_auth is permission-gated (inventory.read)'
 );
 
 SELECT * FROM finish();

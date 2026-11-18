@@ -26,6 +26,76 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 18 novembre 2026, 11 h — retrait des objets abandonnés (`S2-03`, `S2-04`, `S2-05`, `S2-09`)
+
+Relevé du 18 novembre 2026 vers 11 h, UTC+8. Observé directement. Boutique
+ouverte : la migration ne touche aucune table de vente ni de stock en écriture.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, avant | `stock_reservations` et `production_schedules` à 0 ligne ; `mv_sales_daily` et `mv_pl_monthly` non peuplées ; aucune tâche planifiée de ces objets ; les 3 permissions `audit_log.read`, `users.view_audit`, `settings.kiosk.manage` détenues par `SUPER_ADMIN` seul, sans dérogation ; 163 permissions ; aucune règle ni fonction ne cite ces codes ; seule dépendance des tables : la vue `v_product_available_stock` | — |
+| Back-office servi, avant | Le code servi n'appelle aucun objet retiré ; il vise la production, pas le dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, migration | Essai en transaction annulée, puis `apply_migration` du texte de `20261118000005_s2_retire_abandoned_objects.sql` (PR #729, fusionnée sur `a2d3a285` après une CI et un pgTAP verts) | — |
+| Backend production, après | 160 permissions ; aucune des 5 relations ni des 9 fonctions retirées ; `mv_stock_variance` et `refresh_mv_stock_variance` présentes ; les deux valeurs `reservation_*` de `movement_type` présentes ; registre du stock intact (15 327 mouvements) | — |
+| Back-office | `a2d3a285` publié (run `44233470065`, réussi à 12 h 53 après l'approbation de l'environnement Production). Code servi relu ensuite : les nouveaux textes des réglages e-mail sont présents ; il vise la production, jamais le dev ; aucun appel aux objets retirés ; `reservation_hold` et `reservation_release` restent seulement comme libellés de valeurs d'enum conservées | Lecture des fichiers servis, pas d'un parcours à l'écran |
+
+Retour : aucun geste ne rend les objets supprimés ; ils étaient vides et sans
+appelant. Les trois permissions se recréent par leur ligne d'origine de
+`supabase/seed.sql` (historique Git) et une attribution à `SUPER_ADMIN`.
+
+## Complément du 18 novembre 2026, 1 h 30 — visibilité confidentielle par permission (`S1-08`, paquet 1)
+
+Relevé du 18 novembre 2026 entre 1 h 25 et 1 h 40, UTC+8. Observé directement.
+Boutique fermée : aucune session de caisse ouverte, dernière commande le 17 à
+17 h 40.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, avant | Les neuf règles visées et les fonctions `has_permission`, `can_view_stock_v1`, `can_view_business_day_v2` égales au dev d'avant la migration. `SUPER_ADMIN` (2 comptes actifs) détient `reports.inventory.read` et `reports.audit.read` ; aucun autre rôle ni aucune dérogation individuelle | — |
+| Backend production, migration | `apply_migration` du texte de `20261117000005_s1_08_visibility_permissions_and_policies.sql` (PR #725, fusionnée sur `9347514b` après un pgTAP vert) | — |
+| Backend production, après | Permission `reports.statements.read` au catalogue, détenue par `SUPER_ADMIN` seul. `can_view_stock_v2` et `can_view_statements_v1` présentes, corps égaux au dev, non exécutables par `anon`. Les huit règles restrictives et la règle `admin_read` d'`audit_logs` lisent une permission dans un `(SELECT …)` | — |
+| Backend production, identités | Lecture seule, identité simulée par `request.jwt.claims` : propriétaire → stock et états financiers visibles ; compte ADMIN → ni stock, ni états financiers, ni journaux | Fonctions d'aide appelées directement, sans session PIN : les tables elles-mêmes n'ont pas été lues sous ces identités |
+| Back-office et caisse | Aucune publication : aucun écran ne change dans ce paquet | — |
+
+Retour, relevé sur la production avant la migration : remettre par
+`ALTER POLICY … USING (…)` les expressions précédentes rétablit l'état d'avant.
+
+- `stock_movements.confidentiality_stock_movements`,
+  `display_movements.confidentiality_display_movements`,
+  `audit_logs.confidentiality_audit_logs`,
+  `notification_outbox.confidentiality_notifications` :
+  `can_view_business_day_v2((created_at)::date)`.
+- `pos_events.confidentiality_pos_events` :
+  `can_view_business_day_v2((occurred_at)::date)`.
+- `display_stock.confidentiality_display_stock` :
+  `can_view_business_day_v2(CURRENT_DATE)`.
+- `inventory_count_items.count_items_owner_only` : `is_business_owner_v1()`.
+- `z_reports.confidentiality_zreports` : `EXISTS (SELECT 1 FROM pos_sessions s
+  WHERE s.id = z_reports.shift_id AND can_view_business_day_v2((s.opened_at)::date))`.
+- `audit_logs.admin_read` : `get_current_role() = ANY (ARRAY['SUPER_ADMIN','ADMIN'])`.
+
+Les deux fonctions neuves et la permission peuvent rester : elles n'ouvrent
+rien seules.
+
+## Complément du 17 novembre 2026, 23 h 15 — inventaire `S1-10`, charte de comptes, bilan v5 et retrait
+
+Relevé du 17 novembre 2026 entre 22 h 00 et 23 h 15, UTC+8. Observé directement,
+sauf mention contraire. Boutique fermée au moment du retrait : aucune session de
+caisse ouverte, aucun inventaire en cours, dernière commande à 17 h 40.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, migrations | Présentes dans l'historique de la base de production : `finalize_opname_v7_absolute`, `coa_company_chart`, `balance_sheet_v5_fixed_assets` (PR #719 et #722), et quatre migrations de factures du même jour | Gestes d'application **non observés** par ce relevé : seule leur présence est lue |
+| Backend production, fonctions | `finalize_opname_v7` et `get_balance_sheet_v5` présentes, corps égaux au dev (`md5` du source sans retour chariot). Aucune fonction SQL ne nomme `finalize_opname_v6` ni `get_balance_sheet_v4` | — |
+| Back-office production | Run « Publish Backoffice Production » `44080901277` sur `60c20d79`, réussi, de 20 h 12 à 20 h 40 (lu sur GitHub). Bundle servi par `backoffice.the-breakery.com` relu en entier (324 fichiers JS) : `finalize_opname_v7` et `get_balance_sheet_v5` présents ; `finalize_opname_v6`, `get_balance_sheet_v4` et la référence dev absents ; la référence de production présente. Fichier d'entrée inchangé entre 22 h et 23 h 15 | Lecture du bundle, pas un parcours d'écran : aucun inventaire finalisé, aucun bilan ouvert |
+| Backend production, retrait | À 23 h 15, `apply_migration` du texte de `20261117000004_drop_finalize_opname_v6_balance_sheet_v4.sql` (PR #723, fusionnée sur `a3039af7` après un pgTAP vert). Après : seules `finalize_opname_v7(uuid,uuid)` et `get_balance_sheet_v5(date)` restent dans ces deux familles | — |
+| Dev | Même retrait appliqué avant l'ouverture de la PR #723 | — |
+| POS production | Non relevé ce soir. La PR #720 (`S2-13`, fichiers orphelins) touche du code du POS : elle ne change aucun appel, et la caisse n'a pas été réinstallée | — |
+
+Retour : recréer `finalize_opname_v6` ou `get_balance_sheet_v4` à partir de leur
+migration d'origine n'est utile qu'avec un back-office antérieur à `60c20d79` ;
+le back-office publié n'appelle plus ces versions.
+
 ## Complément du 15 novembre 2026, 21 h 40 — motifs de perte `S1-18`, caisse installée et retrait
 
 Relevé du 15 novembre 2026 entre 21 h 20 et 21 h 40, UTC+8. Observé directement,

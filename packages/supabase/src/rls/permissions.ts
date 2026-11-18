@@ -76,7 +76,6 @@ export type PermissionCode =
   | 'users.create'
   | 'users.read'
   | 'users.update'
-  | 'users.view_audit'
   | 'rbac.read'
   | 'rbac.manage'
   | 'promotions.read'
@@ -111,6 +110,7 @@ export type PermissionCode =
   | 'reports.inventory.read'
   | 'reports.audit.read'
   | 'reports.financial.read'
+  | 'reports.statements.read'
   | 'expenses.read'
   | 'expenses.create'
   | 'expenses.update'
@@ -138,7 +138,6 @@ export type PermissionCode =
   | 'settings.read'
   | 'settings.update'
   | 'settings.holidays.manage'
-  | 'settings.kiosk.manage'
   // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
   | 'accounting.read'
   | 'accounting.bank.read'

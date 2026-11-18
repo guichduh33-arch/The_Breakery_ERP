@@ -180,12 +180,11 @@ de `payments.process`).
 
 ### 5.2 Visibilité du stock et des comptes
 
-**FAIT** — Aujourd'hui, `is_business_owner_v1()` ne reconnaît que
-`role_code = 'SUPER_ADMIN'`, donc **un seul compte**. **37 fonctions** l'exigent
-(tous les états de stock, l'inventaire, le bilan, le résultat, la balance, le
-grand livre, la PB1, la marge) et **7 policies restrictives** passent par la même
-porte (`stock_movements`, `display_stock`, `display_movements`, `audit_logs`,
-`pos_events`, `z_reports`, `notification_outbox`).
+**FAIT** — `is_business_owner_v1()` ne reconnaît que `role_code = 'SUPER_ADMIN'`
+(2 comptes actifs en production au relevé du 2026-11-17). Les fonctions de
+lecture du stock et des états financiers l'exigent, directement ou par une
+fonction d'aide : tous les états de stock, l'inventaire, le bilan, le résultat,
+la balance, le grand livre, la PB1, la marge.
 
 **FAIT** — Les 3 comptes `ADMIN` **détiennent** `inventory.read`,
 `reports.financial.read` et `reports.export` : ces permissions sont des lettres
@@ -194,8 +193,15 @@ mortes, la fonction les refuse.
 **RÈGLE** — La visibilité du stock et des états financiers doit se piloter **par
 permission**, pas par rôle codé en dur, pour redevenir déléguable depuis
 l'écran RBAC.
-**À LIVRER** — Remplacer le contrôle de rôle par `reports.inventory.read` et
-`reports.financial.read` dans les 37 fonctions et les 7 policies.
+**À LIVRER** — Remplacer le contrôle de rôle par `reports.inventory.read` pour
+le stock et par `reports.statements.read` pour les états financiers, dans les
+fonctions de lecture concernées (ADR-039, précision de Mamat du 2026-11-17).
+Le rôle ADMIN ne gagne aucune visibilité à la livraison.
+
+**FAIT** — Depuis le paquet 1 de `S1-08` (2026-11-17), les règles d'accès des
+tables confidentielles lisent une permission : `reports.inventory.read` pour le
+stock, `reports.audit.read` pour les journaux, `reports.statements.read` pour
+les rapports Z. Les fonctions de lecture exigent encore le rôle propriétaire.
 
 ### 5.3 Authentification
 
@@ -447,7 +453,8 @@ existent. Les écritures passent exclusivement par des fonctions
 réceptions et les entrées de production. Il **se réinitialise** — il ne se pondère
 pas — quand le stock de départ est nul ou négatif. Il se pondère contre le stock
 **au moment de la saisie**, pas à la date de réception.
-**RÈGLE** — Ces deux comportements sont ceux voulus ; ils doivent être écrits.
+**RÈGLE** — Ces deux comportements sont ceux voulus, gravés le 2026-11-18
+([ADR-042](adr/042-comportement-cout-moyen-pondere.md)).
 
 **FAIT** — Le stock négatif est autorisé à la vente (réglage global), **toujours
 bloqué** pour une commande B2B quel que soit le réglage (ADR-036), et bloqué en
@@ -513,13 +520,16 @@ séparation des tâches disparaît de l'inventaire, en connaissance de cause.
 
 **FAIT** — Les ajustements et les pertes de stock passent par un circuit
 **déclaration puis approbation** : le geste ne touche le stock qu'après
-approbation du propriétaire, par une personne différente du déclarant. Cette
-règle ne figure dans aucun document : elle vit dans un commentaire de migration.
-**3 déclarations sont en attente.**
+approbation du propriétaire, par une personne différente du déclarant. La règle
+est gravée depuis le 2026-11-18
+([ADR-041](adr/041-circuit-declaration-approbation-stock.md)).
+**3 déclarations étaient en attente** au relevé du 2026-11-09.
 
-**RÈGLE** — Le circuit est voulu et doit être gravé dans un ADR, avec une cadence
-de traitement de la file. Pas d'alerte automatique.
-**À LIVRER** — L'ADR et le traitement des 3 déclarations en attente.
+**RÈGLE** — Le circuit est voulu, avec une cadence de traitement de la file. Pas
+d'alerte automatique.
+**À LIVRER** — Le traitement des 3 déclarations en attente.
+**OUVERT** — La valeur de la cadence. Et le sort d'une déclaration soumise par
+le seul compte propriétaire, que personne ne peut aujourd'hui approuver.
 
 ### 8.6 Motifs de perte
 
@@ -557,6 +567,10 @@ produits suivis sans seuil. Pas de promesse d'e-mail.
 les deux filtres d'écran qui ne ramènent jamais rien). Les transferts entre
 zones, supprimés par l'ADR-027. Les allergènes, supprimés par l'ADR-011 : **ne
 pas rebâtir**.
+**FAIT** — Depuis le 2026-11-18, la réservation de stock n'existe plus, en dev ni
+en production : table, vue de disponibilité, fonctions, module de calcul et
+filtres retirés. Les deux types de mouvement de réservation restent dans
+l'énumération du registre du stock, qui ne perd aucune valeur.
 
 ---
 
@@ -594,8 +608,13 @@ La couverture reste à 3 jours.
 **ABANDONNÉ** — Le suivi des causes d'écart de rendement : l'écran de saisie
 n'était importé par personne. Les trois composants, leurs tests et le réglage de
 seuil sont à supprimer. Les rapports montreront l'écart **sans** la cause.
+**FAIT** — Écart relevé le 2026-11-18 : l'écran de saisie de la cause **est**
+importé par le formulaire de production, qui l'ouvre au-delà du seuil et envoie
+la cause à la fonction d'enregistrement. La décision reste ; son retrait touche
+ce parcours.
 **ABANDONNÉ** — Le planning de production hebdomadaire : table et fonction sans
 aucun appelant, zéro ligne en production.
+**FAIT** — Retiré le 2026-11-18, en dev et en production.
 
 ---
 
@@ -649,8 +668,10 @@ Le compte 2142 « VAT Output » est actif, postable et agrégé au bilan avec la
 **À LIVRER** — Les deux désactivations.
 
 **RÈGLE** — **La vente B2B n'est pas assujettie à la PB1.** Exonération
-confirmée. Elle doit être gravée dans un ADR : aujourd'hui elle ne vit que dans
-un commentaire de fonction, invisible à tout contrôle.
+confirmée, gravée le 2026-11-18
+([ADR-040](adr/040-exoneration-pb1-ventes-b2b.md)).
+**OUVERT** — Le traitement de la PB1 déjà portée par les commandes B2B de la
+reprise historique.
 **FAIT** — Chiffre d'affaires B2B 63 534 500 IDR, dont 4 181 133 IDR portent une
 PB1 issue de la reprise historique d'octobre.
 
@@ -891,6 +912,8 @@ coût de report augmente chaque jour.
 
 **ABANDONNÉ** — L'interrupteur « produit test » (ADR-035). Le crochet orphelin
 est à supprimer.
+**FAIT** — Le crochet orphelin est supprimé (PR #729, 2026-11-18). Le drapeau, sa
+fonction et l'exclusion des rapports restent.
 
 ---
 
@@ -908,6 +931,8 @@ mouvements fantômes, stock périmé, et une quinzaine d'autres). Aucun n'existe
 **jamais peuplées** en production, et aucune fonction applicative ne les lit.
 **ABANDONNÉ** — La tendance de rentabilité sur 12 mois. Les deux vues sont à
 supprimer : tout rapport qui s'y brancherait échouerait.
+**FAIT** — Les deux vues et leurs fonctions de rafraîchissement sont retirées
+depuis le 2026-11-18, en dev et en production.
 
 **FAIT** — Le « rapport de coût de production » mesure en réalité des **achats
 commandés**, réception non incluse.
@@ -969,6 +994,8 @@ d'abord.
 **FAIT** — Trois permissions du catalogue ne contrôlent **rien** :
 `audit_log.read`, `users.view_audit`, `settings.kiosk.manage`.
 **À LIVRER** — Les retirer du catalogue.
+**FAIT** — Retirées du catalogue et de leurs attributions le 2026-11-18, en dev et
+en production.
 
 ---
 
@@ -999,6 +1026,8 @@ production reste à poser avec l'installation des tâches.
 sont pas déployées, aucune clé de prestataire n'est posée, et les tables
 concernées sont vides. La promesse d'envoi est à retirer des documents. Le code
 reste dormant.
+**FAIT** — Depuis la PR #729 (2026-11-18), les pages de réglages des
+notifications et des modèles d'e-mail disent qu'aucun e-mail n'est envoyé.
 
 **FAIT** — Quatre fonctions appelées par le back-office **déployé** n'existent pas
 en production : comptabilisation et lecture du compte d'attente du rapprochement

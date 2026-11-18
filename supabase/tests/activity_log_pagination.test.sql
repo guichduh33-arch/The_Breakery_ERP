@@ -136,6 +136,12 @@ BEGIN
   EXECUTE 'RESET ROLE';
   SELECT auth_user_id INTO STRICT v_low_auth FROM user_profiles
   WHERE role_code='ADMIN' AND is_active AND deleted_at IS NULL LIMIT 1;
+  -- ADR-039 : la lecture des journaux suit reports.audit.read, que la matrice
+  -- dev donne à ADMIN et la production non. Refus posé dans la transaction.
+  INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
+  SELECT id,'reports.audit.read',false,'activity log confidentiality coverage'
+  FROM user_profiles WHERE auth_user_id=v_low_auth
+  ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=false,expires_at=NULL;
   PERFORM pg_temp.authenticate_pin(v_low_auth);
   EXECUTE 'SET LOCAL ROLE authenticated';
   RETURN NEXT is((SELECT count(*)::integer FROM get_activity_logs_v4(p_entity_id:=v_entity)),0,'confidentialité non-Owner conservée');

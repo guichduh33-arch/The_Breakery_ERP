@@ -37,6 +37,8 @@ describe('purchase invoice durable recovery', () => {
       ? { data: access.allowed, error: null }
       : { data: { po_id: args.p_po_id, invoice_path: args.p_storage_path ?? null, applied: true, idempotent_replay: false }, error: null }));
     upload.mockResolvedValue({ data: {}, error: null });
+    // L'aperçu se charge au montage : par défaut, la lecture reste en vol.
+    download.mockReturnValue(new Promise(() => undefined));
   });
   it('checks first and uploads only the missing object with a durable UUID and no upsert', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'invoice_object_not_found' } });
@@ -118,21 +120,30 @@ describe('purchase invoice durable recovery', () => {
     await act(async () => { reply.resolve({ data: true, error: null }); await reply.promise; });
     expect(screen.queryByLabelText('Invoice file')).not.toBeInTheDocument();
   });
-  it('downloads privately and revokes the temporary URL', async () => {
-    const create = vi.fn(() => 'blob:private-invoice'), revoke = vi.fn();
+  it('shows a PDF invoice inline, privately, and downloads the same file', async () => {
+    const create = vi.fn((_b: Blob) => 'blob:private-invoice'), revoke = vi.fn();
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create }); Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     download.mockResolvedValue({ data: new Blob(['private']), error: null });
-    render(<PoInvoicePanel po={po} hasPayments={false} fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
-    expect(screen.queryByRole('link')).not.toBeInTheDocument(); fireEvent.click(screen.getByText('Download invoice'));
-    await waitFor(() => expect(click).toHaveBeenCalledOnce());
-    expect(download).toHaveBeenCalledWith('download-po-invoice', { body: { po_id: poId }, headers: { 'x-session-token': 'session-a-secret' } }); expect(revoke).toHaveBeenCalledWith('blob:private-invoice');
+    const view = render(<PoInvoicePanel po={po} hasPayments={false} fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    expect(await screen.findByTitle('Invoice preview')).toHaveAttribute('src', 'blob:private-invoice');
+    expect(create.mock.calls[0]![0].type).toBe('application/pdf'); expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(download).toHaveBeenCalledWith('download-po-invoice', { body: { po_id: poId }, headers: { 'x-session-token': 'session-a-secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Download invoice' })); expect(click).toHaveBeenCalledOnce(); expect(download).toHaveBeenCalledOnce();
+    view.unmount(); expect(revoke).toHaveBeenCalledWith('blob:private-invoice');
   });
-  it('discards a download when the session changes during IO', async () => {
-    const response = deferred<{ data: Blob; error: null }>(); download.mockReturnValue(response.promise);
+  it('shows a JPEG invoice inline with its image type', async () => {
+    const create = vi.fn((_b: Blob) => 'blob:private-image'); Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() }); download.mockResolvedValue({ data: new Blob(['private']), error: null });
+    render(<PoInvoicePanel po={{ ...po, invoice_path: 'purchase-orders/' + poId + '/invoice.jpg' }} hasPayments={false} fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
+    expect(await screen.findByRole('img', { name: 'Supplier invoice' })).toHaveAttribute('src', 'blob:private-image'); expect(create.mock.calls[0]![0].type).toBe('image/jpeg');
+  });
+  it('discards a preview when the session changes during IO', async () => {
+    // Le nouvel opérateur relance sa propre lecture : elle reste en vol, seule l'ancienne est résolue.
+    const response = deferred<{ data: Blob; error: null }>(); download.mockReturnValueOnce(response.promise);
     const create = vi.fn(); Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create });
     render(<PoInvoicePanel po={po} hasPayments={false} fullyPaid={false} paymentsKnown onBusyChange={vi.fn()} />, { wrapper });
-    fireEvent.click(screen.getByText('Download invoice')); act(() => { financialTestAuth.setState({ sessionToken: 'new-session' }); });
+    await waitFor(() => expect(download).toHaveBeenCalledOnce()); act(() => { financialTestAuth.setState({ sessionToken: 'new-session' }); });
     await act(async () => { response.resolve({ data: new Blob(['private']), error: null }); await response.promise; }); expect(create).not.toHaveBeenCalled();
   });
 

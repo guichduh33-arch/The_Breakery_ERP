@@ -234,13 +234,13 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Financial',
         links: [
-          { to: '/backoffice/reports/profit-loss', label: 'Profit & loss', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/gross-margin', label: 'Gross margin', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/profit-loss', label: 'Profit & loss', permission: 'reports.statements.read' },
+          { to: '/backoffice/reports/gross-margin', label: 'Gross margin', permission: 'reports.statements.read' },
           { to: '/backoffice/reports/operating-expenses', label: 'Operating expenses', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/balance-sheet', label: 'Balance sheet', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/cash-flow', label: 'Cash flow', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/balance-sheet', label: 'Balance sheet', permission: 'reports.statements.read' },
+          { to: '/backoffice/reports/cash-flow', label: 'Cash flow', permission: 'reports.statements.read' },
           { to: '/backoffice/reports/payment-by-method', label: 'Payment by method', permission: 'reports.financial.read' },
-          { to: '/backoffice/reports/pb1', label: 'VAT / PB1', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/pb1', label: 'VAT / PB1', permission: 'reports.statements.read' },
           { to: '/backoffice/reports/ar-aging', label: 'AR aging (B2B)', permission: 'reports.financial.read' },
         ],
       },

@@ -246,7 +246,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_pb1_report_v6(5, 2026);
+  v_result := get_pb1_report_v7(5, 2026);
   v_ok := (v_result->'period'->>'month')::int = 5
       AND (v_result->'period'->>'year')::int  = 2026
       AND (v_result ? 'pb1_rate')
@@ -260,7 +260,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t7_pass')::boolean,
-  'T7: get_pb1_report_v6 happy month returns 8-key JSONB with balance_account_code=2110'
+  'T7: get_pb1_report_v7 happy month returns 8-key JSONB with balance_account_code=2110'
 );
 
 -- T8 CASHIER perm denied → 42501
@@ -270,7 +270,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_pb1_report_v6(5, 2026);
+    PERFORM get_pb1_report_v7(5, 2026);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -279,7 +279,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t8_pass')::boolean,
-  'T8: get_pb1_report_v6 CASHIER raises 42501'
+  'T8: get_pb1_report_v7 CASHIER raises 42501'
 );
 
 -- T9 invalid month (13) rejected with 22023
@@ -290,7 +290,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_pb1_report_v6(13, 2026);
+    PERFORM get_pb1_report_v7(13, 2026);
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = '22023');
@@ -300,7 +300,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t9_pass')::boolean,
-  'T9: get_pb1_report_v6 month=13 raises 22023'
+  'T9: get_pb1_report_v7 month=13 raises 22023'
 );
 
 -- ============================================================
@@ -316,7 +316,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_stock_movements_v6(
+  v_result := get_stock_movements_v7(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 50::int, NULL::text
   );
@@ -328,7 +328,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t10_pass')::boolean,
-  'T10: get_stock_movements_v6 returns lines[] + next_cursor'
+  'T10: get_stock_movements_v7 returns lines[] + next_cursor'
 );
 
 -- T11 filter movement_type=waste returns only waste rows
@@ -339,7 +339,7 @@ DECLARE
   v_line      JSONB;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_stock_movements_v6(
+  v_result := get_stock_movements_v7(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, 'waste'::text, 50::int, NULL::text
   );
@@ -353,7 +353,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t11_pass')::boolean,
-  'T11: get_stock_movements_v6 movement_type=waste filter returns only waste rows'
+  'T11: get_stock_movements_v7 movement_type=waste filter returns only waste rows'
 );
 
 -- T12 p_limit=999 clamps to <= 200
@@ -364,7 +364,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_stock_movements_v6(
+  v_result := get_stock_movements_v7(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 999::int, NULL::text
   );
@@ -375,7 +375,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_movements_v6 p_limit=999 clamps to <= 200 rows'
+  'T12: get_stock_movements_v7 p_limit=999 clamps to <= 200 rows'
 );
 
 -- ============================================================

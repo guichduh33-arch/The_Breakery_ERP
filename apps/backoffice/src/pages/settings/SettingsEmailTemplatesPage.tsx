@@ -34,15 +34,15 @@ export default function SettingsEmailTemplatesPage() {
     <div className="space-y-6 max-w-6xl">
       <PageHeader
         title="Email templates"
-        subtitle="Customer-facing emails (welcome, order ready, payment, password reset). System notifications live in Notifications (Phase 5.B)."
+        subtitle="Templates for customer-facing emails (welcome, order ready, payment, password reset). Email delivery is not active: no email is sent. System notifications live in Notifications."
       />
 
       <div
         data-testid="templates-not-wired-banner"
         className="rounded-lg border border-border-subtle bg-bg-overlay p-3 text-sm text-text-secondary"
       >
-        ⚠︎ Editing is live, but these templates are <strong>not applied yet</strong> — no email is
-        currently sent by the system. Wiring is planned (Vague 3 — notifications / versioned print-bridge).
+        ⚠︎ Editing is live, but these templates are <strong>not applied</strong> — the system
+        sends no email.
       </div>
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}

@@ -16,7 +16,7 @@
 // une surface partagée hors périmètre. Le tri de colonne de cette page est donc
 // celui du tableau, déjà en place.
 //
-// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v4`) est
+// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v5`) est
 // partagé avec la page Inventory. On ne le touche pas : il accepte déjà
 // `productId`, que la page Inventory passe depuis son propre filtre.
 //
@@ -64,7 +64,13 @@ const MOVEMENT_TYPE_ORDER: Record<MovementType, number> = {
   reservation_hold: 17, reservation_release: 18,
 };
 
+// La réservation de stock est retirée (S2-03) : ses deux valeurs restent dans
+// l'enum du ledger append-only, mais aucun mouvement n'en porte, donc le
+// sélecteur ne les propose plus.
+const RETIRED_MOVEMENT_TYPES: ReadonlySet<string> = new Set(['reservation_hold', 'reservation_release']);
+
 const MOVEMENT_TYPE_OPTIONS: readonly ReportFilterOption[] = Object.entries(MOVEMENT_TYPE_ORDER)
+  .filter(([t]) => !RETIRED_MOVEMENT_TYPES.has(t))
   .sort(([, a], [, b]) => a - b)
   .map(([t]) => ({ value: t, label: t }));
 

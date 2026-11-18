@@ -108,7 +108,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
    `expired`, `leftover`, `damaged` et `other`, commune à la production, au
    stock et à la vitrine ; les pertes passées gardent leur texte et sont
    marquées « non précisé ».
-3. `S1-10` — décisions S04 et lot 7 déjà rendues.
+3. `S1-10` — fait, voir son paragraphe.
 4. `S1-08` — seul, en au moins trois paquets.
 5. `S1-16` — débloquée par `S1-14`.
 6. `S1-15` — dépend de `S1-01`, encore en cours : elle ne part pas sans elle.
@@ -498,6 +498,71 @@ exhaustive des 37 fonctions jointe à la PR, avec le statut de chacune.
 **Débloque** — Le chiffrage du manque avant fournée devient visible par le
 boulanger (constat §9 des specs).
 
+**État — paquet 1 développé et prouvé en dev le 2026-11-17**, branche
+`fix/s1-08-visibilite-deleguable`. Décision précisée par Mamat le même jour et
+gravée dans l'ADR-039 : le stock suit `reports.inventory.read`, les états
+financiers une permission neuve, `reports.statements.read`, donnée au seul
+propriétaire ; le rôle ADMIN garde ses permissions et ne gagne aucune
+visibilité. Écart signalé au relevé du corps live : les sept règles
+restrictives ne testaient pas directement le rôle, mais passaient par la
+fonction d'aide de la journée métier, elle-même réduite au test de rôle ; cette
+fonction est aussi appelée par des fonctions d'écriture, dont celle du paiement.
+Les règles des tables pointent donc vers des fonctions d'aide neuves, sans
+toucher à l'ancienne. Paquet 1, migration
+`20261117000005_s1_08_visibility_permissions_and_policies.sql` : la permission
+neuve, deux fonctions d'aide (stock, états financiers), les huit règles
+restrictives (les sept de la liste et celle des lignes d'inventaire) et la
+règle permissive des journaux, qui testait encore le rôle. Les journaux suivent
+`reports.audit.read`, les rapports Z les états financiers. Preuve pgTAP
+`s1_08_visibility_permissions.test.sql`, 18 sur 18 en dev le 2026-11-17 : lecture
+réelle des mouvements de stock et des journaux par un délégué, avec et sans la
+permission ; pour les six autres tables, seule l'expression de la règle est
+vérifiée. Un délégué lit une table s'il détient aussi la permission ordinaire de
+cette table (ADR-039, Conséquences).
+**Paquet 1 en production le 2026-11-18 à 1 h 30** (UTC+8) : PR #725 fusionnée
+(`9347514b`), migration appliquée, boutique fermée. Règles, fonctions et droits
+relus égaux au dev ; sous l'identité d'un propriétaire, les deux fonctions d'aide
+rendent vrai, sous celle d'un compte ADMIN, faux. Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 18 novembre.
+**Restent** : paquet 2, les fonctions de lecture du stock ; paquet 3, les
+fonctions des états financiers ; puis les fonctions d'écriture qui masquent le
+stock dans leur réponse, et l'Edge Function du PDF confidentiel, qui lisent
+encore l'ancienne fonction d'aide.
+**Paquets 2 et 3 développés et appliqués en dev le 2026-11-18**, branche
+`fix/s1-08-s1-16-s1-20-lot`, migration
+`20261118000001_s1_08_stock_and_statements_reads.sql` (additive) puis
+`20261118000002_s1_08_drop_owner_only_reads.sql` (retrait, après publication du
+back-office). 29 lectures reçoivent une version neuve : 21 de stock, dont le
+grand livre pour ses seuls comptes de stock, le tableau de bord, la nomenclature
+complète et le coût direct des recettes et la recherche d'ingrédients, suivent
+`reports.inventory.read` ; 8 des états financiers (bilan, résultat, flux de
+trésorerie, balance, journal des coffres, marge par produit, PB1 et son calcul)
+suivent `reports.statements.read`. Corps repris du vivant (empreinte vérifiée
+avant génération, puis égalité fichier-base sur les 29). Le back-office ouvre
+ses routes et son menu des états financiers à la permission, et non plus au
+rôle ; l'aperçu des matières d'une fournée montre le stock et le manque à qui
+détient la permission de stock. L'Edge Function du PDF suit les deux
+permissions. **Limite, conforme à l'ADR-039** : la plupart des lectures de
+stock gardent la confidentialité de la journée en cours ; un délégué n'y voit le
+stock qu'une fois la journée close. Le manque avant fournée devient visible au
+délégué dans l'aperçu des matières et la recherche d'ingrédients, qui n'ont pas
+ce verrou ; les listes et alertes de stock, non. **Restent hors de ce lot** : les fonctions d'écriture et de
+paiement qui masquent le stock dans leurs messages d'erreur, la lecture des
+produits opérationnels par la caisse, et les paiements par méthode, rapport et
+PDF, dont la permission n'est pas tranchée (voir l'ADR-039, qui ne les range ni
+dans les états financiers ni dans les rapports d'exploitation).
+**Paquets 2 et 3 fusionnés le 2026-11-18** : PR #727 (`5665eeb9`), CI verte.
+**En production le même jour vers 8 h 30** (UTC+8) : la partie additive,
+appliquée par un bloc qui refait les remplacements sur le corps vivant de la
+production ; les 29 corps relus égaux au corps d'origine remplacé, mêmes
+attributs, droits refusés à anon. L'Edge Function du PDF est redéployée en
+production (version 9, contrôle du jeton conservé). Back-office publié le
+même jour sur `5665eeb9` (approbation de Mamat) ; le code servi appelle les
+nouvelles versions, aucune ancienne, et vise la production. Puis retrait des
+anciennes versions en production et en dev ; aucun appelant restant, et sous
+l'identité d'un propriétaire le bilan et les compteurs de stock répondent.
+**Paquets 2 et 3 en production le 2026-11-18.**
+
 ---
 
 ### `[S1-09]` Plafonner la remise de ligne au sous-total serveur
@@ -565,6 +630,22 @@ finalise un inventaire qu'il a compté lui-même.
 
 **Note** — La séparation des tâches disparaît de l'inventaire, en connaissance
 de cause (arbitrage lot 7).
+
+**État — développé et prouvé en dev le 2026-11-17**, branche
+`fix/s1-10-opname-absolu`. Décision gravée dans l'ADR-038. Migration
+`20261117000001_finalize_opname_v7_absolute.sql` : nouvelle version de la
+famille `finalize_opname`, additive ; l'ancienne reste jusqu'à la publication du
+back-office. Preuve pgTAP `opname_finalize_absolute.test.sql`, 17 sur 17 en dev
+le 2026-11-17 : compté 10, stock passé de 4 à 7 pendant le comptage, résultat
+10 ; inventaire compté et finalisé par le propriétaire. L'écran appelle la
+nouvelle version et ne parle plus de revue « indépendante ».
+**En production le 2026-11-17** : PR #719 fusionnée, migration présente en
+production, back-office publié sur `60c20d79` ; son bundle appelle la nouvelle
+version et ne nomme plus l'ancienne. L'ancienne version est retirée le même
+soir, en dev puis en production (PR #723, migration
+`20261117000004_drop_finalize_opname_v6_balance_sheet_v4.sql`). Relevé dans
+`docs/runbooks/etat-environnements.md`, section du 17 novembre. **Non fait** :
+un inventaire réel finalisé à l'écran.
 
 ---
 
@@ -766,6 +847,30 @@ après.
 
 **Dépend de** — `S1-01`, `S1-14`.
 
+**État — développé et appliqué en dev le 2026-11-18**, branche
+`fix/s1-08-s1-16-s1-20-lot`, migration
+`20261118000003_s1_16_pos_events_partitions.sql`. Relevé du même jour : 22 889
+lignes dans la partition par défaut en production (octobre et novembre), 212 en
+dev (octobre). La migration détache la partition par défaut, crée d'octobre 2026
+à février 2027 par la fonction qui ferme chaque partition, recrée une partition
+par défaut vide et fermée, réinsère les lignes par la table mère, compare le
+comptage, puis supprime l'ancienne table par DROP : aucune ligne n'est supprimée
+une à une. Essai en transaction annulée, puis application en dev : 212 lignes en
+octobre, partition par défaut vide, comptage égal. Une tâche planifiée, sans
+adresse ni secret, crée le 20 de chaque mois les partitions des deux mois
+suivants. Écart vu par la CI : la fonction de création ne posait pas la règle
+de session PIN des tables publiques. La migration
+`20261118000004_s1_16_partition_pin_policy.sql` la pose sur chaque partition,
+crée la version suivante de la fonction, qui la pose aussi, et y branche la
+tâche. Preuve pgTAP `s1_16_pos_events_partitions.test.sql`, 10 sur 10 en dev,
+et la garde des règles PIN verte.
+**Non fait** : la production, à appliquer boutique fermée (le détachement
+bloque l'écriture du journal le temps de la transaction).
+**Fusionné le 2026-11-18** : PR #727 (`5665eeb9`). Relevé en production le même
+jour à 8 h 35 : 23 028 lignes, toutes dans la partition par défaut ; la
+boutique était ouverte. Application prévue après la fermeture, avec l'accord de
+Mamat du même jour.
+
 ---
 
 ### `[S1-17]` Désactiver les deux comptes de taxe hors régime
@@ -911,6 +1016,19 @@ invisibles à tout contrôle, perdues au premier bump.
 **Preuve** — Les 3 ADR sont rédigés, relus en contexte vierge, et référencés
 depuis `../SPECS_OFFICIELS_ERP_POS.md`. Les 3 déclarations en attente sont
 traitées. `node scripts/ci/relative-links.mjs` vert.
+
+**État — rédigé le 2026-11-18**, branche `fix/s1-08-s1-16-s1-20-lot` :
+`../adr/040-exoneration-pb1-ventes-b2b.md`,
+`../adr/041-circuit-declaration-approbation-stock.md`,
+`../adr/042-comportement-cout-moyen-pondere.md`, référencés depuis les règles
+correspondantes de `../SPECS_OFFICIELS_ERP_POS.md`. Écart signalé : les
+décisions ne sont pas aux lots 3, 4 et 6 cités en source, mais au lot 2
+(`G04`), au lot 10 (`S06`) et au bloc documentaire du §13 (`P01`, `P03`) du
+registre ; les ADR citent ces sources. **Non fait** : la cadence de traitement
+de la file des déclarations, qu'aucune décision ne fixe, et le traitement des 3
+déclarations en attente, geste de Mamat.
+**Fusionné le 2026-11-18** : PR #727 (`5665eeb9`) ; les trois ADR sont sur
+`master`.
 
 ---
 
@@ -1074,6 +1192,13 @@ personne. Les rapports montreront l'écart **sans** la cause.
 **Preuve** — Aucune référence restante. Le rapport de rendement affiche l'écart.
 Suite back-office complète verte.
 
+**État — non commencée, écart signalé le 2026-11-18.** Le relevé du jour
+contredit la source : la fenêtre de saisie de la cause est **importée** par le
+formulaire de production, qui l'ouvre quand l'écart dépasse le seuil et envoie
+la cause à la fonction d'enregistrement de la production. La retirer change ce
+parcours et la fonction d'écriture du stock de production : la tâche ne tient
+pas dans un lot de nettoyage et part seule.
+
 ---
 
 ### `[S2-03]` Retirer la réservation de stock
@@ -1090,6 +1215,27 @@ filtres d'écran qui ne ramènent **jamais** rien.
 
 **Preuve** — Aucune référence. Types régénérés. Suites vertes.
 
+**État — développé et prouvé en dev le 2026-11-18**, branche
+`chore/s2-nettoyage-lot`, migration
+`20261118000005_s2_retire_abandoned_objects.sql`, commune à `S2-03`, `S2-04`,
+`S2-05` et `S2-09`. Relevé du jour : 0 réservation en dev et en production, aucun
+mouvement de réservation dans les deux bases, aucune tâche planifiée en
+production. Retirés : la table, la vue de disponibilité qui la lisait, les cinq
+fonctions (dont celle du schéma privé du stock) et la tâche planifiée de dev ;
+le module de calcul du domaine ; les deux options du filtre de type de
+mouvement. Les deux valeurs de réservation **restent** dans l'énumération des
+mouvements : le registre du stock ne perd aucune valeur. Preuve pgTAP
+`s2_retired_objects.test.sql`, 18 sur 18 en dev, et quatre fichiers allégés des
+cas devenus caducs, verts.
+**Fusionné le 2026-11-18** : PR #729 (`a2d3a285`), CI verte. **En production le
+même jour vers 11 h** (UTC+8), pour `S2-03`, `S2-04`, `S2-05` et `S2-09` : relevé
+refait juste avant (mêmes signatures, 0 ligne, aucune dépendance cachée), essai
+en transaction annulée, puis migration appliquée. Après : 160 permissions, aucun
+des objets retirés, `mv_stock_variance` et les deux valeurs d'énumération
+conservées. Le back-office servi n'appelait aucun objet retiré. Back-office
+`a2d3a285` publié vers 12 h 53 (textes `S2-10` servis). Relevé dans
+`../runbooks/etat-environnements.md`, section du 18 novembre à 11 h.
+
 ---
 
 ### `[S2-04]` Retirer le planning de production hebdomadaire
@@ -1101,6 +1247,11 @@ filtres d'écran qui ne ramènent **jamais** rien.
 **Fichiers** — `supabase/migrations/<nouveau>`.
 **Preuve** — Comptage à zéro confirmé en production **avant** la suppression.
 Types régénérés.
+
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Comptage à zéro relevé en production le même jour, avant toute
+suppression. Retirés : la table, ses deux déclencheurs, la fonction de garde
+et la fonction de suggestion.
 
 ---
 
@@ -1117,6 +1268,12 @@ n'existent plus. Types régénérés.
 
 **Note** — Les supprimer **évite** qu'un futur rapport s'y branche et échoue
 silencieusement.
+
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Relevé du jour : non peuplées en production ; en dev, peuplées par
+deux tâches planifiées, et lues par aucune fonction applicative. Retirées avec
+leurs deux fonctions de rafraîchissement et ces deux tâches. La vue du stock
+`mv_stock_variance`, vivante, reste.
 
 ---
 
@@ -1148,6 +1305,11 @@ suppression.
 orphelins).
 **Preuve** — Aucune référence. Suites vertes.
 
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot` : le
+crochet `useSetProductTestFlag.ts` est supprimé, sans importeur. Le drapeau, sa
+fonction serveur et l'exclusion des rapports restent, comme l'ADR-035 le
+décide.
+
 ---
 
 ### `[S2-08]` Retirer le rapport de rotation des périssables
@@ -1177,6 +1339,16 @@ fonction ne les cite.
 **Dépend de** — `S1-08` : ne pas retirer une permission avant d'avoir fini de
 redistribuer les contrôles.
 
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Relevé du jour : aucune règle d'accès ni aucune fonction ne cite les
+trois codes, en dev ; en production, chacun est attribué au seul rôle
+SUPER_ADMIN, sans exception par compte. Le catalogue de production compte 163
+permissions (la permission des états financiers de `S1-08` s'y est ajoutée) :
+il passera à 160. Retirés aussi de la liste des codes du paquet partagé et de
+la base de départ. Les paquets de `S1-08` qui redistribuent les contrôles sont
+en production ; les fonctions d'écriture restantes de `S1-08` ne citent aucun
+des trois codes.
+
 ---
 
 ### `[S2-10]` Retirer la promesse de notification par e-mail
@@ -1194,6 +1366,11 @@ code reste dormant** ; c'est la *promesse* qu'on retire.
 
 **Preuve** — Aucun document vivant ne promet un envoi. Aucun écran ne l'annonce.
 
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot` : les deux
+pages de réglage des notifications et des modèles d'e-mail disent désormais
+qu'aucun e-mail n'est envoyé ; la checklist du skill de stock aussi. Les Edge
+Functions et les tables restent, dormantes.
+
 ---
 
 ### `[S2-11]` Corriger le miroir d'énumérations
@@ -1205,6 +1382,14 @@ commande. La source unique est Postgres.
 `02_DETTE_TECHNIQUE...`).
 **Preuve** — Le miroir liste les 6 valeurs réelles. Un test compare le miroir aux
 valeurs de l'énumération générée.
+
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot`. Écart
+signalé : le fichier est `packages/supabase/src/enums.ts`, et le défaut ne se
+limite pas aux statuts de commande ; le type de commande `b2b`, la plupart des
+types de mouvement et le type de fidélité `refund` manquaient aussi. Les sept
+listes ne sont plus recopiées : elles dérivent des énumérations générées.
+`enums.test.ts` les compare une à une (7 cas verts). Seule la liste des moyens
+de paiement a un consommateur, et ses valeurs sont inchangées.
 
 ---
 
@@ -1238,6 +1423,46 @@ silence**.
 **Travail** — Vérifier l'absence d'import **par glob**, jamais depuis un seul
 répertoire : un même module a souvent plusieurs dossiers de tests.
 **Preuve** — Aucun import. Suites vertes. Relevé joint.
+
+**État — développé et vérifié le 2026-11-17**, branche `chore/s2-13-orphelins`,
+base `651fe781`. Écart signalé : la liste des orphelins est au §2 de l'audit 02,
+pas au §3 (le §3 traite des doublons). Relevé fait par `git grep` sur tout le
+dépôt (apps, packages, scripts, workflows, skills, `.design-sync/`), le jour du
+geste.
+**Supprimés** (aucun importeur de production) : les 11 du §2.1 —
+`useAuthPin`, le `UserPicker` du POS (celui du back-office est vivant et reste),
+`CustomerAttachButton`, `DiscountButton`, `LineDiscountButton`,
+`CategorySidebar`, le `CategoryPicker` des dépenses, les composants
+`CustomerListRow`, `PromotionListRow` et `SupplierListRow` (les **types** du même
+nom restent, dans leurs hooks), le dossier `features/devices/` du back-office ;
+du §2.2 — `useVoidServerOrder`, `CustomerAttachedBadge`, `HeldOrdersInboxButton`,
+le `useCreateCustomer` du POS (celui du back-office reste), `useTabletOffline`
+(remplacé par `useTabletConnectionState`) ; du §2.3 — les 4 fichiers de la boîte
+de réception tablette : les commandes tablette s'ouvrent depuis la liste des
+commandes en attente, qui appelle elle-même `pickup_tablet_order`. Retirés avec
+eux : les `vi.mock` de modules supprimés dans deux tests, le bloc de test de
+`useTabletOffline`, les deux fichiers de test de la boîte de réception, la ligne
+de baseline de la garde 1 devenue sans objet, les mentions dans trois skills et
+une eval, et les commentaires qui pointaient vers un fichier supprimé. Reste
+inerte : la clé de cache `pending-tablet-orders`, encore invalidée par plusieurs
+hooks alors qu'aucune requête ne la porte plus ; sans effet, à retirer au
+prochain passage.
+**Gardés** : `ServiceSpeedIndicator` + `useServiceSpeed` (fonction écrite et
+jamais affichée, à trancher) ; `useStockLots` (relève de `S2-01`, décision des
+lots à Mamat) ; `useSetProductTestFlag` (relève de `S2-07`) ; `useUpdateVariant`
+(trou de parcours, décision produit) ; `ProductionRecordList` (orphelin assumé) ;
+`clearKioskPairing` (export d'un fichier vivant, trou de parcours) ; le composant
+`TabletInboxRow` de `packages/ui` (preview versionnée) ; les deux scripts du §9.3
+(`uxui-test-data-cleanup.sql` attend la relecture de Mamat,
+`prepare-backup-task.ps1` est une procédure manuelle). Restent des mentions
+historiques dans `supabase/seed.sql`, une migration et un test pgTAP : zones non
+touchées par ce lot.
+**Preuves** : typecheck 7/7 ; lint des fichiers modifiés propre ; gardes de
+gouvernance vertes ; suite back-office complète 389 fichiers et 2 525 tests
+verts, 1 test ignoré (un `it.skip` préexistant de `suppliers-crud.smoke.test.tsx`,
+non touché) ; tests POS des dossiers touchés 90 fichiers, 557 tests, 0 ignoré ;
+primitives de `packages/ui` 16 fichiers, 52 tests. Suite POS complète : CI
+seulement. Revue indépendante : aucun bloquant, remarques corrigées.
 
 ---
 

@@ -94,12 +94,25 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
-  const ownerTemplates = ['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover',
-    'payment_by_method', 'pb1'];
-  if (ownerTemplates.includes(body.template)) {
-    const { data: owner, error: ownerError } = await userClient.rpc('can_view_stock_v1');
-    if (ownerError) return jsonResponse({ error: 'permission_check_failed' }, 500);
-    if (owner !== true) return jsonResponse({ error: 'stock_visibility_owner_required' }, 403);
+  // ADR-039 : le stock suit `reports.inventory.read`, les états financiers
+  // `reports.statements.read`. Les paiements par méthode restent réservés au
+  // propriétaire (confidentialité de la journée, hors de cette décision).
+  const visibilityGates: Record<string, { rpc: string; error: string }> = {
+    pnl: { rpc: 'can_view_statements_v1', error: 'financial_statements_required' },
+    bs: { rpc: 'can_view_statements_v1', error: 'financial_statements_required' },
+    cf: { rpc: 'can_view_statements_v1', error: 'financial_statements_required' },
+    pb1: { rpc: 'can_view_statements_v1', error: 'financial_statements_required' },
+    stock_variance: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
+    stock_movements: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
+    wastage: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
+    perishable_turnover: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
+    payment_by_method: { rpc: 'can_view_stock_v1', error: 'stock_visibility_owner_required' },
+  };
+  const gate = visibilityGates[body.template];
+  if (gate) {
+    const { data: allowed, error: gateError } = await userClient.rpc(gate.rpc);
+    if (gateError) return jsonResponse({ error: 'permission_check_failed' }, 500);
+    if (allowed !== true) return jsonResponse({ error: gate.error }, 403);
   }
 
   // Audit Reports 2026-08-01, lot C / D3 — second verrou : EXTRAIRE un rapport

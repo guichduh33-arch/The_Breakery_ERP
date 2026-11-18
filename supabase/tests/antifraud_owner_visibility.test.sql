@@ -8,10 +8,13 @@ CREATE TEMP TABLE antifraud_actors AS SELECT gen_random_uuid() id,gen_random_uui
 INSERT INTO auth.users(id,email) SELECT auth_user_id,auth_user_id||'@visibility.invalid' FROM antifraud_actors;
 INSERT INTO public.user_profiles(id,auth_user_id,employee_code,full_name,pin_hash,role_code,is_active)
  SELECT id,auth_user_id,'VIS-'||id,'Visibility fixture','invalid-test-hash',role_code,true FROM antifraud_actors;
+-- Toutes les permissions sauf les deux vues déléguables d'ADR-039, refusées par
+-- dérogation : ADMIN et CASHIER restent sans stock ni états, quelle que soit la matrice.
 INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
- SELECT a.id,p.code,true,'Transactional antifraud coverage' FROM antifraud_actors a CROSS JOIN public.permissions p
+ SELECT a.id,p.code,p.code NOT IN('reports.inventory.read','reports.statements.read'),'Transactional antifraud coverage'
+ FROM antifraud_actors a CROSS JOIN public.permissions p
  WHERE a.role_code<>'SUPER_ADMIN'
- ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
+ ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=EXCLUDED.is_granted,expires_at=NULL;
 CREATE TEMP TABLE antifraud_ids AS SELECT gen_random_uuid() product_id,gen_random_uuid() session_id,
  gen_random_uuid() order_id,gen_random_uuid() sale_je,gen_random_uuid() receipt_je,
  gen_random_uuid() receipt_key,gen_random_uuid() float_je,gen_random_uuid() customer_id,
@@ -67,16 +70,16 @@ INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(receipt_je),'Outstanding receipt JE hidden while receiving shift is open') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v2(float_je),'Opening float JE hidden before shift close') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.journal_entries WHERE id=(SELECT sale_je FROM antifraud_ids)),0::bigint,'Direct journal read cannot bypass the shift boundary');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_balance_sheet_v4(current_date)','P0003','stock_visibility_owner_required','Balance-sheet valuation is Owner only');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_profit_loss_v4(current_date,current_date)','P0003','stock_visibility_owner_required','Profit and loss is Owner only');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_movement_aggregates_v5(p_date_start=>current_date-1,p_date_end=>current_date)','P0003','stock_visibility_owner_required','Closed dates never unlock stock movement aggregates');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT * FROM public.get_cash_wallet_ledger_v4(''1141'',current_date,current_date)','P0003','stock_visibility_owner_required','Cash ledger cannot expose inventory accounts');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_balance_sheet_v6(current_date)','42501','financial_statements_required','Balance-sheet valuation requires reports.statements.read');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_profit_loss_v5(current_date,current_date)','42501','financial_statements_required','Profit and loss requires reports.statements.read');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_movement_aggregates_v6(p_date_start=>current_date-1,p_date_end=>current_date)','P0003','stock_visibility_required','Closed dates never unlock stock movement aggregates');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT * FROM public.get_cash_wallet_ledger_v5(''1141'',current_date,current_date)','42501','financial_statements_required','Cash ledger cannot expose inventory accounts');
 INSERT INTO antifraud_results(tap) SELECT lives_ok('SELECT * FROM public.get_customer_segments_v2()','Segmentation preserves its CTE column aliases');
 INSERT INTO antifraud_results(tap) SELECT is((SELECT count(*) FROM public.shift_cash_treasury WHERE session_id=(SELECT session_id FROM antifraud_ids)),0::bigint,'Direct treasury read hides an open shift');
-INSERT INTO antifraud_results(tap) SELECT ok((public.get_dashboard_overview_v7()->'kpis'->'cash_on_hand'->>'drawer') IS NULL
- AND (public.get_dashboard_overview_v7()->'kpis'->'cash_on_hand'->>'safe') IS NULL,'Dashboard hides live drawer and derived safe from ADMIN');
-INSERT INTO antifraud_results(tap) SELECT ok((public.get_dashboard_overview_v7()->'cost_mtd'->>'restricted')::boolean
- AND public.get_dashboard_overview_v7()->'cost_mtd'->'lines'='[]'::jsonb,'Dashboard costs cannot expose stock loss valuations to ADMIN');
+INSERT INTO antifraud_results(tap) SELECT ok((public.get_dashboard_overview_v8()->'kpis'->'cash_on_hand'->>'drawer') IS NULL
+ AND (public.get_dashboard_overview_v8()->'kpis'->'cash_on_hand'->>'safe') IS NULL,'Dashboard hides live drawer and derived safe from ADMIN');
+INSERT INTO antifraud_results(tap) SELECT ok((public.get_dashboard_overview_v8()->'cost_mtd'->>'restricted')::boolean
+ AND public.get_dashboard_overview_v8()->'cost_mtd'->'lines'='[]'::jsonb,'Dashboard costs cannot expose stock loss valuations to ADMIN');
 RESET ROLE;
 UPDATE public.pos_sessions SET status='closed',closed_at=now() WHERE id=(SELECT session_id FROM antifraud_ids);
 SET LOCAL ROLE authenticated;
@@ -91,7 +94,7 @@ INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(
 INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(receipt_je),'Closed receiving shift releases outstanding JE') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(public.can_view_financial_entry_v2(float_je),'Closed shift releases its float JE') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_stock_v1(),'Shift closure never unlocks stock');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_stock_levels_v6()','P0003','stock_visibility_owner_required','Stock reader stays Owner only after shift closure');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_stock_levels_v7()','P0003','stock_visibility_required','Stock reader still requires reports.inventory.read after shift closure');
 RESET ROLE;
 
 -- B2B sans droit POS, avec prix serveur, AR et facture payée encore lisible.

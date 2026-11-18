@@ -48,7 +48,7 @@ SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
       'create_opname_v3','add_opname_item_v4','set_opname_count_v3',
-      'validate_opname_v2','finalize_opname_v6','cancel_opname_v1',
+      'validate_opname_v2','finalize_opname_v7','cancel_opname_v1',
       'next_count_number'
     )),
   7,
@@ -122,10 +122,10 @@ SELECT is(
 
 -- T_OPN_10 — finalize_opname_v5 status guard — call as anonymous (should raise forbidden)
 SELECT throws_ok(
-  $$SELECT finalize_opname_v6(gen_random_uuid())$$,
+  $$SELECT finalize_opname_v7(gen_random_uuid())$$,
   'P0003',
   NULL,
-  'T_OPN_10: finalize_opname_v6 forbids anonymous callers'
+  'T_OPN_10: finalize_opname_v7 forbids anonymous callers'
 );
 
 -- T_OPN_11 — enum values opname_in + opname_out present
@@ -153,8 +153,8 @@ SELECT ok(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'get_stock_movements_v6','get_movement_aggregates_v5',
-      'get_low_stock_v4','get_reorder_suggestions_v3','get_product_dashboard_v7'
+      'get_stock_movements_v7','get_movement_aggregates_v6',
+      'get_low_stock_v5','get_reorder_suggestions_v4','get_product_dashboard_v8'
     )),
   5,
   'T_OPN_13: 5 query RPCs (movements/aggregates/low_stock_v2/reorder/dashboard_v3) exist'
@@ -265,7 +265,7 @@ BEGIN
   PERFORM validate_opname_v2(v_count_id);
 
   PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
-  SELECT finalize_opname_v6(v_count_id) INTO v_finalize;
+  SELECT finalize_opname_v7(v_count_id) INTO v_finalize;
 
   SELECT id, movement_type, quantity, from_section_id, to_section_id
     INTO v_mvt_id, v_mvt_type, v_mvt_qty, v_mvt_from, v_mvt_to
@@ -287,7 +287,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t_opn_15$;
 SELECT ok(current_setting('breakery.t_opn_15_pass')::boolean,
-  'T_OPN_15: finalize_opname_v6 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
+  'T_OPN_15: finalize_opname_v7 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
 
 
 -- =========================================================================
@@ -331,11 +331,11 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
 END $t_opn_16$;
 SELECT throws_ok(
-  format($q$SELECT finalize_opname_v6(%L::uuid)$q$,
+  format($q$SELECT finalize_opname_v7(%L::uuid)$q$,
          current_setting('breakery.opn16_count_id')),
   'P0001',
   'finalize_not_allowed_in_status',
-  'T_OPN_16: finalize_opname_v6 refuses status counting — reveal is not skippable'
+  'T_OPN_16: finalize_opname_v7 refuses status counting — reveal is not skippable'
 );
 SELECT * FROM finish();
 

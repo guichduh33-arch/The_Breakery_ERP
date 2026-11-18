@@ -182,7 +182,7 @@ export default function OpnameDetailPage(): JSX.Element {
               <EyeOff className="h-3.5 w-3.5" aria-hidden /> Blind count
             </div>
             <p className="mt-2 text-sm text-text-secondary">
-              Expected quantities and variances are restricted to the owner. Submitting locks your count for independent review.
+              Expected quantities and variances are restricted to the owner. Submitting locks your count for owner review.
               Record what you actually see on the shelf.
             </p>
           </div>
@@ -251,7 +251,7 @@ export default function OpnameDetailPage(): JSX.Element {
           `blind-count` l'a attrapé au premier essai. */}
       {counting && canCreate && (
         <p className="text-sm text-text-secondary">
-          Submitting locks every counted quantity for independent owner review.
+          Submitting locks every counted quantity for owner review.
           The count cannot be reopened.
         </p>
       )}

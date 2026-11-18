@@ -57,11 +57,11 @@ BEGIN
   PERFORM validate_opname_v2(count_id);
   INSERT INTO precision_lifecycle_results(tap)
     SELECT is((SELECT variance FROM inventory_count_items WHERE id=item_id),0.000166::numeric,'generated count variance retains residue')
-    UNION ALL SELECT throws_ok(format('SELECT finalize_opname_v6(%L)',count_id),'P0003','forbidden','non-owner cannot finalize count')
+    UNION ALL SELECT throws_ok(format('SELECT finalize_opname_v7(%L)',count_id),'P0003','forbidden','non-owner cannot finalize count')
     UNION ALL SELECT throws_ok(format('SELECT set_opname_count_v3(%L,1.0001)',item_id),'P0001','counted_qty_invalid','human count precision remains three decimals');
   PERFORM pg_temp.authenticate_pin(owner_auth);
-  result:=finalize_opname_v6(count_id);
-  replay:=finalize_opname_v6(count_id);
+  result:=finalize_opname_v7(count_id);
+  replay:=finalize_opname_v7(count_id);
   INSERT INTO precision_lifecycle_results(tap)
     SELECT is((SELECT current_stock FROM products WHERE id=material),1::numeric,'opname closes the exact fractional gap')
     UNION ALL SELECT is((SELECT quantity FROM stock_movements WHERE reference_type='opname' AND reference_id=count_id),0.000166::numeric,'opname ledger movement retains fractional gap')
