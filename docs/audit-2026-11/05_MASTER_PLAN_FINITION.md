@@ -1192,6 +1192,13 @@ personne. Les rapports montreront l'écart **sans** la cause.
 **Preuve** — Aucune référence restante. Le rapport de rendement affiche l'écart.
 Suite back-office complète verte.
 
+**État — non commencée, écart signalé le 2026-11-18.** Le relevé du jour
+contredit la source : la fenêtre de saisie de la cause est **importée** par le
+formulaire de production, qui l'ouvre quand l'écart dépasse le seuil et envoie
+la cause à la fonction d'enregistrement de la production. La retirer change ce
+parcours et la fonction d'écriture du stock de production : la tâche ne tient
+pas dans un lot de nettoyage et part seule.
+
 ---
 
 ### `[S2-03]` Retirer la réservation de stock
@@ -1208,6 +1215,19 @@ filtres d'écran qui ne ramènent **jamais** rien.
 
 **Preuve** — Aucune référence. Types régénérés. Suites vertes.
 
+**État — développé et prouvé en dev le 2026-11-18**, branche
+`chore/s2-nettoyage-lot`, migration
+`20261118000005_s2_retire_abandoned_objects.sql`, commune à `S2-03`, `S2-04`,
+`S2-05` et `S2-09`. Relevé du jour : 0 réservation en dev et en production, aucun
+mouvement de réservation dans les deux bases, aucune tâche planifiée en
+production. Retirés : la table, la vue de disponibilité qui la lisait, les cinq
+fonctions (dont celle du schéma privé du stock) et la tâche planifiée de dev ;
+le module de calcul du domaine ; les deux options du filtre de type de
+mouvement. Les deux valeurs de réservation **restent** dans l'énumération des
+mouvements : le registre du stock ne perd aucune valeur. Preuve pgTAP
+`s2_retired_objects.test.sql`, 18 sur 18 en dev, et quatre fichiers allégés des
+cas devenus caducs, verts.
+
 ---
 
 ### `[S2-04]` Retirer le planning de production hebdomadaire
@@ -1219,6 +1239,11 @@ filtres d'écran qui ne ramènent **jamais** rien.
 **Fichiers** — `supabase/migrations/<nouveau>`.
 **Preuve** — Comptage à zéro confirmé en production **avant** la suppression.
 Types régénérés.
+
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Comptage à zéro relevé en production le même jour, avant toute
+suppression. Retirés : la table, ses deux déclencheurs, la fonction de garde
+et la fonction de suggestion.
 
 ---
 
@@ -1235,6 +1260,12 @@ n'existent plus. Types régénérés.
 
 **Note** — Les supprimer **évite** qu'un futur rapport s'y branche et échoue
 silencieusement.
+
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Relevé du jour : non peuplées en production ; en dev, peuplées par
+deux tâches planifiées, et lues par aucune fonction applicative. Retirées avec
+leurs deux fonctions de rafraîchissement et ces deux tâches. La vue du stock
+`mv_stock_variance`, vivante, reste.
 
 ---
 
@@ -1266,6 +1297,11 @@ suppression.
 orphelins).
 **Preuve** — Aucune référence. Suites vertes.
 
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot` : le
+crochet `useSetProductTestFlag.ts` est supprimé, sans importeur. Le drapeau, sa
+fonction serveur et l'exclusion des rapports restent, comme l'ADR-035 le
+décide.
+
 ---
 
 ### `[S2-08]` Retirer le rapport de rotation des périssables
@@ -1295,6 +1331,16 @@ fonction ne les cite.
 **Dépend de** — `S1-08` : ne pas retirer une permission avant d'avoir fini de
 redistribuer les contrôles.
 
+**État — développé et prouvé en dev le 2026-11-18**, même migration que
+`S2-03`. Relevé du jour : aucune règle d'accès ni aucune fonction ne cite les
+trois codes, en dev ; en production, chacun est attribué au seul rôle
+SUPER_ADMIN, sans exception par compte. Le catalogue de production compte 163
+permissions (la permission des états financiers de `S1-08` s'y est ajoutée) :
+il passera à 160. Retirés aussi de la liste des codes du paquet partagé et de
+la base de départ. Les paquets de `S1-08` qui redistribuent les contrôles sont
+en production ; les fonctions d'écriture restantes de `S1-08` ne citent aucun
+des trois codes.
+
 ---
 
 ### `[S2-10]` Retirer la promesse de notification par e-mail
@@ -1312,6 +1358,11 @@ code reste dormant** ; c'est la *promesse* qu'on retire.
 
 **Preuve** — Aucun document vivant ne promet un envoi. Aucun écran ne l'annonce.
 
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot` : les deux
+pages de réglage des notifications et des modèles d'e-mail disent désormais
+qu'aucun e-mail n'est envoyé ; la checklist du skill de stock aussi. Les Edge
+Functions et les tables restent, dormantes.
+
 ---
 
 ### `[S2-11]` Corriger le miroir d'énumérations
@@ -1323,6 +1374,14 @@ commande. La source unique est Postgres.
 `02_DETTE_TECHNIQUE...`).
 **Preuve** — Le miroir liste les 6 valeurs réelles. Un test compare le miroir aux
 valeurs de l'énumération générée.
+
+**État — développé le 2026-11-18**, branche `chore/s2-nettoyage-lot`. Écart
+signalé : le fichier est `packages/supabase/src/enums.ts`, et le défaut ne se
+limite pas aux statuts de commande ; le type de commande `b2b`, la plupart des
+types de mouvement et le type de fidélité `refund` manquaient aussi. Les sept
+listes ne sont plus recopiées : elles dérivent des énumérations générées.
+`enums.test.ts` les compare une à une (7 cas verts). Seule la liste des moyens
+de paiement a un consommateur, et ses valeurs sont inchangées.
 
 ---
 
