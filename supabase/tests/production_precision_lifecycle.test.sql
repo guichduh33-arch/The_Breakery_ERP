@@ -38,7 +38,7 @@ BEGIN
     (starter,material,0.002,'kg',true),(product,starter,0.083,'kg',true);
   result:=record_production_v12(p_product_id:=product,p_quantity_produced:=1,p_section_id:=station);
   production_id:=(result->>'production_id')::uuid;
-  PERFORM revert_production_v4(production_id,'Precision lifecycle exact reversal');
+  PERFORM revert_production_v5(production_id,'Precision lifecycle exact reversal');
   INSERT INTO precision_lifecycle_results(tap)
     SELECT is((SELECT current_stock FROM products WHERE id=material),1::numeric,'revert restores exact ingredient stock')
     UNION ALL SELECT is((SELECT current_stock FROM products WHERE id=product),0::numeric,'revert removes exact finished output')

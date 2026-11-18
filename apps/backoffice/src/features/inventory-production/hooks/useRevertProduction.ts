@@ -62,7 +62,7 @@ export function useRevertProduction() {
   const qc = useQueryClient();
   return useMutation<unknown, RevertProductionError, RevertProductionArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('revert_production_v4', {
+      const { data, error } = await supabase.rpc('revert_production_v5', {
         p_production_id: args.productionId,
         p_reason:        args.reason,
       });

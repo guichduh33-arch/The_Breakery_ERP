@@ -102,7 +102,6 @@ function defaultMockFrom(table: string): ChainResult {
   if (table === 'sections')        return { data: [SECTION_ROW], error: null };
   if (table === 'products')        return { data: [PRODUCT_ROW], error: null };
   if (table === 'recipes')         return { data: [{ product_id: 'bag-1' }], error: null };
-  if (table === 'business_config') return { data: [{ production_yield_variance_threshold_pct: 0.15 }], error: null };
   return { data: [], error: null };
 }
 

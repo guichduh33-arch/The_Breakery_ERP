@@ -38,15 +38,6 @@ export interface ProductDashboardData {
     day: string;
     units_sold: number;
   }[];
-  expiring_lots: {
-    id: string;
-    quantity: number;
-    unit: string;
-    expires_at: string;
-    batch_number: string | null;
-    status: string;
-    hours_until_expiry: number;
-  }[];
   top_customers: {
     customer_id: string;
     customer_name: string;
@@ -67,7 +58,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_dashboard_v8', {
+      const { data, error } = await rpc('get_product_dashboard_v9', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);

@@ -23,7 +23,7 @@ vi.mock('../../functions/_shared/pdf-layout.ts', () => ({
 }));
 vi.mock('../../functions/_shared/pdf-templates/index.ts', () => ({
   TEMPLATES: Object.fromEntries(['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage',
-    'perishable_turnover', 'payment_by_method', 'pb1', 'daily_sales'].map((name) => [name, { permission: 'reports.read', render: state.render }])),
+    'payment_by_method', 'pb1', 'daily_sales'].map((name) => [name, { permission: 'reports.read', render: state.render }])),
 }));
 
 beforeEach(() => {
@@ -58,7 +58,6 @@ const CASES: Array<[template: string, gate: Gate, error: string]> = [
   ['stock_variance', 'can_view_stock_v2', 'stock_visibility_required'],
   ['stock_movements', 'can_view_stock_v2', 'stock_visibility_required'],
   ['wastage', 'can_view_stock_v2', 'stock_visibility_required'],
-  ['perishable_turnover', 'can_view_stock_v2', 'stock_visibility_required'],
   ['payment_by_method', 'can_view_stock_v1', 'stock_visibility_owner_required'],
 ];
 

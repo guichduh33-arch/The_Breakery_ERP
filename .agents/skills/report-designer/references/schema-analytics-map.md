@@ -50,7 +50,7 @@ Base : projet dev `ikcyvlovptebroadgtvd` (the-breakery-v3-dev). **SELECT uniquem
 | Table | Ce qu'elle sait dire |
 |---|---|
 | `stock_movements` | Ledger append-only : chaque entrée/sortie avec type, quantité, coût unitaire **en unité de BASE**. Source de vérité des flux ; `products.current_stock` n'est qu'un cache. |
-| `stock_lots` | Lots périssables (F1) : péremption, quantités restantes. |
+| `stock_lots` | Lots historiques, dormants depuis le 2026-11-18 (ADR-004, `S2-01`) : plus rien ne les crée ni ne les consomme. Ne pas bâtir de rapport dessus. |
 | `inventory_counts`, `inventory_count_items` | Opnames : variance générée (counted − expected) — matière des rapports d'écart. |
 | `display_stock`, `display_movements` | Vitrine POS — ledger séparé, PAS du stock BO. Ne jamais les additionner au stock général. |
 | `unit_conversions`, `product_unit_alternatives` | Conversions d'unités — les quantités multi-unités se ramènent à l'unité de base avant agrégation. |

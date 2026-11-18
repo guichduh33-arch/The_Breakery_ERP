@@ -95,10 +95,8 @@ const SECTIONS: ReportSection[] = [
       // Une grille de tuiles cliquables EST une navigation, quel que soit son
       // nom — arbitrage du propriétaire, 2026-08-22.
       //
-      // Ce qui SUBSISTE délibérément : la route, la page, la RPC
-      // `get_perishable_turnover_v1` et le gabarit PDF. L'ADR demande le retrait
-      // du menu, pas la suppression du rapport ; un lien direct continue de
-      // servir l'historique. Ne pas remettre de tuile ici.
+      // Le 2026-11-18 (S2-08), la route, la page, la fonction et le gabarit PDF
+      // du rapport sont supprimés à leur tour. Ne pas remettre de tuile ici.
     ],
   },
   {

@@ -27,21 +27,21 @@ const PROD_ROWS = [
     production_date: '2026-05-10T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 50,
     // DB-shape : fraction → -0.5 displays as -50,00%
-    yield_variance_pct: -0.5, yield_variance_reason: 'oven failure',
+    yield_variance_pct: -0.5,
     reverted_at: null,
   },
   {
     id: 'pr-2', production_number: 'PROD-002', product_id: 'p2',
     production_date: '2026-05-11T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 90,
-    yield_variance_pct: -0.1, yield_variance_reason: null,
+    yield_variance_pct: -0.1,
     reverted_at: null,
   },
   {
     id: 'pr-3', production_number: 'PROD-003', product_id: 'p1',
     production_date: '2026-05-12T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 102,
-    yield_variance_pct: 0.02, yield_variance_reason: null,
+    yield_variance_pct: 0.02,
     reverted_at: null,
   },
 ];
@@ -133,13 +133,14 @@ describe('ProductionYieldPage smoke', () => {
   });
 
   // Les deux mesures dérivées de la bande, sur la fixture : trois lots suivis,
-  // le plus gros écart à 50 %, un seul motif renseigné.
+  // le plus gros écart à 50 %.
   it('summarises the window in the KPI band', async () => {
     renderPage();
     const swing = await screen.findByTestId('kpi-largest-swing');
     expect(swing.textContent).toMatch(/50,00%/);
     expect(screen.getByTestId('kpi-beyond').textContent).toMatch(/^Beyond ±15%1/);
-    expect(screen.getByTestId('kpi-explained').textContent).toMatch(/1 of 3 with a reason/);
+    // S2-02 : la tuile « Variances explained » est retirée avec la cause.
+    expect(screen.queryByTestId('kpi-explained')).toBeNull();
   });
 
   it('reveals the drill-down panel when an outlier row is clicked', async () => {

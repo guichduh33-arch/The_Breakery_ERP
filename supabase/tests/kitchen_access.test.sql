@@ -75,7 +75,7 @@ SELECT throws_ok(format('SELECT set_user_kitchen_access_v1(%L,true,ARRAY[%L]::uu
 SELECT throws_ok(format('SELECT record_kitchen_production_v7(%L::jsonb)',
   (SELECT jsonb_set(request || jsonb_build_object('idempotency_key',gen_random_uuid()),'{items,0,unit}','"invalid"') FROM kitchen_fixture)),
   'P0001','invalid_kitchen_unit','Unknown unit refused');
--- Le lot historique reste utilisable sans accorder inventory.receive au chef.
+-- Un produit qui porte encore une durée de conservation se produit sans lot (S2-01).
 UPDATE products SET default_shelf_life_hours=24 WHERE id=(SELECT product FROM kitchen_fixture);
 SELECT lives_ok(format('SELECT record_kitchen_production_v7(%L::jsonb)',
   (SELECT jsonb_set(jsonb_set(jsonb_set(jsonb_set(request || jsonb_build_object('idempotency_key',gen_random_uuid()),

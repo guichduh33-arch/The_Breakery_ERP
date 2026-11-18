@@ -59,16 +59,9 @@ function varianceTone(frac: number | null): string {
   return 'text-success';
 }
 
-/**
- * Cellule « Reason » des deux tableaux — tronquée à 18 rem.
- *
- * Le motif du dépôt (WalletLedgerTable) veut qu'une troncature porte son
- * `title` : le motif de l'écart est la SEULE explication de la ligne, et
- * l'ellipsis le coupait sans aucun recours — ni survol, ni clic, ni export
- * visible depuis l'écran. La colonne CSV le porte déjà en entier, mais un
- * lecteur ne télécharge pas un fichier pour lire une phrase.
- */
-const REASON_CELL = 'max-w-[18rem] truncate py-2 text-xs text-text-secondary';
+// S2-02 (2026-11-18) : le rapport montre l'écart sans sa cause. La saisie du
+// motif est retirée du formulaire de production ; aucune production de la base
+// de production n'en portait un.
 
 /** Fraction → pourcentage signé (`+12.50%` / `-16.67%`). */
 function formatVariancePct(frac: number | null): string {
@@ -83,7 +76,6 @@ const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [
   { header: 'expected_yield_qty',   accessor: (r) => r.expected_yield_qty },
   { header: 'actual_yield_qty',     accessor: (r) => r.actual_yield_qty },
   { header: 'yield_variance_pct',   accessor: (r) => r.yield_variance_pct === null ? null : (r.yield_variance_pct * 100).toFixed(4) },
-  { header: 'yield_variance_reason', accessor: (r) => r.yield_variance_reason },
 ];
 
 interface TrendRow {
@@ -138,7 +130,6 @@ function OutliersTable({
             <th scope="col" className="py-2 text-right">Expected</th>
             <th scope="col" className="py-2 text-right">Actual</th>
             <th scope="col" className="py-2 text-right">Variance %</th>
-            <th scope="col" className="py-2 text-left">Reason</th>
           </tr>
         </thead>
         <tbody>
@@ -185,9 +176,6 @@ function OutliersTable({
                 <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                   {formatVariancePct(r.yield_variance_pct)}
                 </td>
-                <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
-                  {r.yield_variance_reason ?? '—'}
-                </td>
               </tr>
             );
           })}
@@ -209,7 +197,6 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
             <th scope="col" className="py-2 text-right">Expected</th>
             <th scope="col" className="py-2 text-right">Actual</th>
             <th scope="col" className="py-2 text-right">Variance %</th>
-            <th scope="col" className="py-2 text-left">Reason</th>
           </tr>
         </thead>
         <tbody>
@@ -221,9 +208,6 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
               <td className="py-2 text-right font-data tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
               <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                 {formatVariancePct(r.yield_variance_pct)}
-              </td>
-              <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
-                {r.yield_variance_reason ?? '—'}
               </td>
             </tr>
           ))}
@@ -317,7 +301,6 @@ export default function ProductionYieldPage(): JSX.Element {
     : yieldRows.reduce((s, r) => s + (r.yield_variance_pct ?? 0), 0) / yieldRows.length;
   const largestSwing = yieldRows.reduce((m, r) => Math.max(m, Math.abs(r.yield_variance_pct ?? 0)), 0);
   const beyond = yieldRows.filter((r) => Math.abs(r.yield_variance_pct ?? 0) > OUTLIER_THRESHOLD).length;
-  const withReason = yieldRows.filter((r) => r.yield_variance_reason !== null).length;
 
   const tiles: KpiDescriptor[] = [
     {
@@ -344,11 +327,6 @@ export default function ProductionYieldPage(): JSX.Element {
       key: 'recipes', label: 'Recipes tracked',
       value: formatCount(trend.length),
     },
-    {
-      key: 'explained', label: 'Variances explained',
-      value: yieldRows.length === 0 ? '—' : `${Math.round((withReason / yieldRows.length) * 100)}%`,
-      note:  `${formatCount(withReason)} of ${formatCount(yieldRows.length)} with a reason`,
-    },
   ];
 
   // Audit R-13 — le template PDF `production_yield` existe dans le registre et
@@ -360,7 +338,7 @@ export default function ProductionYieldPage(): JSX.Element {
     expected_yield:    r.expected_yield_qty ?? 0,
     actual_yield:      r.actual_yield_qty ?? 0,
     variance_pct:      r.yield_variance_pct ?? 0, // ratio, comme attendu par le template
-    status:            r.yield_variance_reason ?? '',
+    status:            '',
   })), [yieldRows]);
 
   const toolbar = (

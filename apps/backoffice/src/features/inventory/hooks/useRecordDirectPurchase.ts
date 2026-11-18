@@ -148,7 +148,7 @@ export function useRecordDirectPurchase() {
       if (poItemId === undefined) throw new DirectPurchaseError('lookup', 'PO line not found after create');
 
       // ── 3. Receive → GRN (DR Inventory / CR Payable JE) + purchase movement ──
-      const recvRes = await rpc('receive_purchase_order_v6', {
+      const recvRes = await rpc('receive_purchase_order_v7', {
         p_po_id:       po.po_id,
         p_received_items: [{ po_item_id: poItemId, received_quantity: args.quantity }],
         p_idempotency_key: subKey(args.idempotencyKey, 'receive'),

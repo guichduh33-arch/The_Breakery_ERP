@@ -396,7 +396,7 @@ DECLARE
   v_errmsg TEXT := 'none';
 BEGIN
   BEGIN
-    PERFORM revert_production_v4(
+    PERFORM revert_production_v5(
       current_setting('breakery.d2_prod_id')::uuid,
       'ADR-008 D2 test — revert must undo the waste expense'
     );

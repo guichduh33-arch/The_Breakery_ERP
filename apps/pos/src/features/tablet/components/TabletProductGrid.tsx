@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { Button, EmptyState, FullScreenModal, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import type { Product, SelectedModifiers } from '@breakery/domain';
-import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
 import { ComboConfigModal } from '@/features/combos/components/ComboConfigModal';
 import { VariantSelectModal } from '@/features/cart/VariantSelectModal';
@@ -29,7 +28,6 @@ import type { POSVariantRow } from '@/features/products/hooks/useProductVariants
 import { ProductCard } from '@/features/products/ProductCard';
 import { useProducts } from '@/features/products/hooks/useProducts';
 import { useCategories } from '@/features/products/hooks/useCategories';
-import { useActiveLotsByProduct } from '@/features/products/hooks/useActiveLotsByProduct';
 import { useProductModifiers } from '@/features/products/hooks/useProductModifiers';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 
@@ -44,7 +42,6 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const pendingSend = useTabletCartStore((s) => s.pendingSend);
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
-  const { data: lotsByProduct } = useActiveLotsByProduct();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
   const [variantParent, setVariantParent] = useState<Product | null>(null);
@@ -252,11 +249,8 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
           <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3">
             {filtered.map((p) => {
               const soldOut = p.is_sellable === false;
-              const lots = lotsByProduct?.get(p.id);
-              const isLotTracked = lots !== undefined && lots.length > 0;
-              const allExpired = isLotTracked && allLotsExpiredOrConsumed(lots, p.id);
-              const disabled = soldOut || allExpired || pendingSend !== null;
-              const overlayLabel = soldOut ? 'Sold out' : allExpired ? 'Expired' : null;
+              const disabled = soldOut || pendingSend !== null;
+              const overlayLabel = soldOut ? 'Sold out' : null;
               const lowStockLabel =
                 !disabled && p.current_stock !== null && p.current_stock > 0 && p.current_stock <= 3
                   ? `Low stock · ${p.current_stock} left`

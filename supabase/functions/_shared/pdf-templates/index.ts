@@ -19,7 +19,6 @@ import * as wastage            from './wastage.ts';
 import * as paymentByMethod    from './payment_by_method.ts';
 import * as pb1                from './pb1.ts';
 import * as stockMovements     from './stock_movements.ts';
-import * as perishableTurnover from './perishable_turnover.ts';
 import * as b2bInvoice         from './b2b_invoice.ts';
 import * as receipt            from './receipt.ts';
 
@@ -40,7 +39,6 @@ export type TemplateName =
   | 'payment_by_method'
   | 'pb1'
   | 'stock_movements'
-  | 'perishable_turnover'
   | 'b2b_invoice'
   | 'receipt';
 
@@ -69,7 +67,6 @@ export const TEMPLATES: Record<TemplateName, TemplateRegistration> = {
   payment_by_method:    { render: paymentByMethod.render,    permission: 'reports.financial.read' },
   pb1:                  { render: pb1.render,                permission: 'reports.financial.read' },
   stock_movements:      { render: stockMovements.render,     permission: 'reports.inventory.read' },
-  perishable_turnover:  { render: perishableTurnover.render, permission: 'reports.inventory.read' },
   b2b_invoice:          { render: b2bInvoice.render,          permission: 'b2b.read'               },
   // Lot 6c — reçu duplicata : gaté par la permission opérationnelle de reprint
   // (le second verrou reports.export tient déjà — mêmes rôles ADMIN/MANAGER/SUPER_ADMIN).
