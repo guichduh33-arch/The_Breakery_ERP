@@ -41,8 +41,8 @@ export default function SettingsEmailTemplatesPage() {
         data-testid="templates-not-wired-banner"
         className="rounded-lg border border-border-subtle bg-bg-overlay p-3 text-sm text-text-secondary"
       >
-        ⚠︎ Editing is live, but these templates are <strong>not applied yet</strong> — no email is
-        currently sent by the system. Wiring is planned (Vague 3 — notifications / versioned print-bridge).
+        ⚠︎ Editing is live, but these templates are <strong>not applied</strong> — the system
+        sends no email.
       </div>
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
