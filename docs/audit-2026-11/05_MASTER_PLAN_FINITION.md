@@ -551,6 +551,14 @@ paiement qui masquent le stock dans leurs messages d'erreur, la lecture des
 produits opérationnels par la caisse, et les paiements par méthode, rapport et
 PDF, dont la permission n'est pas tranchée (voir l'ADR-039, qui ne les range ni
 dans les états financiers ni dans les rapports d'exploitation).
+**Paquets 2 et 3 fusionnés le 2026-11-18** : PR #727 (`5665eeb9`), CI verte.
+**En production le même jour vers 8 h 30** (UTC+8) : la partie additive,
+appliquée par un bloc qui refait les remplacements sur le corps vivant de la
+production ; les 29 corps relus égaux au corps d'origine remplacé, mêmes
+attributs, droits refusés à anon. L'Edge Function du PDF est redéployée en
+production (version 9, contrôle du jeton conservé). **Non fait** : la
+publication du back-office (approbation de Mamat), puis le retrait des
+anciennes versions, en production et en dev.
 
 ---
 
@@ -855,6 +863,10 @@ tâche. Preuve pgTAP `s1_16_pos_events_partitions.test.sql`, 10 sur 10 en dev,
 et la garde des règles PIN verte.
 **Non fait** : la production, à appliquer boutique fermée (le détachement
 bloque l'écriture du journal le temps de la transaction).
+**Fusionné le 2026-11-18** : PR #727 (`5665eeb9`). Relevé en production le même
+jour à 8 h 35 : 23 028 lignes, toutes dans la partition par défaut ; la
+boutique était ouverte. Application prévue après la fermeture, avec l'accord de
+Mamat du même jour.
 
 ---
 
@@ -1012,6 +1024,8 @@ décisions ne sont pas aux lots 3, 4 et 6 cités en source, mais au lot 2
 registre ; les ADR citent ces sources. **Non fait** : la cadence de traitement
 de la file des déclarations, qu'aucune décision ne fixe, et le traitement des 3
 déclarations en attente, geste de Mamat.
+**Fusionné le 2026-11-18** : PR #727 (`5665eeb9`) ; les trois ADR sont sur
+`master`.
 
 ---
 
