@@ -27,9 +27,10 @@ test('la vraie suite se découpe au-dessus du plancher', () => {
   const p = plan(readSuite());
   assert.ok(p.total >= 180);
   // Relevé du 2026-11-17 : chaque fichier connu pour poser un verrou fort sur
-  // un objet partagé doit rester exclusif.
+  // un objet partagé doit rester exclusif. `maintenance_functions_acl` en est
+  // sorti le 2026-11-18 : S2-03/S2-05 ont retiré ses REFRESH de vues matérialisées.
   for (const f of ['antifraud_release_prerequisites', 'bank_reconciliation', 'cash_wallets', 'close_fiscal_year_v2',
-    'customers_categorie_obligatoire', 'loyalty_operation_recovery', 'maintenance_functions_acl', 'pb1_dedup_void_refund',
+    'customers_categorie_obligatoire', 'loyalty_operation_recovery', 'pb1_dedup_void_refund',
     'recipe_reversal_compatibility'])
     assert.ok(p.shards[EXCLUSIVE].includes(`${f}.test.sql`), f);
 });
