@@ -100,14 +100,17 @@ export function readSuite(root = ROOT) {
 // croisent sur les mêmes verrous partagés (ligne de `ui_invalidation_topics`,
 // verrou consultatif du jour métier), tenus jusqu'au ROLLBACK de chaque fichier.
 // Relevé du 2026-11-18 sur le premier run en morceaux : 15 fichiers tombés ainsi.
-// Un fichier dont la SEULE faute est un interblocage n'est pas vert : il est
-// `deferred`, puis relancé seul par le morceau exclusif, comme dans l'ancienne
-// suite série. Une assertion rouge ou toute autre erreur l'exclut du report.
+// Un fichier dont le passage parallèle a subi un interblocage n'est pas vert :
+// ce passage est contaminé (un `lives_ok` qui attrape le 40P01 le rend en
+// `not ok`, et la suite du fichier échoue en cascade). Il est `deferred`, puis
+// relancé seul par le morceau exclusif, comme dans l'ancienne suite série :
+// seule cette relance, entière et sans interblocage, décide de son verdict.
+// Sans interblocage, toute erreur ou assertion rouge reste un échec immédiat.
 export function verdict(rc, out) {
   const notOk = (out.match(/^[ \t]*not ok [0-9]/gm) ?? []).length;
   const summary = (out.match(/# Looks like you failed [0-9]+ test/g) ?? []).length;
   const ok = rc === 0 && notOk === 0 && summary === 0;
-  const deferred = !ok && rc !== 0 && notOk === 0 && summary === 0 && /\bERROR:\s+deadlock detected\b/.test(out);
+  const deferred = !ok && /\bERROR:\s+deadlock detected\b|\bdied: 40P01\b/.test(out);
   return { rc, notOk, summary, ok, deferred };
 }
 

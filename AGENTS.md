@@ -259,9 +259,9 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   `supabase/{migrations,tests,functions}`, son workflow, son classificateur et
   son script de découpage (`scripts/ci/pgtap-shards.mjs`). La suite tourne en
   morceaux parallèles, plus un morceau `exclusive` lancé seul ensuite pour les
-  fichiers qui posent un DDL sur un objet partagé. Un fichier tombé en parallèle
-  sur un seul interblocage, sans assertion rouge, est relancé seul par ce morceau
-  `exclusive` et doit y passer. Le job `pgtap` agrège : il
+  fichiers qui posent un DDL sur un objet partagé. Un fichier dont le passage
+  parallèle a subi un interblocage est relancé seul par ce morceau `exclusive`,
+  qui seul décide alors de son verdict. Le job `pgtap` agrège : il
   n'est vert que si chaque morceau l'est et si les fichiers exécutés égalent
   exactement le plan. Un fichier instable se relance par « Re-run failed jobs ».
   Le contrôle `db-gate` exige soit cette preuve réussie, soit une non-applicabilité

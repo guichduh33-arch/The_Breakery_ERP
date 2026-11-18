@@ -54,12 +54,16 @@ test('verdict : erreur psql, not ok en tête de ligne ou résumé agrégé suffi
   assert.equal(verdict(0, '    not ok 2 - b').ok, false);
   assert.equal(verdict(0, ' t | not ok 4 - x\n# Looks like you failed 1 test of 4').ok, false);
 });
-test('verdict : seul un interblocage sans assertion rouge est reporté', () => {
+test('verdict : un passage parallèle contaminé par un interblocage est reporté, rien d\'autre', () => {
   const deadlock = 'ok 1 - a\npsql:supabase/tests/x.test.sql:86: ERROR:  deadlock detected';
   assert.deepEqual([verdict(3, deadlock).ok, verdict(3, deadlock).deferred], [false, true]);
-  assert.equal(verdict(3, `not ok 1 - a\n${deadlock}`).deferred, false);
+  // 40P01 attrapé par lives_ok : not ok, puis échecs en cascade (relevé du 2026-11-18).
+  const caught = ' not ok 1 - T1 +\n #     died: 40P01: deadlock detected +\npsql:x.sql:109: ERROR:  invalid_tender';
+  assert.deepEqual([verdict(3, caught).ok, verdict(3, caught).deferred], [false, true]);
+  assert.equal(verdict(3, 'not ok 1 - a\n # died: 23514: invalid').deferred, false);
   assert.equal(verdict(3, 'psql: ERROR:  relation "x" does not exist').deferred, false);
   assert.equal(verdict(0, "ok 1 - 'deadlock detected' cité dans un libellé").deferred, false);
+  assert.equal(verdict(0, 'ok 1 - a').deferred, false);
 });
 test('runShard : chaque fichier du morceau est exécuté et noté', () => {
   const calls = [];
