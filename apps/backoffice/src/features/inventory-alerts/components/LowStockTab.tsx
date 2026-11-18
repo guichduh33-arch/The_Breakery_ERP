@@ -4,12 +4,18 @@
 // Refonte design 2026-08-08 — passe au DataTable partagé (en-tête sur
 // remplissage inerte, libellés mono, état vide et squelettes corrects). Le
 // contenu et la source de données sont inchangés.
+//
+// S3-10 — la RPC ignore les produits sans seuil (`min_stock_threshold ≤ 0`).
+// Un bandeau dit combien de produits suivis échappent ainsi à l'alerte, et
+// l'état vide cesse d'affirmer « tout est au-dessus du seuil » tant qu'il en
+// reste. Aucune promesse de notification.
 
 import type { JSX } from 'react';
 import { type DataTableColumn } from '@breakery/ui';
 import { DataTable } from '@/components/BackofficeUi.js';
 import { formatQuantity } from '@breakery/utils';
 import { useLowStock, type LowStockRow } from '../hooks/useLowStock.js';
+import { useProductsWithoutThreshold } from '../hooks/useProductsWithoutThreshold.js';
 import { ProductCell } from './ProductCell.js';
 
 // Une quantité de stock se lit en mono tabulaire, unité comprise. Le rendu
@@ -54,8 +60,26 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
   },
 ];
 
+function NoThresholdBanner({ count }: { count: number }): JSX.Element {
+  const subject = count === 1 ? 'tracked product has' : 'tracked products have';
+  const pronoun = count === 1 ? 'it' : 'they';
+  return (
+    <div
+      role="status"
+      data-testid="low-stock-no-threshold"
+      className="rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning"
+    >
+      <span className="font-semibold tabular-nums">{count}</span> {subject} no low-stock
+      threshold, so {pronoun} can never appear in this list. Set a minimum stock level on
+      the product to include {count === 1 ? 'it' : 'them'}.
+    </div>
+  );
+}
+
 export function LowStockTab(): JSX.Element {
   const q = useLowStock();
+  const noThreshold = useProductsWithoutThreshold();
+  const missing = noThreshold.data;
 
   if (q.error !== null) {
     return <p className="text-sm text-danger" role="alert">Failed to load low stock: {q.error.message}</p>;
@@ -63,22 +87,33 @@ export function LowStockTab(): JSX.Element {
 
   const rows = q.data ?? [];
 
+  // « Tout va bien » ne se dit que si l'on SAIT qu'aucun produit suivi
+  // n'échappe au contrôle : compteur chargé et nul.
+  const allChecked = missing === 0;
+
   return (
-    <DataTable<LowStockRow>
-      caption="Product, quantity on hand, minimum level and shortfall per low-stock product"
-      columns={COLUMNS}
-      rows={rows}
-      getRowKey={(r) => r.product_id}
-      isLoading={q.isLoading}
-      density="compact"
-      emptyTitle="All above threshold"
-      emptyDescription="Every tracked product sits at or above its minimum."
-      data-testid="low-stock-table"
-      footer={
-        <span className="font-data text-xs text-text-muted tabular-nums">
-          {rows.length} {rows.length === 1 ? 'product' : 'products'}
-        </span>
-      }
-    />
+    <div className="space-y-3">
+      {missing !== undefined && missing > 0 && <NoThresholdBanner count={missing} />}
+      <DataTable<LowStockRow>
+        caption="Product, quantity on hand, minimum level and shortfall per low-stock product"
+        columns={COLUMNS}
+        rows={rows}
+        getRowKey={(r) => r.product_id}
+        isLoading={q.isLoading}
+        density="compact"
+        emptyTitle={allChecked ? 'All above threshold' : 'Nothing below a set minimum'}
+        emptyDescription={
+          allChecked
+            ? 'Every tracked product sits at or above its minimum.'
+            : 'Only products with a minimum stock level are checked here.'
+        }
+        data-testid="low-stock-table"
+        footer={
+          <span className="font-data text-xs text-text-muted tabular-nums">
+            {rows.length} {rows.length === 1 ? 'product' : 'products'}
+          </span>
+        }
+      />
+    </div>
   );
 }

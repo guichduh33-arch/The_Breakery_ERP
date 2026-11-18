@@ -7,11 +7,11 @@
 //   - Tabs: Purchases / Price Evolution / Payments / Analytics.
 //
 // Write paths (Edit / Deactivate / Add Payment) reuse the existing
-// SupplierFormModal + useUpdateSupplier mutation. There is no
-// `record_supplier_payment_v*` RPC in supabase/migrations as of session 14, so
-// the Payments tab is intentionally read-only — supplier credit is inferred
-// from PO `payment_terms` + received_date, the same logic the Suppliers KPI
-// strip uses.
+// SupplierFormModal + useUpdateSupplier mutation. The Payments tab stays
+// read-only (payments are recorded on the PO page).
+// S3-07 — l'impayé et le payé viennent du grand livre `purchase_payments`
+// (`useSupplierOutstanding`), selon la règle du rapport des paiements
+// fournisseurs ; le badge par bon aussi (`SupplierPaymentBadge`).
 //
 // Price Evolution + Analytics also stay read-only — these surfaces require
 // dedicated reporting RPCs (e.g. `mv_supplier_price_history`, `mv_supplier_
@@ -49,6 +49,8 @@ import {
   type SupplierPOListRow,
 } from '@/features/suppliers/hooks/useSupplierPurchases.js';
 import { useSupplierMetrics } from '@/features/suppliers/hooks/useSupplierMetrics.js';
+import { useSupplierOutstanding } from '@/features/suppliers/hooks/useSupplierOutstanding.js';
+import { SupplierPaymentBadge } from '@/features/suppliers/components/SupplierPaymentBadge.js';
 import { useSupplierPurchaseItems } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { useUpdateSupplier } from '@/features/suppliers/hooks/useUpdateSupplier.js';
 import { SupplierFormModal } from '@/features/suppliers/components/SupplierFormModal.js';
@@ -103,21 +105,16 @@ function PoStatusBadge({ status }: { status: string }): JSX.Element {
   return <Badge variant="default" className={tone}>{status}</Badge>;
 }
 
-function PaymentBadge({ row }: { row: SupplierPOListRow }): JSX.Element {
-  const isUnpaid =
-    row.status !== 'cancelled' &&
-    row.payment_terms === 'credit' &&
-    (row.received_date === null || row.status === 'pending' || row.status === 'partial');
-  return isUnpaid ? (
-    <Badge variant="outline" className="border-danger text-danger">unpaid</Badge>
-  ) : (
-    <Badge variant="outline" className="border-success text-success">paid</Badge>
-  );
-}
-
 function fmtIdrPrefixed(amount: number): string {
   // formatCurrency already prefixes "Rp ".
   return formatCurrency(amount);
+}
+
+/** Montant issu du grand livre : « … » tant qu'il charge, « — » en erreur. */
+function fmtLedger(amount: number | undefined, isError: boolean): string {
+  if (isError) return '—';
+  if (amount === undefined) return '…';
+  return fmtIdrPrefixed(amount);
 }
 
 function fmtDays(days: number): string {
@@ -183,7 +180,7 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
               <td className="px-4 py-3"><PoStatusBadge status={r.status} /></td>
               <td className="px-4 py-3 text-right tabular-nums">{r.item_count}</td>
               <td className="px-4 py-3 text-right tabular-nums">{fmtIdrPrefixed(Number(r.total_amount))}</td>
-              <td className="px-4 py-3 text-center"><PaymentBadge row={r} /></td>
+              <td className="px-4 py-3 text-center"><SupplierPaymentBadge row={r} /></td>
             </tr>
           ))}
         </tbody>
@@ -203,6 +200,7 @@ export default function SupplierDetailPage(): JSX.Element {
   const items     = useSupplierPurchaseItems(id);
   const updateMut = useUpdateSupplier();
   const metrics   = useSupplierMetrics(purchases.data ?? []);
+  const ledger    = useSupplierOutstanding(id);
 
   const [editing, setEditing] = useState<SupplierRow | undefined>(undefined);
   const [tab, setTab] = useState<'purchases' | 'price' | 'payments' | 'analytics'>('purchases');
@@ -308,7 +306,7 @@ export default function SupplierDetailPage(): JSX.Element {
           <div className="grid grid-cols-2 gap-3">
             <KpiTile label="Total Spent" value={fmtIdrPrefixed(metrics.totalSpent)} icon={DollarSign} />
             <KpiTile label="Purchase Orders" value={metrics.poCount} icon={Package} />
-            <KpiTile label="Unpaid Amount" value={fmtIdrPrefixed(metrics.unpaidAmount)} icon={CreditCard} />
+            <KpiTile label="Unpaid Amount" value={fmtLedger(ledger.data?.outstanding, ledger.isError)} icon={CreditCard} />
             <KpiTile label="Avg Delivery" value={fmtDays(metrics.avgLeadDays)} icon={Clock} />
           </div>
         </div>
@@ -347,7 +345,7 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4">
-          <PaymentsSection rows={purchaseRows} metrics={metrics} isLoading={purchases.isLoading} />
+          <PaymentsSection rows={purchaseRows} ledger={ledger} isLoading={purchases.isLoading} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
@@ -394,11 +392,11 @@ function DetailRow({
 
 function PaymentsSection({
   rows,
-  metrics,
+  ledger,
   isLoading,
 }: {
   rows: SupplierPOListRow[];
-  metrics: ReturnType<typeof useSupplierMetrics>;
+  ledger: ReturnType<typeof useSupplierOutstanding>;
   isLoading: boolean;
 }): JSX.Element {
   // Le hook précède le retour anticipé : appelé après, il n'existait pas au
@@ -422,8 +420,8 @@ function PaymentsSection({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <KpiTile label="Total Paid"   value={fmtIdrPrefixed(metrics.paidAmount)}   icon={CheckCircle2} />
-        <KpiTile label="Total Unpaid" value={fmtIdrPrefixed(metrics.unpaidAmount)} icon={CreditCard} />
+        <KpiTile label="Total Paid"   value={fmtLedger(ledger.data?.totalPaid, ledger.isError)}   icon={CheckCircle2} />
+        <KpiTile label="Total Unpaid" value={fmtLedger(ledger.data?.outstanding, ledger.isError)} icon={CreditCard} />
         <KpiTile label="Overdue"      value={fmtIdrPrefixed(overdue)}              icon={Clock} />
       </div>
 
@@ -438,7 +436,7 @@ function PaymentsSection({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
           <Card variant="default" padding="md">
             <Suspense fallback={<ChartSkeleton />}>
-              <SupplierPaymentDistribution paidAmount={metrics.paidAmount} overdueAmount={overdue} />
+              <SupplierPaymentDistribution paidAmount={ledger.data?.totalPaid ?? 0} overdueAmount={overdue} />
             </Suspense>
           </Card>
           <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
@@ -463,7 +461,7 @@ function PaymentsSection({
                   </td>
                   <td className="px-4 py-3 tabular-nums">{r.order_date ?? '—'}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{fmtIdrPrefixed(Number(r.total_amount))}</td>
-                  <td className="px-4 py-3"><PaymentBadge row={r} /></td>
+                  <td className="px-4 py-3"><SupplierPaymentBadge row={r} /></td>
                   <td className="px-4 py-3 tabular-nums">{r.expected_date ?? '—'}</td>
                 </tr>
               ))}

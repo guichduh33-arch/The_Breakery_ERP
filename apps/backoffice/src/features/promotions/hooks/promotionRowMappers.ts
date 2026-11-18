@@ -38,6 +38,13 @@ export function toRow(values: Partial<PromotionFormValues>): PromotionRow {
 
   if (values.discount_value !== undefined) row.discount_value = values.discount_value;
   if (values.max_discount_amount !== undefined) row.max_discount_amount = values.max_discount_amount;
+  // S3-11 — un palier en montant fixe ne doit JAMAIS porter de plafond : le
+  // serveur lirait un pourcentage plafonné. Le formulaire normalise déjà
+  // (`normalizePromotionValues`) ; ce garde couvre un appel direct.
+  // `threshold_discount_mode` est un état de formulaire, jamais une colonne.
+  if (values.type === 'threshold' && values.threshold_discount_mode === 'fixed') {
+    row.max_discount_amount = null;
+  }
   if (values.scope_product_ids !== undefined) row.scope_product_ids = values.scope_product_ids;
   if (values.scope_category_ids !== undefined) row.scope_category_ids = values.scope_category_ids;
 

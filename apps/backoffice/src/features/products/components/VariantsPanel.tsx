@@ -40,6 +40,7 @@ import { ConvertToParentDialog } from './ConvertToParentDialog.js';
 import { AddVariantDialog } from './AddVariantDialog.js';
 import { DissolveParentDialog } from './DissolveParentDialog.js';
 import { DeleteVariantDialog } from './DeleteVariantDialog.js';
+import { EditVariantLabelDialog } from './EditVariantLabelDialog.js';
 
 export interface VariantsPanelProduct {
   id:                 string;
@@ -70,6 +71,8 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
   // ADR-011 §3 — delete goes through a confirm dialog (DeleteVariantDialog
   // owns the mutation + error surface) instead of firing on a single click.
   const [deleteTarget, setDeleteTarget] = useState<VariantRow | null>(null);
+  // S3-14 — renommage du libellé (update_variant_v2).
+  const [editTarget,   setEditTarget]   = useState<VariantRow | null>(null);
 
   const variants: readonly VariantRow[] = variantsQuery.data ?? [];
 
@@ -249,7 +252,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
                 <th scope="col" className="px-3 py-2 text-right">Retail</th>
                 <th scope="col" className="px-3 py-2 text-right">Cost</th>
                 <th scope="col" className="px-3 py-2 text-center">Status</th>
-                <th scope="col" className="px-3 py-2 w-20"><span className="sr-only">Actions</span></th>
+                <th scope="col" className="px-3 py-2 w-36"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -260,6 +263,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
                     variant={v}
                     canWrite={canWrite}
                     onDelete={(va) => setDeleteTarget(va)}
+                    onEdit={(va) => setEditTarget(va)}
                     deletePending={false}
                   />
                 ))}
@@ -300,6 +304,10 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           <DeleteVariantDialog
             variant={deleteTarget}
             onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+          />
+          <EditVariantLabelDialog
+            variant={editTarget}
+            onOpenChange={(o) => { if (!o) setEditTarget(null); }}
           />
         </>
       )}

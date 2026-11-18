@@ -171,11 +171,13 @@ export {
   PromotionForm,
   emptyPromotionValues,
   validatePromotion,
+  normalizePromotionValues,
   type PromotionFormProps,
   type PromotionFormValues,
   type PromotionFormOption,
   type PromotionFormErrors,
   type PromotionScope,
+  type ThresholdDiscountMode,
 } from './components/PromotionForm.js';
 export {
   PromotionLineRow,

@@ -3,6 +3,7 @@
 // Session 27c — DnD-sortable row for the variants list. Mirrors the
 // `CategorySortableRow` pattern shipped in S27b (Categories DnD page).
 // Drag handle is gated by `canWrite` (no drag affordance for readers).
+// S3-14 — bouton « Edit » (libellé), gaté comme « Delete ».
 
 import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
@@ -16,10 +17,11 @@ export interface VariantRowSortableProps {
   canWrite:       boolean;
   onDelete?:      (variant: VariantRow) => void;
   deletePending?: boolean;
+  onEdit?:        (variant: VariantRow) => void;
 }
 
 export function VariantRowSortable({
-  variant, canWrite, onDelete, deletePending = false,
+  variant, canWrite, onDelete, deletePending = false, onEdit,
 }: VariantRowSortableProps): JSX.Element {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -72,7 +74,18 @@ export function VariantRowSortable({
           {variant.is_active ? 'Active' : 'Inactive'}
         </span>
       </td>
-      <td className="px-3 py-2 text-right">
+      <td className="px-3 py-2 text-right whitespace-nowrap">
+        {canWrite && onEdit !== undefined && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(variant)}
+            data-testid={`variant-edit-${variant.id}`}
+            aria-label={`Edit ${variant.variant_label}`}
+          >
+            Edit
+          </Button>
+        )}
         {canWrite && onDelete !== undefined && (
           <Button
             variant="ghost"

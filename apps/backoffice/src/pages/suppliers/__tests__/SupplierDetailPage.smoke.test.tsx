@@ -5,13 +5,14 @@
 // tabs, and the Purchases table render with seeded data.
 
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import type { SupplierRow } from '@/features/suppliers/hooks/useSuppliersList.js';
 import type { SupplierPOListRow } from '@/features/suppliers/hooks/useSupplierPurchases.js';
 import type * as SupplierPurchasesHooks from '@/features/suppliers/hooks/useSupplierPurchases.js';
+import { formatCurrency } from '@breakery/utils';
 
 const SUPPLIER: SupplierRow = {
   id:                 'sup-1',
@@ -58,6 +59,7 @@ const PURCHASES: SupplierPOListRow[] = [
     metadata:         {},
     idempotency_key:  null,
     item_count:       1,
+    paid_amount:      0,
   },
   {
     id:               'po-2',
@@ -88,8 +90,34 @@ const PURCHASES: SupplierPOListRow[] = [
     metadata:         {},
     idempotency_key:  null,
     item_count:       1,
+    paid_amount:      0,
   },
 ];
+
+// S3-07 — la tuile « Unpaid » lit le grand livre par sa propre requête : on
+// simule PostgREST, le vrai crochet et la vraie règle tournent. po-1 n'est pas
+// reçu (hors encours) ; po-2 est reçu et soldé ; po-3, reçu à crédit, porte
+// 500 000 payés sur 2 000 000 → 1 500 000 dus. L'import historique, non soldé,
+// reste hors encours comme dans le rapport.
+const LEDGER_ROWS = [
+  { status: 'pending',  total_amount: 1255000, is_historical_import: false, deleted_at: null, purchase_payments: [] },
+  { status: 'received', total_amount: 605000,  is_historical_import: false, deleted_at: null, purchase_payments: [{ amount: 605000 }] },
+  { status: 'received', total_amount: 2000000, is_historical_import: false, deleted_at: null, purchase_payments: [{ amount: 300000 }, { amount: '200000' }] },
+  { status: 'received', total_amount: 900000,  is_historical_import: true,  deleted_at: null, purchase_payments: [] },
+];
+
+vi.mock('@/lib/supabase.js', () => {
+  function builder(table: string): Record<string, unknown> {
+    const result = { data: table === 'purchase_orders' ? LEDGER_ROWS : [], error: null };
+    const chain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'is', 'in', 'order', 'range', 'limit', 'gte', 'lte']) {
+      chain[m] = () => chain;
+    }
+    chain.then = (resolve: (v: typeof result) => unknown) => Promise.resolve(result).then(resolve);
+    return chain;
+  }
+  return { supabase: { from: (t: string) => builder(t) } };
+});
 
 vi.mock('@/features/suppliers/hooks/useSupplierDetail.js', () => ({
   useSupplierDetail: () => ({ data: SUPPLIER, isLoading: false, error: null }),
@@ -150,6 +178,24 @@ describe('SupplierDetailPage (Phase 5.A)', () => {
     renderPage();
     expect(screen.getByRole('link', { name: /PO-202604-0002/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /PO-202603-0032/i })).toBeInTheDocument();
+  });
+
+  it('shows the ledger outstanding (report rule) in the Unpaid Amount tile', async () => {
+    currentPerms = new Set(['suppliers.read', 'suppliers.update']);
+    renderPage();
+    const tile = screen.getByText('Unpaid Amount').parentElement;
+    expect(tile).not.toBeNull();
+    await waitFor(() => expect(tile).toHaveTextContent(formatCurrency(1_500_000)));
+  });
+
+  it('derives each row payment badge from the ledger, not from payment terms', () => {
+    currentPerms = new Set(['suppliers.read', 'suppliers.update']);
+    renderPage();
+    // Bon reçu sans paiement → unpaid ; bon encore en attente → pas de dette,
+    // comme la tuile et le rapport : « awaiting receipt ».
+    expect(screen.getAllByText('unpaid')).toHaveLength(1);
+    expect(screen.getAllByText('awaiting receipt')).toHaveLength(1);
+    expect(screen.queryByText('paid')).not.toBeInTheDocument();
   });
 
   it('hides Edit / Deactivate when the user lacks suppliers.update', () => {

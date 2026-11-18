@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase.js';
 import { PO_PAYMENTS_QUERY_KEY } from './usePoPayments.js';
 import { PURCHASE_ORDER_DETAIL_QUERY_KEY } from './usePurchaseOrderDetail.js';
 import { PURCHASE_ORDERS_QUERY_KEY } from './usePurchaseOrdersList.js';
+import { SUPPLIER_OUTSTANDING_QUERY_KEY } from '@/features/suppliers/hooks/useSupplierOutstanding.js';
+import { SUPPLIER_PURCHASES_QUERY_KEY } from '@/features/suppliers/hooks/useSupplierPurchases.js';
 import { invoiceErrorMessage } from '@/lib/invoiceFiles.js';
 
 export type RecordPaymentErrorCode =
@@ -100,6 +102,9 @@ export function useRecordPoPayment() {
         qc.invalidateQueries({ queryKey: [...PO_PAYMENTS_QUERY_KEY, vars.poId] }),
         qc.invalidateQueries({ queryKey: [...PURCHASE_ORDER_DETAIL_QUERY_KEY, vars.poId] }),
         qc.invalidateQueries({ queryKey: PURCHASE_ORDERS_QUERY_KEY }),
+        // S3-07 — la fiche fournisseur lit le même grand livre (encours, badges).
+        qc.invalidateQueries({ queryKey: SUPPLIER_OUTSTANDING_QUERY_KEY }),
+        qc.invalidateQueries({ queryKey: SUPPLIER_PURCHASES_QUERY_KEY }),
       ]);
     },
   });

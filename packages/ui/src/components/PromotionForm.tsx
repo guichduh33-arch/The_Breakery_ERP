@@ -1,7 +1,8 @@
 // packages/ui/src/components/PromotionForm.tsx
 //
-// Dynamic create/edit form for the four promotion types (percentage,
-// fixed_amount, bogo, free_product). Three-tab layout: General / Conditions /
+// Dynamic create/edit form for the six promotion types (percentage,
+// fixed_amount, bogo, free_product, threshold, bundle — S3-11 opened the last
+// two, already evaluated server-side). Three-tab layout: General / Conditions /
 // Stacking. Validation is dispatched per-type and mirrors the DB CHECK
 // constraints documented in the spec §3.1.
 //
@@ -22,7 +23,7 @@ import { PromotionTypeBadge } from './PromotionTypeBadge.js';
 import { ConditionsTab } from './promotion-form/ConditionsTab.js';
 import { GeneralTab } from './promotion-form/GeneralTab.js';
 import { StackingTab } from './promotion-form/StackingTab.js';
-import { validatePromotion } from './promotion-form/validation.js';
+import { normalizePromotionValues, validatePromotion } from './promotion-form/validation.js';
 import {
   emptyPromotionValues,
   type PromotionFormProps,
@@ -32,6 +33,7 @@ import {
 // Public API re-exports — keep the `@breakery/ui` surface identical.
 export {
   emptyPromotionValues,
+  normalizePromotionValues,
   validatePromotion,
 };
 export type {
@@ -40,6 +42,7 @@ export type {
   PromotionFormOption,
   PromotionFormErrors,
   PromotionScope,
+  ThresholdDiscountMode,
 } from './promotion-form/types.js';
 
 export function PromotionForm({
@@ -73,8 +76,17 @@ export function PromotionForm({
     setValues((prev) => ({
       ...prev,
       type: nextType,
-      // Reset scope: NULL for bogo/free_product per spec P2
-      scope: nextType === 'bogo' || nextType === 'free_product' ? null : (prev.scope ?? 'cart'),
+      // Reset scope: NULL for bogo/free_product per spec P2 — et pour palier /
+      // formule (S3-11), que le serveur évalue sur le panier entier.
+      scope:
+        nextType === 'bogo' || nextType === 'free_product'
+        || nextType === 'threshold' || nextType === 'bundle'
+          ? null
+          : (prev.scope ?? 'cart'),
+      // Un palier part sur le sous-total si rien n'est encore choisi.
+      ...(nextType === 'threshold' && prev.threshold_type === null
+        ? { threshold_type: 'subtotal' as const }
+        : {}),
     }));
   }, []);
 
@@ -86,7 +98,7 @@ export function PromotionForm({
       setSubmitting(true);
       setServerError(null);
       try {
-        await onSubmit(values);
+        await onSubmit(normalizePromotionValues(values));
       } catch (err) {
         setServerError(err instanceof Error ? err.message : 'Failed to save promotion');
       } finally {
