@@ -71,7 +71,7 @@ Expert on product CRUD, variants (linked-products), categories, units/sections/m
 |---|---|---|
 | `update_cost_price` | `inventory.cost_correction` | le coût est de la valorisation : WAC + trace `stock_movements`. Un UPDATE direct de `products.cost_price` est d'ailleurs révoqué (`20260526000010`). Call-site `useCorrectCostPrice`. |
 | `set_product_base_unit(p_product_id, p_new_unit)` | `products.units.update` | changer `products.unit` réinterprète toute quantité/coût stocké. Refuse sauf `current_stock = 0` **et** aucun `stock_movements` **et** aucun `display_stock` ; reset des unités alternatives/contextes ; `cost_price` converti si une conversion globale existe. Call-site `useSetProductBaseUnit`. |
-| `set_product_is_test(p_product_id, p_is_test)` | `products.test_flag.update` (ADMIN/SUPER_ADMIN) | le flag exclut le produit des rapports — un MANAGER titulaire de `products.update` ne doit pas pouvoir le poser. Call-site `useSetProductTestFlag`. |
+| `set_product_is_test(p_product_id, p_is_test)` | `products.test_flag.update` (ADMIN/SUPER_ADMIN) | le flag exclut le produit des rapports — un MANAGER titulaire de `products.update` ne doit pas pouvoir le poser. Aucun appelant dans le back-office depuis le retrait de l'interrupteur (ADR-035) ; le crochet orphelin est supprimé (S2-07). |
 
 ### Variants
 

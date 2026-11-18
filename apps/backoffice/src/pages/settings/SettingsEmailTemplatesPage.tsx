@@ -34,7 +34,7 @@ export default function SettingsEmailTemplatesPage() {
     <div className="space-y-6 max-w-6xl">
       <PageHeader
         title="Email templates"
-        subtitle="Customer-facing emails (welcome, order ready, payment, password reset). System notifications live in Notifications (Phase 5.B)."
+        subtitle="Templates for customer-facing emails (welcome, order ready, payment, password reset). Email delivery is not active: no email is sent. System notifications live in Notifications."
       />
 
       <div

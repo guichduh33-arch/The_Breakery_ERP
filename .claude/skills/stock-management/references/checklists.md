@@ -22,12 +22,14 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ### B. Automatisation (triggers + crons active)
 
 - [ ] **JE trigger attached** — `SELECT * FROM pg_trigger WHERE tgname = 'tr_20_je_emit'` confirms attachment. (Also expect `tr_update_product_cost_on_purchase` = the WAC trigger.)
-- [ ] **Spoilage cron** — `mark_expired_lots_hourly` doit être **`active = false`** (décommissionnement ADR-004). `SELECT jobname, active FROM cron.job`. S'il repasse à `true`, c'est une **régression** : il auto-wasterait du stock déjà vendu. Crons stock légitimes, relevés actifs le 2026-08-31 : `recompute-recipe-costs-daily`, `recompute-recipe-margins-daily`, `refresh-mv-stock-variance`, `release-expired-reservations`, plus `notification-dispatch-minutely` (transverse, il draine la file d'alertes ci-dessous).
+- [ ] **Spoilage cron** — `mark_expired_lots_hourly` doit être **`active = false`** (décommissionnement ADR-004). `SELECT jobname, active FROM cron.job`. S'il repasse à `true`, c'est une **régression** : il auto-wasterait du stock déjà vendu. Crons stock légitimes, relevés actifs le 2026-08-31 : `recompute-recipe-costs-daily`, `recompute-recipe-margins-daily`, `refresh-mv-stock-variance`, plus `notification-dispatch-minutely` (transverse, il draine la file d'alertes ci-dessous). `release-expired-reservations` est désinscrit depuis le retrait de la réservation de stock (2026-11-18, S2-03).
 - [ ] **WAC cascade on receive** — only `purchase` (PO) and `production_in` feed WAC → fires `tr_snapshot_on_product_cost_change` → ancestor `recipe_versions` re-snapshot. `incoming` does NOT (voir « Cost backbone »). Run pgTAP `recipe_cascade_snapshot.test.sql`.
 - [ ] **Alertes low-stock — l'ancien constat « ABSENT » est PÉRIMÉ** (il datait du 2026-05-30).
       Relevé du 2026-08-31 : un trigger `trg_notify_low_stock` sur `products` (fonction
       `_trg_notify_low_stock`) enfile une notification `low_stock_alert` vers
       `business_config.alert_email`, drainée par le cron `notification-dispatch-minutely`.
+      L'envoi d'e-mail est abandonné (Edge Functions d'envoi non déployées) : aucun
+      message ne part ; la notification reste en file.
       Les alertes ne sont donc plus seulement réactives. La RPC à la demande de la famille
       `get_low_stock` existe toujours, en **mode global uniquement** (le mode par section est
       tombé avec ADR-027). → Ne plus signaler l'absence d'alerte proactive ; si un audit
