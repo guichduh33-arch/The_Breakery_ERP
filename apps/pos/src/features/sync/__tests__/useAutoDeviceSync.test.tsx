@@ -29,6 +29,8 @@ describe('automatic device sync', () => {
   it('rafraîchit à la reprise puis toutes les 30 secondes, et nettoie son timer', async () => {
     const { unmount } = renderHook(() => useAutoDeviceSync(true), { wrapper });
     expect(sync).toHaveBeenCalledTimes(1);
+    // Le filet de fond épargne les préchargements par produit récents.
+    expect(sync).toHaveBeenCalledWith(expect.anything(), { mode: 'background' });
     await act(() => vi.advanceTimersByTimeAsync(29_999));
     expect(sync).toHaveBeenCalledTimes(1);
     await act(() => vi.advanceTimersByTimeAsync(1));

@@ -16,7 +16,7 @@ export function useAutoDeviceSync(enabled: boolean): void {
     const refresh = () => {
       if (document.visibilityState === 'hidden' || Date.now() - lastAttempt < 1_000) return;
       lastAttempt = Date.now();
-      void syncDeviceData(client);
+      void syncDeviceData(client, { mode: 'background' });
     };
     // Une reconnexion / reprise de session rattrape aussi les événements perdus.
     refresh();
