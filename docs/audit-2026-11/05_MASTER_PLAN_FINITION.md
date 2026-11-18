@@ -86,7 +86,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
-| `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; tâche quotidienne installée | Constater le déclenchement de 03 h 30 ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
+| `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; déclenchement de 03 h 30 constaté le 2026-11-18 (6 nuits sur 9), réveil du poste autorisé le même soir | Constater que les nuits suivantes ne manquent plus ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
 | `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
 
 ### Retirée
@@ -171,8 +171,12 @@ ses propres tests, mais **rien ne la déclenche** :
 5. 🟡 **Installée le 2026-11-09** — Tâche « Breakery V3 Daily Backup » sur le
    PC boutique, compte `Cashier`, chaque jour à 03 h 30. **Lancée une fois à la
    main** le même jour à 16 h 42 : résultat 0, archive de production produite.
-   Reste à constater le **déclenchement** de 03 h 30 (contrôle du lendemain,
-   décrit au runbook).
+   **Déclenchement constaté le 2026-11-18** : six archives produites seules sur
+   les neuf nuits du 9 au 18 novembre, la dernière à 03 h 30 avec le résultat 0.
+   Trois nuits sans archive, et une sauvegarde partie à 6 h 41 : la tâche ne
+   réveillait pas le poste. Réveil autorisé le 2026-11-18 au soir, sur décision
+   de Mamat (relevé au runbook). Reste à constater que les nuits suivantes ne
+   manquent plus.
 6. ⏳ Activer le PITR sur le projet de production (réglage facturé, console
    Supabase, aucun outil du dépôt ne le fait).
 7. ⏳ **Éprouver une restauration réelle, une fois**, sur un projet jetable.

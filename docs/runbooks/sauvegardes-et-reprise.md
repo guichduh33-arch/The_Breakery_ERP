@@ -3,10 +3,10 @@
 > Écrit le **2026-11-09** (tâche `S1-01`). Remplace le guide archivé, qui
 > prescrivait cinq objets SQL inexistants.
 >
-> **État au 2026-11-09, fin de journée : la tâche quotidienne est installée sur le
-> PC boutique et a réussi une exécution lancée à la main, mais son déclenchement
-> automatique n'est pas encore constaté. Aucune copie hors site, le PITR est
-> désactivé, et aucune restauration n'a jamais été éprouvée.** Ce document donne
+> **État au 2026-11-18 : la tâche quotidienne se déclenche seule sur le PC
+> boutique (constaté sur 6 nuits sur 9 ; le réveil du poste est autorisé depuis
+> ce soir-là). Aucune copie hors site, le PITR est désactivé, et aucune
+> restauration n'a jamais été éprouvée.** Ce document donne
 > la procédure ; l'exécuter est un geste à part, dont la preuve se consigne dans
 > [l'état des environnements](etat-environnements.md).
 
@@ -679,6 +679,37 @@ connectée.
 **Consigner le résultat ici même**, daté, et retirer la mention « non
 éprouvée » seulement une fois le contrôle réussi.
 
+**Contrôle du 2026-11-18, vers 19 h 40 heure de Lombok.** Observé directement,
+depuis le terminal de la console de gestion, sur le poste `Pos`.
+
+| Contrôle | Résultat |
+|---|---|
+| `Get-ScheduledTaskInfo` | `LastRunTime` 2026-11-18 03:30:01, `LastTaskResult` **0**, `NextRunTime` 2026-11-19 03:30 |
+| Archives produites seules | `2026-11-10`, `-12`, `-14`, `-15`, `-16`, `-17` (le nom porte la date UTC), chacune avec son reçu, de 62 à 87 Mo ; écrites à 03 h 31, sauf celle du 17 novembre, écrite à 6 h 41 |
+| Nuits sans archive | Celles qui finissent les matins du 10, du 12 et du 14 novembre |
+| Réglages de la tâche, avant | `WakeToRun` **False**, `StartWhenAvailable` True ; compte `Cashier`, `LogonType` Interactive |
+| Journal système | Reprises de veille chaque matin entre 6 h 30 et 6 h 45 |
+
+**Ce que cela prouve** : le déclenchement automatique fonctionne quand le poste
+est éveillé. **Cause probable des trous**, non prouvée nuit par nuit : le poste
+dormait à 03 h 30, et la tâche n'avait pas le droit de le réveiller.
+
+**Changement du même soir, sur décision de Mamat** : `WakeToRun` passé à
+**True** sur la tâche, par `Set-ScheduledTask -Settings` ; compte et mode de
+connexion inchangés. Les minuteurs de réveil du plan d'alimentation actif
+(« Balanced ») passent, sur secteur, de « importants seulement » à **activés**
+(`powercfg /setacvalueindex SCHEME_CURRENT SUB_SLEEP RTCWAKE 1`). Sur
+batterie, ils restent désactivés. Après le changement, `powercfg /waketimers`
+liste un réveil à 03:29:31 le 2026-11-19 pour cette tâche.
+
+**Limite** : la tâche reste en mode Interactive. Si la session `Cashier` est
+fermée, ou si le poste a redémarré sans connexion, le réveil ne suffit pas. Le
+contrôle des matins suivants dira si les trous ont disparu.
+
+**Retour** : `WakeToRun` à False sur la tâche, et
+`powercfg /setacvalueindex SCHEME_CURRENT SUB_SLEEP RTCWAKE 2` puis
+`powercfg /setactive SCHEME_CURRENT`.
+
 **État du dossier de sortie au 2026-11-09 :** vidé de ses fichiers pour laisser
 la place à la première exécution automatique. L'archive produite et vérifiée à
 la main a été déplacée dans le sous-dossier `verifiee-manuelle` ; elle est
@@ -967,7 +998,7 @@ décrite ici est hors de ce périmètre : elle ne passe par aucune migration.
 | ✅ | Paire de clés générée, deux copies, aller-retour chiffrer/déchiffrer prouvé |
 | ✅ | Installation complète sur le PC boutique |
 | ✅ | **Première sauvegarde réelle produite et déchiffrement prouvé** |
-| 🟡 | Tâche quotidienne **installée, exécutée une fois à la main le 2026-11-09 (résultat 0)** ; le déclenchement de 03h30 reste à constater — voir le contrôle du lendemain |
+| 🟡 | Tâche quotidienne **installée** ; déclenchement de 03h30 **constaté le 2026-11-18** (6 nuits sur 9) ; réveil du poste autorisé le même soir — les nuits suivantes restent à constater, voir le contrôle du lendemain |
 | ⏳ | **Copie hors site vers Drive** — c'est la prochaine étape, et la plus utile |
 | ⏳ | PITR, et répétition d'une restauration dans un projet Supabase |
 
