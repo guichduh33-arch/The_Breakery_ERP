@@ -26,6 +26,23 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 18 novembre 2026, 11 h — retrait des objets abandonnés (`S2-03`, `S2-04`, `S2-05`, `S2-09`)
+
+Relevé du 18 novembre 2026 vers 11 h, UTC+8. Observé directement. Boutique
+ouverte : la migration ne touche aucune table de vente ni de stock en écriture.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, avant | `stock_reservations` et `production_schedules` à 0 ligne ; `mv_sales_daily` et `mv_pl_monthly` non peuplées ; aucune tâche planifiée de ces objets ; les 3 permissions `audit_log.read`, `users.view_audit`, `settings.kiosk.manage` détenues par `SUPER_ADMIN` seul, sans dérogation ; 163 permissions ; aucune règle ni fonction ne cite ces codes ; seule dépendance des tables : la vue `v_product_available_stock` | — |
+| Back-office servi, avant | Le code servi n'appelle aucun objet retiré ; il vise la production, pas le dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, migration | Essai en transaction annulée, puis `apply_migration` du texte de `20261118000005_s2_retire_abandoned_objects.sql` (PR #729, fusionnée sur `a2d3a285` après une CI et un pgTAP verts) | — |
+| Backend production, après | 160 permissions ; aucune des 5 relations ni des 9 fonctions retirées ; `mv_stock_variance` et `refresh_mv_stock_variance` présentes ; les deux valeurs `reservation_*` de `movement_type` présentes ; registre du stock intact (15 327 mouvements) | — |
+| Back-office | `a2d3a285` publié (run `44233470065`, réussi à 12 h 53 après l'approbation de l'environnement Production). Code servi relu ensuite : les nouveaux textes des réglages e-mail sont présents ; il vise la production, jamais le dev ; aucun appel aux objets retirés ; `reservation_hold` et `reservation_release` restent seulement comme libellés de valeurs d'enum conservées | Lecture des fichiers servis, pas d'un parcours à l'écran |
+
+Retour : aucun geste ne rend les objets supprimés ; ils étaient vides et sans
+appelant. Les trois permissions se recréent par leur ligne d'origine de
+`supabase/seed.sql` (historique Git) et une attribution à `SUPER_ADMIN`.
+
 ## Complément du 18 novembre 2026, 1 h 30 — visibilité confidentielle par permission (`S1-08`, paquet 1)
 
 Relevé du 18 novembre 2026 entre 1 h 25 et 1 h 40, UTC+8. Observé directement.
