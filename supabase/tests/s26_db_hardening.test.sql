@@ -59,9 +59,9 @@ SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'calculate_pb1_payable_v5'
+    WHERE n.nspname = 'public' AND p.proname = 'calculate_pb1_payable_v6'
   ),
-  'T5: calculate_pb1_payable_v5 exists'
+  'T5: calculate_pb1_payable_v6 exists'
 );
 
 -- Lot D1 : _v1 → _v2 (gate reports.financial.read ajouté) — poser un contexte
@@ -79,8 +79,8 @@ END $$;
 
 -- ADR-005 : Lombok/NTB (PBJT), remplace le résidu ADR-003 NON_PKP_BALI_PB1.
 SELECT ok(
-  (calculate_pb1_payable_v5(DATE '2026-01-01', DATE '2026-12-31'))->>'tax_regime' = 'NON_PKP_LOMBOK_PBJT',
-  'T6: calculate_pb1_payable_v5 returns NON_PKP_LOMBOK_PBJT tax_regime (ADR-005)'
+  (calculate_pb1_payable_v6(DATE '2026-01-01', DATE '2026-12-31'))->>'tax_regime' = 'NON_PKP_LOMBOK_PBJT',
+  'T6: calculate_pb1_payable_v6 returns NON_PKP_LOMBOK_PBJT tax_regime (ADR-005)'
 );
 
 -- ============================================================================
@@ -147,12 +147,12 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN (
-      'close_fiscal_period_v2', 'get_general_ledger_v4',
-      'get_trial_balance_v5', 'create_manual_je_v2'
+      'close_fiscal_period_v2', 'get_general_ledger_v5',
+      'get_trial_balance_v6', 'create_manual_je_v2'
     )
     GROUP BY 1 HAVING COUNT(*) = 4
   ),
-  'T13: 4 cockpit RPCs exist (close_fiscal_period_v2, get_general_ledger_v4, get_trial_balance_v5, create_manual_je_v2)'
+  'T13: 4 cockpit RPCs exist (close_fiscal_period_v2, get_general_ledger_v5, get_trial_balance_v6, create_manual_je_v2)'
 );
 
 -- T14 vérifie structurellement que le payload contient les bons champs.
@@ -163,8 +163,8 @@ SELECT ok(
 SELECT set_config('request.jwt.claim.sub',
   (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 SELECT ok(
-  get_trial_balance_v5(DATE '2026-01-01', DATE '2026-12-31') ?& ARRAY['balanced', 'total_debit', 'total_credit', 'lines'],
-  'T14: get_trial_balance_v5 returns payload with balanced+totals+lines keys'
+  get_trial_balance_v6(DATE '2026-01-01', DATE '2026-12-31') ?& ARRAY['balanced', 'total_debit', 'total_credit', 'lines'],
+  'T14: get_trial_balance_v6 returns payload with balanced+totals+lines keys'
 );
 
 SELECT ok(

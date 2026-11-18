@@ -50,7 +50,7 @@ BEGIN
 
   -- ── Baseline avant seed ───────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_before := get_dashboard_overview_v7();
+  v_before := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_cash_b := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_before->'payments'->'lines') e
@@ -122,7 +122,7 @@ BEGIN
 
   -- ── Après seed ────────────────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_after := get_dashboard_overview_v7();
+  v_after := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_cash_a := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_after->'payments'->'lines') e
@@ -197,7 +197,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_rand);
   EXECUTE 'SET LOCAL ROLE authenticated';
   BEGIN
-    PERFORM get_dashboard_overview_v7();
+    PERFORM get_dashboard_overview_v8();
     v_denied := false;
   EXCEPTION WHEN insufficient_privilege THEN v_denied := true;
   END;
@@ -206,7 +206,7 @@ BEGIN
 
   -- T14 : anon n'a pas EXECUTE (trio S20)
   INSERT INTO _r SELECT 'T14_anon_execute_revoked',
-    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v7()', 'EXECUTE');
+    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v8()', 'EXECUTE');
 
   -- T15 : le helper privé reste hors de portée des deux rôles clients. La refonte
   --       a déplacé le calcul dans _dashboard_kpis_v2 ; sans cette assertion, un

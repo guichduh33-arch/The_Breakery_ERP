@@ -345,10 +345,10 @@ DECLARE
   v_line_cost NUMERIC;
   v_farine_found BOOLEAN;
 BEGIN
-  SELECT COUNT(*) INTO v_row_count FROM recipe_bom_full_v5(v_croissant, 5);
+  SELECT COUNT(*) INTO v_row_count FROM recipe_bom_full_v6(v_croissant, 5);
   SELECT material_id, cost_price, line_cost INTO v_material, v_cost, v_line_cost
-    FROM recipe_bom_full_v5(v_croissant, 5) LIMIT 1;
-  SELECT EXISTS(SELECT 1 FROM recipe_bom_full_v5(v_croissant, 5) WHERE material_id = v_farine)
+    FROM recipe_bom_full_v6(v_croissant, 5) LIMIT 1;
+  SELECT EXISTS(SELECT 1 FROM recipe_bom_full_v6(v_croissant, 5) WHERE material_id = v_farine)
     INTO v_farine_found;
 
   PERFORM set_config('breakery.c5_row_count', v_row_count::text, false);
@@ -359,7 +359,7 @@ BEGIN
 END $chk5$;
 
 SELECT is(current_setting('breakery.c5_row_count')::int, 1,
-  'T15: recipe_bom_full_v5(croissant) returns exactly 1 row (pate_a as a terminal line)');
+  'T15: recipe_bom_full_v6(croissant) returns exactly 1 row (pate_a as a terminal line)');
 SELECT is(current_setting('breakery.c5_material'), 'pate_a',
   'T16: the single row material_id is pate_a, not farine');
 SELECT is(current_setting('breakery.c5_cost')::numeric, 8000::numeric,
@@ -367,7 +367,7 @@ SELECT is(current_setting('breakery.c5_cost')::numeric, 8000::numeric,
 SELECT is(current_setting('breakery.c5_line_cost')::numeric, 1600::numeric,
   'T18: line_cost = qty_per_unit (0.2) * pate_a.cost_price (8000) = 1600');
 SELECT is(current_setting('breakery.c5_farine'), '0',
-  'T19: farine does not appear in recipe_bom_full_v5(croissant) output');
+  'T19: farine does not appear in recipe_bom_full_v6(croissant) output');
 
 -- ===========================================================================
 -- CHECK 6 — upsert_recipe_v2 : refuse g -> pcs, accepte gr -> kg.
@@ -420,10 +420,10 @@ SELECT ok(
     'public.record_production_v12(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
     'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.record_batch_production_v14(jsonb, jsonb)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.recipe_bom_full_v5(uuid, integer)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.recipe_bom_full_v6(uuid, integer)', 'EXECUTE')
   AND NOT has_function_privilege('anon',
     'public.upsert_recipe_v2(uuid, uuid, numeric, text, text, boolean, numeric)', 'EXECUTE'),
-  'T22: anon has EXECUTE revoked on the 4 functions carrying the ADR-016 behaviour (record_production_v12, record_batch_production_v14, recipe_bom_full_v5, upsert_recipe_v2) — REVOKE FROM PUBLIC is baked into the same migration statements (20260729000002 for the recipe pair, 20260729000005 for the production pair)'
+  'T22: anon has EXECUTE revoked on the 4 functions carrying the ADR-016 behaviour (record_production_v12, record_batch_production_v14, recipe_bom_full_v6, upsert_recipe_v2) — REVOKE FROM PUBLIC is baked into the same migration statements (20260729000002 for the recipe pair, 20260729000005 for the production pair)'
 );
 
 SELECT ok(
@@ -437,7 +437,7 @@ SELECT ok(
   AND to_regprocedure('public.record_batch_production_v4(jsonb, jsonb)') IS NULL
   AND to_regprocedure('public.recipe_bom_full_v1(uuid, integer)') IS NULL
   AND to_regprocedure('public.upsert_recipe_v1(uuid, uuid, numeric, text, text, boolean, numeric)') IS NULL,
-  'T24: all 5 pre-ADR-016 function signatures (record_production_v12, record_batch_production_v14, record_batch_production_v14, recipe_bom_full_v5, upsert_recipe_v1) are absent from pg_proc'
+  'T24: all 5 pre-ADR-016 function signatures (record_production_v12, record_batch_production_v14, record_batch_production_v14, recipe_bom_full_v6, upsert_recipe_v1) are absent from pg_proc'
 );
 
 SELECT * FROM finish();

@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 const ALL_PERMS = [
   'orders.read', 'customers.read', 'settings.read', 'products.read',
   'inventory.read', 'expenses.read', 'expenses.create', 'reports.read',
-  'reports.sales.read', 'reports.financial.read', 'reports.inventory.read',
+  'reports.sales.read', 'reports.financial.read', 'reports.inventory.read', 'reports.statements.read',
   'users.read', 'users.create', 'combos.create', 'purchasing.po.create',
 ];
 
@@ -131,7 +131,7 @@ describe('CommandPalette', () => {
   });
 
   it('n’expose jamais une destination interdite, même sur son nom exact', () => {
-    setAuthState(['expenses.read']); // pas de reports.financial.read
+    setAuthState(['expenses.read']); // pas de reports.statements.read
     renderPalette();
     fireEvent.change(input(), { target: { value: 'cash flow' } });
     expect(screen.queryByRole('option', { name: /Cash flow/ })).not.toBeInTheDocument();

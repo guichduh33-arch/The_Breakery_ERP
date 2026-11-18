@@ -1,11 +1,10 @@
 // apps/backoffice/src/routes/__tests__/owner-report-access.test.tsx
 //
-// S3-19 — « Production vs Sales » est réservé au propriétaire (décision du
-// 2026-11-10). La route l'impose AVANT le montage : `SuperAdminGate` dans le
-// `PermissionGate` de `reports.inventory.read`, comme les rapports financiers
-// réservés (gabarit `financial-report-access.test.tsx`). La page réelle est
-// montée ici, et la RPC espionnée : un refus de route ne doit déclencher aucun
-// appel, la garde serveur P0003 restant la seconde ligne.
+// S3-19 — « Production vs Sales » montre le stock : depuis l'ADR-039 (S1-08),
+// la route le réserve à la permission `reports.inventory.read`, et non plus au
+// rôle propriétaire. La page réelle est montée ici, et la RPC espionnée : un
+// refus de route ne doit déclencher aucun appel, la garde serveur P0003 restant
+// la seconde ligne.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -52,29 +51,29 @@ function openReport() {
 }
 
 function reportCalls(): number {
-  return state.rpc.mock.calls.filter(([fn]) => fn === 'get_production_vs_sales_v4').length;
+  return state.rpc.mock.calls.filter(([fn]) => fn === 'get_production_vs_sales_v5').length;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   state.user.role_code = 'ADMIN';
-  // Le rôle refusé PORTE le droit d'inventaire : seul le rôle le distingue.
   state.hasPermission.mockImplementation((code: string) => code === 'reports.inventory.read');
 });
 afterEach(cleanup);
 
 describe('production-vs-sales access', () => {
-  it.each(['ADMIN', 'MANAGER', undefined])('denies role %s before mounting the page, with no RPC call', async (role) => {
+  it.each(['ADMIN', 'MANAGER', undefined])('denies role %s without the stock permission, with no RPC call', async (role) => {
     state.user.role_code = role;
+    state.hasPermission.mockReturnValue(false);
     openReport();
-    expect(await screen.findByTestId('route-denied')).toHaveTextContent('Super admin');
+    expect(await screen.findByTestId('route-denied')).toHaveTextContent('reports.inventory.read');
     expect(screen.getByTestId('shell-nav')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Production vs Sales' })).toBeNull();
     expect(reportCalls()).toBe(0);
   });
 
-  it('lets the Owner mount the page, which then calls the report RPC', async () => {
-    state.user.role_code = 'SUPER_ADMIN';
+  it('lets a delegate holding the stock permission mount the page (ADR-039)', async () => {
+    state.user.role_code = 'ADMIN';
     openReport();
     // La page réelle est chargée en lazy : le premier import peut dépasser 1 s.
     expect(await screen.findByRole('heading', { name: 'Production vs Sales', level: 1 }, { timeout: 10_000 }))

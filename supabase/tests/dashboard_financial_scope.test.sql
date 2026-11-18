@@ -17,6 +17,15 @@ SELECT a.profile_id,p.code,CASE p.code
  ELSE a.kind = 'commercial' END,
  'Transactional financial report fixture',a.profile_id
 FROM rf_actors a CROSS JOIN unnest(ARRAY['reports.read','reports.financial.read','accounting.cash.read']) p(code);
+-- ADR-039 : la vue du stock se délègue par reports.inventory.read. Les non-propriétaires
+-- en sont privés par dérogation (en dev, ADMIN la détient par son rôle) ; le
+-- propriétaire la détient quelle que soit la matrice vivante.
+INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_granted,reason,granted_by)
+SELECT profile_id,'reports.inventory.read',false,'Transactional financial report fixture',profile_id
+FROM rf_actors WHERE kind<>'financial';
+INSERT INTO public.role_permissions(role_code,permission_code,is_granted)
+VALUES('SUPER_ADMIN','reports.inventory.read',true)
+ON CONFLICT(role_code,permission_code) DO UPDATE SET is_granted=true;
 CREATE TEMP TABLE rf_results(kind text PRIMARY KEY, result jsonb);
 GRANT SELECT ON rf_actors TO authenticated;
 GRANT INSERT,SELECT ON rf_results TO authenticated;
@@ -24,16 +33,16 @@ GRANT INSERT,SELECT ON rf_results TO authenticated;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM rf_actors WHERE kind='commercial')); END $$;
 SET LOCAL ROLE authenticated;
 SELECT ok(public.request_has_active_pin_session_v1(),'commercial actor has a real active PIN session');
-INSERT INTO rf_results VALUES('commercial', public.get_dashboard_overview_v7());
+INSERT INTO rf_results VALUES('commercial', public.get_dashboard_overview_v8());
 RESET ROLE;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM rf_actors WHERE kind='financial')); END $$;
 SET LOCAL ROLE authenticated;
 SELECT ok(public.request_has_active_pin_session_v1(),'financial actor has a real active PIN session');
-INSERT INTO rf_results VALUES('financial', public.get_dashboard_overview_v7());
+INSERT INTO rf_results VALUES('financial', public.get_dashboard_overview_v8());
 RESET ROLE;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM rf_actors WHERE kind='financial_admin')); END $$;
 SET LOCAL ROLE authenticated;
-INSERT INTO rf_results VALUES('financial_admin', public.get_dashboard_overview_v7());
+INSERT INTO rf_results VALUES('financial_admin', public.get_dashboard_overview_v8());
 SELECT is((SELECT result->'cost_mtd'->>'restricted' FROM rf_results WHERE kind='financial_admin'),'true',
  'ADMIN financial permission never reveals stock-derived costs');
 SELECT is((SELECT result->'kpis'->'gross_margin'->>'restricted' FROM rf_results WHERE kind='financial_admin'),'true',
@@ -42,7 +51,7 @@ RESET ROLE;
 DO $$ BEGIN PERFORM pg_temp.authenticate_pin((SELECT auth_id FROM rf_actors WHERE kind='denied')); END $$;
 SET LOCAL ROLE authenticated;
 SELECT ok(public.request_has_active_pin_session_v1(),'denied actor is authenticated, permission is the gate');
-SELECT throws_ok('SELECT public.get_dashboard_overview_v7()', '42501',
+SELECT throws_ok('SELECT public.get_dashboard_overview_v8()', '42501',
  'permission denied: reports.read required','reports.read still required even with financial permission');
 RESET ROLE;
 
@@ -76,9 +85,9 @@ SELECT is(result->'kpis'->'gross_margin', public._dashboard_kpis_v3(
 
 SELECT ok(to_regprocedure('public.get_dashboard_overview_v3()') IS NULL
  AND to_regprocedure('public._dashboard_cost_mtd_v1(text,date)') IS NULL,'old versions removed atomically');
-SELECT ok(has_function_privilege('authenticated','public.get_dashboard_overview_v7()','EXECUTE')
- AND has_function_privilege('service_role','public.get_dashboard_overview_v7()','EXECUTE')
- AND NOT has_function_privilege('anon','public.get_dashboard_overview_v7()','EXECUTE'),
+SELECT ok(has_function_privilege('authenticated','public.get_dashboard_overview_v8()','EXECUTE')
+ AND has_function_privilege('service_role','public.get_dashboard_overview_v8()','EXECUTE')
+ AND NOT has_function_privilege('anon','public.get_dashboard_overview_v8()','EXECUTE'),
  'overview keeps its exact client/server grants');
 SELECT ok(NOT has_function_privilege('authenticated','public._dashboard_cost_mtd_v3(text,date)','EXECUTE')
  AND NOT has_function_privilege('anon','public._dashboard_cost_mtd_v3(text,date)','EXECUTE')
@@ -86,7 +95,7 @@ SELECT ok(NOT has_function_privilege('authenticated','public._dashboard_cost_mtd
  'cost helper remains private to the server');
 SELECT ok(NOT EXISTS(
  SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a
- WHERE p.oid IN ('public.get_dashboard_overview_v7()'::regprocedure,
+ WHERE p.oid IN ('public.get_dashboard_overview_v8()'::regprocedure,
    'public._dashboard_cost_mtd_v3(text,date)'::regprocedure) AND a.grantee=0 AND a.privilege_type='EXECUTE'),
  'PUBLIC has no inherited execution path');
 

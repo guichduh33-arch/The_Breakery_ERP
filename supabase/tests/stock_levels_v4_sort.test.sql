@@ -20,16 +20,16 @@ BEGIN
 END $$;
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.get_stock_levels_v6(uuid,text,public.stock_bucket,integer,integer,text,text)', 'EXECUTE'),
-  'T1: anon has no EXECUTE on get_stock_levels_v6'
+  NOT has_function_privilege('anon', 'public.get_stock_levels_v7(uuid,text,public.stock_bucket,integer,integer,text,text)', 'EXECUTE'),
+  'T1: anon has no EXECUTE on get_stock_levels_v7'
 );
 SELECT ok(
-  has_function_privilege('authenticated', 'public.get_stock_levels_v6(uuid,text,public.stock_bucket,integer,integer,text,text)', 'EXECUTE'),
-  'T2: authenticated has EXECUTE on get_stock_levels_v6'
+  has_function_privilege('authenticated', 'public.get_stock_levels_v7(uuid,text,public.stock_bucket,integer,integer,text,text)', 'EXECUTE'),
+  'T2: authenticated has EXECUTE on get_stock_levels_v7'
 );
 SELECT ok(
   to_regprocedure('public.get_stock_levels_v3(uuid,text,public.stock_bucket,integer,integer)') IS NULL,
-  'T3: get_stock_levels_v6 is dropped (versioning monotone)'
+  'T3: get_stock_levels_v3 is dropped (versioning monotone)'
 );
 
 -- T4/T5 : tri par nom, deux directions — la suite est ordonnée.
@@ -38,11 +38,11 @@ DECLARE v_asc BOOLEAN; v_desc BOOLEAN;
 BEGIN
   SELECT bool_and(name >= lag_name) INTO v_asc FROM (
     SELECT r.name, lag(r.name) OVER () AS lag_name
-    FROM get_stock_levels_v6(NULL, NULL, 'all', 10, 0, 'name', 'asc') r
+    FROM get_stock_levels_v7(NULL, NULL, 'all', 10, 0, 'name', 'asc') r
   ) s WHERE lag_name IS NOT NULL;
   SELECT bool_and(name <= lag_name) INTO v_desc FROM (
     SELECT r.name, lag(r.name) OVER () AS lag_name
-    FROM get_stock_levels_v6(NULL, NULL, 'all', 10, 0, 'name', 'desc') r
+    FROM get_stock_levels_v7(NULL, NULL, 'all', 10, 0, 'name', 'desc') r
   ) s WHERE lag_name IS NOT NULL;
   PERFORM set_config('breakery.t4_pass', COALESCE(v_asc, false)::text, false);
   PERFORM set_config('breakery.t5_pass', COALESCE(v_desc, false)::text, false);
@@ -56,7 +56,7 @@ SELECT ok(current_setting('breakery.t5_pass', true)::boolean,
 DO $$
 DECLARE v_count INT;
 BEGIN
-  SELECT count(*) INTO v_count FROM get_stock_levels_v6(NULL, NULL, 'all', 5, 0);
+  SELECT count(*) INTO v_count FROM get_stock_levels_v7(NULL, NULL, 'all', 5, 0);
   PERFORM set_config('breakery.t6_pass', (v_count > 0)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t6_pass', true)::boolean,
@@ -67,7 +67,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   BEGIN
-    PERFORM get_stock_levels_v6(NULL, NULL, 'all', 5, 0, 'cost_price; DROP TABLE x', 'asc');
+    PERFORM get_stock_levels_v7(NULL, NULL, 'all', 5, 0, 'cost_price; DROP TABLE x', 'asc');
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_status := 'pass';
   END;

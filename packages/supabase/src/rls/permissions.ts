@@ -111,6 +111,7 @@ export type PermissionCode =
   | 'reports.inventory.read'
   | 'reports.audit.read'
   | 'reports.financial.read'
+  | 'reports.statements.read'
   | 'expenses.read'
   | 'expenses.create'
   | 'expenses.update'

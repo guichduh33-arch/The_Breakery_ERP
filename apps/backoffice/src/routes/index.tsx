@@ -662,7 +662,7 @@ export function AppRoutes() {
           path="accounting/trial-balance"
           element={
             <PermissionGate required="accounting.tb.read">
-              <SuperAdminGate><TrialBalancePage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><TrialBalancePage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -822,7 +822,7 @@ export function AppRoutes() {
           path="reports/profit-loss"
           element={
             <PermissionGate required="reports.financial.read">
-              <SuperAdminGate><ProfitLossPage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><ProfitLossPage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -830,7 +830,7 @@ export function AppRoutes() {
           path="reports/gross-margin"
           element={
             <PermissionGate required="reports.financial.read">
-              <SuperAdminGate><GrossMarginPage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><GrossMarginPage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -838,7 +838,7 @@ export function AppRoutes() {
           path="reports/balance-sheet"
           element={
             <PermissionGate required="reports.financial.read">
-              <SuperAdminGate><BalanceSheetPage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><BalanceSheetPage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -846,7 +846,7 @@ export function AppRoutes() {
           path="reports/cash-flow"
           element={
             <PermissionGate required="reports.financial.read">
-              <SuperAdminGate><CashFlowPage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><CashFlowPage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -904,7 +904,7 @@ export function AppRoutes() {
           path="reports/pb1"
           element={
             <PermissionGate required="reports.financial.read">
-              <SuperAdminGate><Pb1ReportPage /></SuperAdminGate>
+              <PermissionGate required="reports.statements.read"><Pb1ReportPage /></PermissionGate>
             </PermissionGate>
           }
         />
@@ -1072,7 +1072,7 @@ export function AppRoutes() {
           path="reports/production-vs-sales"
           element={
             <PermissionGate required="reports.inventory.read">
-              <SuperAdminGate><ProductionVsSalesPage /></SuperAdminGate>
+              <ProductionVsSalesPage />
             </PermissionGate>
           }
         />

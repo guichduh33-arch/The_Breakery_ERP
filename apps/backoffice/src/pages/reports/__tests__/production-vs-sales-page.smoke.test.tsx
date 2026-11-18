@@ -102,7 +102,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn !== 'get_production_vs_sales_v4') return Promise.resolve({ data: null, error: null });
+      if (fn !== 'get_production_vs_sales_v5') return Promise.resolve({ data: null, error: null });
       if (rpcError !== null) return Promise.resolve({ data: null, error: rpcError });
       if (args.p_product_id === 'p2') return Promise.resolve({ data: ONLY_CROISSANT, error: null });
       return Promise.resolve({ data: payload, error: null });
@@ -141,7 +141,7 @@ function renderPage(search = '?start=2026-11-01&end=2026-11-02') {
 
 function rpcCalls(): Record<string, unknown>[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_production_vs_sales_v4')
+    .filter(([fn]) => fn === 'get_production_vs_sales_v5')
     .map(([, args]) => args as Record<string, unknown>);
 }
 
@@ -335,10 +335,10 @@ describe('ProductionVsSalesPage', () => {
     expect(await screen.findByText('Nothing produced or sold')).toBeInTheDocument();
   });
 
-  it('explains the owner-only refusal (P0003) in the shell banner', async () => {
-    rpcError = { code: 'P0003', message: 'stock_visibility_owner_required' };
+  it('explains the stock visibility refusal (P0003) in the shell banner', async () => {
+    rpcError = { code: 'P0003', message: 'stock_visibility_required' };
     renderPage();
-    expect(await screen.findByTestId('report-error')).toHaveTextContent(/available to the owner/);
+    expect(await screen.findByTestId('report-error')).toHaveTextContent(/Ask the owner for stock report access/);
   });
 
   it('says when the served period is shorter than the requested one', async () => {

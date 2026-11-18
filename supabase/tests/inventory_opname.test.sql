@@ -153,8 +153,8 @@ SELECT ok(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'get_stock_movements_v6','get_movement_aggregates_v5',
-      'get_low_stock_v4','get_reorder_suggestions_v3','get_product_dashboard_v7'
+      'get_stock_movements_v7','get_movement_aggregates_v6',
+      'get_low_stock_v5','get_reorder_suggestions_v4','get_product_dashboard_v8'
     )),
   5,
   'T_OPN_13: 5 query RPCs (movements/aggregates/low_stock_v2/reorder/dashboard_v3) exist'

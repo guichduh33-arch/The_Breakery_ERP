@@ -40,7 +40,7 @@ BEGIN
 
   -- ── Baseline ──────────────────────────────────────────────────────────
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_b  := get_dashboard_overview_v7();
+  v_dash_b  := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_daily_b := get_daily_sales_v5(v_today::text, v_today::text);
   v_rev30_today_b := COALESCE((SELECT (e->>'net')::numeric
@@ -63,7 +63,7 @@ BEGIN
     VALUES (v_o1, v_prod, 'S64 NetVoid Item', 60000, 1, 60000);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_1  := get_dashboard_overview_v7();
+  v_dash_1  := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_daily_1 := get_daily_sales_v5(v_today::text, v_today::text);
 
@@ -89,7 +89,7 @@ BEGIN
             v_profile, v_profile, v_session, true);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_2  := get_dashboard_overview_v7();
+  v_dash_2  := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_daily_2 := get_daily_sales_v5(v_today::text, v_today::text);
 
@@ -119,7 +119,7 @@ BEGIN
             v_profile, v_profile, v_session);
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  v_dash_3  := get_dashboard_overview_v7();
+  v_dash_3  := get_dashboard_overview_v8();
   EXECUTE 'RESET ROLE';
   v_daily_3 := get_daily_sales_v5(v_today::text, v_today::text);
   v_rev30_today_3 := COALESCE((SELECT (e->>'net')::numeric

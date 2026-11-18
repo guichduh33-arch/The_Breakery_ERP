@@ -51,7 +51,7 @@ const SHORTAGE_ERROR = {
 };
 
 /**
- * La carte monte l'aperçu de faisabilité, qui appelle `recipe_bom_full_v5` :
+ * La carte monte l'aperçu de faisabilité, qui appelle `recipe_bom_full_v6` :
  * les appels RPC ne sont plus tous des soumissions de lot. On ne raisonne donc
  * que sur les appels de la RPC de production.
  */
@@ -90,7 +90,7 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     // L'aperçu partage le mock : sans BOM neutre, il rendrait l'erreur de
     // pénurie du lot comme une erreur de résolution de recette.
     mockRpc.mockImplementation((fn: string) =>
-      fn === 'recipe_bom_full_v5' ? { data: [], error: null } : SHORTAGE_ERROR,
+      fn === 'recipe_bom_full_v6' ? { data: [], error: null } : SHORTAGE_ERROR,
     );
     resolvers.product_sections = () => ({ data: [{ product_id: 'p-bag' }], error: null });
     resolvers.products = () => ({
@@ -114,7 +114,7 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     expect(screen.getByTestId('force-negative-toggle')).toBeInTheDocument();
   });
   it('explains stock precision rejection without offering a force override', async () => {
-    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v5'
+    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v6'
       ? { data: [], error: null } : { data: null, error: { message: 'quantity_below_stock_precision' } });
     renderCard();
     await addBaguetteRow();
@@ -124,7 +124,7 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     expect(batchCalls()).toHaveLength(1);
   });
   it('formats tiny server shortages without scientific notation', async () => {
-    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v5'
+    mockRpc.mockImplementation((fn: string) => fn === 'recipe_bom_full_v6'
       ? { data: [], error: null } : { data: null, error: { message: 'insufficient_stock', details: JSON.stringify([
         { material_name: 'Yeast', required: 1e-7, available: 1e-8, shortfall: 9e-8, unit: 'kg' },
       ]) } });
