@@ -2371,3 +2371,62 @@ ci-dessus.
     `pnpm-lock.yaml`.
 14. **Le contenu ne transite jamais par un shell.** Un `>` de citation y devient
     une redirection.
+
+# Annexe C — En réserve, non planifié
+
+Ces points sont établis, mais Mamat a décidé de **ne pas les traiter pour
+l'instant**. Ils n'entrent ni dans le décompte ni dans l'avancement. Chacun
+nomme le signal qui justifierait d'y revenir ; sans ce signal, il reste ici.
+
+### `[R-01]` Ordre de prise des verrous entre une vente et le règlement d'une commande ouverte
+
+**Risque prod** 🔴 si le signal apparaît, faible en l'état · **Source** —
+constat du 2026-11-18, en lecture seule sur dev et sur la production V3, après
+les interblocages du premier run pgTAP en morceaux (PR #731, run
+44241956458). **Décision de Mamat du 2026-11-18** : en réserve, une seule
+caisse encaisse.
+
+**Constat** — Deux verrous communs à toute la boutique sont pris dans un ordre
+inverse selon le parcours :
+
+- toute écriture d'une commande (création, statut, date de paiement ou total)
+  déclenche la famille `invalidate_business_day_release`, qui prend le verrou
+  du jour métier, puis supprime la publication du jour. Les triggers de cette
+  table, posés par instruction, se déclenchent même quand rien n'est supprimé :
+  ils mettent à jour les lignes `catalog` et `orders` de
+  `ui_invalidation_topics` (famille `signal_ui_invalidation`) ;
+- toute déduction de stock de vente écrit dans les produits ou la vitrine, ce
+  qui met à jour la ligne `catalog`.
+
+La vente au comptoir (famille `complete_order_with_payment`) et la création
+d'une commande prennent le verrou du jour **puis** `catalog`. Le règlement
+d'une commande ouverte (famille `pay_existing_order`, utilisée pour les tables,
+les dettes et le rejeu hors ligne) déduit le stock **puis** écrit la commande :
+`catalog` **puis** le verrou du jour. Les familles `cancel_b2b_order` et
+`edit_b2b_order` suivent le même ordre inverse.
+
+**Effet** — Si la caisse règle une table au moment où une tablette envoie une
+commande, PostgreSQL annule l'une des deux transactions. Rien n'est faussé :
+l'annulation est entière. L'écran reçoit une erreur générique et le geste est à
+refaire. Au relevé du 2026-11-18, les fonctions concernées sont identiques en
+dev et en production, et aucun interblocage ne figure dans les journaux
+Postgres de production des dernières 24 heures. Ce dernier point est une
+indication, pas une preuve : la présence de cette source de journaux n'a pas
+été vérifiée.
+
+**Signal pour y revenir** — une erreur inexpliquée sur un règlement ou un envoi
+de commande pendant un coup de feu, ou un nouveau poste qui encaisse ou envoie
+des commandes.
+
+**Travail proposé** — Une nouvelle version de la famille
+`invalidate_business_day_release` qui ne supprime la publication du jour que si
+elle existe, vérifiée sous le verrou du jour déjà pris. Une vente ordinaire ne
+touche alors plus la ligne `catalog` : le cycle et le point de contention
+disparaissent, sans modifier aucune fonction de paiement. Le cas résiduel, la
+première écriture d'un jour déjà publié, demanderait que les familles
+`pay_existing_order`, `cancel_b2b_order` et `edit_b2b_order` prennent le verrou
+du jour en premier.
+
+**Preuve** — Un test pgTAP qui reproduit l'interblocage entre deux sessions
+avant la correction et montre qu'il ne se produit plus après. Types régénérés,
+pgTAP vert sur la PR.
