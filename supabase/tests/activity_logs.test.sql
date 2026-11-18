@@ -78,6 +78,12 @@ BEGIN
   RETURN NEXT is((SELECT count(*)::integer FROM audit_logs WHERE entity_id=v_id),2,'création et modification promotion auditées');
   PERFORM delete_promotion_v1(v_id);
   RETURN NEXT is((SELECT count(*)::integer FROM audit_logs WHERE entity_id=v_id AND action='promotion.delete'),1,'suppression promotion sans doublon');
+  -- S3-12 : une suppression physique laisse une trace, auteur = profil.
+  INSERT INTO promotions(name,slug,type,scope,discount_value) VALUES('Audit hard delete','audit-' || gen_random_uuid(), 'percentage','cart',10) RETURNING id INTO v_id;
+  DELETE FROM promotions WHERE id=v_id;
+  RETURN NEXT ok((SELECT count(*)=1 AND bool_and(actor_id=v_actor AND payload->'before'->>'id'=v_id::text
+      AND payload->'before'->>'name'='Audit hard delete' AND payload->'after'='null'::jsonb)
+    FROM audit_logs WHERE entity_id=v_id AND action='promotion.delete'),'suppression physique promotion auditée, auteur profil');
   INSERT INTO margin_alerts(product_id,expected_margin_pct,target_margin_pct,delta_pct,cost_per_unit,selling_price)
   VALUES(v_product,20,30,-10,80,100) RETURNING id INTO v_id;
   UPDATE margin_alerts SET acknowledged_at=now(),acknowledged_by=v_actor WHERE id=v_id;
