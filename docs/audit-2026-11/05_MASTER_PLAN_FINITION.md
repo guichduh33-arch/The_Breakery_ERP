@@ -874,6 +874,11 @@ bloque l'écriture du journal le temps de la transaction).
 jour à 8 h 35 : 23 028 lignes, toutes dans la partition par défaut ; la
 boutique était ouverte. Application prévue après la fermeture, avec l'accord de
 Mamat du même jour.
+**En production le 2026-11-18 à 19 h 50**, boutique fermée : les deux
+migrations sont appliquées. 23 908 lignes avant et après, 0 dans la partition
+par défaut ; chaque partition porte la règle PIN ; la tâche planifiée appelle la
+version suivante de la fonction, et l'ancienne est retirée. Relevé daté dans
+`docs/runbooks/etat-environnements.md`.
 
 ---
 

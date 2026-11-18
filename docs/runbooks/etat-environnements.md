@@ -26,6 +26,23 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 18 novembre 2026, 19 h 50 — partitions du journal du POS (`S1-16`) et lectures `S1-08`, paquets 2 et 3
+
+Relevé du 18 novembre 2026, UTC+8. Observé directement sur la production V3.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| `S1-08`, étape additive | Vers 8 h 30, `apply_migration` du bloc additif (`s1_08_stock_and_statements_reads_additive`) : 29 versions neuves des lectures de stock et d'états financiers, attributs et droits égaux au dev, gardes non exécutables par `anon`. `generate-pdf` redéployée (version 9) | — |
+| `S1-08`, back-office | `5665eeb9` (fusion de #727) publié après l'approbation de l'environnement Production par Mamat. Code servi relu : 26 des 29 versions neuves appelées, les 3 autres sans appel direct depuis le BO ; aucune ancienne version ; il vise la production, jamais le dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| `S1-08`, retrait | `apply_migration` du texte de `20261118000002_s1_08_drop_owner_only_reads.sql`, en production puis en dev. Après : aucune ancienne version ; sous l'identité simulée d'un `SUPER_ADMIN`, le bilan et les compteurs de stock répondent | Identité simulée par `request.jwt.claims` |
+| `S1-16`, avant | 19 h 47 : dernière commande à 18 h 03, aucune session de caisse ouverte. 23 908 lignes dans `pos_events`, toutes dans `pos_events_default`. Huit événements d'une tablette entre 19 h 28 et 19 h 29 (articles ajoutés puis retirés, aucune commande) | — |
+| `S1-16`, migrations | `apply_migration` du texte de `20261118000003_s1_16_pos_events_partitions.sql`, puis de `20261118000004_s1_16_partition_pin_policy.sql` (PR #727, `5665eeb9`) | — |
+| `S1-16`, après | 23 908 lignes : 920 dans `pos_events_2026_10`, 22 988 dans `pos_events_2026_11`, 0 dans la partition par défaut. Partitions de 2026-07 à 2027-02 et défaut : RLS active, règle `pin_session_required`, aucune lecture pour `anon` ni `authenticated`, déclencheurs `pos_events_no_update` et `pos_events_no_delete`. `create_pos_events_partition_v2` seule, non exécutable par `anon` ni `authenticated` ; tâche `pos-events-partitions-ahead` (`0 3 20 * *`) sur la v2 ; aucune table `pos_events_default_s116` restante | Aucune écriture de caisse observée après la migration |
+
+Retour : aucun geste simple ne remet le journal dans une seule partition par
+défaut, et ce retour n'est pas utile ; les lignes sont intactes. Les anciennes
+lectures `S1-08` sont supprimées : leur retour exigerait une nouvelle migration.
+
 ## Complément du 18 novembre 2026, 19 h 25 — paquet caisse et APK 1.23 sur `6854931a`, installés
 
 Relevé du 18 novembre 2026 entre 17 h et 19 h 25, UTC+8. Observé directement.
