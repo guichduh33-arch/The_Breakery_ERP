@@ -1227,6 +1227,14 @@ mouvement. Les deux valeurs de réservation **restent** dans l'énumération des
 mouvements : le registre du stock ne perd aucune valeur. Preuve pgTAP
 `s2_retired_objects.test.sql`, 18 sur 18 en dev, et quatre fichiers allégés des
 cas devenus caducs, verts.
+**Fusionné le 2026-11-18** : PR #729 (`a2d3a285`), CI verte. **En production le
+même jour vers 11 h** (UTC+8), pour `S2-03`, `S2-04`, `S2-05` et `S2-09` : relevé
+refait juste avant (mêmes signatures, 0 ligne, aucune dépendance cachée), essai
+en transaction annulée, puis migration appliquée. Après : 160 permissions, aucun
+des objets retirés, `mv_stock_variance` et les deux valeurs d'énumération
+conservées. Le back-office servi n'appelait aucun objet retiré. Back-office
+`a2d3a285` publié vers 12 h 53 (textes `S2-10` servis). Relevé dans
+`../runbooks/etat-environnements.md`, section du 18 novembre à 11 h.
 
 ---
 

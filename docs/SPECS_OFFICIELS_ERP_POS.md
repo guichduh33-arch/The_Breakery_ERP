@@ -567,6 +567,10 @@ produits suivis sans seuil. Pas de promesse d'e-mail.
 les deux filtres d'écran qui ne ramènent jamais rien). Les transferts entre
 zones, supprimés par l'ADR-027. Les allergènes, supprimés par l'ADR-011 : **ne
 pas rebâtir**.
+**FAIT** — Depuis le 2026-11-18, la réservation de stock n'existe plus, en dev ni
+en production : table, vue de disponibilité, fonctions, module de calcul et
+filtres retirés. Les deux types de mouvement de réservation restent dans
+l'énumération du registre du stock, qui ne perd aucune valeur.
 
 ---
 
@@ -604,8 +608,13 @@ La couverture reste à 3 jours.
 **ABANDONNÉ** — Le suivi des causes d'écart de rendement : l'écran de saisie
 n'était importé par personne. Les trois composants, leurs tests et le réglage de
 seuil sont à supprimer. Les rapports montreront l'écart **sans** la cause.
+**FAIT** — Écart relevé le 2026-11-18 : l'écran de saisie de la cause **est**
+importé par le formulaire de production, qui l'ouvre au-delà du seuil et envoie
+la cause à la fonction d'enregistrement. La décision reste ; son retrait touche
+ce parcours.
 **ABANDONNÉ** — Le planning de production hebdomadaire : table et fonction sans
 aucun appelant, zéro ligne en production.
+**FAIT** — Retiré le 2026-11-18, en dev et en production.
 
 ---
 
@@ -903,6 +912,8 @@ coût de report augmente chaque jour.
 
 **ABANDONNÉ** — L'interrupteur « produit test » (ADR-035). Le crochet orphelin
 est à supprimer.
+**FAIT** — Le crochet orphelin est supprimé (PR #729, 2026-11-18). Le drapeau, sa
+fonction et l'exclusion des rapports restent.
 
 ---
 
@@ -920,6 +931,8 @@ mouvements fantômes, stock périmé, et une quinzaine d'autres). Aucun n'existe
 **jamais peuplées** en production, et aucune fonction applicative ne les lit.
 **ABANDONNÉ** — La tendance de rentabilité sur 12 mois. Les deux vues sont à
 supprimer : tout rapport qui s'y brancherait échouerait.
+**FAIT** — Les deux vues et leurs fonctions de rafraîchissement sont retirées
+depuis le 2026-11-18, en dev et en production.
 
 **FAIT** — Le « rapport de coût de production » mesure en réalité des **achats
 commandés**, réception non incluse.
@@ -981,6 +994,8 @@ d'abord.
 **FAIT** — Trois permissions du catalogue ne contrôlent **rien** :
 `audit_log.read`, `users.view_audit`, `settings.kiosk.manage`.
 **À LIVRER** — Les retirer du catalogue.
+**FAIT** — Retirées du catalogue et de leurs attributions le 2026-11-18, en dev et
+en production.
 
 ---
 
@@ -1011,6 +1026,8 @@ production reste à poser avec l'installation des tâches.
 sont pas déployées, aucune clé de prestataire n'est posée, et les tables
 concernées sont vides. La promesse d'envoi est à retirer des documents. Le code
 reste dormant.
+**FAIT** — Depuis la PR #729 (2026-11-18), les pages de réglages des
+notifications et des modèles d'e-mail disent qu'aucun e-mail n'est envoyé.
 
 **FAIT** — Quatre fonctions appelées par le back-office **déployé** n'existent pas
 en production : comptabilisation et lecture du compte d'attente du rapprochement
