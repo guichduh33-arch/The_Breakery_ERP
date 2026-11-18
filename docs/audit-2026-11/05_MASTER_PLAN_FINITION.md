@@ -556,9 +556,12 @@ dans les états financiers ni dans les rapports d'exploitation).
 appliquée par un bloc qui refait les remplacements sur le corps vivant de la
 production ; les 29 corps relus égaux au corps d'origine remplacé, mêmes
 attributs, droits refusés à anon. L'Edge Function du PDF est redéployée en
-production (version 9, contrôle du jeton conservé). **Non fait** : la
-publication du back-office (approbation de Mamat), puis le retrait des
-anciennes versions, en production et en dev.
+production (version 9, contrôle du jeton conservé). Back-office publié le
+même jour sur `5665eeb9` (approbation de Mamat) ; le code servi appelle les
+nouvelles versions, aucune ancienne, et vise la production. Puis retrait des
+anciennes versions en production et en dev ; aucun appelant restant, et sous
+l'identité d'un propriétaire le bilan et les compteurs de stock répondent.
+**Paquets 2 et 3 en production le 2026-11-18.**
 
 ---
 
