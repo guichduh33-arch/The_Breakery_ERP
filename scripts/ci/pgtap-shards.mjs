@@ -12,7 +12,7 @@
 // sur un objet partagé (ALTER TABLE, trigger, fonction, policy, LOCK) pose un
 // verrou fort jusqu'au ROLLBACK et bloque ou interbloque les autres sessions.
 // Ces fichiers vont dans le morceau `exclusive`, lancé SEUL après les autres.
-// Il relance aussi, un à un, les fichiers reportés pour interblocage (voir verdict).
+// Il relance aussi, un à un, les fichiers qui n'ont pas passé en parallèle (voir verdict).
 // Un auteur peut forcer ce classement avec un commentaire `-- pgtap:exclusive`.
 import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -100,18 +100,18 @@ export function readSuite(root = ROOT) {
 // croisent sur les mêmes verrous partagés (ligne de `ui_invalidation_topics`,
 // verrou consultatif du jour métier), tenus jusqu'au ROLLBACK de chaque fichier.
 // Relevé du 2026-11-18 sur le premier run en morceaux : 15 fichiers tombés ainsi.
-// Un fichier dont le passage parallèle a subi un interblocage n'est pas vert :
-// ce passage est contaminé (un `lives_ok` qui attrape le 40P01 le rend en
-// `not ok`, et la suite du fichier échoue en cascade). Il est `deferred`, puis
+// L'interblocage ne se voit pas toujours : un `lives_ok` le rend en `not ok`
+// suivi d'échecs en cascade, et un bloc `EXCEPTION WHEN OTHERS` l'avale sans
+// trace (b2b_balance_adjust_je_pin, run 44244044322). Un passage parallèle ne
+// prouve donc que la réussite. Un fichier qui n'y passe pas est `deferred` et
 // relancé seul par le morceau exclusif, comme dans l'ancienne suite série :
-// seule cette relance, entière et sans interblocage, décide de son verdict.
-// Sans interblocage, toute erreur ou assertion rouge reste un échec immédiat.
+// seule cette relance décide de son verdict. `deadlock` ne sert qu'au relevé.
 export function verdict(rc, out) {
   const notOk = (out.match(/^[ \t]*not ok [0-9]/gm) ?? []).length;
   const summary = (out.match(/# Looks like you failed [0-9]+ test/g) ?? []).length;
   const ok = rc === 0 && notOk === 0 && summary === 0;
-  const deferred = !ok && /\bERROR:\s+deadlock detected\b|\bdied: 40P01\b/.test(out);
-  return { rc, notOk, summary, ok, deferred };
+  const deadlock = /\bERROR:\s+deadlock detected\b|\bdied: 40P01\b/.test(out);
+  return { rc, notOk, summary, ok, deferred: !ok, deadlock };
 }
 
 export function runShard(names, { psql, now = Date.now, log = console.log } = {}) {
@@ -145,7 +145,7 @@ export function aggregate(expected, reports) {
       seen.set(r.file, (seen.get(r.file) ?? 0) + 1);
       if (r.ok) continue;
       const retry = report.shard !== EXCLUSIVE && r.deferred ? retries.get(r.file) : undefined;
-      if (!retry) errors.push(`${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary}${r.deferred ? ', interblocage non relancé' : ''})`);
+      if (!retry) errors.push(`${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary}${r.deferred ? ', non relancé seul' : ''})`);
       else if (!retry.ok) errors.push(`${r.file} relancé seul (exit=${retry.rc}, not_ok=${retry.notOk}, tap_summary=${retry.summary})`);
     }
   }
@@ -196,18 +196,18 @@ if (isMain(import.meta.url)) {
       const results = runShard(expected.shards[arg], { psql });
       const report = { shard: arg, results };
       // Le morceau exclusif tourne seul, après les autres : il relance un à un
-      // les fichiers qu'ils ont reportés pour interblocage (bilans téléchargés).
+      // les fichiers qu'ils ont reportés (bilans téléchargés).
       if (arg === EXCLUSIVE) {
         const toRetry = deferredOf(readReports(dir));
         if (toRetry.length) console.log(`Relance seule de ${toRetry.length} fichier(s) reporté(s) : ${toRetry.join(', ')}`);
         report.retries = runShard(toRetry, { psql }).map(({ deferred, ...r }) => r);
       }
       writeFileSync(join(dir, `${arg}.json`), JSON.stringify(report, null, 1));
-      // Dans le morceau exclusif, un interblocage est un échec : rien ne le relance.
+      // Dans le morceau exclusif, tout échec est définitif : rien ne le relance.
       const failed = [...results, ...(report.retries ?? [])].filter((r) => !r.ok && (arg === EXCLUSIVE || !r.deferred));
       const later = arg === EXCLUSIVE ? [] : results.filter((r) => r.deferred);
       const seconds = results.reduce((s, r) => s + r.seconds, 0).toFixed(0);
-      for (const r of later) console.log(`::warning::${r.file} reporté (interblocage) : relancé seul par le morceau exclusif.`);
+      for (const r of later) console.log(`::warning::${r.file} reporté${r.deadlock ? ' (interblocage)' : ''} : relancé seul par le morceau exclusif.`);
       if (failed.length) {
         console.log(`::error::${failed.length} pgTAP file(s) failed in shard ${arg}:`);
         for (const r of failed) console.log(` - ${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary})`);
