@@ -1194,6 +1194,12 @@ la tâche planifiée de dev sont retirées. Retirés aussi : le module du domain
 la lecture POS et la désactivation de tuile des deux grilles. Preuve pgTAP
 `s2_01_stock_lots_retired.test.sql`, 20 sur 20 en dev (un lot actif n'est plus
 décrémenté par une perte), et tous les fichiers pgTAP retouchés, verts.
+**En production le 2026-11-19 vers 0 h 10**, boutique fermée, avec le
+back-office de `47ac4756` : versions neuves créées, back-office publié, puis
+anciennes versions retirées. Empreintes des fonctions égales au dev ; 41 lots
+et le registre du stock intacts. Écart propre à la production : la publication
+temps réel de `business_config` y liste ses colonnes, et la liste a été reprise
+moins la colonne retirée. Relevé daté dans `docs/runbooks/etat-environnements.md`.
 
 ---
 
@@ -1236,6 +1242,8 @@ de sa signature, aucun appelant ne l'envoie) et le rapport d'efficacité de
 production expose encore un indicateur « motifs présents », servi par sa fonction
 de lecture. Ces deux restes partent au prochain changement de version de chaque
 fonction.
+**En production le 2026-11-19 vers 0 h 10**, avec `S2-01` : colonne de seuil
+retirée, back-office de `47ac4756` publié.
 
 ---
 
@@ -1362,6 +1370,8 @@ décide.
 La tuile avait déjà quitté le hub le 2026-08-22 ; restaient la route, la page, sa
 fonction de lecture, son gabarit PDF et l'entrée du générateur de PDF, tous
 retirés. Le test du hub compte toujours ses tuiles sans elle.
+**En production le 2026-11-19 vers 0 h 10**, avec `S2-01` : fonction de lecture
+retirée, back-office de `47ac4756` publié.
 
 ---
 
@@ -1651,6 +1661,8 @@ ligne lisent le journal des paiements avec la règle du rapport, sans plafond de
 100 lignes. Un bon non reçu affiche « awaiting receipt ». Le montant « Overdue »
 garde sa règle de livraison attendue : non traité. Tests verts en local ; la
 comparaison avec le rapport sur un fournisseur de dev reste à faire.
+**Fusionnée le 2026-11-18 (PR #739), publiée en production le 2026-11-19 vers
+0 h 10** (back-office `47ac4756`). Écran non vu en production.
 
 **Fichiers**
 - La fiche fournisseur du back-office et son crochet d'impayé
@@ -1712,6 +1724,8 @@ de la liste, et non dans l'onglet des problèmes de configuration. Il compte les
 produits actifs suivis dont le seuil est à zéro ; tout produit est suivi par
 défaut, produits finis compris. Tests verts en local. Reste : la saisie des
 seuils par Mamat.
+**Fusionnée le 2026-11-18 (PR #739), publiée en production le 2026-11-19 vers
+0 h 10** (back-office `47ac4756`). Écran non vu en production.
 
 **Fichiers**
 - `apps/backoffice/src/features/inventory-alerts/components/LowStockTab.tsx`
@@ -1736,6 +1750,9 @@ Mamat saisit les seuils.
 exige un plafond, car le serveur lit le plafond comme le mode. Tests verts en
 local ; l'évaluation au POS en dev n'est pas faite. Le filtre par type de la
 liste des promotions ignore encore ces deux types.
+**Fusionnée le 2026-11-18 (PR #739), publiée en production le 2026-11-19 vers
+0 h 10** (back-office `47ac4756`). Aucune promotion de ces types créée en
+production.
 
 **Fichiers**
 - `apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx`
@@ -1763,8 +1780,9 @@ promotions couvre la création et la modification, **pas la suppression**.
 `20261118000007_s3_12_audit_promotion_hard_delete.sql`. La suppression logique
 était déjà tracée par la famille `delete_promotion` ; il manquait la suppression
 physique. Un déclencheur séparé la trace. Prouvé en dev dans une transaction
-annulée : 0 ligne avant la migration, 1 après, auteur = profil. Pas en
-production.
+annulée : 0 ligne avant la migration, 1 après, auteur = profil.
+**En production le 2026-11-19 vers 0 h 10** : déclencheur
+`audit_promotion_hard_delete` présent. Aucune suppression essayée en production.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — étendre le déclencheur
@@ -1799,6 +1817,8 @@ crochet existent ; aucun bouton ne les appelle.
 **État — développé le 2026-11-18**, lot back-office (branche
 `feat/s3-lot-backoffice`). Bouton « Edit » sur chaque variante, réservé au droit
 d'écriture des variantes, et dialogue du libellé. Tests verts en local.
+**Fusionnée le 2026-11-18 (PR #739), publiée en production le 2026-11-19 vers
+0 h 10** (back-office `47ac4756`). Écran non vu en production.
 **Fichiers** — La fiche produit, onglet variantes.
 **Preuve** — Le libellé se modifie et persiste. Vitest ciblé.
 

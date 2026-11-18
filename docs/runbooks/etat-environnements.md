@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 19 novembre 2026, 0 h 15 — retrait des lots (`S2-01`, `S2-02`, `S2-08`), audit de suppression de promotion (`S3-12`) et back-office `47ac4756`
+
+Relevé du 18 novembre 2026 à 23 h 15 au 19 novembre 2026 à 0 h 15, UTC+8.
+Observé directement. Boutique fermée : aucune session de caisse ouverte,
+dernière commande à 18 h 03.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `47ac4756` | Fusion de #739 (après #738). `ci.yml` run `44320527684` réussi ; pgTAP lancé à la main, run `44333947398`, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production, avant | Dernière migration `20261118194839` ; ni `20261118000006` ni `20261118000007`. Les cinq fonctions remplacées portent les marqueurs du dev (même lignée) ; seules `record_production_v10` et `receive_purchase_order_v6` appellent les fonctions de lots retirées. Aucun appel dans le code des applications, des Edge Functions ni des types | — |
+| Back-office, préparation | `production-backoffice.yml` en `stage_only`, run `44338988561`, réussi après l'approbation de l'environnement Production par Mamat ; déploiement `dpl_5exWss8amH6NHep5ydk6Uj2W1oEA` READY, sans alias ; empreinte de l'artefact du manifeste `93bee28c5d0236046e0c1a2e4a58ff37f83ec7de778ae6bed14eff644e9c45b9`. Le domaine servait encore `a2d3a285` (`dpl_5SE8NAvj5JpDDo21aN5t6M6A61yy`) | — |
+| Backend production, étape additive | Entre 0 h 03 et 0 h 06, `apply_migration` des sections 1 à 5 de `20261118000006_s2_01_retire_stock_lots.sql`, sans les trois `DROP` des anciennes versions. Empreintes `pg_get_functiondef` égales au dev pour `record_stock_movement_v2`, `stock_private.record_production_v10`, `receive_purchase_order_v7`, `revert_production_v5`, `get_product_dashboard_v9` ; les trois versions neuves exécutables par `authenticated`, pas par `anon` | — |
+| Back-office, bascule | Promotion de `dpl_5exWss8amH6NHep5ydk6Uj2W1oEA` par l'API Vercel ; `backoffice.the-breakery.com` lui est associé. Code servi relu (299 fichiers) : il vise la production, jamais le dev ni la V2 ; il appelle `receive_purchase_order_v7`, `get_product_dashboard_v9`, `revert_production_v5`, aucune ancienne version ni fonction retirée | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, retrait | `apply_migration` de `20261118000007_s3_12_audit_promotion_hard_delete.sql`. Le premier essai du retrait a échoué en entier : la publication `supabase_realtime` y publie `business_config` avec une **liste de colonnes** (le dev publie la table entière). Le retrait appliqué ensuite retire la table de la publication, supprime la colonne et la remet avec la même liste moins `production_yield_variance_threshold_pct` | Écart non traité : la liste de production omet `kot_copies_waiter`, que le dev publie |
+| Backend production, après | Aucune des neuf fonctions retirées ni la colonne ; publication de `business_config` sur 42 colonnes ; déclencheur `audit_promotion_hard_delete` présent ; 41 lots dans `stock_lots` et 15 614 mouvements, comme avant ; aucune tâche planifiée de lots. Sous l'identité simulée d'un `SUPER_ADMIN`, `get_product_dashboard_v9` répond, transaction annulée | Identité simulée par `request.jwt.claims` |
+| POS | Non installé : la caisse reste sur `6854931a`, qui n'appelle aucun objet retiré. Le lot caisse de #738 (`S3-04`, `S3-13`, `S3-17`) attend un paquet et une installation | — |
+
+Retour : le back-office `a2d3a285` appelle des fonctions supprimées et n'est plus
+un recours. Les fonctions retirées se recréent seulement par une nouvelle
+migration, depuis leur corps dans l'historique Git ; la valeur de la colonne de
+seuil n'a pas été relevée avant sa suppression.
+
 ## Complément du 18 novembre 2026, 19 h 50 — partitions du journal du POS (`S1-16`) et lectures `S1-08`, paquets 2 et 3
 
 Relevé du 18 novembre 2026, UTC+8. Observé directement sur la production V3.
