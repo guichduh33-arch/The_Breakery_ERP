@@ -23,7 +23,8 @@ test('DB : les deux côtés des renommages et copies sont analysés sans découp
   assert.deepEqual(changedPaths('M\0apps/name with\nspace.ts\0'), ['apps/name with\nspace.ts']);
 });
 test('DB : propre workflow/classificateur couverts, manuel toujours applicable, aucune exemption bot', () => {
-  for (const path of ['.github/workflows/pgtap-pr.yml', 'scripts/ci/db-gate.mjs', 'scripts/ci/db-gate.test.mjs'])
+  for (const path of ['.github/workflows/pgtap-pr.yml', 'scripts/ci/db-gate.mjs', 'scripts/ci/db-gate.test.mjs',
+    'scripts/ci/pgtap-shards.mjs', 'scripts/ci/pgtap-shards.test.mjs'])
     assert.equal(scope(`M\0${path}\0`).applicable, true);
   assert.equal(scope('M\0supabase/tests/example.sql\0', { event: { ...event, sender: { login: 'dependabot[bot]' } } }).applicable, true);
   assert.deepEqual(classify({ eventName: 'workflow_dispatch', readDiff: () => assert.fail('pas de diff manuel') }),

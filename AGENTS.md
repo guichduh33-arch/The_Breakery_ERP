@@ -256,7 +256,15 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   une PR POS ou money-path n'est pas automatiquement couverte par l'E2E.
 - Filets CI : `ci.yml` (gardes gouvernance nues + lint-ratchet + build/tests) ;
   `pgtap-pr.yml` classe toutes les PR : pgTAP est requis pour
-  `supabase/{migrations,tests,functions}`, son workflow et son classificateur.
+  `supabase/{migrations,tests,functions}`, son workflow, son classificateur et
+  son script de découpage (`scripts/ci/pgtap-shards.mjs`). La suite tourne en
+  morceaux parallèles, plus un morceau `exclusive` lancé seul ensuite pour les
+  fichiers qui posent un DDL sur un objet partagé. Les fichiers tournent sous
+  verrous partagés et s'interbloquent parfois en parallèle, parfois sans trace :
+  un fichier qui n'y passe pas est relancé seul par ce morceau `exclusive`, et
+  seule cette relance décide de son verdict. Le job `pgtap` agrège : il
+  n'est vert que si chaque morceau l'est et si les fichiers exécutés égalent
+  exactement le plan. Un fichier instable se relance par « Re-run failed jobs ».
   Le contrôle `db-gate` exige soit cette preuve réussie, soit une non-applicabilité
   justifiée ; un test applicable ignoré ne suffit pas, même pour Dependabot.
   Une PR front-only n'exécute pas de tests DB. Le lancement manuel exige toujours

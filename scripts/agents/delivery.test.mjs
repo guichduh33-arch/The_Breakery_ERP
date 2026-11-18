@@ -153,7 +153,7 @@ test('après intégration : base égale à HEAD ne retire pas les preuves requis
 });
 
 test('routage DB aligné sur le vrai classificateur CI, y compris son propre filet', () => {
-  const paths = ['.github/workflows/pgtap-pr.yml', 'scripts/ci/db-gate.mjs', 'scripts/ci/db-gate.test.mjs',
+  const paths = ['.github/workflows/pgtap-pr.yml', 'scripts/ci/db-gate.mjs', 'scripts/ci/db-gate.test.mjs', 'scripts/ci/pgtap-shards.mjs',
     'supabase/functions/payment/index.ts', 'supabase/tests/permission.test.sql', 'supabase/migrations/new.sql', 'apps/pos/src/Cart.tsx'];
   for (const path of paths) {
     const ci = classify({ eventName: 'pull_request', event: { pull_request: { base: { sha: baseSha }, head: { sha } } },

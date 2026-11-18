@@ -13,7 +13,7 @@ export function deliveryPolicy(files, deliveryTarget = 'production') {
   const surfaces = {
     backoffice: shared || global || has(/^apps\/backoffice\//),
     pos: shared || global || has(/^apps\/(pos|print-bridge)\//),
-    database: has(/^(supabase\/(migrations|tests|functions)\/|\.github\/workflows\/pgtap-pr\.yml$|scripts\/ci\/db-gate(?:\.test)?\.mjs$)/),
+    database: has(/^(supabase\/(migrations|tests|functions)\/|\.github\/workflows\/pgtap-pr\.yml$|scripts\/ci\/(?:db-gate|pgtap-shards)(?:\.test)?\.mjs$)/),
     edge: has(/^supabase\/functions\//),
     tooling: has(/^(scripts\/|\.github\/|AGENTS\.md$|CLAUDE\.md$|\.agents\/|\.claude\/agents\/|\.codex\/agents\/)/),
   };

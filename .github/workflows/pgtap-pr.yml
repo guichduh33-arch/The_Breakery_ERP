@@ -6,11 +6,12 @@ name: pgTAP PR
 # à la SUITE ENTIÈRE. Avant ce lot, 186 des 198 fichiers pgTAP ne tournaient
 # jamais sur PR : chaque lot livré l'était sans filet, et la seule couverture
 # complète était un run nocturne 3×/semaine — donc après merge.
-# Coût mesuré : ~15 min de runner pour 198 fichiers en série.
+# Coût mesuré au lot 1.B : ~15 min de runner pour 198 fichiers en série.
+# 2026-11-17 — mesuré ~45 min pour 369 fichiers : la suite est découpée en morceaux
+# parallèles par scripts/ci/pgtap-shards.mjs (voir le job pgtap-shard).
 #
-# Le run nocturne (pgtap-nightly.yml) reste : il couvre master, la dérive des
-# types et la suite Vitest live-RPC. Les deux boucles psql sont volontairement
-# identiques — toute modification de l'une se reporte sur l'autre.
+# Le run nocturne (pgtap-nightly.yml) reste : il couvre master et la dérive
+# des types. Les deux workflows appellent le même script de découpage.
 #
 # Toutes les PR rendent db-gate ; seules les modifications DB lancent pgTAP.
 
@@ -44,90 +45,136 @@ jobs:
       - id: scope
         run: node scripts/ci/db-gate.mjs classify
 
-  pgtap:
+  plan:
     needs: classify
     if: needs.classify.outputs.applicable == 'true'
     runs-on: ubuntu-latest
-    # Lot 1.B — 25 min : le run complet mesuré ~15 min, la marge absorbe la
-    # contention sur la base dev partagée (le nightly sérialise pgtap et
-    # live-rpc-vitest pour la même raison).
-    # 2026-09-05 — 35 min : le run complet mesuré 21:22 sur #493 et annulé à
-    # 25:06 sur #494 sans une seule assertion rouge (dernier fichier atteint :
-    # `user_permission_override_rpcs`, en fin d'alphabet). La suite grossit à
-    # chaque lot et la latence de la base dev varie : le gate vivait sur son
-    # plafond. Arbitrage de Mamat, inclus dans #494.
-    # 2026-11-14 — 60 min : le run complet mesuré 34 min sur #703, puis annulé
-    # à 45 min sur #706 sans une seule assertion rouge, au dernier fichier de
-    # l'alphabet. Même cause. Arbitrage de Mamat, inclus dans #706.
-    timeout-minutes: 60
-    # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
-    # nightly). Failures now block the PR. Revert to true only if the secret
-    # becomes unavailable for fork PRs (rare on this private repo).
-    continue-on-error: false
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Plancher sur le total et partition déterministe : scripts/ci/pgtap-shards.mjs.
+      - id: plan
+        run: node scripts/ci/pgtap-shards.mjs plan
 
-      # Same psql approach as pgtap-nightly.yml — keep the two in sync.
-      # Quota 2026-07 — psql préinstallé sur le runner ubuntu-latest ; on
-      # n'ajoute plus le dépôt pgdg (~1-2 min économisées par run).
+  # 2026-11-17 — la suite passe d'un job série (~45 min mesurées sur #717) à
+  # des morceaux parallèles. Un fichier instable ne relance plus que son
+  # morceau (« Re-run failed jobs »). La preuve reste UNE : le job `pgtap`
+  # ci-dessous, que db-gate et le preflight de release exigent par son nom.
+  pgtap-shard:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Même approche psql que pgtap-nightly.yml — les deux appellent le même script.
+      # Quota 2026-07 — psql préinstallé sur le runner ubuntu-latest.
       - name: Ensure psql is available
         run: |
           if ! command -v psql >/dev/null 2>&1; then
             sudo apt-get update -q && sudo apt-get install -y postgresql-client
           fi
           psql --version
-
-      - name: Run pgTAP suite via pooler
-        id: pgtap
+      - name: Run pgTAP shard via pooler
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
-          # Plancher de fichiers attendus. Un glob cassé, un checkout partiel ou
-          # un déplacement de répertoire rendrait sinon le job VERT À VIDE — le
-          # mode de panne le plus coûteux d'un gate, puisqu'il ne se voit pas.
-          # À relever quand la suite grossit franchement.
-          PGTAP_MIN_FILES: '180'
+        run: node scripts/ci/pgtap-shards.mjs run "${{ matrix.shard }}"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pgtap-results-${{ matrix.shard }}
+          path: pgtap-results/${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
+  # Les fichiers qui posent un DDL sur un objet partagé (verrou fort tenu
+  # jusqu'au ROLLBACK) tournent seuls, après les morceaux parallèles.
+  pgtap-exclusive:
+    needs: [plan, pgtap-shard]
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Ensure psql is available
         run: |
-          set -uo pipefail
-          if [ -z "${PGURL:-}" ]; then
-            echo "::error::V3_DEV_PG_POOLER_URL secret is not set" >&2
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+      # Bilans des morceaux parallèles : les fichiers qui n'y ont pas passé
+      # y sont listés et relancés seuls ici. Un bilan absent est vu par l'agrégat.
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: pgtap-results-*
+          path: pgtap-results
+          merge-multiple: true
+      - name: Run exclusive pgTAP files via pooler
+        env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+        run: node scripts/ci/pgtap-shards.mjs run exclusive
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pgtap-results-exclusive
+          path: pgtap-results/exclusive.json
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
+  # Agrégat sous le nom historique `pgtap`. Vert seulement si chaque morceau
+  # est vert ET si l'union des fichiers exécutés égale exactement le plan.
+  pgtap:
+    needs: [classify, plan, pgtap-shard, pgtap-exclusive]
+    if: ${{ always() && needs.classify.outputs.applicable == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require every shard to succeed
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          SHARDS_RESULT: ${{ needs.pgtap-shard.result }}
+          EXCLUSIVE_RESULT: ${{ needs.pgtap-exclusive.result }}
+        run: |
+          echo "plan=${PLAN_RESULT} shards=${SHARDS_RESULT} exclusive=${EXCLUSIVE_RESULT}"
+          if [ "$PLAN_RESULT" != success ] || [ "$SHARDS_RESULT" != success ] || [ "$EXCLUSIVE_RESULT" != success ]; then
+            echo "::error::au moins un morceau pgTAP n'est pas vert"
             exit 1
           fi
-          shopt -s nullglob
-          files=(supabase/tests/*.test.sql)
-          echo "Fichiers pgTAP découverts : ${#files[@]}"
-          if [ "${#files[@]}" -lt "$PGTAP_MIN_FILES" ]; then
-            echo "::error::seulement ${#files[@]} fichiers pgTAP découverts (plancher ${PGTAP_MIN_FILES}) — glob ou checkout suspect, le gate refuse de passer vert à vide" >&2
-            exit 1
-          fi
-          fail_count=0
-          fail_list=""
-          for f in "${files[@]}"; do
-            echo "=== Running $f ==="
-            # S77: fail on psql error OR any TAP 'not ok' line (assertion
-            # failures never flip psql's exit code — mirror of pgtap-nightly).
-            # `|| rc=$?` keeps the runner's implicit `bash -e` from killing
-            # the loop on the first failing file.
-            rc=0
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
-            printf '%s\n' "$out"
-            not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
-            # Lot 1.B — le compteur `not ok` en debut de ligne ne suffit pas.
-            # 17 suites capturent leurs assertions dans une table temporaire et
-            # les rendent AGREGEES DANS UNE COLONNE : leurs `not ok` ne sont
-            # jamais en debut de ligne, et le gate les comptait vertes. Quatre
-            # suites rouges se cachaient ainsi derriere un run « 7 echecs ».
-            # `finish()` emet ce resume quelle que soit la presentation.
-            summary=$(printf '%s\n' "$out" | grep -cE '# Looks like you failed [0-9]+ test' || true)
-            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ] || [ "$summary" -gt 0 ]; then
-              fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok}, tap_summary=${summary})"
-            fi
-          done
-          if [ "$fail_count" -gt 0 ]; then
-            echo "::error::${fail_count} pgTAP file(s) failed:${fail_list}"
-            exit 1
-          fi
-          echo "All ${#files[@]} pgTAP files passed."
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: pgtap-results-*
+          path: pgtap-results
+          merge-multiple: true
+      - name: Check executed files against the plan
+        run: node scripts/ci/pgtap-shards.mjs aggregate pgtap-results
 
   db-gate:
     if: ${{ always() }}
