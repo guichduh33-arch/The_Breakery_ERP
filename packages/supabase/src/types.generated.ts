@@ -10519,6 +10519,10 @@ export type Database = {
         }
         Returns: Json
       }
+      post_bank_books_import_v1: {
+        Args: { p_actor?: string; p_dry_run?: boolean; p_entries: Json }
+        Returns: Json
+      }
       post_stock_chain_catchup_v2: {
         Args: { p_actor?: string; p_dry_run?: boolean }
         Returns: Json
