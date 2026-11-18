@@ -213,9 +213,8 @@ function AlertEmailCard() {
     <section className="space-y-2 bg-bg-elevated rounded-lg border border-border-subtle p-5" data-testid="alert-email-card">
       <h2 className="text-lg font-semibold">Operational alert recipient</h2>
       <p className="text-xs text-text-secondary">
-        Internal alerts (low stock, PO received, expense approved) are emailed to this address.
-        Leave empty to disable internal alerts. Customer emails (order complete, payment received)
-        go to the customer on file.
+        Address recorded for internal alerts (low stock, PO received, expense approved).
+        Email delivery is not active: no email is sent, to this address or to customers.
       </p>
       {!isLoading && (
         <div className="flex items-center gap-2 pt-1">
@@ -253,7 +252,7 @@ export default function SettingsNotificationsPage() {
     <div className="space-y-6 max-w-6xl">
       <PageHeader
         title="Notifications"
-        subtitle="System notification templates consumed by enqueue_notification_v2 (order complete, payment received, low stock…). Codes are system events — no create/delete from here. Deactivating a template silences its event. An active Email template with the same code upgrades the send to branded HTML."
+        subtitle="System notification templates consumed by enqueue_notification_v2 (order complete, payment received, low stock…). Codes are system events — no create/delete from here. Deactivating a template silences its event. Email delivery is not active: no email is sent."
       />
 
       <AlertEmailCard />

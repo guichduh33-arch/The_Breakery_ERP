@@ -76,7 +76,6 @@ export type PermissionCode =
   | 'users.create'
   | 'users.read'
   | 'users.update'
-  | 'users.view_audit'
   | 'rbac.read'
   | 'rbac.manage'
   | 'promotions.read'
@@ -139,7 +138,6 @@ export type PermissionCode =
   | 'settings.read'
   | 'settings.update'
   | 'settings.holidays.manage'
-  | 'settings.kiosk.manage'
   // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
   | 'accounting.read'
   | 'accounting.bank.read'

@@ -21,7 +21,7 @@ const MOVEMENT_TYPES = [
   'production_in','production_out',
   'adjustment','adjustment_in','adjustment_out',
   'opname_in','opname_out',
-  'waste','reservation_hold','reservation_release',
+  'waste',
 ];
 
 // --- Period presets -------------------------------------------------------

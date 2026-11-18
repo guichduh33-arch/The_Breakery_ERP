@@ -81,7 +81,7 @@ const SECTIONS: SettingSection[] = [
     title: 'Notifications & Templates',
     tiles: [
       { to: '/backoffice/settings/notifications', title: 'Notifications', blurb: 'System notification templates.', icon: Bell },
-      { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },
+      { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Templates only; email delivery is not active.', icon: Mail },
       { to: '/backoffice/settings/templates/receipt', title: 'Receipt Templates', blurb: 'Header, footer, logo.',                       icon: Receipt },
       { to: '/backoffice/settings/templates/invoice', title: 'Invoice Template', blurb: 'B2B layout, paper dimensions and print alignment.', icon: FileText },
     ],

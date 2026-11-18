@@ -2,8 +2,8 @@
 -- Session 13 / Phase 2.B — Reports infra pgTAP suite (T_RPT_01..10).
 --
 -- Coverage:
---   T_RPT_01..03  Materialised views exist + are populated + have unique indexes.
---   T_RPT_04..05  Refresh wrapper functions exist and run.
+--   T_RPT_01..03  mv_sales_daily / mv_pl_monthly retired (S2-05) ; mv_stock_variance still exists.
+--   T_RPT_04..05  Their refresh wrapper functions are retired (S2-05).
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
 --   T_RPT_07      get_sales_by_category (family) returns 0 rows on empty data, accepts date range.
 --   T_RPT_08      get_stock_variance_v4 (ADR-027 : démarque constatée, sans
@@ -36,31 +36,31 @@ BEGIN
 END $fixture$;
 
 -- ============================================================
--- T_RPT_01..03 — Materialised views
+-- T_RPT_01..03 — Materialised views (S2-05 : two retired, mv_stock_variance kept)
 -- ============================================================
 SELECT ok(
-  EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_sales_daily' AND schemaname = 'public'),
-  'T_RPT_01 — mv_sales_daily exists'
+  NOT EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_sales_daily' AND schemaname = 'public'),
+  'T_RPT_01 — mv_sales_daily retired (S2-05)'
 );
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_stock_variance' AND schemaname = 'public'),
   'T_RPT_02 — mv_stock_variance exists'
 );
 SELECT ok(
-  EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_pl_monthly' AND schemaname = 'public'),
-  'T_RPT_03 — mv_pl_monthly exists'
+  NOT EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'mv_pl_monthly' AND schemaname = 'public'),
+  'T_RPT_03 — mv_pl_monthly retired (S2-05)'
 );
 
 -- ============================================================
--- T_RPT_04..05 — Refresh wrappers
+-- T_RPT_04..05 — Refresh wrappers (retired)
 -- ============================================================
-SELECT has_function(
+SELECT hasnt_function(
   'public', 'refresh_mv_sales_daily', ARRAY[]::TEXT[],
-  'T_RPT_04 — refresh_mv_sales_daily() function exists'
+  'T_RPT_04 — refresh_mv_sales_daily() retired (S2-05)'
 );
-SELECT lives_ok(
-  $$SELECT public.refresh_mv_sales_daily()$$,
-  'T_RPT_05 — refresh_mv_sales_daily runs without error'
+SELECT hasnt_function(
+  'public', 'refresh_mv_pl_monthly', ARRAY[]::TEXT[],
+  'T_RPT_05 — refresh_mv_pl_monthly() retired (S2-05)'
 );
 
 -- ============================================================

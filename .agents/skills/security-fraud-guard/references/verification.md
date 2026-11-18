@@ -87,8 +87,9 @@ Lancer une section quand un trou est suspecté. Chaque ligne est un SQL ou un gr
   sur la policy `admin_read` (`get_current_role() IN ('SUPER_ADMIN','ADMIN')`).
   ⚠️ **La famille `get_audit_logs` est SECURITY INVOKER, GRANT EXECUTE à `authenticated`, et
   ne porte AUCUN gate `has_permission`** — constat assumé et écrit dans la migration, pas un
-  oubli ; son durcissement est un arbitrage ouvert. Corollaire : `reports.audit.read` et
-  `users.view_audit` existent dans l'union `PermissionCode` mais ne gardent pas cette lecture.
+  oubli ; son durcissement est un arbitrage ouvert. Corollaire : `reports.audit.read` existe
+  dans l'union `PermissionCode` mais ne garde pas cette lecture (`users.view_audit`, qui ne
+  gardait rien, est retirée du catalogue le 2026-11-18).
   Consommateurs : `AuditPage.tsx`, `useSettingsHistory`, `useProductAuditLog`.
 - [ ] **Complétude de la LECTURE : le journal affiché est-il le journal réel ?** Un contrôle
   d'audit-completeness ne s'arrête pas à « la ligne est écrite », il vérifie qu'elle
@@ -109,8 +110,9 @@ Lancer une section quand un trou est suspecté. Chaque ligne est un SQL ou un gr
 
 - [ ] **anon ne voit rien** sur `customers`, `orders`, `payments`, `expenses`,
   `journal_entries`, `audit_logs` : `has_table_privilege('anon','customers','SELECT')` = false,
-  et `has_table_privilege('anon','mv_sales_daily','SELECT')` = false en contrôle de
-  non-régression (le trou MV est corrigé, `20260619000020`).
+  et `has_table_privilege('anon','mv_stock_variance','SELECT')` = false en contrôle de
+  non-régression (le trou MV est corrigé, `20260619000020` ; les vues `mv_sales_daily` et
+  `mv_pl_monthly` sont retirées depuis le 2026-11-18).
 - [ ] **La lecture PII client est gatée** : la policy SELECT sur `customers` ne doit pas se
   contenter de `is_authenticated()` ; le BO passe par `customers.read`, le POS par une RPC
   definer étroite. Et **`pin_hash` reste illisible** — `REVOKE SELECT (pin_hash) … FROM

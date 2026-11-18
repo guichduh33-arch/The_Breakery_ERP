@@ -2,10 +2,10 @@
 -- Session 50 / pgTAP — Security leak guard tests.
 --
 -- Couvre :
---   T1–T3  : MVs inaccessibles à authenticated (W1.5) — throws_ok 4-arg + RESET ROLE
+--   T2     : mv_stock_variance inaccessible à authenticated (W1.5) — throws_ok 4-arg + RESET ROLE
 --   T4     : audit_log security_invoker=true (W1.5) — seule vue appliquée
---   T5–T6  : v_product_available_stock (+ ex-view_product_allergens_resolved,
---            droppée avec la suppression allergènes 2026-07-22) → DEFERRED V2
+--   (S2-03/S2-05 : T1/T3 sur mv_sales_daily/mv_pl_monthly et T5–T6 sur
+--   v_product_available_stock retirés avec leurs objets ; plan 13 → 9)
 --   T7     : get_customer_product_price search_path (W1.6) — SECURITY DEFINER
 --   T8–T9  : enforce_margin_alerts_ack_only + next_expense_number search_path (W1.6)
 --            — SECURITY INVOKER (proconfig uniquement, pas prosecdef)
@@ -23,24 +23,13 @@
 -- DEV-S50-pgTAP-leaks
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(9);
 
 -- ============================================================
--- T1–T3 : MVs — authenticated ne peut pas SELECT
+-- T2 : MV — authenticated ne peut pas SELECT
 -- Forme 4-arg : throws_ok(sql, errcode, errmsg, description)
 -- RESET ROLE après chaque pour éviter la fuite SET LOCAL ROLE.
 -- ============================================================
-
-SELECT throws_ok(
-  $$
-    SET LOCAL ROLE authenticated;
-    SELECT 1 FROM mv_sales_daily LIMIT 1;
-  $$,
-  '42501',
-  NULL,
-  'T1 — mv_sales_daily inaccessible à authenticated'
-);
-RESET ROLE;
 
 SELECT throws_ok(
   $$
@@ -50,17 +39,6 @@ SELECT throws_ok(
   '42501',
   NULL,
   'T2 — mv_stock_variance inaccessible à authenticated'
-);
-RESET ROLE;
-
-SELECT throws_ok(
-  $$
-    SET LOCAL ROLE authenticated;
-    SELECT 1 FROM mv_pl_monthly LIMIT 1;
-  $$,
-  '42501',
-  NULL,
-  'T3 — mv_pl_monthly inaccessible à authenticated'
 );
 RESET ROLE;
 
@@ -78,13 +56,6 @@ SELECT ok(
   ),
   'T4 — audit_log compat view dropped (S56)'
 );
-
--- ============================================================
--- T5–T6 : vues POS différées (DEFERRED to V2)
--- CASCADE RLS inventory.read cassée pour CASHIER/waiter → non appliqué live.
--- ============================================================
-
-SELECT skip('DEFERRED to V2: security_invoker on POS views breaks CASHIER cascade (inventory.read RLS)', 2);
 
 -- ============================================================
 -- T7–T9 : search_path hardening

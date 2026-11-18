@@ -44,14 +44,6 @@ export {
   type FifoSelectionResult,
 } from './expiry/fifo.js';
 
-// Session 13 — Phase 3.C reservation accounting helpers.
-export {
-  activeHeldQuantity,
-  availableQuantity,
-  canHoldQuantity,
-  type ActiveReservation,
-} from './reservations/index.js';
-
 // Session 23 — landed cost allocation primitive (mirrors receive_po_v1 SQL).
 export {
   calculateLandedCostAllocation,
