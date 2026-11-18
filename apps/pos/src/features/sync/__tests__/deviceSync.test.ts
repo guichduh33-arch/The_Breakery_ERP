@@ -14,6 +14,13 @@ function active(key: string, queryFn: () => Promise<number>, enabled = true) {
   return observer;
 }
 
+function preload(queryKey: string[], queryFn: () => Promise<unknown>, updatedAt = Date.now()) {
+  const observer = new QueryObserver(client, {
+    queryKey, queryFn, initialData: [], initialDataUpdatedAt: updatedAt, staleTime: Infinity,
+  });
+  stops.push(observer.subscribe(() => undefined));
+}
+
 beforeEach(() => {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
   onlineManager.setOnline(true);
@@ -77,6 +84,63 @@ describe('device data sync', () => {
     expect(await syncDeviceData(client)).toBe('offline');
     expect(read).not.toHaveBeenCalled();
     expect(client.getQueryData(['products'])).toBe(2);
+  });
+
+  // Prod 2026-11-18 : l'écran de vente monte une query cachée par produit
+  // (~290). Le filet de 30 s les relisait toutes à chaque tour.
+  it('en arrière-plan, ne relit pas les préchargements par produit encore récents', async () => {
+    const modifiers = vi.fn().mockResolvedValue([]);
+    const combo = vi.fn().mockResolvedValue({});
+    const products = vi.fn().mockResolvedValue(5);
+    preload(['product-modifiers', 'p1', 'c1'], modifiers);
+    preload(['combo-config', 'meal'], combo);
+    active('products', products);
+
+    expect(await syncDeviceData(client, { mode: 'background' })).toBe('success');
+    expect(products).toHaveBeenCalledTimes(1);
+    expect(modifiers).not.toHaveBeenCalled();
+    expect(combo).not.toHaveBeenCalled();
+    expect(client.getQueryState(['product-modifiers', 'p1', 'c1'])?.isInvalidated).toBe(false);
+  });
+
+  it('en arrière-plan, relit un préchargement par produit vieux de 5 minutes', async () => {
+    const modifiers = vi.fn().mockResolvedValue([]);
+    preload(['product-modifiers', 'p1', 'c1'], modifiers, Date.now() - 5 * 60_000);
+    expect(await syncDeviceData(client, { mode: 'background' })).toBe('success');
+    expect(modifiers).toHaveBeenCalledTimes(1);
+  });
+
+  it('le bouton de synchronisation relit tout, préchargements compris', async () => {
+    const modifiers = vi.fn().mockResolvedValue([]);
+    preload(['product-modifiers', 'p1', 'c1'], modifiers);
+    expect(await syncDeviceData(client)).toBe('success');
+    expect(modifiers).toHaveBeenCalledTimes(1);
+  });
+
+  it('un appui manuel pendant un passage de fond relit ensuite les préchargements', async () => {
+    let finish!: (value: number) => void;
+    const products = vi.fn()
+      .mockImplementationOnce(() => new Promise<number>((resolve) => { finish = resolve; }))
+      .mockResolvedValue(5);
+    active('products', products);
+    const modifiers = vi.fn().mockResolvedValue([]);
+    preload(['product-modifiers', 'p1', 'c1'], modifiers);
+    const background = syncDeviceData(client, { mode: 'background' });
+    const manual = syncDeviceData(client);
+    await Promise.resolve();
+    expect(modifiers).not.toHaveBeenCalled();
+    finish(4);
+    expect(await background).toBe('success');
+    expect(await manual).toBe('success');
+    expect(products).toHaveBeenCalledTimes(2);
+    expect(modifiers).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne tient pas pour récent un préchargement daté dans le futur', async () => {
+    const modifiers = vi.fn().mockResolvedValue([]);
+    preload(['product-modifiers', 'p1', 'c1'], modifiers, Date.now() + 60_000);
+    expect(await syncDeviceData(client, { mode: 'background' })).toBe('success');
+    expect(modifiers).toHaveBeenCalledTimes(1);
   });
 
   it('ne prétend pas réussir quand la connexion est perdue pendant la lecture', async () => {
