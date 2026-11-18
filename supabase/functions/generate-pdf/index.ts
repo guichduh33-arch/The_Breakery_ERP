@@ -105,7 +105,6 @@ serve(async (req) => {
     stock_variance: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
     stock_movements: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
     wastage: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
-    perishable_turnover: { rpc: 'can_view_stock_v2', error: 'stock_visibility_required' },
     payment_by_method: { rpc: 'can_view_stock_v1', error: 'stock_visibility_owner_required' },
   };
   const gate = visibilityGates[body.template];

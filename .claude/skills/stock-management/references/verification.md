@@ -103,7 +103,7 @@ avec V3 : ne pas y rejouer ce lot.
 - About to write directly to `stock_movements` from a new RPC → don't. Always use the primitive.
 - Audit finds drift between WAC and recomputed cost > 0.01 IDR on more than 3 products → flag, likely manual UPDATE in production history.
 - Audit finds orphan `lot_id` rows → flag, FK was relaxed somewhere.
-- `mark_expired_lots_hourly` repassé à `active = true` → flag immédiat, régression ADR-004.
+- Une tâche planifiée ou une fonction de lots ou de péremption réapparaît (supprimées le 2026-11-18, `S2-01`) → flag immédiat, régression ADR-004.
 - Envie de « réparer » le FIFO, la péremption, la vitrine POS (lui ajouter WAC/lots/JE), le
   stock par section ou les transferts internes → **ne pas coder**. Toutes sont des décisions
   actées (ADR-004, ADR-027), pas des trous.

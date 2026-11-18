@@ -1170,6 +1170,22 @@ après, inchangé.
 **Note** — `packages/supabase/src/types.generated.ts` cite `stock_lots` : c'est
 un fichier **généré**, il se régénère, on ne l'édite pas.
 
+**État — développé et prouvé en dev le 2026-11-18**, branche
+`chore/s2-retrait-lots`, migration `20261118000006_s2_01_retire_stock_lots.sql`,
+commune à `S2-02` et `S2-08`. **Sort des lots** : l'ADR-004 l'a déjà tranché —
+« conserver `stock_lots` dormante (pas de DROP) » —, la table et ses lignes
+restent donc en lecture seule (41 lots actifs en production au 2026-11-18, contre
+21 au relevé du 2026-11-09). Plus aucune fonction ne lit ni n'écrit la table,
+hors le rapport des pertes qui affiche le lot d'une perte passée. La primitive du
+ledger et la fonction interne de production sont remplacées en place (aucun
+grant à `authenticated`, aucun appel applicatif), la primitive refuse désormais
+un lot fourni ; la réception de bon de commande, l'annulation de production et le
+tableau de bord produit passent à une version neuve ; les fonctions de lots et
+la tâche planifiée de dev sont retirées. Retirés aussi : le module du domaine,
+la lecture POS et la désactivation de tuile des deux grilles. Preuve pgTAP
+`s2_01_stock_lots_retired.test.sql`, 20 sur 20 en dev (un lot actif n'est plus
+décrémenté par une perte), et tous les fichiers pgTAP retouchés, verts.
+
 ---
 
 ### `[S2-02]` Retirer le suivi des causes d'écart de rendement
@@ -1198,6 +1214,19 @@ formulaire de production, qui l'ouvre quand l'écart dépasse le seuil et envoie
 la cause à la fonction d'enregistrement de la production. La retirer change ce
 parcours et la fonction d'écriture du stock de production : la tâche ne tient
 pas dans un lot de nettoyage et part seule.
+**Développé et prouvé en dev le 2026-11-18**, dans le lot de `S2-01` (même
+fonction de production touchée). Retirés : la fenêtre de saisie et son test, le
+seuil et sa lecture dans le formulaire, le motif des deux points d'appel de la
+production, la colonne de motif, la tuile « Variances explained » et l'export du
+motif dans le rapport de rendement, et la colonne de seuil en base. Le formulaire
+affiche toujours l'écart. Relevé du jour en production : aucune des 898
+productions ne porte de motif. Écarts : la source cite « deux autres composants
+de la même famille », que `02_DETTE_TECHNIQUE...` ne nomme pas et qu'aucun
+fichier ne porte ; la fonction de production accepte encore un motif (paramètre
+de sa signature, aucun appelant ne l'envoie) et le rapport d'efficacité de
+production expose encore un indicateur « motifs présents », servi par sa fonction
+de lecture. Ces deux restes partent au prochain changement de version de chaque
+fonction.
 
 ---
 
@@ -1319,6 +1348,11 @@ décide.
 **Fichiers** — la route et sa tuile de hub, nommées dans `01_CARTOGRAPHIE...` §4.
 **Preuve** — Le hub passe de 45 à 44 tuiles. Aucune route morte.
 **Dépend de** — `S2-01`.
+
+**État — développé et prouvé en dev le 2026-11-18**, dans le lot de `S2-01`.
+La tuile avait déjà quitté le hub le 2026-08-22 ; restaient la route, la page, sa
+fonction de lecture, son gabarit PDF et l'entrée du générateur de PDF, tous
+retirés. Le test du hub compte toujours ses tuiles sans elle.
 
 ---
 

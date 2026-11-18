@@ -114,7 +114,7 @@ RESET ROLE;
 CREATE TEMP TABLE s18_functions AS SELECT p.oid,p.proname,p.prosrc FROM pg_proc p
  WHERE p.pronamespace='public'::regnamespace AND p.proname=ANY(ARRAY[
   'get_display_stock_activity_v4','get_low_stock_v5','get_movement_aggregates_v6','get_product_analytics_v5',
-  'get_product_dashboard_v8','get_production_suggestions_v4','get_production_vs_sales_v5','get_reorder_suggestions_v4',
+  'get_product_dashboard_v9','get_production_suggestions_v4','get_production_vs_sales_v5','get_reorder_suggestions_v4',
   'get_stock_config_issues_v5','get_stock_counters_v4','get_stock_levels_v7','get_stock_movement_ledger_v5',
   'get_stock_movements_v7','get_stock_position_v4','get_stock_variance_v6','get_general_ledger_v5',
   'get_dashboard_overview_v8','recipe_bom_full_v6','recipe_direct_cost_v4','search_ingredients_v4',

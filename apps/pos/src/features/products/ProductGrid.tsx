@@ -23,7 +23,6 @@ import { useMemo, useState } from 'react';
 import type { JSX, ReactElement } from 'react';
 import { Search } from 'lucide-react';
 import type { Product } from '@breakery/domain';
-import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { EmptyState, Input } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
@@ -31,7 +30,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
-import { useActiveLotsByProduct } from './hooks/useActiveLotsByProduct';
 import { usePrefetchProductModifiers } from './hooks/usePrefetchProductModifiers';
 
 export interface ProductGridProps {
@@ -45,7 +43,6 @@ const EMPTY_ITEMS: never[] = [];
 export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.Element {
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
-  const { data: lotsByProduct } = useActiveLotsByProduct();
   // Stable empty fallback so a partially-mocked store (tests) can't crash here
   // and the selector never returns a fresh array identity.
   const cartItems = useCartStore((s) => s.cart?.items ?? EMPTY_ITEMS);
@@ -168,15 +165,8 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
               // S43 (P1-1) — sold-out is derived in useProducts via the domain
               // isSellable rule (track_inventory + display_stock-first).
               const soldOut = p.is_sellable === false;
-              const lots = lotsByProduct?.get(p.id);
-              const isLotTracked = lots !== undefined && lots.length > 0;
-              const allExpired = isLotTracked && allLotsExpiredOrConsumed(lots, p.id);
-              const disabled = soldOut || allExpired;
-              const overlayLabel = soldOut
-                ? 'Sold out'
-                : allExpired
-                  ? 'Expired'
-                  : null;
+              const disabled = soldOut;
+              const overlayLabel = soldOut ? 'Sold out' : null;
               // Low-stock heuristic — current_stock > 0 && <= 3 (matches ref 06 "LOW STOCK · 2 LEFT").
               const lowStockLabel =
                 !disabled && p.current_stock !== null && p.current_stock > 0 && p.current_stock <= 3

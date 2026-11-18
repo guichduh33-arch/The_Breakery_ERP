@@ -147,6 +147,9 @@ IDR — **OUVERT** : fermeture de boutique ou panne de caisse, à confirmer.
 réglages, donc non modifiables depuis l'interface :
 `production_yield_variance_threshold_pct` = 0,15 et
 `retail_tab_credit_limit_default` = 300 000 IDR.
+**FAIT** — Le 2026-11-18, le retrait de la cause d'écart de rendement (`S2-08`)
+supprime le premier seuil en dev. La production le garde jusqu'à la mise en
+production de ce lot.
 
 ---
 
@@ -486,6 +489,11 @@ premier sorti.** L'ADR-004 reste la règle.
 la création de lots déclenchée par la durée de conservation, la lecture POS et la
 désactivation de tuile. Décider du sort des 21 lots existants.
 **ABANDONNÉ** — Le rapport de rotation des périssables, dont la route survivait.
+**FAIT** — Livré en dev le 2026-11-18 (`S2-01`, `S2-02`) : la primitive refuse
+un lot fourni, réceptions et fournées n'en créent plus, les grilles du POS ne
+lisent plus les lots, et le rapport de rotation est supprimé. La table des lots
+reste en lecture seule, avec ses lignes historiques. La production attend la
+mise en production de ce lot.
 
 ### 8.3 Vitrine
 
@@ -612,6 +620,9 @@ seuil sont à supprimer. Les rapports montreront l'écart **sans** la cause.
 importé par le formulaire de production, qui l'ouvre au-delà du seuil et envoie
 la cause à la fonction d'enregistrement. La décision reste ; son retrait touche
 ce parcours.
+**FAIT** — Retiré en dev le 2026-11-18 (`S2-08`) : le formulaire de production
+n'ouvre plus l'écran de cause, le seuil est supprimé, et le rapport de rendement
+montre l'écart sans cause. La production attend la mise en production de ce lot.
 **ABANDONNÉ** — Le planning de production hebdomadaire : table et fonction sans
 aucun appelant, zéro ligne en production.
 **FAIT** — Retiré le 2026-11-18, en dev et en production.

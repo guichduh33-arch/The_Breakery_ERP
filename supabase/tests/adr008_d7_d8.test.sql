@@ -131,7 +131,7 @@ BEGIN
   PERFORM set_config('breakery.fin_after_prod',
     (SELECT current_stock FROM products WHERE id = v_finA)::text, false);
 
-  PERFORM revert_production_v4(v_pid, 'annulation nominale, rien nest sorti');
+  PERFORM revert_production_v5(v_pid, 'annulation nominale, rien nest sorti');
 END $chk_nominal$;
 
 SELECT is(current_setting('breakery.fin_after_prod')::numeric, 10::numeric,
@@ -206,7 +206,7 @@ BEGIN
     p_reason := 'sortie de stock apres production', p_from_section_id := v_section);
 
   BEGIN
-    PERFORM revert_production_v4(v_pid, 'tentative dannulation apres sortie');
+    PERFORM revert_production_v5(v_pid, 'tentative dannulation apres sortie');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
     GET STACKED DIAGNOSTICS v_hint = PG_EXCEPTION_HINT, v_detail = PG_EXCEPTION_DETAIL;
@@ -255,7 +255,7 @@ BEGIN
     p_product_id := v_finC, p_quantity_produced := 7, p_section_id := v_section);
 
   BEGIN
-    PERFORM revert_production_v4(v_pid, 'annulation de la premiere fournee');
+    PERFORM revert_production_v5(v_pid, 'annulation de la premiere fournee');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
   END;
@@ -274,8 +274,8 @@ SELECT is(
 -- Bloc 4 — droits, versioning, gardes conservées.
 -- ===========================================================================
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.revert_production_v4(uuid, text)', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.revert_production_v4(uuid, text)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.revert_production_v5(uuid, text)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.revert_production_v5(uuid, text)', 'EXECUTE')
   AND to_regprocedure('public.revert_production_v1(uuid, text)') IS NULL,
   'T12: anon revoked / authenticated retained on _v2, and the superseded _v1 is gone from pg_proc');
 
@@ -284,7 +284,7 @@ SELECT ok(
 SELECT ok(
   (SELECT prosrc LIKE '%check_fiscal_period_open%' FROM pg_proc p
      JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'revert_production_v4'),
+    WHERE n.nspname = 'public' AND p.proname = 'revert_production_v5'),
   'T13: ADR-008 D7 — the counter-entries are guarded by check_fiscal_period_open');
 
 DO $chk_gardes$
@@ -293,7 +293,7 @@ DECLARE
 BEGIN
   -- La production annulée au bloc 1 ne peut pas l'être deux fois.
   BEGIN
-    PERFORM revert_production_v4(current_setting('breakery.pid_nominal')::uuid, 'seconde tentative');
+    PERFORM revert_production_v5(current_setting('breakery.pid_nominal')::uuid, 'seconde tentative');
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
   END;

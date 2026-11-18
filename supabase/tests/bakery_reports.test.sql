@@ -50,7 +50,7 @@ SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(17);
+SELECT plan(15);
 
 -- ============================================================
 -- B.1 Wastage & Spoilage (T1–T3)
@@ -379,70 +379,12 @@ SELECT ok(
 );
 
 -- ============================================================
--- B.5 Perishable Turnover (T13–T15)
+-- B.5 Perishable Turnover — retiré (S2-08, ADR-004)
 -- ============================================================
 
--- T13 happy returns period + by_product[]
-DO $$
-DECLARE
-  v_result JSONB;
-  v_ok     BOOLEAN;
-BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
-  v_ok := (v_result ? 'period')
-      AND (v_result ? 'by_product')
-      AND jsonb_typeof(v_result->'by_product') = 'array';
-  PERFORM set_config('breakery.t13_pass', v_ok::text, false);
-END
-$$;
-SELECT ok(
-  current_setting('breakery.t13_pass')::boolean,
-  'T13: get_perishable_turnover_v1 returns period + by_product array'
-);
-
--- T14 velocity_score is in [1..5] on every row (vacuously true if empty)
-DO $$
-DECLARE
-  v_result       JSONB;
-  v_row          JSONB;
-  v_score        INT;
-  v_all_in_range BOOLEAN := true;
-BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-  v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
-  FOR v_row IN SELECT * FROM jsonb_array_elements(v_result->'by_product') LOOP
-    v_score := (v_row->>'velocity_score')::int;
-    IF v_score IS NULL OR v_score < 1 OR v_score > 5 THEN
-      v_all_in_range := false;
-    END IF;
-  END LOOP;
-  PERFORM set_config('breakery.t14_pass', v_all_in_range::text, false);
-END
-$$;
-SELECT ok(
-  current_setting('breakery.t14_pass')::boolean,
-  'T14: get_perishable_turnover_v1 velocity_score in [1..5] on every row'
-);
-
--- T15 CASHIER perm denied → 42501
-DO $$
-DECLARE
-  v_caught BOOLEAN := false;
-BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
-  BEGIN
-    PERFORM get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
-  EXCEPTION WHEN insufficient_privilege THEN
-    v_caught := true;
-  END;
-  PERFORM set_config('breakery.t15_pass', v_caught::text, false);
-END
-$$;
-SELECT ok(
-  current_setting('breakery.t15_pass')::boolean,
-  'T15: get_perishable_turnover_v1 CASHIER raises 42501'
-);
+-- T13 : le rapport de rotation des périssables n existe plus.
+SELECT hasnt_function('public', 'get_perishable_turnover_v1',
+  'T13: get_perishable_turnover_v1 retiré (S2-08)');
 
 SELECT * FROM finish();
 ROLLBACK;

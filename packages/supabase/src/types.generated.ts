@@ -1311,7 +1311,6 @@ export type Database = {
           pos_discount_presets: Json
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
-          production_yield_variance_threshold_pct: number
           retail_tab_credit_limit_default: number
           shift_denomination_count_enabled: boolean
           shift_variance_pin_threshold_abs: number
@@ -1357,7 +1356,6 @@ export type Database = {
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
-          production_yield_variance_threshold_pct?: number
           retail_tab_credit_limit_default?: number
           shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
@@ -1403,7 +1401,6 @@ export type Database = {
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
-          production_yield_variance_threshold_pct?: number
           retail_tab_credit_limit_default?: number
           shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
@@ -8070,7 +8067,7 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_dashboard_v8: {
+      get_product_dashboard_v9: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
@@ -8331,6 +8328,14 @@ export type Database = {
         }
         Returns: Json
       }
+      receive_purchase_order_v7: {
+        Args: {
+          p_idempotency_key?: string
+          p_po_id: string
+          p_received_items: Json
+        }
+        Returns: Json
+      }
       recipe_bom_full_v6: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {
@@ -8412,6 +8417,10 @@ export type Database = {
           p_quantity: number
           p_reason?: string
         }
+        Returns: Json
+      }
+      revert_production_v5: {
+        Args: { p_production_id: string; p_reason: string }
         Returns: Json
       }
       search_ingredients_v4: {
@@ -8723,19 +8732,6 @@ export type Database = {
         Returns: boolean
       }
       _kitchen_profile_v1: { Args: never; Returns: string }
-      _kitchen_stock_lot_v1: {
-        Args: {
-          p_batch_number?: string
-          p_expires_at?: string
-          p_idempotency_key?: string
-          p_location_id?: string
-          p_metadata?: Json
-          p_product_id: string
-          p_quantity: number
-          p_unit?: string
-        }
-        Returns: Json
-      }
       _next_b2b_invoice_number_v1: { Args: never; Returns: string }
       _notif_substitute: {
         Args: { p_source: string; p_vars: Json }
@@ -8856,10 +8852,6 @@ export type Database = {
       _resolve_dispatch_stations_v1: {
         Args: { p_product_id: string }
         Returns: string[]
-      }
-      _resolve_fifo_lot: {
-        Args: { p_product_id: string; p_quantity_needed: number }
-        Returns: string
       }
       _resolve_line_price_v2: {
         Args: {
@@ -9508,19 +9500,6 @@ export type Database = {
         }
         Returns: string
       }
-      create_stock_lot_v1: {
-        Args: {
-          p_batch_number?: string
-          p_expires_at?: string
-          p_idempotency_key?: string
-          p_location_id?: string
-          p_metadata?: Json
-          p_product_id: string
-          p_quantity: number
-          p_unit?: string
-        }
-        Returns: Json
-      }
       create_table_section_v1: {
         Args: { p_name: string; p_sort_order: number }
         Returns: {
@@ -9793,30 +9772,6 @@ export type Database = {
         }
         Returns: Json
       }
-      get_expiring_lots_v1: {
-        Args: {
-          p_hours_ahead?: number
-          p_limit?: number
-          p_offset?: number
-          p_product_id?: string
-        }
-        Returns: {
-          batch_number: string
-          expires_at: string
-          hours_remaining: number
-          id: string
-          location_id: string
-          location_name: string
-          product_id: string
-          product_name: string
-          product_sku: string
-          quantity: number
-          received_at: string
-          status: string
-          total_count: number
-          unit: string
-        }[]
-      }
       get_kiosk_display_v1: { Args: never; Returns: Json }
       get_kitchen_history_v1: {
         Args: {
@@ -9839,10 +9794,6 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_perishable_turnover_v1: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
       get_permission_changes_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
@@ -10194,7 +10145,6 @@ export type Database = {
         }
         Returns: Json
       }
-      mark_expired_lots_hourly: { Args: never; Returns: Json }
       mark_item_served: {
         Args: { p_item_id: string }
         Returns: {
@@ -10327,14 +10277,6 @@ export type Database = {
         Returns: Json
       }
       preview_historical_import_v4: { Args: { p_payload: Json }; Returns: Json }
-      receive_purchase_order_v6: {
-        Args: {
-          p_idempotency_key?: string
-          p_po_id: string
-          p_received_items: Json
-        }
-        Returns: Json
-      }
       recipe_cost_history_v1: {
         Args: { p_from: string; p_product_id?: string; p_to: string }
         Returns: {
@@ -10627,10 +10569,6 @@ export type Database = {
       }
       retry_sale_journal_entry_v5: {
         Args: { p_order_id: string }
-        Returns: Json
-      }
-      revert_production_v4: {
-        Args: { p_production_id: string; p_reason: string }
         Returns: Json
       }
       round_idr: { Args: { amount: number }; Returns: number }
