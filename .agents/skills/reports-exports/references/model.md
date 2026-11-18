@@ -34,7 +34,7 @@ get_wastage_report              buildCsv<T>(rows, cols, opts?)   generate-pdf
 get_payments_by_method           ↓ RFC 4180 + UTF-8 BOM            ↓ registry TEMPLATES
 get_pb1_report                   ↓ id-ID locale (IDR)              ↓ rate-limit 30/min durable
 get_stock_movement_ledger        previousPeriod(start, end)        ↓ bucket reports-exports/ TTL 30j
-get_perishable_turnover          formatDelta(curr, prev) → Delta
+                                formatDelta(curr, prev) → Delta
 get_orders_list                 downloadCsv(csv, filename)       generate-zreport-pdf
                                                                     ↓ idempotent x-idempotency-key
                                 buildDrilldownUrl(entity, id,       ↓ bucket zreports/ 7 ans
@@ -68,7 +68,7 @@ get_orders_list                 downloadCsv(csv, filename)       generate-zrepor
 |------------|-----------------------|
 | `reports.financial.read` | `pnl`, `bs`, `cf`, `recipe_overview`, `recipe_timeline`, `payment_by_method`, `pb1` |
 | `reports.sales.read` | `basket`, `sales_by_hour`, `sales_by_category`, `sales_by_staff` |
-| `reports.inventory.read` | `wastage`, `stock_variance`, `stock_movements`, `perishable_turnover` |
+| `reports.inventory.read` | `wastage`, `stock_variance`, `stock_movements` |
 | `reports.audit.read` | `audit` |
 | `inventory.read` | `production_yield` |
 | `b2b.read` | `b2b_invoice` |
@@ -87,7 +87,6 @@ Familles, avec leur gate. **Vérifier la version live** dans `supabase/migration
 | `get_pb1_report` | `reports.financial.read` | non (mois/année) |
 | `get_stock_movement_ledger` | `inventory.read` **OU** `reports.inventory.read` | non (requête unique, filtrée) |
 | `get_stock_movements` | `reports.inventory.read` | oui — keyset `(created_at, id)` via token TEXT `"<created_at>\|<id>"` |
-| `get_perishable_turnover` | `reports.inventory.read` | non |
 | `get_orders_list` | `orders.read` | oui — keyset générique `(valeur_de_tri, id)` + `p_sort`/`p_dir` blanc-listés |
 
 **Piège `get_stock_movements` vs `get_stock_movement_ledger`.** Deux familles distinctes, pas deux versions :

@@ -23,7 +23,6 @@ export interface YieldRow {
   expected_yield_qty: number | null;
   actual_yield_qty:   number | null;
   yield_variance_pct: number | null;
-  yield_variance_reason: string | null;
 }
 
 /** Server-side row cap — surfaced to the user via `truncated`. */
@@ -48,7 +47,7 @@ export function useProductionYield(start: string, end: string) {
       const endTs   = toLocalDayEndUTC(end).toISOString();
       const { data, error } = await supabase
         .from('production_records')
-        .select('id, production_number, product_id, production_date, expected_yield_qty, actual_yield_qty, yield_variance_pct, yield_variance_reason')
+        .select('id, production_number, product_id, production_date, expected_yield_qty, actual_yield_qty, yield_variance_pct')
         .gte('production_date', startTs)
         .lte('production_date', endTs)
         .is('reverted_at', null)
@@ -78,7 +77,6 @@ export function useProductionYield(start: string, end: string) {
           expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
           actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
           yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
-          yield_variance_reason: r.yield_variance_reason,
         })),
         truncated: rows.length >= YIELD_ROW_CAP,
       };

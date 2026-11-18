@@ -51,7 +51,6 @@ export type RecordProductionErrorCode =
   | 'unit_conversion_failed'
   | 'expected_yield_must_be_positive'
   | 'actual_yield_must_be_non_negative'
-  | 'variance_reason_too_short'
   | 'unknown';
 
 export class RecordProductionError extends Error {
@@ -82,8 +81,6 @@ export interface RecordProductionArgs {
   expectedYieldQty?: number;
   /** F5 yield variance: realized qty — defaults server-side to quantity_produced. */
   actualYieldQty?:   number;
-  /** Required when |variance| > threshold (server-enforced ≥5 chars). */
-  yieldVarianceReason?: string;
   /** ADR-008 D4 — produce despite insufficient stock (permission-gated server-side). */
   forceNegative?: boolean;
 }
@@ -137,7 +134,6 @@ function classify(message: string): RecordProductionErrorCode {
   if (message.includes('unit_conversion_failed'))          return 'unit_conversion_failed';
   if (message.includes('expected_yield_must_be_positive')) return 'expected_yield_must_be_positive';
   if (message.includes('actual_yield_must_be_non_negative')) return 'actual_yield_must_be_non_negative';
-  if (message.includes('variance_reason_too_short'))       return 'variance_reason_too_short';
   return 'unknown';
 }
 
@@ -160,7 +156,6 @@ export function useRecordProduction() {
         p_notes?:                 string;
         p_expected_yield_qty?:    number;
         p_actual_yield_qty?:      number;
-        p_yield_variance_reason?: string;
         p_force_negative?:        boolean;
         p_waste_reason?:          WasteReason;
       } = {
@@ -176,7 +171,6 @@ export function useRecordProduction() {
       if (args.notes                !== undefined) rpcArgs.p_notes                 = args.notes;
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
-      if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
       const { data, error } = await supabase.rpc('record_production_v12', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;

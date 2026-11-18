@@ -5,64 +5,28 @@
 // chargée et le current_stock de chaque matière fourni par useFinishedProducts.
 //
 // Session 15 / Phase 2.B: split "quantity_produced" into expected vs actual
-// yield. On submit, if |actual-expected|/expected*100 > business_config
-// threshold AND no reason has been entered, open the YieldVarianceModal to
-// collect a justification before re-submitting with `p_yield_variance_reason`.
+// yield. L'écart s'affiche sans motif : la saisie d'une cause et son seuil
+// sont retirés (S2-02, 2026-11-18) — les rapports montrent l'écart seul.
 //
 // ADR-008 D3: a non-zero waste requires a structured cause (`waste_reason`).
 // The submit button stays disabled until one is picked — the server refuses it
 // anyway (`waste_reason_required`), the gate here only avoids a round-trip.
 
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Input, Select } from '@breakery/ui';
 import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { checkFeasibility } from '@breakery/domain';
-import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import { useRecipes } from '../hooks/useRecipes.js';
 import { useSections } from '@/hooks/useSections.js';
 import { useRecordProduction, RecordProductionError, type WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { FeasibilityBadge } from './FeasibilityBadge.js';
-import { YieldVarianceModal } from './YieldVarianceModal.js';
-
-/** Falls back to 15% if business_config row is missing or value invalid.
- *
- *  CRITICAL : `business_config.production_yield_variance_threshold_pct` is
- *  NUMERIC(6,4) stored as a FRACTION (`0.1500` = 15%). UI multiplies by 100
- *  for display. */
-const DEFAULT_THRESHOLD_PCT = 15;
-
-function useYieldVarianceThresholdPct(): number {
-  const q = useQuery({
-    queryKey: ['business_config', 'production.yield_variance_threshold_pct'] as const,
-    staleTime: 5 * 60_000,
-    queryFn: async (): Promise<number> => {
-      const { data, error } = await supabase
-        .from('business_config')
-        .select('production_yield_variance_threshold_pct')
-        .eq('id', 1)
-        .limit(1);
-      if (error) throw error;
-      const raw = (data?.[0] as { production_yield_variance_threshold_pct?: number | string | null } | undefined)
-        ?.production_yield_variance_threshold_pct;
-      if (raw === null || raw === undefined) return DEFAULT_THRESHOLD_PCT;
-      const num = Number(raw);
-      if (!Number.isFinite(num) || num <= 0) return DEFAULT_THRESHOLD_PCT;
-      // DB stores a fraction (0..1). Convert to percentage for UI consumers.
-      // Defensive fallback : if value already > 1, assume legacy %-encoded.
-      return num <= 1 ? num * 100 : num;
-    },
-  });
-  return q.data ?? DEFAULT_THRESHOLD_PCT;
-}
 
 export default function ProductionForm(): JSX.Element {
   const products = useFinishedProducts({ withRecipeOnly: true });
   const sections = useSections();
-  const thresholdPct = useYieldVarianceThresholdPct();
 
   const [productId, setProductId] = useState<string>('');
   const [expectedQty, setExpectedQty] = useState<string>('');
@@ -75,9 +39,6 @@ export default function ProductionForm(): JSX.Element {
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const [varianceModalOpen, setVarianceModalOpen] = useState(false);
-  const [pendingReason, setPendingReason] = useState<string | null>(null);
 
   const recipes = useRecipes(productId === '' ? null : productId);
 
@@ -117,8 +78,6 @@ export default function ProductionForm(): JSX.Element {
     return ((numericActual - numericExpected) / numericExpected) * 100;
   }, [numericExpected, numericActual]);
 
-  const exceedsThreshold = variancePct !== null && Math.abs(variancePct) > thresholdPct;
-
   const recordMut = useRecordProduction();
 
   const hasValidExpected = Number.isFinite(numericExpected) && numericExpected > 0;
@@ -136,7 +95,7 @@ export default function ProductionForm(): JSX.Element {
     sectionId !== '' &&
     !recordMut.isPending;
 
-  async function submitWithReason(reason: string | null): Promise<void> {
+  async function submitProduction(): Promise<void> {
     setFormError(null);
     try {
       const args: {
@@ -144,7 +103,6 @@ export default function ProductionForm(): JSX.Element {
         quantityWaste: number; idempotencyKey: string;
         batchNumber?: string; notes?: string;
         expectedYieldQty?: number; actualYieldQty?: number;
-        yieldVarianceReason?: string;
         wasteReason?: WasteReason;
       } = {
         productId,
@@ -162,9 +120,6 @@ export default function ProductionForm(): JSX.Element {
       if (bt !== '') args.batchNumber = bt;
       const nt = notes.trim();
       if (nt !== '') args.notes = nt;
-      if (reason !== null && reason.trim() !== '') {
-        args.yieldVarianceReason = reason.trim();
-      }
       const result = await recordMut.mutateAsync(args);
       const wasteExpense = result.waste_expense ?? 0;
       setSuccessMsg(
@@ -172,7 +127,6 @@ export default function ProductionForm(): JSX.Element {
         + (wasteExpense > 0 ? ` — waste expensed: ${formatCurrency(wasteExpense)}` : ''),
       );
       setExpectedQty(''); setActualQty(''); setWaste('0'); setWasteReason(''); setBatchNumber(''); setNotes('');
-      setPendingReason(null);
       setIdempotencyKey(crypto.randomUUID());
     } catch (err) {
       if (err instanceof RecordProductionError) {
@@ -182,8 +136,6 @@ export default function ProductionForm(): JSX.Element {
             .map((d) => `${d.material_name} short ${d.shortfall} ${d.unit}`)
             .join('; ');
           setFormError(`Insufficient stock: ${list}`);
-        } else if (err.code === 'variance_reason_too_short') {
-          setFormError('Yield variance reason must be at least 5 characters.');
         } else if (err.code === 'section_required') {
           setFormError('Section is required.');
         } else if (err.code === 'waste_reason_required') {
@@ -205,30 +157,8 @@ export default function ProductionForm(): JSX.Element {
     e.preventDefault();
     if (!canSubmit) return;
     setFormError(null);
-
-    // Gate: variance > threshold AND no reason yet → open modal.
-    if (exceedsThreshold && pendingReason === null) {
-      setVarianceModalOpen(true);
-      return;
-    }
-    await submitWithReason(pendingReason);
+    await submitProduction();
   }
-
-  function handleVarianceConfirm(reason: string): void {
-    setPendingReason(reason);
-    setVarianceModalOpen(false);
-    void submitWithReason(reason);
-  }
-
-  function handleVarianceCancel(): void {
-    setVarianceModalOpen(false);
-  }
-
-  // When user edits the form again after entering a reason, reset it so a
-  // fresh variance check happens on next submit.
-  useEffect(() => {
-    setPendingReason(null);
-  }, [productId, expectedQty, actualQty, waste]);
 
   // Clear success after 3s.
   useEffect(() => {
@@ -295,10 +225,9 @@ export default function ProductionForm(): JSX.Element {
             {variancePct !== null && (
               <div
                 data-testid="variance-display"
-                className={`text-xs font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
+                className="text-xs font-mono text-text-secondary"
               >
                 variance {formatPercent(variancePct, { signed: true })}
-                {exceedsThreshold && <> (over ±{formatPercent(thresholdPct)})</>}
               </div>
             )}
           </div>
@@ -368,15 +297,6 @@ export default function ProductionForm(): JSX.Element {
         </div>
       </form>
 
-      {varianceModalOpen && hasValidExpected && hasValidActual && (
-        <YieldVarianceModal
-          expectedQty={numericExpected}
-          actualQty={numericActual}
-          thresholdPct={thresholdPct}
-          onCancel={handleVarianceCancel}
-          onConfirm={handleVarianceConfirm}
-        />
-      )}
     </>
   );
 }

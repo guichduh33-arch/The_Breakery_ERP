@@ -42,9 +42,6 @@ vi.mock('@/features/products/hooks/useProducts', () => ({
 vi.mock('@/features/products/hooks/useCategories', () => ({
   useCategories: () => ({ data: [], isLoading: false, isSuccess: true }),
 }));
-vi.mock('@/features/products/hooks/useActiveLotsByProduct', () => ({
-  useActiveLotsByProduct: () => ({ data: new Map(), isLoading: false, isSuccess: true }),
-}));
 vi.mock('@/features/products/hooks/useProductVariants', () => ({
   useProductVariants: () => ({ data: [] }),
 }));

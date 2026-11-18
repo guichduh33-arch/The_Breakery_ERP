@@ -20,9 +20,6 @@ vi.mock('@/features/products/hooks/useProducts', () => ({
 vi.mock('@/features/products/hooks/useCategories', () => ({
   useCategories: () => ({ data: [], isLoading: false }),
 }));
-vi.mock('@/features/products/hooks/useActiveLotsByProduct', () => ({
-  useActiveLotsByProduct: () => ({ data: new Map() }),
-}));
 
 function wrap(node: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

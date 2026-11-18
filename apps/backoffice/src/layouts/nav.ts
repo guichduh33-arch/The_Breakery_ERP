@@ -216,7 +216,8 @@ export const NAV_DOMAINS: NavDomain[] = [
           // « retirer la page /inventory/expiring et le rapport
           // perishable-turnover de la navigation ». The Breakery ne suit ni lots
           // ni péremption ; la péremption se déclare en perte. Le rapport, sa
-          // route et son gabarit PDF subsistent pour l'historique — le menu, non.
+          // route, sa fonction et son gabarit PDF sont supprimés le 2026-11-18
+          // (S2-08).
           //
           // Il a été ajouté ici le 2026-08-21 puis retiré le lendemain. La
           // critique /impeccable avait relevé l'écart entre l'index des rapports

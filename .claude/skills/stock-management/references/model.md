@@ -26,12 +26,13 @@ Périmètre : inventaire et recettes du back-office, stock POS, domaine inventor
 > consommation FIFO.** Le modèle retenu, définitif, est le suivi en **quantité globale par
 > produit** ; la péremption se gère par **déclaration de perte** (`waste_stock`, raison
 > `Expired`). Chantier **abandonné : aucune spec, aucun développement, ne pas re-proposer**
-> (conséq. 1). Décommissionnement acté (conséq. 2) : le cron `mark_expired_lots_hourly` est
-> **`active = false`**, la page `/inventory/expiring` et le rapport perishable-turnover ont
-> quitté la navigation ; l'infra reste **dormante, pas droppée** — `stock_lots`,
-> `_resolve_fifo_lot`, `get_expiring_lots`, `create_stock_lot` existent encore, pour
-> l'historique et la réversibilité. Partout ci-dessous, une mention de lot / `lot_id` / FIFO
-> décrit une **infra dormante**, jamais une consigne à appliquer ni un défaut à corriger.
+> (conséq. 1). Décommissionnement (conséq. 2), achevé le 2026-11-18 par `S2-01` : seule la
+> **table** `stock_lots` reste, dormante et en lecture seule, avec la colonne historique
+> `stock_movements.lot_id`. Les fonctions de lots, leur tâche planifiée, la page des lots
+> expirants et le rapport de rotation des périssables sont supprimés ; la primitive du
+> ledger refuse un lot fourni (`lot_tracking_retired`). Partout ci-dessous, une mention de
+> lot / `lot_id` / FIFO décrit cet **historique dormant**, jamais une consigne à appliquer
+> ni un défaut à corriger.
 > → **Ne JAMAIS proposer de spec FIFO/FEFO, ni traiter « `lot_id` NULL » ou « FIFO non
 > câblé » comme un gap.** Un `lot_id` renseigné est un résidu, pas une garantie de
 > traçabilité. **Hors périmètre — homonymes** (conséq. 5) : le FIFO d'allocation des

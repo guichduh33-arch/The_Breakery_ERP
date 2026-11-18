@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@/features/products/hooks/useProducts', () => ({ useProducts: () => ({ data: [mocks.parent] }) }));
 vi.mock('@/features/products/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }));
-vi.mock('@/features/products/hooks/useActiveLotsByProduct', () => ({ useActiveLotsByProduct: () => ({ data: new Map() }) }));
 vi.mock('@/features/products/hooks/usePrefetchProductModifiers', () => ({ usePrefetchProductModifiers: () => undefined }));
 vi.mock('@/features/products/hooks/useProductVariants', () => ({ useProductVariants: () => ({ data: mocks.variants }) }));
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({

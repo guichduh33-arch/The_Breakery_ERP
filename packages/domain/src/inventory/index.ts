@@ -35,15 +35,6 @@ export { computeStockDelta } from './computeStockDelta.js';
 export { lowStockFilter, type LowStockCandidate } from './lowStockFilter.js';
 export { deriveStockIncrements } from './deriveStockIncrements.js';
 
-// Session 13 — F1 expiry tracking primitives (consumed by POS ProductGrid + BO).
-export {
-  selectLotForConsumption,
-  allLotsExpiredOrConsumed,
-  filterExpiringLots,
-  type StockLotForFifo,
-  type FifoSelectionResult,
-} from './expiry/fifo.js';
-
 // Session 23 — landed cost allocation primitive (mirrors receive_po_v1 SQL).
 export {
   calculateLandedCostAllocation,

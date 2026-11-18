@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@/features/products/hooks/useProducts', () => ({ useProducts: () => ({ data: [mocks.product] }) }));
 vi.mock('@/features/products/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }));
-vi.mock('@/features/products/hooks/useActiveLotsByProduct', () => ({ useActiveLotsByProduct: () => ({ data: new Map() }) }));
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({ useProductModifiers: () => ({ ...mocks.query, refetch: mocks.refetch }) }));
 vi.mock('@/features/combos/components/ComboConfigModal', () => ({ ComboConfigModal: () => null }));
 vi.mock('@/features/products/ProductCard', () => ({ ProductCard: ({ product, onSelect }: { product: Product; onSelect: (p: Product) => void }) => <button onClick={() => onSelect(product)}>{product.name}</button> }));

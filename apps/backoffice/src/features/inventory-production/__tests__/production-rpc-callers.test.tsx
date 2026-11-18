@@ -39,7 +39,7 @@ describe('published production RPC callers', () => {
     await act(async () => {
       await expect(result.current.mutateAsync({ ...unitInput, batchNumber: 'manual-batch',
         quantityWaste: 2, wasteReason: 'mis_baked', notes: 'Oven stopped',
-        expectedYieldQty: 14, actualYieldQty: 0, yieldVarianceReason: 'Oven stopped',
+        expectedYieldQty: 14, actualYieldQty: 0,
         forceNegative: true,
       })).resolves.toBe(receipt);
     });
@@ -47,7 +47,7 @@ describe('published production RPC callers', () => {
       p_product_id: 'bread', p_quantity_produced: 12, p_section_id: 'bakery',
       p_idempotency_key: 'unit-key', p_batch_number: 'manual-batch', p_quantity_waste: 2,
       p_waste_reason: 'mis_baked', p_notes: 'Oven stopped', p_expected_yield_qty: 14,
-      p_actual_yield_qty: 0, p_yield_variance_reason: 'Oven stopped', p_force_negative: true,
+      p_actual_yield_qty: 0, p_force_negative: true,
     });
   });
 
@@ -94,7 +94,7 @@ describe('published production RPC callers', () => {
         productionDate: '2026-11-07T06:00:00+08:00', forceNegative: true,
         items: [{ productId: 'bread', quantityProduced: 12, quantityWaste: 2,
           wasteReason: 'mis_baked', expectedYieldQty: 14, actualYieldQty: 0,
-          yieldVarianceReason: 'Oven stopped', idempotencyKey: 'line-key' },
+          idempotencyKey: 'line-key' },
         { productId: 'cake', quantityProduced: 3, quantityWaste: 0 }],
       })).resolves.toBe(receipt);
     });
@@ -103,7 +103,7 @@ describe('published production RPC callers', () => {
         production_date: '2026-11-07T06:00:00+08:00', force_negative: true },
       p_items: [{ product_id: 'bread', quantity_produced: 12, quantity_waste: 2,
         waste_reason: 'mis_baked', expected_yield_qty: 14, actual_yield_qty: 0,
-        yield_variance_reason: 'Oven stopped', idempotency_key: 'line-key' },
+        idempotency_key: 'line-key' },
       { product_id: 'cake', quantity_produced: 3, quantity_waste: 0 }],
     });
   });

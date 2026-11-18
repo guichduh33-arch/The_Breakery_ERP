@@ -39,7 +39,7 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 
 ```
 Migrations — repère la PLUS HAUTE de chaque famille avant d'écrire :
-  ls supabase/migrations | grep -Ei "wastage|payments_by_method|pb1|stock_movement|perishable|orders_list|zreport"
+  ls supabase/migrations | grep -Ei "wastage|payments_by_method|pb1|stock_movement|orders_list|zreport"
 
 BO — ossature et export
   apps/backoffice/src/features/reports/components/ReportShell.tsx       # archétype Report

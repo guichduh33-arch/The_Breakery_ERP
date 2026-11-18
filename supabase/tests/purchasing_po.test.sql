@@ -10,7 +10,8 @@
 --
 -- Critical invariants:
 --   - GRN row INSERT posts a balanced JE: DR INVENTORY + DR VAT = CR PAYABLE.
---   - Lots are minted UPFRONT for products with default_shelf_life_hours SET.
+--   - No lot is ever minted, even for a product with default_shelf_life_hours
+--     (S2-01, ADR-004 : stock_lots est dormante depuis le 2026-11-18).
 --   - PO status transitions correctly through partial → received.
 --   - Cancel after any GRN refused.
 --
@@ -206,7 +207,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v6(
+  v_result := receive_purchase_order_v7(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
@@ -255,7 +256,7 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T_PO_11 — Receive remainder + product B (with shelf-life → lot upfront)
+-- T_PO_11 — Receive remainder + product B (with shelf-life, still no lot)
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -279,7 +280,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v6(
+  PERFORM receive_purchase_order_v7(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
@@ -294,8 +295,8 @@ SELECT is(
   (SELECT COUNT(*)::int FROM stock_lots
     WHERE product_id = current_setting('breakery.t_po_prod_b', true)::uuid
       AND metadata->>'po_id' = current_setting('breakery.t_po_id', true)),
-  1,
-  'T_PO_11b: 1 lot minted upfront for product B'
+  0,
+  'T_PO_11b: no lot minted for product B despite its shelf life (S2-01)'
 );
 
 -- ---------------------------------------------------------------------------

@@ -28,7 +28,6 @@ vi.mock('@/lib/supabase.js', () => {
       table === 'products'      ? { data: PRODUCT_ROWS, error: null } :
       table === 'recipes'       ? { data: [{ product_id: 'bag-1' }], error: null } :
       table === 'sections'      ? { data: [{ id: 'sec-1', code: 'KIT', name: 'Kitchen', kind: 'kitchen', display_order: 1 }], error: null } :
-      table === 'business_config' ? { data: [{ production_yield_variance_threshold_pct: 0.15 }], error: null } :
       { data: [], error: null };
     const chain: MockChain = {
       select: () => chain,

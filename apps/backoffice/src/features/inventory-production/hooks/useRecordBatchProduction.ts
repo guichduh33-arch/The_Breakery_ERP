@@ -31,7 +31,7 @@
 //   p_items = [{
 //     product_id, quantity_produced,
 //     quantity_waste?, waste_reason?, expected_yield_qty?, actual_yield_qty?,
-//     yield_variance_reason?, idempotency_key?
+//     idempotency_key?
 //   }, ...]
 //
 // On `insufficient_stock`, the DETAIL field carries a JSON array of shortages
@@ -82,7 +82,6 @@ export interface BatchItemInput {
   wasteReason?:        WasteReason;
   expectedYieldQty?:   number;
   actualYieldQty?:     number;
-  yieldVarianceReason?: string;
   idempotencyKey?:     string;
 }
 
@@ -155,7 +154,6 @@ function buildItemPayload(item: BatchItemInput): Record<string, unknown> {
   if (item.wasteReason !== undefined)         out.waste_reason         = item.wasteReason;
   if (item.expectedYieldQty !== undefined)    out.expected_yield_qty   = item.expectedYieldQty;
   if (item.actualYieldQty !== undefined)      out.actual_yield_qty     = item.actualYieldQty;
-  if (item.yieldVarianceReason !== undefined) out.yield_variance_reason = item.yieldVarianceReason;
   if (item.idempotencyKey !== undefined)      out.idempotency_key      = item.idempotencyKey;
   return out;
 }
