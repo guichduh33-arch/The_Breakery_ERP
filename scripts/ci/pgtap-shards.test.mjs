@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregate, EXCLUSIVE, isExclusive, plan, readSuite, runShard, shardOf, verdict } from './pgtap-shards.mjs';
+import { aggregate, deferredOf, EXCLUSIVE, isExclusive, plan, readSuite, runShard, shardOf, verdict } from './pgtap-shards.mjs';
 
 const suite = (n, exclusive = []) => [...Array(n).keys()].map((i) => ({ name: `f${i}.test.sql`, exclusive: exclusive.includes(i) }));
 const pass = (file) => ({ file, rc: 0, notOk: 0, summary: 0, ok: true });
@@ -54,6 +54,13 @@ test('verdict : erreur psql, not ok en tête de ligne ou résumé agrégé suffi
   assert.equal(verdict(0, '    not ok 2 - b').ok, false);
   assert.equal(verdict(0, ' t | not ok 4 - x\n# Looks like you failed 1 test of 4').ok, false);
 });
+test('verdict : seul un interblocage sans assertion rouge est reporté', () => {
+  const deadlock = 'ok 1 - a\npsql:supabase/tests/x.test.sql:86: ERROR:  deadlock detected';
+  assert.deepEqual([verdict(3, deadlock).ok, verdict(3, deadlock).deferred], [false, true]);
+  assert.equal(verdict(3, `not ok 1 - a\n${deadlock}`).deferred, false);
+  assert.equal(verdict(3, 'psql: ERROR:  relation "x" does not exist').deferred, false);
+  assert.equal(verdict(0, "ok 1 - 'deadlock detected' cité dans un libellé").deferred, false);
+});
 test('runShard : chaque fichier du morceau est exécuté et noté', () => {
   const calls = [];
   const results = runShard(['a.test.sql', 'b.test.sql'], { log: () => {}, now: () => 0,
@@ -75,4 +82,22 @@ test('aggregate : vert seulement si tous les morceaux couvrent exactement le pla
   assert.match(aggregate(p, doubled).errors.join(), /deux fois/);
   assert.match(aggregate(p, [...good, { shard: '9', results: [] }]).errors.join(), /inconnu/);
   assert.equal(aggregate(p, []).ok, false);
+});
+test('aggregate : un fichier reporté pour interblocage doit passer relancé seul', () => {
+  const p = plan(suite(24, [5]), { count: 3, min: 1 });
+  const base = reportsOf(p);
+  const shard = base.find((r) => r.shard !== EXCLUSIVE);
+  const file = shard.results[0].file;
+  const deferred = { file, rc: 3, notOk: 0, summary: 0, ok: false, deferred: true };
+  const withRetry = (retries) => base.map((r) => (r === shard ? { ...r, results: [deferred, ...r.results.slice(1)] }
+    : r.shard === EXCLUSIVE ? { ...r, retries } : r));
+  assert.deepEqual(deferredOf(withRetry([])), [file]);
+  assert.equal(aggregate(p, withRetry([pass(file)])).ok, true);
+  assert.match(aggregate(p, withRetry([])).errors.join(), /interblocage non relancé/);
+  assert.match(aggregate(p, withRetry([{ ...pass(file), ok: false, rc: 3 }])).errors.join(), /relancé seul/);
+  assert.match(aggregate(p, withRetry([pass(file), pass('f1.test.sql')])).errors.join(), /différentes/);
+  // Dans le morceau exclusif, un interblocage n'a pas de seconde chance.
+  const excl = base.map((r) => (r.shard === EXCLUSIVE
+    ? { ...r, results: [{ ...deferred, file: r.results[0].file }], retries: [] } : r));
+  assert.equal(aggregate(p, excl).ok, false);
 });

@@ -109,7 +109,7 @@ jobs:
     needs: [plan, pgtap-shard]
     if: ${{ !cancelled() && needs.plan.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -123,6 +123,13 @@ jobs:
             sudo apt-get update -q && sudo apt-get install -y postgresql-client
           fi
           psql --version
+      # Bilans des morceaux parallèles : les fichiers reportés pour interblocage
+      # y sont listés et relancés seuls ici. Un bilan absent est vu par l'agrégat.
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: pgtap-results-*
+          path: pgtap-results
+          merge-multiple: true
       - name: Run exclusive pgTAP files via pooler
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}

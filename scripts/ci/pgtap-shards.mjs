@@ -12,6 +12,7 @@
 // sur un objet partagé (ALTER TABLE, trigger, fonction, policy, LOCK) pose un
 // verrou fort jusqu'au ROLLBACK et bloque ou interbloque les autres sessions.
 // Ces fichiers vont dans le morceau `exclusive`, lancé SEUL après les autres.
+// Il relance aussi, un à un, les fichiers reportés pour interblocage (voir verdict).
 // Un auteur peut forcer ce classement avec un commentaire `-- pgtap:exclusive`.
 import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -94,10 +95,20 @@ export function readSuite(root = ROOT) {
 // Un fichier échoue sur une erreur psql OU une assertion rouge. Le `not ok` en
 // début de ligne ne suffit pas : 17 suites rendent leurs assertions agrégées
 // dans une colonne. `finish()` émet le résumé quelle que soit la présentation.
+//
+// Interblocage (40P01) : en parallèle, presque toutes les écritures métier se
+// croisent sur les mêmes verrous partagés (ligne de `ui_invalidation_topics`,
+// verrou consultatif du jour métier), tenus jusqu'au ROLLBACK de chaque fichier.
+// Relevé du 2026-11-18 sur le premier run en morceaux : 15 fichiers tombés ainsi.
+// Un fichier dont la SEULE faute est un interblocage n'est pas vert : il est
+// `deferred`, puis relancé seul par le morceau exclusif, comme dans l'ancienne
+// suite série. Une assertion rouge ou toute autre erreur l'exclut du report.
 export function verdict(rc, out) {
   const notOk = (out.match(/^[ \t]*not ok [0-9]/gm) ?? []).length;
   const summary = (out.match(/# Looks like you failed [0-9]+ test/g) ?? []).length;
-  return { rc, notOk, summary, ok: rc === 0 && notOk === 0 && summary === 0 };
+  const ok = rc === 0 && notOk === 0 && summary === 0;
+  const deferred = !ok && rc !== 0 && notOk === 0 && summary === 0 && /\bERROR:\s+deadlock detected\b/.test(out);
+  return { rc, notOk, summary, ok, deferred };
 }
 
 export function runShard(names, { psql, now = Date.now, log = console.log } = {}) {
@@ -112,9 +123,16 @@ export function runShard(names, { psql, now = Date.now, log = console.log } = {}
   return results;
 }
 
+// Fichiers qu'un morceau parallèle a reportés : le morceau exclusif les relance.
+export const deferredOf = (reports) => reports.filter((r) => r.shard !== EXCLUSIVE)
+  .flatMap((r) => r.results.filter((x) => x.deferred).map((x) => x.file)).sort();
+
 export function aggregate(expected, reports) {
   const errors = [];
   const seen = new Map();
+  const exclusive = reports.find((r) => r.shard === EXCLUSIVE);
+  const retries = new Map((exclusive?.retries ?? []).map((r) => [r.file, r]));
+  const deferred = deferredOf(reports);
   for (const report of reports) {
     const want = expected.shards[report.shard];
     if (!want) { errors.push(`Bilan d'un morceau inconnu : ${report.shard}`); continue; }
@@ -122,9 +140,15 @@ export function aggregate(expected, reports) {
     if (JSON.stringify(got) !== JSON.stringify(want)) errors.push(`Morceau ${report.shard} : ${got.length} fichiers exécutés pour ${want.length} prévus.`);
     for (const r of report.results) {
       seen.set(r.file, (seen.get(r.file) ?? 0) + 1);
-      if (!r.ok) errors.push(`${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary})`);
+      if (r.ok) continue;
+      const retry = report.shard !== EXCLUSIVE && r.deferred ? retries.get(r.file) : undefined;
+      if (!retry) errors.push(`${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary}${r.deferred ? ', interblocage non relancé' : ''})`);
+      else if (!retry.ok) errors.push(`${r.file} relancé seul (exit=${retry.rc}, not_ok=${retry.notOk}, tap_summary=${retry.summary})`);
     }
   }
+  const retried = [...retries.keys()].sort();
+  if (JSON.stringify(retried) !== JSON.stringify(deferred))
+    errors.push(`Relances seules (${retried.length}) différentes des fichiers reportés (${deferred.length}).`);
   for (const id of Object.keys(expected.shards))
     if (expected.shards[id].length && !reports.some((r) => r.shard === id)) errors.push(`Bilan absent pour le morceau ${id}.`);
   const missing = expected.files.filter((f) => !seen.has(f));
@@ -134,6 +158,12 @@ export function aggregate(expected, reports) {
   if (doubled.length) errors.push(`Fichier(s) exécuté(s) deux fois : ${doubled.join(', ')}`);
   if (unknown.length) errors.push(`Fichier(s) hors plan : ${unknown.join(', ')}`);
   return { ok: errors.length === 0, executed: seen.size, total: expected.total, errors };
+}
+
+// Bilans JSON d'un dossier. deferredOf écarte celui du morceau exclusif.
+function readReports(dir) {
+  return readdirSync(dir).filter((n) => n.endsWith('.json'))
+    .map((n) => JSON.parse(readFileSync(join(dir, n), 'utf8')));
 }
 
 function psqlRunner(url) {
@@ -157,20 +187,31 @@ if (isMain(import.meta.url)) {
     } else if (command === 'run') {
       if (!(arg in expected.shards)) throw new Error(`Morceau inconnu : ${arg}`);
       if (!process.env.PGURL) throw new Error('V3_DEV_PG_POOLER_URL secret is not set');
-      const results = runShard(expected.shards[arg], { psql: psqlRunner(process.env.PGURL) });
-      mkdirSync(join(ROOT, 'pgtap-results'), { recursive: true });
-      writeFileSync(join(ROOT, 'pgtap-results', `${arg}.json`), JSON.stringify({ shard: arg, results }, null, 1));
-      const failed = results.filter((r) => !r.ok);
+      const psql = psqlRunner(process.env.PGURL);
+      const dir = join(ROOT, 'pgtap-results');
+      mkdirSync(dir, { recursive: true });
+      const results = runShard(expected.shards[arg], { psql });
+      const report = { shard: arg, results };
+      // Le morceau exclusif tourne seul, après les autres : il relance un à un
+      // les fichiers qu'ils ont reportés pour interblocage (bilans téléchargés).
+      if (arg === EXCLUSIVE) {
+        const toRetry = deferredOf(readReports(dir));
+        if (toRetry.length) console.log(`Relance seule de ${toRetry.length} fichier(s) reporté(s) : ${toRetry.join(', ')}`);
+        report.retries = runShard(toRetry, { psql }).map(({ deferred, ...r }) => r);
+      }
+      writeFileSync(join(dir, `${arg}.json`), JSON.stringify(report, null, 1));
+      // Dans le morceau exclusif, un interblocage est un échec : rien ne le relance.
+      const failed = [...results, ...(report.retries ?? [])].filter((r) => !r.ok && (arg === EXCLUSIVE || !r.deferred));
+      const later = arg === EXCLUSIVE ? [] : results.filter((r) => r.deferred);
       const seconds = results.reduce((s, r) => s + r.seconds, 0).toFixed(0);
+      for (const r of later) console.log(`::warning::${r.file} reporté (interblocage) : relancé seul par le morceau exclusif.`);
       if (failed.length) {
         console.log(`::error::${failed.length} pgTAP file(s) failed in shard ${arg}:`);
         for (const r of failed) console.log(` - ${r.file} (exit=${r.rc}, not_ok=${r.notOk}, tap_summary=${r.summary})`);
         process.exitCode = 1;
-      } else console.log(`Morceau ${arg} : ${results.length} fichiers verts en ${seconds} s.`);
+      } else console.log(`Morceau ${arg} : ${results.length - later.length} fichiers verts, ${later.length} reporté(s), en ${seconds} s.`);
     } else if (command === 'aggregate') {
-      const dir = arg ?? join(ROOT, 'pgtap-results');
-      const reports = readdirSync(dir).filter((n) => n.endsWith('.json'))
-        .map((n) => JSON.parse(readFileSync(join(dir, n), 'utf8')));
+      const reports = readReports(arg ?? join(ROOT, 'pgtap-results'));
       const result = aggregate(expected, reports);
       for (const e of result.errors) console.log(`::error::${e}`);
       if (!result.ok) process.exitCode = 1;
