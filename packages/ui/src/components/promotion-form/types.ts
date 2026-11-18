@@ -46,6 +46,10 @@ export interface PromotionFormValues {
   // Threshold (Session 13 / Phase 2.C)
   threshold_amount: number | null;
   threshold_type: 'subtotal' | 'quantity' | null;
+  /** S3-11 — état de formulaire seulement, jamais écrit en base : le serveur
+   *  lit « pourcentage » quand `max_discount_amount` est renseigné. Absent
+   *  (ligne relue de la base) → dérivé par `thresholdDiscountMode`. */
+  threshold_discount_mode?: ThresholdDiscountMode;
 
   // Bundle (Session 13 / Phase 2.C)
   bundle_product_ids: string[];
@@ -75,6 +79,16 @@ export interface PromotionFormValues {
   stackable_with_manual: boolean;
 
   is_active: boolean;
+}
+
+/** S3-11 — nature de la remise d'un palier. */
+export type ThresholdDiscountMode = 'fixed' | 'percent';
+
+/** Mode de remise d'un palier : le choix explicite du formulaire, sinon celui
+ *  qu'implique la ligne (plafond renseigné → pourcentage, règle du serveur). */
+export function thresholdDiscountMode(v: PromotionFormValues): ThresholdDiscountMode {
+  if (v.threshold_discount_mode !== undefined) return v.threshold_discount_mode;
+  return v.max_discount_amount !== null ? 'percent' : 'fixed';
 }
 
 export interface PromotionFormOption {
@@ -108,11 +122,15 @@ export type PromotionFieldErrorFn = (key: keyof PromotionFormValues) => string |
 // Constants
 // ---------------------------------------------------------------------------
 
+// S3-11 — les six valeurs de l'enum Postgres `promotion_type`, toutes
+// évaluées par le serveur (palier = threshold, formule = bundle).
 export const PROMOTION_TYPES: readonly PromotionType[] = [
   'percentage',
   'fixed_amount',
   'bogo',
   'free_product',
+  'threshold',
+  'bundle',
 ] as const;
 export const SCOPES: readonly PromotionScope[] = ['cart', 'product', 'category'] as const;
 export const DAY_LABELS: readonly string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

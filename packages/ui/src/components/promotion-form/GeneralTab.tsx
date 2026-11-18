@@ -2,13 +2,15 @@
 //
 // "General" tab of the promotion form: name / slug / description, the type
 // selector, and the per-type configuration section (percentage & fixed_amount,
-// bogo, free_product).
+// bogo, free_product, threshold, bundle — S3-11 pour les deux derniers, dans
+// ThresholdBundleFields.tsx).
 
 import type { JSX } from 'react';
 import type { PromotionType } from '@breakery/domain';
 import { Input } from '../../primitives/Input.js';
 import { cn } from '../../lib/cn.js';
 import { Field, MultiSelect, NumberInput, SingleSelect } from './fields.js';
+import { BundleFields, ThresholdFields } from './ThresholdBundleFields.js';
 import {
   PROMOTION_TYPES,
   SCOPES,
@@ -72,7 +74,7 @@ export function GeneralTab({
       </Field>
 
       <Field label="Type">
-        <div role="tablist" className="inline-flex gap-1 rounded-md bg-bg-input p-1">
+        <div role="tablist" className="inline-flex flex-wrap gap-1 rounded-md bg-bg-input p-1">
           {PROMOTION_TYPES.map((t) => (
             <button
               key={t}
@@ -242,6 +244,19 @@ export function GeneralTab({
             />
           </Field>
         </div>
+      )}
+
+      {values.type === 'threshold' && (
+        <ThresholdFields values={values} update={update} showError={showError} />
+      )}
+
+      {values.type === 'bundle' && (
+        <BundleFields
+          values={values}
+          update={update}
+          showError={showError}
+          productOptions={productOptions}
+        />
       )}
 
       {values.type === 'free_product' && (
