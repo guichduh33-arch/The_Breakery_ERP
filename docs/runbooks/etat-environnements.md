@@ -26,6 +26,22 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 18 novembre 2026, 19 h — paquet caisse et APK 1.23 fabriqués sur `6854931a`, non installés
+
+Relevé du 18 novembre 2026 entre 17 h et 19 h, UTC+8. Observé directement.
+Rien n'est installé : la caisse et les tablettes servent encore `f46a4eeb`.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| POS production, avant | `https://pos.the-breakery.com:3001/health` rend `f46a4eeb` (vers 17 h 30) ; 443 répond 403 hors du poste | — |
+| Compatibilité | Les 54 fonctions SQL appelées par le POS de `6854931a` existent en production, dont `close_shift_v14` ; les 13 Edge Functions qu'il appelle sont actives. `close_shift_v13` et `close_shift_v10` y sont des enveloppes vers `close_shift_v14` ; `close_shift_v12` existe encore sans la garde des commandes impayées, sans appelant dans `master` | Lecture du schéma, pas d'appel exécuté |
+| Preuves du SHA `6854931a` | Fusion de #733. `ci.yml` run `44282889463` réussi ; pgTAP lancé à la main, run `44283595879`, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Paquet caisse | `package-shop-release.yml`, run `44287258563`, approuvé par Mamat ; artefact `shop-release-6854931afe98444d138381288121484a923f8533-1`, SHA-256 de l'archive `70a69558c770ad60db6384e2936bfa318ce7a551c7a0c9645df37ba3490d7965` égal au fichier `.sha256`. `release.json` : SHA `6854931a`, projet de production. Bundle : référence de production seule, ni dev ni V2 ; `close_shift_v14` présent, `close_shift_v13` absent ; le mode `background` de la synchronisation présent | **Non installé** |
+| Tablettes, APK 1.23 | Fabriquée sur le poste de développement : `com.thebreakery.pos`, version 1.23 (code 24), SHA-256 `e98dbf582b2e61b80d41eacf7ff91ee192fec4d56cdd98fd1d710bad97a14fda`. Les 88 fichiers de `assets/public/assets` sont identiques au bundle du paquet ci-dessus, repris de l'archive sans reconstruction. Certificat `100d48b8…`, égal à celui de l'APK 1.21. Conservée hors Git sous `.release-manifests/tablet-apk-1.23-20261118/` | **Non installée** ; aucun appareil joint par `adb` |
+
+Pour l'installation : la release précédente de la caisse est `f46a4eeb`, et les
+tablettes portent la 1.22 (code 23) relevée le 15 novembre.
+
 ## Complément du 18 novembre 2026, 11 h — retrait des objets abandonnés (`S2-03`, `S2-04`, `S2-05`, `S2-09`)
 
 Relevé du 18 novembre 2026 vers 11 h, UTC+8. Observé directement. Boutique
