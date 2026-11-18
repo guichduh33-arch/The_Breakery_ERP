@@ -31,6 +31,10 @@ export interface Product {
   // fallback current_stock quand aucune ligne vitrine n'existe.
   track_inventory?: boolean;
   is_sellable?: boolean;
+  // S3-13 — ordre d'affichage des combos saisi au back-office
+  // (products.combo_display_order, NOT NULL DEFAULT 0). Appliqué par le POS
+  // `useProducts` avant le nom.
+  combo_display_order?: number;
 }
 
 export interface Category {

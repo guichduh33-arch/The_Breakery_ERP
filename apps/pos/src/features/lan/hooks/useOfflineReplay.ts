@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCloudStatusStore } from '../cloudStatusStore';
 import { replayOfflineOutbox } from '../offlineReplay';
 import { subscribeOutboxCommitted } from '../offlineOutboxWake';
+import { QUARANTINE_QUERY_KEY } from './useQuarantinedPayments';
 
 export function useOfflineReplay(): void {
   useEffect(() => {
@@ -59,6 +60,12 @@ export function useOfflineReplay(): void {
           void queryClient.invalidateQueries({ queryKey: ['table_orders'] });
           void queryClient.invalidateQueries({ queryKey: ['products'] });
           void queryClient.invalidateQueries({ queryKey: ['kds'] });
+        }
+        // S3-17 — ADR-018 D5 : une quarantaine n'est jamais silencieuse. On
+        // rafraîchit tout de suite le registre lu par l'alerte caisse
+        // persistante (QuarantineAlertBanner) au lieu d'attendre son poll.
+        if ((res.quarantined ?? 0) > 0) {
+          void queryClient.invalidateQueries({ queryKey: QUARANTINE_QUERY_KEY });
         }
         if (res.failed > 0) {
           toast.error(
