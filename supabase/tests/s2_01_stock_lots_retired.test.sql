@@ -1,4 +1,4 @@
--- supabase/tests/s2_01_lot_tracking_retired.test.sql
+-- supabase/tests/s2_01_stock_lots_retired.test.sql
 -- S2-01 / S2-02 (volet base) / S2-08 — la mécanique de lots et de péremption
 -- est retirée (ADR-004), la table `stock_lots` reste dormante.
 --

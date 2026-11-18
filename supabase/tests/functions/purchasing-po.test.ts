@@ -172,14 +172,15 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const je2row = je2 as { total_debit: number; total_credit: number };
     expect(Number(je2row.total_debit)).toBeCloseTo(Number(je2row.total_credit), 2);
 
-    // 8. Lot minted upfront for product B (has shelf life).
+    // 8. Aucun lot créé pour B malgré sa durée de conservation : la réception
+    //    ne crée plus de lot depuis le retrait des lots (ADR-004, S2-01).
     const { data: lotsB } = await admin.from('stock_lots')
-      .select('id, metadata, quantity')
+      .select('id')
       .eq('product_id', prodB.id)
       .filter('metadata->>po_id', 'eq', po.po_id);
-    expect((lotsB as unknown[]).length).toBeGreaterThanOrEqual(1);
+    expect((lotsB as unknown[]).length).toBe(0);
 
-    // 9. No lots for product A (no shelf life).
+    // 9. Aucun lot pour A non plus.
     const { data: lotsA } = await admin.from('stock_lots')
       .select('id')
       .eq('product_id', prodA.id)

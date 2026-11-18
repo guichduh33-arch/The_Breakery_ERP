@@ -297,7 +297,7 @@ cet audit : il n'a plus de document source vivant, et il fait foi tel quel.
 
 **Statut M3 — CLOS SANS SUITE par ADR-004 (2026-07-04).** Le constat « FIFO non câblé »
 était exact, mais la réponse n'est pas de le câbler : le propriétaire a abandonné le
-chantier lots/FIFO/péremption. Le cron `mark_expired_lots_hourly` est désactivé, l'infra
+chantier lots/FIFO/péremption. Sa tâche planifiée et ses fonctions sont supprimées depuis le 2026-11-18 (`S2-01`) ; la table
 reste dormante. **Aucune spec FIFO ne doit être écrite.** Si un audit re-signale ce point,
 la réponse est l'ADR-004, pas un ticket.
 
