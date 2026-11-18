@@ -65,7 +65,7 @@ export function EditVariantLabelDialog({
         <DialogHeader>
           <DialogTitle>Rename "{variant?.variant_label ?? ''}"</DialogTitle>
           <DialogDescription>
-            The new label shows on the POS and on future receipts. Past orders keep their history.
+            Only the variant label changes. Price, SKU and stock stay as they are.
           </DialogDescription>
         </DialogHeader>
 

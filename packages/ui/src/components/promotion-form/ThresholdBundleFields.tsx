@@ -16,6 +16,7 @@
 // présent au panier − prix de la formule, appliquée une fois.
 
 import type { JSX } from 'react';
+import type { ThresholdType } from '@breakery/domain';
 import { Field, MultiSelect, NumberInput } from './fields.js';
 import type {
   PromotionFieldErrorFn,
@@ -33,7 +34,7 @@ export interface ThresholdBundleFieldsProps {
   productOptions: PromotionFormOption[];
 }
 
-const THRESHOLD_TYPES: readonly { value: 'subtotal' | 'quantity'; label: string }[] = [
+const THRESHOLD_TYPES: readonly { value: ThresholdType; label: string }[] = [
   { value: 'subtotal', label: 'Cart subtotal (IDR)' },
   { value: 'quantity', label: 'Number of items' },
 ];

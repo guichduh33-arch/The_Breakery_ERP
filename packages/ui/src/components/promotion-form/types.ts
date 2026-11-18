@@ -9,7 +9,7 @@
 //   docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §3.1
 //   docs/superpowers/specs/2026-07-03-s57-p2-governance-ux-design.md A-D4 / A-D9 / E-D4
 
-import type { PromotionScope, PromotionType } from '@breakery/domain';
+import type { PromotionScope, PromotionType, ThresholdType } from '@breakery/domain';
 
 export type { PromotionScope };
 
@@ -45,7 +45,7 @@ export interface PromotionFormValues {
 
   // Threshold (Session 13 / Phase 2.C)
   threshold_amount: number | null;
-  threshold_type: 'subtotal' | 'quantity' | null;
+  threshold_type: ThresholdType | null;
   /** S3-11 — état de formulaire seulement, jamais écrit en base : le serveur
    *  lit « pourcentage » quand `max_discount_amount` est renseigné. Absent
    *  (ligne relue de la base) → dérivé par `thresholdDiscountMode`. */

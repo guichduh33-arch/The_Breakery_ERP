@@ -191,9 +191,10 @@ describe('SupplierDetailPage (Phase 5.A)', () => {
   it('derives each row payment badge from the ledger, not from payment terms', () => {
     currentPerms = new Set(['suppliers.read', 'suppliers.update']);
     renderPage();
-    // po-1 : à crédit, aucun paiement → unpaid ; po-2 : comptant, aucun
-    // paiement enregistré dans la fixture du tableau → unpaid aussi.
-    expect(screen.getAllByText('unpaid')).toHaveLength(2);
+    // Bon reçu sans paiement → unpaid ; bon encore en attente → pas de dette,
+    // comme la tuile et le rapport : « awaiting receipt ».
+    expect(screen.getAllByText('unpaid')).toHaveLength(1);
+    expect(screen.getAllByText('awaiting receipt')).toHaveLength(1);
     expect(screen.queryByText('paid')).not.toBeInTheDocument();
   });
 
