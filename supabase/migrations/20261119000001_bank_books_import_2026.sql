@@ -8,11 +8,15 @@
 --
 -- La fonction ne connaît aucun chiffre. Les écritures arrivent en argument, au
 -- moment de l'appel : les montants de la société ne vivent pas dans le dépôt.
--- Elle les vérifie TOUTES avant d'en écrire une : date dans une période ouverte,
--- au moins deux lignes, débit XOR crédit positif, compte actif et imputable,
--- écriture équilibrée. Un seul passage réel : la garde lit le `kind` des
--- écritures déjà posées (aucune référence, l'index d'idempotence ne couvre pas
--- ces écritures). Le mode simulation, par défaut, n'écrit rien.
+-- Elle les vérifie TOUTES avant d'en écrire une : date entre le 1er janvier et
+-- le 30 septembre 2026 et dans une période ouverte, au moins deux lignes,
+-- montants JSON numériques à deux décimales au plus et tenant dans les colonnes
+-- du journal (DECIMAL(12,2)), débit XOR crédit positif, compte actif et
+-- imputable, écriture équilibrée. Un seul passage réel : la garde lit le `kind`
+-- des écritures déjà posées (aucune référence, l'index d'idempotence ne couvre
+-- pas ces écritures). Le mode simulation, par défaut, n'écrit rien ; un
+-- `p_dry_run` NULL est refusé plutôt que lu comme un passage réel, et le
+-- passage réel exige l'acteur (un `user_profiles.id`) pour l'audit.
 --
 -- Réservée au service_role, comme la famille `post_stock_chain_catchup` dont
 -- elle reprend la forme.
@@ -34,8 +38,8 @@ DECLARE
   v_date       date;
   v_desc       text;
   v_acc        RECORD;
-  v_dr         numeric(14,2);
-  v_cr         numeric(14,2);
+  v_dr         numeric;
+  v_cr         numeric;
   v_sum_dr     numeric(14,2);
   v_sum_cr     numeric(14,2);
   v_all_dr     numeric(14,2) := 0;
@@ -46,6 +50,10 @@ DECLARE
   v_summary    jsonb := '[]'::jsonb;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('bank-books-import-2026', 0));
+
+  IF p_dry_run IS NULL THEN
+    RAISE EXCEPTION 'dry_run_flag_required' USING ERRCODE = 'P0001';
+  END IF;
 
   IF EXISTS (SELECT 1 FROM journal_entries
               WHERE reference_type = 'manual'
@@ -61,6 +69,9 @@ BEGIN
     RAISE EXCEPTION 'entries_array_required' USING ERRCODE = 'P0001';
   END IF;
 
+  IF NOT p_dry_run AND p_actor IS NULL THEN
+    RAISE EXCEPTION 'actor_required_for_real_run' USING ERRCODE = 'P0001';
+  END IF;
   IF p_actor IS NOT NULL AND NOT EXISTS (
        SELECT 1 FROM user_profiles WHERE id = p_actor AND deleted_at IS NULL) THEN
     RAISE EXCEPTION 'actor_profile_not_found' USING ERRCODE = 'P0002';
@@ -74,18 +85,34 @@ BEGIN
     IF v_date IS NULL THEN
       RAISE EXCEPTION 'entry_%_date_required', v_index USING ERRCODE = 'P0001';
     END IF;
+    IF v_date < DATE '2026-01-01' OR v_date > DATE '2026-09-30' THEN
+      RAISE EXCEPTION 'entry_%_date_outside_import_window: %', v_index, v_date USING ERRCODE = 'P0001';
+    END IF;
     IF v_desc IS NULL OR length(trim(v_desc)) < 3 THEN
       RAISE EXCEPTION 'entry_%_description_required', v_index USING ERRCODE = 'P0001';
     END IF;
-    IF jsonb_typeof(v_entry->'lines') <> 'array' OR jsonb_array_length(v_entry->'lines') < 2 THEN
+    -- jsonb_typeof(NULL) est NULL : sans IS DISTINCT FROM, une écriture sans
+    -- `lines` passerait la garde et serait postée vide.
+    IF jsonb_typeof(v_entry->'lines') IS DISTINCT FROM 'array'
+       OR jsonb_array_length(v_entry->'lines') < 2 THEN
       RAISE EXCEPTION 'entry_%_minimum_2_lines', v_index USING ERRCODE = 'P0001';
     END IF;
     PERFORM check_fiscal_period_open(v_date);
 
     v_sum_dr := 0; v_sum_cr := 0;
     FOR v_line IN SELECT * FROM jsonb_array_elements(v_entry->'lines') LOOP
-      v_dr := COALESCE((v_line->>'debit')::numeric(14,2), 0);
-      v_cr := COALESCE((v_line->>'credit')::numeric(14,2), 0);
+      -- Un nombre JSON (jamais une chaîne, donc ni 'NaN' ni texte), deux
+      -- décimales au plus (aucun arrondi silencieux), sous la borne des colonnes.
+      IF jsonb_typeof(v_line->'debit') NOT IN ('number','null')
+         OR jsonb_typeof(v_line->'credit') NOT IN ('number','null') THEN
+        RAISE EXCEPTION 'entry_%_amount_must_be_a_number', v_index USING ERRCODE = 'P0001';
+      END IF;
+      v_dr := COALESCE((v_line->>'debit')::numeric, 0);
+      v_cr := COALESCE((v_line->>'credit')::numeric, 0);
+      IF v_dr <> round(v_dr, 2) OR v_cr <> round(v_cr, 2)
+         OR v_dr >= 10000000000 OR v_cr >= 10000000000 THEN
+        RAISE EXCEPTION 'entry_%_amount_out_of_range', v_index USING ERRCODE = 'P0001';
+      END IF;
       IF v_dr < 0 OR v_cr < 0 OR (v_dr > 0) = (v_cr > 0) THEN
         RAISE EXCEPTION 'entry_%_line_must_be_debit_xor_credit', v_index USING ERRCODE = 'P0001';
       END IF;
@@ -102,6 +129,9 @@ BEGIN
 
     IF v_sum_dr <> v_sum_cr THEN
       RAISE EXCEPTION 'entry_%_unbalanced: % vs %', v_index, v_sum_dr, v_sum_cr USING ERRCODE = 'P0001';
+    END IF;
+    IF v_sum_dr >= 10000000000 THEN
+      RAISE EXCEPTION 'entry_%_amount_out_of_range', v_index USING ERRCODE = 'P0001';
     END IF;
     v_all_dr := v_all_dr + v_sum_dr;
     v_summary := v_summary || jsonb_build_object(
