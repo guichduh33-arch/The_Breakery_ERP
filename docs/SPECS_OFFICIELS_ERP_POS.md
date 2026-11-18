@@ -336,7 +336,10 @@ obligatoire à l'ouverture.
 de commandes sont **figés** à la clôture.
 **RÈGLE** — La dernière clôture peut être **annulée** par le propriétaire, ce qui
 contre-passe l'écriture d'écart et remet la session en `open`.
-**À LIVRER** — Les quatre règles ci-dessus.
+**FAIT** — L'alerte des 24 h : la liste des sessions en cours du POS marque une
+session ouverte depuis plus de 24 h. Elle ne se voit qu'à l'ouverture de cette
+liste ; aucune clôture automatique n'existe.
+**À LIVRER** — Les trois autres règles ci-dessus.
 **ABANDONNÉ** — L'état intermédiaire `recounting` : remplacé par l'annulation de
 clôture.
 **OUVERT** — Le numéro de session lisible (`SHF-YYYYMMDD-NN`) : recommandé, non
@@ -354,9 +357,11 @@ multi-règlement, encaissement espèces mono-règlement (**lecture seule**, plus
 jamais émis) et commande de tablette. Format **append-only** : un genre publié ne
 se supprime jamais.
 
-**FAIT** — La décision 5 de l'ADR-018 **n'est pas implémentée** : un règlement
-définitivement rejeté au rejeu part en quarantaine **sans alerte en caisse**. Le
-seul consommateur du résultat de rejeu ignore le champ.
+**FAIT** — La décision 5 de l'ADR-018 est implémentée : un règlement
+définitivement rejeté au rejeu affiche, sur l'écran de vente du POS, une alerte
+**sans bouton de fermeture**, lue dans le registre durable de quarantaine. Elle
+nomme le numéro local et la raison du serveur, et reste tant que l'enregistrement
+existe. La tablette de salle n'encaisse pas et ne l'affiche pas.
 
 **OUVERT** — Un article peut-il même entrer au panier hors ligne ? Le prix client
 est demandé au serveur à chaque ajout et n'est pas préchargé. À confirmer en
@@ -903,8 +908,9 @@ fidélité.
 surcharge par option, modificateurs de composants déduits et restitués
 (ADR-017). La période de disponibilité d'un combo a été **supprimée** : le seul
 mécanisme horaire du produit est la promotion.
-**FAIT** — L'ordre d'affichage des combos est enregistré par le back-office et
-**jamais appliqué** au POS, qui trie par nom.
+**FAIT** — L'ordre d'affichage des combos enregistré par le back-office est
+appliqué au POS : les combos se rangent par cet ordre, puis par nom ; les autres
+produits restent triés par nom.
 
 ---
 

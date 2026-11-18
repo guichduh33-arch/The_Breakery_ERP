@@ -6,7 +6,7 @@
 // queryClient.invalidateQueries.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LiveSessionsModal } from '../LiveSessionsModal';
 import type { LiveSession } from '../hooks/useLiveSessions';
@@ -79,6 +79,31 @@ describe('LiveSessionsModal', () => {
     expect(screen.getByText('TERM-ALPHA')).toBeInTheDocument();
     expect(screen.getByText('TERM-BRAVO')).toBeInTheDocument();
     expect(screen.getByText(/2 active/i)).toBeInTheDocument();
+  });
+
+  // S3-04 — alerte sur une session ouverte depuis plus de 24 h.
+  it('shows the stale-session badge for a session open 25h', () => {
+    sessionsState.current = {
+      data: [session({ id: 'old', opened_at: new Date(Date.now() - 25 * 3_600_000).toISOString() })],
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    };
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} />));
+    const row = screen.getByTestId('live-session-old');
+    expect(within(row).getByTestId('stale-session-badge')).toHaveTextContent('Open over 24h');
+  });
+
+  it('does not show the stale-session badge for a session open 23h', () => {
+    sessionsState.current = {
+      data: [session({ id: 'recent', opened_at: new Date(Date.now() - 23 * 3_600_000).toISOString() })],
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    };
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} />));
+    expect(screen.getByTestId('live-session-recent')).toBeInTheDocument();
+    expect(screen.queryByTestId('stale-session-badge')).toBeNull();
   });
 
   it('calls onClose when the close button is clicked', () => {

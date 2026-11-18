@@ -1577,6 +1577,11 @@ dernière est refusée. Un non-propriétaire est refusé.
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 2 : une **alerte**, jamais
 une clôture automatique.
 
+**État — développé le 2026-11-18**, lot caisse (branche `feat/s3-lot-caisse`).
+La liste des sessions en cours marque une session ouverte depuis plus de 24 h ;
+24 h pile ne déclenche rien. Tests du domaine et de la liste verts en local.
+Non livré, non vu dans un navigateur.
+
 **Fichiers**
 - `apps/pos/src/features/shift/LiveSessionsModal.tsx`
 - `apps/pos/src/features/shift/components/VarianceWarningBadge.tsx` — modèle à
@@ -1775,6 +1780,11 @@ avec un `actor_id` de **profil** et le différentiel en `payload`.
 **Risque prod** 🟠 · **Source** — Audit 01 §5.3. L'ordre est enregistré par le
 back-office et **jamais appliqué** : le POS trie par nom.
 
+**État — développé le 2026-11-18**, lot caisse (branche `feat/s3-lot-caisse`).
+Le POS range les combos par l'ordre saisi, puis par nom, dans tous les onglets
+de la grille. Aucune migration : la colonne arrivait déjà au POS. Tests verts en
+local. Non livré, non vu dans un navigateur.
+
 **Fichiers** — La grille de combos du POS et son crochet (chemins dans
 `01_CARTOGRAPHIE...` §4).
 **Preuve** — L'ordre saisi au back-office est celui affiché au POS. Vitest ciblé.
@@ -1836,6 +1846,10 @@ sans pouvoir rouvrir).
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 11. Aujourd'hui le **seul**
 son existant est celui de l'écran cuisine.
 
+**État — reportée le 2026-11-18 par Mamat**, sortie du lot caisse. Rien n'est
+développé. Décision de Mamat : la tâche est remise à plus tard, pas abandonnée ;
+l'intention des specs reste valable.
+
 **Fichiers**
 - Le poste de caisse du POS et son abonnement temps réel
 - Le composant de son de l'écran cuisine — modèle à suivre
@@ -1853,6 +1867,13 @@ l'événement. Vitest ciblé plus une vérification en navigateur.
 **Risque prod** 🔴 · **Source** — Décision 5 de l'ADR-018, **non implémentée** :
 un règlement définitivement rejeté au rejeu part en quarantaine **sans alerte**.
 Le consommateur du résultat de rejeu ignore le champ.
+
+**État — développé le 2026-11-18**, lot caisse (branche `feat/s3-lot-caisse`).
+L'écran de vente affiche une alerte sans bouton de fermeture tant qu'un
+règlement est en quarantaine ; le rejeu la rafraîchit aussitôt. Les formats de
+la file sont inchangés. Tests verts en local, sur le repli localStorage de jsdom
+et non sur un vrai IndexedDB. Non livré : le hors ligne reste désarmé en
+production.
 
 **Fichiers**
 - `apps/pos/src/features/.../offlineReplay.ts` et son consommateur

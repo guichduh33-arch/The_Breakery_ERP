@@ -32,6 +32,7 @@ import {
 } from '@breakery/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLiveSessions, type LiveSession } from './hooks/useLiveSessions';
+import { StaleSessionBadge } from './components/StaleSessionBadge';
 
 export interface LiveSessionsModalProps {
   open: boolean;
@@ -150,6 +151,8 @@ function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3 w-3" aria-hidden /> {formatElapsed(session.opened_at)}
           </span>
+          {/* S3-04 — alerte > 24 h, jamais de clôture automatique. */}
+          <StaleSessionBadge openedAt={session.opened_at} />
           <span className="inline-flex items-center gap-1">
             <CreditCard className="h-3 w-3" aria-hidden /> Opening:{' '}
             <Currency amount={session.opening_cash} className="font-mono" />

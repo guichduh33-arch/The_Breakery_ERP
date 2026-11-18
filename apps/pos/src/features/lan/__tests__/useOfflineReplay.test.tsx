@@ -4,7 +4,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 const replay = vi.hoisted(() => vi.fn());
 vi.mock('../offlineReplay', () => ({ replayOfflineOutbox: replay }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock('@/lib/queryClient', () => ({ queryClient: { invalidateQueries: vi.fn() } }));
+const invalidate = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/queryClient', () => ({ queryClient: { invalidateQueries: invalidate } }));
 
 import { useOfflineReplay } from '../hooks/useOfflineReplay';
 import { useAuthStore } from '@/stores/authStore';
@@ -106,5 +107,25 @@ describe('automatic offline replay', () => {
     hook.unmount();
     await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
     expect(replay).toHaveBeenCalledTimes(2);
+  });
+
+  // S3-17 — ADR-018 D5 : un rejeu qui met en quarantaine rafraîchit l'alerte caisse.
+  it('invalidates the quarantine registry when the replay quarantined intents', async () => {
+    invalidate.mockClear();
+    replay.mockResolvedValue({ replayed: 2, failed: 0, quarantined: 1 });
+    const hook = renderHook(useOfflineReplay);
+    await act(async () => { await Promise.resolve(); });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['offline', 'quarantine'] });
+    hook.unmount();
+  });
+
+  it('does not touch the quarantine registry after a clean replay', async () => {
+    invalidate.mockClear();
+    replay.mockResolvedValue({ replayed: 1, failed: 0 });
+    const hook = renderHook(useOfflineReplay);
+    await act(async () => { await Promise.resolve(); });
+    expect(invalidate).toHaveBeenCalled();
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['offline', 'quarantine'] });
+    hook.unmount();
   });
 });

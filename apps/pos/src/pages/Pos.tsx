@@ -54,6 +54,7 @@ import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
 import { useOfflinePendingCount } from '@/features/lan/hooks/useOfflinePendingCount';
+import { QuarantineAlertBanner } from '@/features/lan/QuarantineAlertBanner';
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { loginWithPin } from '@breakery/supabase';
 import type { Customer } from '@breakery/domain';
@@ -178,6 +179,9 @@ export default function PosPage() {
           Offline mode — checkout disabled in settings, no sale possible until the cloud connection returns
         </div>
       )}
+      {/* S3-17 — ADR-018 D5 : règlement hors ligne refusé au rejeu, alerte
+          persistante sans bouton de fermeture. */}
+      <QuarantineAlertBanner />
       <header className="h-14 shrink-0 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <Button
