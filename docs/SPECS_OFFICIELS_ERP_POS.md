@@ -567,7 +567,10 @@ configurée. L'écran affiche une liste vide qui se lit comme « tout va bien »
 
 **RÈGLE** — L'écran doit **dire qu'il ne sait pas** : bandeau comptant les
 produits suivis sans seuil. Pas de promesse d'e-mail.
-**À LIVRER** — Le bandeau, puis la saisie des seuils par Mamat.
+**FAIT** — Le bandeau : l'onglet de stock bas compte les produits actifs suivis
+dont le seuil est à zéro, et ne dit plus « tout est au-dessus du seuil » tant
+que ce compte n'est pas nul.
+**À LIVRER** — La saisie des seuils par Mamat.
 
 ### 8.8 Abandonné dans ce domaine
 
@@ -654,12 +657,13 @@ facture avec port ne peut pas être saisie à son montant réel.
 doivent exister, le port étant réparti au prorata sur les lignes.
 **À LIVRER** — Les deux.
 
-**FAIT** — La fiche fournisseur calcule l'impayé depuis le **statut du bon**,
-sans lire les paiements : un bon à crédit entièrement reçu et jamais payé est
-compté payé. Le rapport des paiements, lui, lit le vrai journal.
 **RÈGLE** — Une seule réponse à « combien je lui dois », celle du journal des
 paiements.
-**À LIVRER** — Brancher la fiche sur le journal.
+**FAIT** — La fiche fournisseur lit le journal des paiements, avec la règle du
+rapport : bons reçus, hors imports historiques, total moins paiements, compté
+s'il reste positif. Un bon non reçu ne porte pas de dette. Le montant « en
+retard » de l'onglet des paiements suit encore l'ancienne règle de livraison
+attendue.
 
 ---
 
@@ -867,9 +871,10 @@ manuel possible.
 
 **FAIT** — Six mécaniques existent et sont évaluées par le serveur :
 pourcentage, montant fixe, un acheté un offert, produit offert, palier, formule.
-**Le formulaire du back-office n'en propose que quatre** : le palier et la formule
-ne sont configurables qu'en base.
-**À LIVRER** — Ouvrir le palier et la formule dans le formulaire.
+**FAIT** — Le formulaire du back-office propose les six. Un palier en
+pourcentage exige un plafond : le serveur lit la présence du plafond comme le
+mode pourcentage. La suppression physique d'une promotion est tracée dans le
+journal d'audit, comme sa suppression logique.
 
 **FAIT** — Le **cumul** de promotions existe, piloté par un drapeau par
 promotion. **Il n'y a aucune sélection de la « meilleure » promo** : l'ordre est

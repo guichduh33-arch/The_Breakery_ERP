@@ -1640,6 +1640,13 @@ total du bon égale la facture.
 calcule l'impayé depuis le **statut du bon**, sans lire les paiements : un bon à
 crédit entièrement reçu et jamais payé est compté **payé**.
 
+**État — développé le 2026-11-18**, lot back-office (branche
+`feat/s3-lot-backoffice`). La tuile « Unpaid », le total payé et les badges de
+ligne lisent le journal des paiements avec la règle du rapport, sans plafond de
+100 lignes. Un bon non reçu affiche « awaiting receipt ». Le montant « Overdue »
+garde sa règle de livraison attendue : non traité. Tests verts en local ; la
+comparaison avec le rapport sur un fournisseur de dev reste à faire.
+
 **Fichiers**
 - La fiche fournisseur du back-office et son crochet d'impayé
 - `apps/backoffice/src/features/purchasing/hooks/usePoPayments.ts` — la **bonne**
@@ -1694,6 +1701,13 @@ sans pas garde l'arrondi entier.
 suivis ont un seuil à zéro : l'écran affiche une liste vide qui se lit comme
 « tout va bien ». **Pas de promesse d'e-mail.**
 
+**État — développé le 2026-11-18**, lot back-office (branche
+`feat/s3-lot-backoffice`). Le bandeau vit dans l'onglet de stock bas, au-dessus
+de la liste, et non dans l'onglet des problèmes de configuration. Il compte les
+produits actifs suivis dont le seuil est à zéro ; tout produit est suivi par
+défaut, produits finis compris. Tests verts en local. Reste : la saisie des
+seuils par Mamat.
+
 **Fichiers**
 - `apps/backoffice/src/features/inventory-alerts/components/LowStockTab.tsx`
 - `apps/backoffice/src/features/inventory-alerts/components/ConfigIssuesTab.tsx`
@@ -1710,6 +1724,13 @@ Mamat saisit les seuils.
 
 **Risque prod** 🟠 · **Source** — Arbitrage §2bis lot 5. Les 6 mécaniques sont
 évaluées par le serveur ; le formulaire n'en propose que **4**.
+
+**État — développé le 2026-11-18**, lot back-office (branche
+`feat/s3-lot-backoffice`). Le formulaire partagé propose le palier et la formule
+(`bundle`), validés comme la contrainte de la base. Un palier en pourcentage
+exige un plafond, car le serveur lit le plafond comme le mode. Tests verts en
+local ; l'évaluation au POS en dev n'est pas faite. Le filtre par type de la
+liste des promotions ignore encore ces deux types.
 
 **Fichiers**
 - `apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx`
@@ -1731,6 +1752,14 @@ avant.**
 
 **Risque prod** 🟠 · **Source** — Audit 01 §5.1. Le déclencheur d'audit des
 promotions couvre la création et la modification, **pas la suppression**.
+
+**État — appliqué en dev le 2026-11-18**, lot back-office (branche
+`feat/s3-lot-backoffice`), migration
+`20261118000007_s3_12_audit_promotion_hard_delete.sql`. La suppression logique
+était déjà tracée par la famille `delete_promotion` ; il manquait la suppression
+physique. Un déclencheur séparé la trace. Prouvé en dev dans une transaction
+annulée : 0 ligne avant la migration, 1 après, auteur = profil. Pas en
+production.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — étendre le déclencheur
@@ -1756,6 +1785,10 @@ back-office et **jamais appliqué** : le POS trie par nom.
 
 **Risque prod** 🟢 · **Source** — Audit 01 §5.3. La fonction serveur **et** le
 crochet existent ; aucun bouton ne les appelle.
+
+**État — développé le 2026-11-18**, lot back-office (branche
+`feat/s3-lot-backoffice`). Bouton « Edit » sur chaque variante, réservé au droit
+d'écriture des variantes, et dialogue du libellé. Tests verts en local.
 **Fichiers** — La fiche produit, onglet variantes.
 **Preuve** — Le libellé se modifie et persiste. Vitest ciblé.
 
