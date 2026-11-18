@@ -26,21 +26,30 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
-## Complément du 18 novembre 2026, 19 h — paquet caisse et APK 1.23 fabriqués sur `6854931a`, non installés
+## Complément du 18 novembre 2026, 19 h 25 — paquet caisse et APK 1.23 sur `6854931a`, installés
 
-Relevé du 18 novembre 2026 entre 17 h et 19 h, UTC+8. Observé directement.
-Rien n'est installé : la caisse et les tablettes servent encore `f46a4eeb`.
+Relevé du 18 novembre 2026 entre 17 h et 19 h 25, UTC+8. Observé directement.
+Boutique fermée à l'installation : aucune session de caisse ouverte, aucune
+commande ouverte du jour, dernière commande à 18 h 03.
 
 | Surface | Observation | Limite |
 |---|---|---|
 | POS production, avant | `https://pos.the-breakery.com:3001/health` rend `f46a4eeb` (vers 17 h 30) ; 443 répond 403 hors du poste | — |
 | Compatibilité | Les 54 fonctions SQL appelées par le POS de `6854931a` existent en production, dont `close_shift_v14` ; les 13 Edge Functions qu'il appelle sont actives. `close_shift_v13` et `close_shift_v10` y sont des enveloppes vers `close_shift_v14` ; `close_shift_v12` existe encore sans la garde des commandes impayées, sans appelant dans `master` | Lecture du schéma, pas d'appel exécuté |
 | Preuves du SHA `6854931a` | Fusion de #733. `ci.yml` run `44282889463` réussi ; pgTAP lancé à la main, run `44283595879`, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
-| Paquet caisse | `package-shop-release.yml`, run `44287258563`, approuvé par Mamat ; artefact `shop-release-6854931afe98444d138381288121484a923f8533-1`, SHA-256 de l'archive `70a69558c770ad60db6384e2936bfa318ce7a551c7a0c9645df37ba3490d7965` égal au fichier `.sha256`. `release.json` : SHA `6854931a`, projet de production. Bundle : référence de production seule, ni dev ni V2 ; `close_shift_v14` présent, `close_shift_v13` absent ; le mode `background` de la synchronisation présent | **Non installé** |
-| Tablettes, APK 1.23 | Fabriquée sur le poste de développement : `com.thebreakery.pos`, version 1.23 (code 24), SHA-256 `e98dbf582b2e61b80d41eacf7ff91ee192fec4d56cdd98fd1d710bad97a14fda`. Les 88 fichiers de `assets/public/assets` sont identiques au bundle du paquet ci-dessus, repris de l'archive sans reconstruction. Certificat `100d48b8…`, égal à celui de l'APK 1.21. Conservée hors Git sous `.release-manifests/tablet-apk-1.23-20261118/` | **Non installée** ; aucun appareil joint par `adb` |
+| Paquet caisse | `package-shop-release.yml`, run `44287258563`, approuvé par Mamat ; artefact `shop-release-6854931afe98444d138381288121484a923f8533-1`, SHA-256 de l'archive `70a69558c770ad60db6384e2936bfa318ce7a551c7a0c9645df37ba3490d7965` égal au fichier `.sha256`. `release.json` : SHA `6854931a`, projet de production. Bundle : référence de production seule, ni dev ni V2 ; `close_shift_v14` présent, `close_shift_v13` absent ; le mode `background` de la synchronisation présent | — |
+| POS production, installation | Archive envoyée en deux parts par la console de supervision, recollée sur le poste dans `C:\BreakeryV3\updates-6854931a` ; empreinte égale au `.sha256`. `shop-update.json` (version 2) produit sur le poste par un script qui relit les empreintes du Node, du lanceur et de la configuration externe et vérifie que le lanceur nomme `f46a4eeb`. Installateur du paquet lancé vers 19 h 15 ; sortie `SHOP_RELEASE_VERIFIED 6854931afe98444d138381288121484a923f8533` | — |
+| POS production, après | Sur le poste, `https://pos.the-breakery.com/health` et `:3001/health` rendent `6854931a` (19 h 18). Depuis le LAN, la page servie sur 3001 charge `index-B4q0kfzo.js`, fichier du paquet | Rechargement de la caisse, de l'écran client et du KDS non vu ; aucune impression, aucune vente constatées. Vers 19 h 23, une commande de listage destinée au terminal a été tapée par erreur dans la vue « Bureau » de la caisse, ouverte entre-temps par un autre observateur : l'écran montrait la page des rapports, sans champ de saisie, et rien n'y a paru modifié |
+| Tablettes, APK 1.23 | Fabriquée sur le poste de développement : `com.thebreakery.pos`, version 1.23 (code 24), SHA-256 `e98dbf582b2e61b80d41eacf7ff91ee192fec4d56cdd98fd1d710bad97a14fda`. Les 88 fichiers de `assets/public/assets` sont identiques au bundle du paquet ci-dessus, repris de l'archive sans reconstruction. Certificat `100d48b8…`, égal à celui de l'APK 1.21. Conservée hors Git sous `.release-manifests/tablet-apk-1.23-20261118/` | — |
+| CS30, APK 1.23 | `adb install -r` à 19 h 18 sur `A59T11BGT3A01119`, qui portait la 1.22 (code 23). Après : 1.23 (code 24), fichier installé de même SHA-256, date de première installation inchangée (2026-10-08) | Application non ouverte, aucune commande essayée |
+| Galaxy Tab A8, APK 1.23 | `adb install -r` à 19 h 22 sur `R9RT200NJHB` (SM-X205), qui portait la 1.22 (code 23). Après : 1.23 (code 24), fichier installé de même SHA-256, date de première installation inchangée (2026-08-22) | Idem. Tout autre appareil Android reste non mis à jour |
 
-Pour l'installation : la release précédente de la caisse est `f46a4eeb`, et les
-tablettes portent la 1.22 (code 23) relevée le 15 novembre.
+Retour : le lanceur sauvegardé `start.cjs.rollback-6854931a…` et la release
+`f46a4eeb` restent sur le poste ; `f46a4eeb` appelle `close_shift_v13`, encore
+présente en production comme enveloppe. Pour la livraison suivante : la release
+précédente devient `6854931afe98444d138381288121484a923f8533`, et l'empreinte du
+lanceur a changé. Le retour d'une tablette à la 1.22 exigerait une
+désinstallation, donc la perte de ses données.
 
 ## Complément du 18 novembre 2026, 11 h — retrait des objets abandonnés (`S2-03`, `S2-04`, `S2-05`, `S2-09`)
 
