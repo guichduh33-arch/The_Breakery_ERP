@@ -26,6 +26,37 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 20 novembre 2026, 1 h 30 — rapprochement groupé (#745), annulation de clôture (`S3-03`) et caisse `e7c43cfd`
+
+Relevé du 20 novembre 2026 entre 0 h 10 et 1 h 30, UTC+8. Observé directement.
+Boutique fermée : aucune session de caisse ouverte, dernière commande le
+19 novembre à 17 h 58.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, avant | Dernière migration `20261119170112`. Déjà présents (relevé sans trace de session) : `open_shift_v1`, `close_shift_v15`, `get_pos_sessions_report_v5`, `get_shift_close_preview_v2`, `_guard_frozen_shift_totals_v1`. Absents : `_reverse_shift_journal_entry_v1`, `undo_shift_close_v2`, `bank_reconciliation_post_v6`, `bank_reconciliation_clearing_days_v1`. Les fonctions d'aide du rapprochement ont le même corps qu'en dev | Auteur et heure de l'application partielle de #743 non retrouvés |
+| Preuves du SHA `e7c43cfd` | Fusion de #745. `ci.yml` run `44560373860` réussi ; pgTAP lancé à la main, run `44562903552`, réussi (`pgtap` et `db-gate`) | pgTAP tourne sur la base de dev |
+| Backend production, étape additive | `bank_reconciliation_grouped_fees_additive` (`20261119000010` sans le `DROP`) puis `s3_03_undo_shift_close_v2_additive` (`_reverse_shift_journal_entry_v1` de `20261119000005`, sans `undo_shift_close_v1` ; `20261119000008` sans son `DROP`). Empreintes `md5(prosrc)` égales au dev pour les quatre fonctions ; aucune exécutable par `anon` ; `_reverse_shift_journal_entry_v1` non exécutable par `authenticated` | — |
+| Back-office | `production-backoffice.yml`, run `44568258255`, réussi après l'approbation de Mamat ; déploiement `dpl_HVnw2kQ1coVS76jm6qTWkNrEV5j8` sur `e7c43cfd`. Code servi par `backoffice.the-breakery.com` relu (301 fichiers) : référence de production seule, appelle `bank_reconciliation_post_v6` et `bank_reconciliation_clearing_days_v1`, jamais `bank_reconciliation_post_v5` | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, retrait | `bank_reconciliation_grouped_fees_drop_post_v5` : `bank_reconciliation_post_v5` supprimée après la bascule du back-office | — |
+| Paquet caisse | `package-shop-release.yml`, run `44568270215`, approuvé par Mamat ; artefact `shop-release-e7c43cfd814b535a8bcc35e5e441f585da052e2f-1`, SHA-256 de l'archive `851250f167f5fcae68a4c0a464e55d50334e60f150ca5101a2f82ea5d3ae5800` égal au fichier `.sha256`. `release.json` : SHA `e7c43cfd`, projet de production, preuves CI et pgTAP ci-dessus. Bundle : référence de production seule ; appelle `open_shift_v1`, `close_shift_v15`, `get_shift_close_preview_v2`, `undo_shift_close_v2`. Les 55 fonctions versionnées qu'il appelle existent en production | Liste extraite du bundle par motif de nom, pas par exécution |
+| POS production, installation | Archive envoyée en deux parts par la console de supervision, recollée dans `C:\BreakeryV3\updates-e7c43cfd` ; empreinte égale au `.sha256`. `shop-update.json` repris de la livraison `6854931a`, empreintes du Node, du lanceur et de la configuration externe relues sur le poste, release précédente `6854931a`. Installateur lancé vers 1 h 18 ; sortie `SHOP_RELEASE_VERIFIED e7c43cfd814b535a8bcc35e5e441f585da052e2f`, code 0 | — |
+| POS production, après | Sur le poste, à 1 h 24 : `https://pos.the-breakery.com/health` et `:3001/health` rendent `e7c43cfd` ; la page servie sur 3001 charge `index-BvR7I9Te.js`, fichier du paquet | Écran de la caisse, écran client et KDS non rechargés sous observation ; aucune vente, aucune impression, aucune ouverture de session constatée |
+| Tablettes | Non mises à jour : elles portent l'APK 1.23 (bundle `6854931a`), qui ouvre une session par insertion directe et clôture par `close_shift_v14` | — |
+
+Non appliqué : les retraits `20261119000003_s3_01_revoke_direct_session_insert`
+et `20261119000006_s3_02_retire_close_shift_v14`. Ils bloqueraient la page de
+caisse déjà chargée tant qu'elle n'est pas rechargée, et les tablettes en 1.23.
+Les appliquer après le rechargement de la caisse et l'installation d'une APK
+tirée du paquet `e7c43cfd`.
+
+Retour : le lanceur sauvegardé `start.cjs.rollback-e7c43cfd…` et la release
+`6854931a` restent sur le poste ; `6854931a` appelle `close_shift_v14`, encore
+présente. Le back-office précédent `9be05a02` appelle `bank_reconciliation_post_v5`,
+supprimée : il n'est plus un recours pour l'écran de rapprochement. Pour la
+livraison suivante, la release précédente devient
+`e7c43cfd814b535a8bcc35e5e441f585da052e2f` et l'empreinte du lanceur a changé.
+
 ## Complément du 19 novembre 2026, 0 h 15 — retrait des lots (`S2-01`, `S2-02`, `S2-08`), audit de suppression de promotion (`S3-12`) et back-office `47ac4756`
 
 Relevé du 18 novembre 2026 à 23 h 15 au 19 novembre 2026 à 0 h 15, UTC+8.
