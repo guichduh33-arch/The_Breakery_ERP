@@ -41,7 +41,7 @@ import {
 import { todayIsoDate, formatTimeWita, formatIdr } from '@breakery/utils';
 import { sumDenominations } from '@breakery/domain';
 import { toast } from 'sonner';
-import { useOpenShift } from './hooks/useShift';
+import { OpenShiftError, useOpenShift } from './hooks/useShift';
 import { useLanDevices } from './hooks/useLanDevices';
 import { useDenominationCountEnabled } from './hooks/useDenominationCountEnabled';
 import { DenominationGrid } from './components/DenominationGrid';
@@ -63,6 +63,26 @@ export interface OpenShiftModalProps {
   /** Optional close handler — when omitted, the modal cannot be dismissed
    * (used when shift is required to proceed). */
   onClose?: () => void;
+}
+
+/** S3-01 — message lisible pour chaque refus de open_shift_v1. */
+function openShiftErrorMessage(err: unknown): string {
+  const code = err instanceof OpenShiftError ? err.code : 'unknown';
+  switch (code) {
+    case 'terminal_required':
+    case 'terminal_invalid':
+      return 'Select an active cash terminal to open the shift.';
+    case 'terminal_session_open':
+      return 'A shift is already open on this terminal. Close it first.';
+    case 'user_session_open':
+      return 'You already have an open shift on another terminal.';
+    case 'invalid_opening_cash':
+      return 'The opening cash amount is not valid.';
+    case 'forbidden':
+      return 'You are not allowed to open a shift.';
+    default:
+      return 'Failed to open shift — check the connection and try again.';
+  }
 }
 
 /** Format a date like "APRIL 29, 2026" (uppercase, locale-agnostic). */
@@ -87,10 +107,19 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const denomEnabled = useDenominationCountEnabled();
 
   const STORAGE_KEY = 'pos:last_terminal_id';
-  const [terminalId, setTerminalId] = useState<string | null>(
+  const [pickedTerminalId, setTerminalId] = useState<string | null>(
     () => (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null),
   );
   const lanDevices = useLanDevices({ deviceType: 'pos' });
+  // S3-01 — le terminal est obligatoire. Un choix mémorisé ne vaut que s'il
+  // désigne encore un terminal actif ; avec un seul terminal, il est présélectionné.
+  const terminals = lanDevices.data ?? [];
+  const terminalId =
+    pickedTerminalId && terminals.some((d) => d.id === pickedTerminalId)
+      ? pickedTerminalId
+      : terminals.length === 1
+        ? terminals[0]!.id
+        : null;
 
   const openShift = useOpenShift();
   const { presets } = usePOSPresets();
@@ -137,17 +166,16 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   }
 
   async function handleSubmit(): Promise<void> {
-    if (amount <= 0) return;
+    if (amount <= 0 || !terminalId) return;
     setSubmitError(null);
     try {
       const mutInput: {
         opening_cash: number;
         opening_notes?: string;
-        terminal_id?: string | null;
+        terminal_id: string;
         opening_denominations?: Record<string, number>;
-      } = { opening_cash: amount };
+      } = { opening_cash: amount, terminal_id: terminalId };
       if (notes) mutInput.opening_notes = notes;
-      if (terminalId) mutInput.terminal_id = terminalId;
       if (denomEnabled) mutInput.opening_denominations = denoms;
       await openShift.mutateAsync(mutInput);
       toast.success('Shift opened');
@@ -157,8 +185,9 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       setNotes('');
       setDenoms({});
     } catch (err) {
-      setSubmitError('Failed to open shift — check the connection and try again.');
-      toast.error('Failed to open shift');
+      const message = openShiftErrorMessage(err);
+      setSubmitError(message);
+      toast.error(message);
       console.error(err);
     }
   }
@@ -320,8 +349,10 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             )}
 
             <section className="space-y-2">
-              <SectionLabel as="div">Terminal (optional)</SectionLabel>
+              <SectionLabel as="div">Terminal</SectionLabel>
               <Select
+                aria-label="Terminal"
+                aria-required="true"
                 value={terminalId ?? ''}
                 onChange={(e) => {
                   const v = e.target.value || null;
@@ -333,11 +364,16 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 }}
                 data-testid="shift-terminal"
               >
-                <option value="">(no terminal selected)</option>
-                {lanDevices.data?.map((d) => (
+                <option value="">Select a terminal…</option>
+                {terminals.map((d) => (
                   <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
                 ))}
               </Select>
+              {lanDevices.isSuccess && terminals.length === 0 && (
+                <p className="text-xs text-red-as-text" data-testid="shift-terminal-none">
+                  No active cash terminal is registered. Ask a manager to add one in the back office.
+                </p>
+              )}
             </section>
 
             <section className="space-y-2">
@@ -372,7 +408,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 variant="gold"
                 size="lg"
                 className="w-full uppercase tracking-widest"
-                disabled={amount <= 0 || openShift.isPending}
+                disabled={amount <= 0 || !terminalId || openShift.isPending}
                 onClick={() => { void handleSubmit(); }}
                 data-testid="open-shift-submit"
               >
