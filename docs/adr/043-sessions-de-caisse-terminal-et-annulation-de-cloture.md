@@ -32,6 +32,16 @@ plan de finition.
    la session en `open`. Le geste est tracé dans le journal d'audit, avec l'état
    d'avant.
 
+6. **L'annulation est refusée si l'argent déposé par la clôture a déjà quitté
+   les fonds non déposés** (dépôt en banque, retrait) : la contre-passation
+   rendrait ce compte négatif.
+
+7. **Un utilisateur qui détient la permission de clôturer les sessions des
+   autres compte et clôture, depuis le POS, la session ouverte d'un autre
+   caissier.** Sans cette permission, on ne clôture que sa propre session. Un
+   caissier qui oublie de clôturer ne bloque donc pas son terminal pour la
+   suite.
+
 ## Ce qui ne change pas
 
 - Aucune session ne se clôture automatiquement ; la session ouverte depuis plus
@@ -47,7 +57,11 @@ terminal, « la dernière clôture » pouvait désigner la dernière de la bouti
 la dernière de chaque terminal. Et la clôture crée aussitôt un rapport Z, que le
 propriétaire signe ensuite : la décision ne disait pas si une clôture déjà signée
 restait annulable. Mamat a tranché les deux points le 2026-11-19 : par terminal,
-et seulement avant signature.
+et seulement avant signature. La revue du lot a ensuite relevé deux cas que
+la décision ne couvrait pas : l'argent déposé déjà sorti des fonds non déposés,
+et le terminal bloqué par la session oubliée d'un autre caissier. Mamat a
+tranché le même jour : refus de l'annulation dans le premier cas, clôture par un
+manager dans le second (points 6 et 7).
 
 À la clôture, le tiroir est aussi réglé en comptabilité (fond rendu, reste
 déposé). Contre-passer la seule écriture d'écart aurait laissé ce règlement en

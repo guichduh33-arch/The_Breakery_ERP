@@ -345,9 +345,17 @@ de commandes sont **figés** à la clôture.
 contre-passe l'écriture d'écart et remet la session en `open`.
 **RÈGLE** — « La dernière » s'entend par terminal : aucune session plus récente
 n'a été ouverte sur ce terminal. Un rapport Z signé interdit l'annulation ; elle
-défait aussi le règlement du tiroir et retire le rapport Z brouillon (décision de
-Mamat du 2026-11-19,
+défait aussi le règlement du tiroir et retire le rapport Z brouillon. Elle est
+refusée si l'argent déposé par la clôture a déjà quitté les fonds non déposés
+(décisions de Mamat du 2026-11-19,
 [ADR-043](adr/043-sessions-de-caisse-terminal-et-annulation-de-cloture.md)).
+**RÈGLE** — Un utilisateur qui détient la permission de clôturer les sessions des
+autres clôture, depuis le POS, la session ouverte d'un autre caissier ; sans
+elle, on ne clôture que la sienne (même ADR).
+**FAIT** — La famille `close_shift` porte cette garde, et la liste des sessions
+en cours du POS propose la clôture à qui détient la permission (migrations
+`20261119000004_s3_02_freeze_shift_totals.sql` et
+`20261119000007_s3_01_close_other_shift_preview.sql`).
 **FAIT** — L'alerte des 24 h : la liste des sessions en cours du POS marque une
 session ouverte depuis plus de 24 h. Elle ne se voit qu'à l'ouverture de cette
 liste ; aucune clôture automatique n'existe.

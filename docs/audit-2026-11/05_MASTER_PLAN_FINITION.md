@@ -1546,8 +1546,19 @@ terminal (relevé production du 2026-11-19, toutes clôturées, du 31 octobre au
 2 novembre) sont **marquées**, non rattachées : rien ne prouve le poste qui les a
 ouvertes ; le commentaire de la colonne dit qu'un terminal vide désigne une
 session antérieure à la règle. Preuve pgTAP `s3_01_open_shift_terminal.test.sql`,
-19 sur 19 en dev le 2026-11-19. **Non fait** : la production, l'installation du
-paquet caisse, l'essai à l'écran.
+19 sur 19 en dev le 2026-11-19.
+**Après la revue indépendante du même jour** : la migration de retrait retire
+aussi la modification et la suppression directes (une clôture ou une remise en
+open par écriture directe contournerait `S3-02` et `S3-03`). Décision de Mamat
+du 2026-11-19 (ADR-043, point 7) : une session oubliée ne bloque pas le
+terminal ; qui détient `pos.session.close_other` la clôture depuis la liste des
+sessions en cours, qui montre désormais le code du terminal. `close_shift_v15`
+exige cette permission pour la session d'un autre (v14 ne le vérifiait pas), et
+l'aperçu de clôture passe en v2 (migration
+`20261119000007_s3_01_close_other_shift_preview.sql`, la v1 se retire avec v14).
+Sur un refus « terminal occupé » ou « session déjà ouverte », l'écran d'ouverture
+relit la session courante. **Non fait** : la production, l'installation du paquet
+caisse, l'essai à l'écran.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — unicité par terminal, terminal obligatoire
@@ -1582,8 +1593,8 @@ comme figé. Migration `20261119000006_s3_02_retire_close_shift_v14.sql`, après
 installation du paquet caisse : retrait de `close_shift_v14` et du rapport v4,
 et retrait du droit d'exécution client sur les versions plus anciennes encore
 présentes (v10, v12, v13 en production), qui clôtureraient sans figer. Preuve
-pgTAP `s3_02_frozen_shift_totals.test.sql`, 15 sur 15 en dev le 2026-11-19 (plus
-un contrôle d'empreinte joué à part). **Non fait** : la production, l'essai à
+pgTAP `s3_02_frozen_shift_totals.test.sql`, 20 sur 20 en dev le 2026-11-19, garde
+de la clôture d'une autre session comprise. **Non fait** : la production, l'essai à
 l'écran.
 
 **Fichiers**
@@ -1629,8 +1640,16 @@ clôturées. Preuve pgTAP `s3_03_undo_shift_close.test.sql`, 21 sur 21 en dev le
 2026-11-19 : refus (non-propriétaire, PIN absent ou faux, session sans terminal,
 session non dernière, rapport Z signé, session ouverte), annulation, chaque
 compte touché revenu à zéro, puis reclôture avec ses propres écritures, son
-rapport Z et ses totaux. **Non fait** : la production, l'essai à l'écran ; le
-PDF du rapport Z brouillon éventuellement stocké reste dans le stockage.
+rapport Z et ses totaux.
+**Après la revue indépendante du même jour** : décision de Mamat (ADR-043,
+point 6), l'annulation est refusée si les fonds non déposés contiennent moins
+que ce que la clôture y a mis ; le cas est ajouté au test, joué en dev dans un
+passage réduit (15 sur 15), la suite complète du fichier revient à la CI. Le rapport de session
+n'affiche plus les comptages de l'ancienne clôture sur une session rouverte.
+**Non fait** : la production, l'essai à l'écran ; le PDF du rapport Z brouillon
+éventuellement stocké reste dans le stockage ; l'étiquette technique d'une
+écriture contre-passée est réécrite, ce qu'un futur verrou d'immuabilité des
+écritures devra prendre en compte.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction d'annulation, gatée propriétaire,
