@@ -135,6 +135,12 @@ paths:
     post:
       summary: Verify PIN, mint session + JWT
       operationId: loginWithPin
+      parameters:
+        - in: header
+          name: x-login-pin
+          required: true
+          description: The PIN travels in this header only, never in the body.
+          schema: { type: string, pattern: '^[0-9]{6}$' }
       requestBody:
         required: true
         content:
@@ -203,6 +209,15 @@ paths:
           name: x-session-token
           required: true
           schema: { type: string }
+        - in: header
+          name: x-new-pin
+          required: true
+          schema: { type: string, pattern: '^[0-9]{6}$' }
+        - in: header
+          name: x-current-pin
+          required: false
+          description: 'Required for self rotation; omit for admin override.'
+          schema: { type: string, pattern: '^[0-9]{6}$' }
       requestBody:
         required: true
         content:
@@ -229,12 +244,14 @@ components:
         role_code: { type: string }
         employee_code: { type: string }
 
+    # Body JSON réel. Le PIN n'y figure jamais : il voyage dans `x-login-pin`.
+    # La fonction TypeScript `loginWithPin` reçoit `pin` et le place elle-même
+    # dans l'en-tête.
     LoginRequest:
       type: object
-      required: [user_id, pin, device_type]
+      required: [user_id, device_type]
       properties:
         user_id: { type: string, format: uuid }
-        pin: { type: string, pattern: '^[0-9]{6}$' }
         device_type:
           type: string
           enum: [pos, backoffice]
@@ -262,16 +279,13 @@ components:
           type: array
           items: { type: string }
 
+    # Body JSON réel : `user_id` seul. Les PIN voyagent dans `x-current-pin`
+    # et `x-new-pin`, jamais dans le corps.
     ChangePinRequest:
       type: object
-      required: [user_id, new_pin]
+      required: [user_id]
       properties:
         user_id: { type: string, format: uuid }
-        current_pin:
-          type: string
-          pattern: '^[0-9]{6}$'
-          description: 'Required for self rotation; omit for admin override.'
-        new_pin: { type: string, pattern: '^[0-9]{6}$' }
 ```
 
 ---
