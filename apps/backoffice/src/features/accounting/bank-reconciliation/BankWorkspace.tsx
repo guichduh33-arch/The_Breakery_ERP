@@ -90,7 +90,7 @@ export function BankWorkspace({ reconciliationId, catalog }: { reconciliationId:
     </div></details>
     {form === 'import' && <BankImportDialog accounts={catalog.bank_accounts} existing={rec} onClose={() => setForm(null)} onReady={(statement) => manage({ kind: 'import',statement })} />}
     {form === 'balances' && <BankBalanceDialog reconciliation={rec} onClose={() => setForm(null)} onReady={manage} />}
-    {form === 'post' && <BankPostDialog reconciliation={rec} bankLines={selectedBank} glLines={selectedGl} accounts={catalog.counter_accounts} onClose={() => setForm(null)} onReady={(payload) => { setForm(null); setAction({ operation: 'bank_post',payload }); }} />}
+    {form === 'post' && <BankPostDialog reconciliation={rec} bankLines={selectedBank} glLines={selectedGl} accounts={catalog.counter_accounts} clearingAccounts={catalog.clearing_accounts} onClose={() => setForm(null)} onReady={(payload) => { setForm(null); setAction({ operation: 'bank_post',payload }); }} />}
     {form === 'finalize' && <BankFinalizeDialog reconciliationId={rec.id} unmatched={gl.filter((l) => !l.match_id)} onClose={() => setForm(null)} onReady={(payload) => { setForm(null); setAction({ operation: 'bank_finalize',payload }); }} />}
     {unmatch && <BankUnmatchDialog reconciliationId={rec.id} matchId={unmatch} onClose={() => setUnmatch(null)} onReady={manage} />}
     {action && <BankAttemptDialog operation={action.operation} target={rec.id} payload={action.payload} onClose={() => setAction(null)} onSuccess={() => { setBankIds([]); setGlIds([]); }} />}
