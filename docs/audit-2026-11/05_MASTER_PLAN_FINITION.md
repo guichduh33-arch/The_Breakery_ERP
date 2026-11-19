@@ -1734,7 +1734,10 @@ bon et trace l'annulation. Refus explicites : stock déjà consommé, paiements
 supérieurs au reçu restant, réception d'import historique, double annulation.
 Le back-office porte l'action « Cancel receipt » sur chaque réception, affiche
 une réception annulée avec sa date et sa raison, et le message d'annulation du
-bon dit la vérité. pgTAP `s3_05_cancel_goods_receipt.test.sql` 38/38 en dev ;
+bon dit la vérité. pgTAP `s3_05_cancel_goods_receipt.test.sql` 41/41 en dev (relecture indépendante
+appliquée : coût moyen laissé inchangé quand l'article a bougé depuis la
+réception, verrous par article dans un ordre fixe, erreur explicite pour une
+ligne sans quantité) ;
 Vitest 16/16 sur trois fichiers ; suite back-office complète verte. Non publié.
 **Limites relevées** :
 - une réception payée au comptant est toujours refusée, faute de chemin pour

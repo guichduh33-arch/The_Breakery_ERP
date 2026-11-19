@@ -152,11 +152,20 @@ BEGIN
       v_total_paid, v_remaining_recv USING ERRCODE = 'P0001';
   END IF;
 
+  -- Verrous des articles par identifiant croissant : deux annulations de bons
+  -- différents qui partagent des articles les prennent dans le même ordre.
+  PERFORM 1 FROM products
+    WHERE id IN (SELECT product_id FROM stock_movements
+                  WHERE metadata->>'grn_id' = p_grn_id::text
+                    AND movement_type = 'purchase')
+    ORDER BY id
+    FOR UPDATE;
+
   FOR v_mv IN
     SELECT * FROM stock_movements
       WHERE metadata->>'grn_id' = p_grn_id::text
         AND movement_type = 'purchase'
-      ORDER BY created_at, id
+      ORDER BY product_id, created_at, id
   LOOP
     SELECT id, current_stock, cost_price, unit INTO v_product
       FROM products WHERE id = v_mv.product_id FOR UPDATE;
@@ -169,9 +178,14 @@ BEGIN
     -- Coût moyen : retrait pondéré du lot au prix c auquel il est entré.
     -- Sans mouvement intermédiaire, W' retombe sur le WAC d'avant réception
     -- (à l'arrondi à 2 décimales près, celui du déclencheur vivant).
-    -- Avec des mouvements intermédiaires, W' est le coût moyen du stock restant
-    -- en supposant que le lot retiré valait c : c'est la valorisation inverse
-    -- exacte de l'entrée, pas une reconstitution de l'historique.
+    -- Si l'article a bougé APRÈS la réception (vente, perte, autre entrée…),
+    -- hors mouvements de ce même GRN, le retrait pondéré est faux : les unités
+    -- sorties entre-temps ont été valorisées au WAC mélangé, et retirer le lot
+    -- à c déformerait le coût des unités restantes (10@100 + 10@200 = 150,
+    -- vente de 5, retrait de 10 à 200 donnerait 50 au lieu de 100). Le coût
+    -- moyen est alors laissé tel quel (`unchanged_intermediate_movements`).
+    -- Un mouvement daté du même instant que la réception compte comme
+    -- postérieur : en cas d'ex aequo, on choisit de ne pas toucher au coût.
     -- Si le stock restant (Q − q) est nul, le coût moyen n'a plus d'assiette :
     -- il est laissé tel quel ; la prochaine entrée le réensemence (le
     -- déclencheur de réception repart de son coût quand le stock est ≤ 0).
@@ -181,6 +195,14 @@ BEGIN
     v_wac_note := 'weighted_withdrawal';
     IF v_mv.unit_cost IS NULL OR v_mv.unit_cost <= 0 THEN
       v_wac_note := 'unchanged_no_unit_cost';
+    ELSIF EXISTS (
+      SELECT 1 FROM stock_movements sm
+        WHERE sm.product_id = v_mv.product_id
+          AND sm.id <> v_mv.id
+          AND sm.created_at >= v_mv.created_at
+          AND COALESCE(sm.metadata->>'grn_id', '') <> p_grn_id::text
+    ) THEN
+      v_wac_note := 'unchanged_intermediate_movements';
     ELSIF v_product.cost_price IS NULL OR v_product.cost_price <= 0 THEN
       v_wac_note := 'unchanged_no_current_cost';
     ELSIF v_product.current_stock - v_mv.quantity <= 0 THEN
@@ -241,8 +263,11 @@ BEGIN
                            v_mv.quantity / NULLIF((v_mv.metadata->>'unit_factor_to_base')::numeric, 0));
     SELECT * INTO v_po_item FROM purchase_order_items
       WHERE id = (v_mv.metadata->>'po_item_id')::uuid AND po_id = v_po.id FOR UPDATE;
-    IF NOT FOUND OR v_line_qty IS NULL THEN
+    IF NOT FOUND THEN
       RAISE EXCEPTION 'po_item_not_found' USING ERRCODE = 'P0002';
+    END IF;
+    IF v_line_qty IS NULL OR v_line_qty <= 0 THEN
+      RAISE EXCEPTION 'receipt_line_quantity_missing: movement=%', v_mv.id USING ERRCODE = 'P0001';
     END IF;
     IF v_po_item.received_quantity < v_line_qty THEN
       RAISE EXCEPTION 'received_quantity_inconsistent: po_item=% received=% to_remove=%',

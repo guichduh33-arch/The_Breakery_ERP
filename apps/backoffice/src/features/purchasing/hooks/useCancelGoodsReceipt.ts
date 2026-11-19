@@ -36,6 +36,7 @@ export type CancelReceiptErrorCode =
   | 'payments_exceed_remaining_receipts'
   | 'insufficient_stock_to_reverse'
   | 'received_quantity_inconsistent'
+  | 'receipt_line_quantity_missing'
   | 'idempotency_key_conflict'
   | 'period_closed'
   | 'invalid_response'
@@ -87,6 +88,7 @@ export function classifyCancelReceiptError(message: string): CancelReceiptErrorC
   if (message.includes('payments_exceed_remaining_receipts'))    return 'payments_exceed_remaining_receipts';
   if (message.includes('insufficient_stock_to_reverse'))         return 'insufficient_stock_to_reverse';
   if (message.includes('received_quantity_inconsistent'))        return 'received_quantity_inconsistent';
+  if (message.includes('receipt_line_quantity_missing'))         return 'receipt_line_quantity_missing';
   if (message.includes('historical_import_grn_not_cancellable')) return 'historical_import_grn_not_cancellable';
   if (message.includes('grn_already_cancelled'))                 return 'grn_already_cancelled';
   if (message.includes('idempotency_key_conflict'))              return 'idempotency_key_conflict';
@@ -144,6 +146,8 @@ export function cancelReceiptErrorMessage(err: CancelReceiptError, productName?:
         + 'Cancel the receipt only for goods still on hand, or record the difference as waste.';
     case 'received_quantity_inconsistent':
       return 'The received quantity on this order no longer matches the receipt. Nothing was changed — contact an administrator.';
+    case 'receipt_line_quantity_missing':
+      return 'This receipt does not record how much was received on one of its lines, so it cannot be reversed automatically. Nothing was changed — contact an administrator.';
     case 'grn_already_cancelled':
       return 'This receipt has already been cancelled.';
     case 'historical_import_grn_not_cancellable':

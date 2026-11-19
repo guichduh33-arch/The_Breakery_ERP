@@ -93,6 +93,7 @@ describe('useCancelGoodsReceipt', () => {
       ['period_locked: date 2026-11-20 falls in closed period', /accounting period/],
       ['forbidden', /permission/],
       ['received_quantity_inconsistent: po_item=x received=1 to_remove=2', /no longer matches/],
+      ['receipt_line_quantity_missing: movement=22222222-2222-2222-2222-222222222222', /does not record how much was received/],
     ];
     for (const [message, expected] of cases) {
       rpc.mockResolvedValueOnce({ data: null, error: { message } });
@@ -107,6 +108,8 @@ describe('useCancelGoodsReceipt', () => {
   it('classifies and parses details from raw messages', () => {
     expect(classifyCancelReceiptError('idempotency_key_conflict')).toBe('idempotency_key_conflict');
     expect(classifyCancelReceiptError('something else')).toBe('unknown');
+    expect(classifyCancelReceiptError('receipt_line_quantity_missing: movement=x'))
+      .toBe('receipt_line_quantity_missing');
     expect(parseCancelReceiptDetails('payments_exceed_remaining_receipts: paid=500.00 remaining_received=100.00'))
       .toEqual({ paid: 500, remainingReceived: 100 });
   });

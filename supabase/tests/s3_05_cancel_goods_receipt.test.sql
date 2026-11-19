@@ -6,7 +6,7 @@
 BEGIN;
 \ir helpers/pin_session.sql
 \ir helpers/payment_invoice.sql
-SELECT plan(38);
+SELECT plan(41);
 
 CREATE TEMP TABLE fx(
   admin_auth uuid, admin_profile uuid, cashier_auth uuid,
@@ -250,6 +250,43 @@ SELECT ok((SELECT
 SELECT is((SELECT SUM(l.debit)-SUM(l.credit) FROM public.journal_entry_lines l,fx5
   WHERE l.journal_entry_id=(fx5.result->>'reversal_je_id')::uuid),0::numeric,
   'reversal of a pre-catch-up receipt stays balanced');
+
+-- ─── Bon 6 : réception, puis sortie, puis annulation ─────────────────────────
+-- 10@100 + 10@200 = 150 ; une perte de 5 sort au WAC mélangé ; le retrait
+-- pondéré donnerait 50. Le coût moyen doit rester 150, règle tracée.
+CREATE TEMP TABLE fx6(product uuid, grn uuid, result jsonb);
+DO $$
+DECLARE
+  f record; p uuid := gen_random_uuid(); po uuid; l uuid; g uuid;
+BEGIN
+  SELECT * INTO f FROM fx;
+  INSERT INTO public.products(id,sku,name,category_id,retail_price,current_stock,cost_price,
+    unit,product_type,is_active,track_inventory,deduct_stock)
+  SELECT p,'GRNC6-'||left(p::text,8),'GRN cancel P6',category_id,500,10,100,'pcs','finished',true,true,true
+    FROM public.products WHERE id=f.p1;
+  po := (public.create_purchase_order_v2(
+    p_supplier_id:=(SELECT supplier_id FROM public.purchase_orders WHERE id=f.po1),
+    p_items:=jsonb_build_array(jsonb_build_object('product_id',p,'quantity',1,'unit','box',
+      'unit_factor_to_base',10,'unit_cost',2000)),
+    p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
+  UPDATE public.purchase_order_items SET unit_factor_to_base=10 WHERE po_id=po;
+  SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po;
+  g := (public.receive_purchase_order_v7(po,jsonb_build_array(jsonb_build_object(
+    'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
+  PERFORM public.record_stock_movement_v2(p_product_id:=p,p_movement_type:='waste',
+    p_quantity:=-5,p_reason:='Spoiled after receipt',p_unit:='pcs');
+  INSERT INTO fx6 VALUES(p,g,NULL);
+END $$;
+UPDATE fx6 SET result=public.cancel_goods_receipt_v1(fx6.grn,'Cancel after an exit',NULL);
+SELECT is((SELECT current_stock FROM public.products p,fx6 WHERE p.id=fx6.product),5::numeric,
+  'receipt then exit then cancel: stock is 10 + 10 − 5 − 10 = 5');
+SELECT is((SELECT cost_price FROM public.products p,fx6 WHERE p.id=fx6.product),150::numeric,
+  'an exit after the receipt leaves the WAC untouched (150, not 50)');
+SELECT ok((SELECT m.metadata->>'wac_rule'='unchanged_intermediate_movements'
+  FROM public.stock_movements m,fx6 WHERE m.movement_type='purchase_return' AND m.metadata->>'grn_id'=fx6.grn::text)
+  AND (SELECT a.payload->'lines'->0->>'wac_rule'='unchanged_intermediate_movements'
+  FROM public.audit_logs a,fx6 WHERE a.action='goods_receipt.cancelled' AND a.entity_id=fx6.grn),
+  'unchanged_intermediate_movements is traced on the movement and in the audit payload');
 
 SELECT * FROM finish();
 ROLLBACK;
