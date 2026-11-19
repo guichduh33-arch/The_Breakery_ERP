@@ -15,8 +15,8 @@ describe('bank statement money and dates',() => {
     expect(decimalCents(1379998.62)).toBe(137999862n);
     expect(decimalCents('0.29') + decimalCents('0.01')).toBe(30n);
     expect(decimalText(-100000001n)).toBe('-1000000.01');
-    expect(bankMoney(1379998.62)).toBe('Rp 1,379,998.62');
-    expect(bankMoney(null)).toBe('Unavailable');
+    expect(bankMoney(1379998.62)).toBe('Rp 1.379.998,62');
+    expect(bankMoney(null)).toBe('—'); expect(bankMoney('-89291124.74')).toBe('-Rp 89.291.124,74'); expect(bankMoney('2500.00')).toBe('Rp 2.500');
     for (const value of ['1.001',1.005,'1e4','Infinity',Infinity,'1000000000000.00',0.1 + 0.2]) expect(() => decimalCents(value)).toThrow();
     expect(decimalCents('999999999999.99')).toBe(99999999999999n);
   });

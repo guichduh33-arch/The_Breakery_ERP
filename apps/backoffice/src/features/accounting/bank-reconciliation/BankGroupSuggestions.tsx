@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { BankLine, GlLine } from './contracts.js';
 import type { BankPostPreset } from './BankPostDialog.js';
+import { BANK_LABEL, BANK_TD, BANK_TH } from './bankUi.js';
 import { bankMoney, decimalCents, decimalText } from './money.js';
 import { formatRate, proposeSettlements, proposeTransferFees, standaloneFeeLines } from './groupSuggestions.js';
 import { useBankClearingDays } from './useBankQueries.js';
@@ -9,6 +11,13 @@ import { useBankClearingDays } from './useBankQueries.js';
 export interface GroupPost { preset: BankPostPreset; bankLines: BankLine[]; glLines: GlLine[] }
 type Tab = 'settlements' | 'transfers' | 'fees';
 const CHANNEL: Record<string, string> = { '1115': 'QRIS', '1116': 'Card (EDC)' };
+const clean = (text: string) => text.replace(/"/g, '').trim();
+const NUM = `${BANK_TD} whitespace-nowrap text-right font-data tabular-nums`;
+
+function Table({ head, children }: { head: ReactNode; children: ReactNode }) {
+  return <div className="overflow-x-auto"><table className="w-full min-w-[40rem] text-sm"><thead><tr>{head}</tr></thead><tbody>{children}</tbody></table></div>;
+}
+const Th = ({ children, right }: { children?: ReactNode; right?: boolean }) => <th scope="col" className={`${BANK_TH} ${right ? 'text-right' : ''}`}>{children}</th>;
 
 /** Propositions groupées : chaque bouton ouvre le formulaire pré-rempli, rien n'est posté sans PIN. */
 export function BankGroupSuggestions({ reconciliationId, bankLines, glLines, allLoaded, canPost, busy, onPost }: {
@@ -26,50 +35,66 @@ export function BankGroupSuggestions({ reconciliationId, bankLines, glLines, all
   const [tab, setTab] = useState<Tab>('settlements');
   if (!canPost) return null;
   const tabs: [Tab, string][] = [['settlements', 'Card / QRIS payouts'], ['transfers', 'Transfers with fees'], ['fees', 'Bank charges']];
-  return <section aria-label="Grouped reconciliation" className="space-y-3 rounded border border-border-subtle bg-bg-elevated p-4">
-    <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 className="font-medium">Grouped reconciliation</h2>
-      <p className="text-xs text-text-secondary">{allLoaded ? 'Built from every statement line.' : 'Built from loaded lines. Load all lines to see every proposal.'}</p>
+  const intro: Record<Tab, string> = {
+    settlements: 'Each payout is paired with one day of card or QRIS sales. The gap is the bank fee (MDR).',
+    transfers: 'An outgoing transfer and the fee line next to it, matched with the payment entry. Only the fee is posted.',
+    fees: 'Small debits with no ledger entry, posted together as one bank charges entry.',
+  };
+  return <section aria-label="Grouped reconciliation" className="overflow-hidden rounded-md border border-border-subtle bg-bg-elevated">
+    <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-3.5">
+      <h2 className="text-lg font-medium tracking-tight">Grouped reconciliation</h2>
+      <p className="text-xs text-text-muted">{allLoaded ? 'Built from every statement line.' : 'Built from loaded lines only.'}</p>
     </div>
-    <div role="tablist" aria-label="Proposal type" className="flex flex-wrap gap-2">
-      {tabs.map(([key, label]) => <Button key={key} role="tab" aria-selected={tab === key} variant={tab === key ? 'primary' : 'secondary'} size="sm"
-        onClick={() => setTab(key)}>{label} ({counts[key]})</Button>)}
+    <div role="tablist" aria-label="Proposal type" className="mt-2 flex gap-5 overflow-x-auto overflow-y-hidden border-b border-border-subtle px-4">
+      {tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+        className={`-mb-px flex h-10 shrink-0 items-center gap-2 border-b-2 text-sm font-medium transition-colors ${FOCUS_RING} ${tab === key ? 'border-gold text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+        {label}<span className={`rounded-sm px-1.5 font-data text-xs tabular-nums ${counts[key] > 0 ? 'bg-surface-4 text-text-primary' : 'text-text-muted'}`}>{counts[key]}</span></button>)}
     </div>
-    {tab === 'settlements' && <div role="tabpanel" className="space-y-2">
-      <p className="text-sm text-text-secondary">Each payout is matched with one day of card or QRIS sales. The difference is the bank fee (MDR).</p>
-      {days.isLoading && <p role="status">Loading sales clearing…</p>}
-      {days.error && <p role="alert" className="text-sm text-danger">{days.error.message}<Button variant="secondary" onClick={() => { void days.refetch(); }}>Retry</Button></p>}
-      {!days.isLoading && !days.error && settlements.length === 0 && <p className="text-sm">No payout matches a day of sales with a fee under 5%.</p>}
-      {tooLarge.length > 0 && <p className="text-sm text-warning">{tooLarge.map((d) => `${CHANNEL[d.account_code] ?? d.account_code} ${d.entry_date}`).join(', ')}: more than 1,000 payments in one day. Use Settlement / fees to split it.</p>}
-      <ul className="divide-y divide-border-subtle">{settlements.map((s) => {
-        const channel = CHANNEL[s.day.account_code] ?? s.day.account_code;
-        return <li key={s.bankLine.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
-          <div className="min-w-0"><p><span className="font-medium">{channel}</span> · sales of {s.day.entry_date} ({s.day.line_count} payments) → paid {s.bankLine.transaction_date}</p>
-            <p className="text-text-secondary"><span className="font-data">{bankMoney(s.day.gross)}</span> sales − <span className="font-data">{bankMoney(s.fee)}</span> fee ({formatRate(s.rateBasisPoints)}) = <span className="font-data">{bankMoney(s.bankLine.amount)}</span> received</p>
-            {s.ambiguous && <p className="text-warning">Another sales day also fits this amount. Check the date before posting.</p>}</div>
-          <Button variant="secondary" disabled={busy} onClick={() => onPost({ bankLines: [s.bankLine], glLines: [], preset: { kind: 'settlement', clearingIds: s.day.line_ids ?? [], clearingGross: s.day.gross,
-            clearingLabel: `${channel} sales of ${s.day.entry_date}`, description: `${channel} payout ${s.bankLine.transaction_date} for sales of ${s.day.entry_date}` } })}>Review payout</Button>
-        </li>;
-      })}</ul>
-    </div>}
-    {tab === 'transfers' && <div role="tabpanel" className="space-y-2">
-      <p className="text-sm text-text-secondary">An outgoing transfer next to its transfer fee line on the same day. Both are matched with the existing payment entry, and only the fee is posted.</p>
-      {transfers.length === 0 && <p className="text-sm">No transfer with a separate fee line among the loaded lines.</p>}
-      <ul className="divide-y divide-border-subtle">{transfers.map((t) => <li key={t.payment.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
-        <div className="min-w-0"><p className="break-words">{t.payment.transaction_date} · {t.payment.description.replace(/"/g, '') || 'Transfer'}</p>
-          <p className="text-text-secondary"><span className="font-data">{bankMoney(t.payment.amount)}</span> payment ({t.gl.entry_number}) + <span className="font-data">{bankMoney(t.fee)}</span> fee</p></div>
-        <Button variant="secondary" disabled={busy} onClick={() => onPost({ bankLines: [t.payment, t.feeLine], glLines: [t.gl],
-          preset: { kind: 'net_fee', description: `Transfer fee ${t.payment.transaction_date} · ${t.gl.entry_number}` } })}>Review transfer</Button>
-      </li>)}</ul>
-    </div>}
-    {tab === 'fees' && <div role="tabpanel" className="space-y-2">
-      <p className="text-sm text-text-secondary">Small bank debits with no description or a fee label, and no ledger entry. They are posted together as one bank charges entry.</p>
-      {fees.length === 0 ? <p className="text-sm">No standalone bank charges.</p> : <>
-        <p className="text-sm">{fees.length} lines · total <span className="font-data">{bankMoney(decimalText(feeTotal))}</span></p>
-        <ul className="max-h-48 overflow-auto text-xs text-text-secondary">{fees.map((l) => <li key={l.id}>{l.transaction_date} · <span className="font-data">{bankMoney(l.amount)}</span> · {l.description.replace(/"/g, '') || 'No description'}</li>)}</ul>
-        <Button variant="secondary" disabled={busy || fees.length > 1000} onClick={() => onPost({ bankLines: fees, glLines: [],
-          preset: { kind: 'fee', description: `Bank charges ${fees[0]!.transaction_date} to ${fees.at(-1)!.transaction_date}` } })}>Review bank charges</Button>
+    <div role="tabpanel" aria-label={tabs.find(([key]) => key === tab)![1]}>
+      <p className="px-4 py-2.5 text-sm text-text-secondary">{intro[tab]}</p>
+      {tab === 'settlements' && <>
+        {days.isLoading && <p role="status" className="px-4 pb-3 text-sm">Loading sales clearing…</p>}
+        {days.error && <p role="alert" className="px-4 pb-3 text-sm text-danger">{days.error.message} <Button variant="secondary" onClick={() => { void days.refetch(); }}>Retry</Button></p>}
+        {tooLarge.length > 0 && <p className="px-4 pb-3 text-sm text-warning">{tooLarge.map((d) => `${CHANNEL[d.account_code] ?? d.account_code} ${d.entry_date}`).join(', ')}: more than 1,000 payments in one day. Use Settlement / fees to split it.</p>}
+        {!days.isLoading && !days.error && settlements.length === 0 ? <p className="px-4 pb-4 text-sm">No payout matches a day of sales with a fee under 5%.</p>
+          : settlements.length > 0 && <Table head={<><Th>Channel</Th><Th>Sales day → paid</Th><Th right>Sales</Th><Th right>Fee</Th><Th right>Received</Th><Th><span className="sr-only">Action</span></Th></>}>
+            {settlements.map((s) => {
+              const channel = CHANNEL[s.day.account_code] ?? s.day.account_code;
+              return <tr key={s.bankLine.id} className="border-t border-border-row">
+                <td className={BANK_TD}><span className={`${BANK_LABEL} text-text-primary`}>{channel}</span><p className="text-xs text-text-muted">{s.day.line_count} payments</p></td>
+                <td className={`${BANK_TD} whitespace-nowrap font-data text-xs tabular-nums`}>{s.day.entry_date} → {s.bankLine.transaction_date}
+                  {s.ambiguous && <p className="font-body text-warning">Another day also fits</p>}</td>
+                <td className={NUM}>{bankMoney(s.day.gross)}</td>
+                <td className={NUM}>{bankMoney(s.fee)}<p className="text-xs text-text-muted">{formatRate(s.rateBasisPoints)}</p></td>
+                <td className={`${NUM} text-success`}>{bankMoney(s.bankLine.amount)}</td>
+                <td className={`${BANK_TD} text-right`}><Button variant="secondary" disabled={busy} onClick={() => onPost({ bankLines: [s.bankLine], glLines: [], preset: { kind: 'settlement', clearingIds: s.day.line_ids ?? [], clearingGross: s.day.gross,
+                  clearingLabel: `${channel} sales of ${s.day.entry_date}`, description: `${channel} payout ${s.bankLine.transaction_date} for sales of ${s.day.entry_date}` } })}>Review payout</Button></td>
+              </tr>;
+            })}
+          </Table>}
       </>}
-    </div>}
+      {tab === 'transfers' && (transfers.length === 0 ? <p className="px-4 pb-4 text-sm">No transfer with a separate fee line among the loaded lines.</p>
+        : <Table head={<><Th>Transfer</Th><Th>Ledger entry</Th><Th right>Payment</Th><Th right>Fee</Th><Th><span className="sr-only">Action</span></Th></>}>
+          {transfers.map((t) => <tr key={t.payment.id} className="border-t border-border-row">
+            <td className={`${BANK_TD} break-words`}><p>{clean(t.payment.description) || 'Transfer'}</p><p className="font-data text-xs text-text-muted">{t.payment.transaction_date}</p></td>
+            <td className={`${BANK_TD} whitespace-nowrap font-data text-xs`}>{t.gl.entry_number}</td>
+            <td className={NUM}>{bankMoney(t.payment.amount)}</td>
+            <td className={NUM}>{bankMoney(t.fee)}</td>
+            <td className={`${BANK_TD} text-right`}><Button variant="secondary" disabled={busy} onClick={() => onPost({ bankLines: [t.payment, t.feeLine], glLines: [t.gl],
+              preset: { kind: 'net_fee', description: `Transfer fee ${t.payment.transaction_date} · ${t.gl.entry_number}` } })}>Review transfer</Button></td>
+          </tr>)}
+        </Table>)}
+      {tab === 'fees' && (fees.length === 0 ? <p className="px-4 pb-4 text-sm">No standalone bank charges.</p> : <>
+        <div className="max-h-56 overflow-auto"><Table head={<><Th>Date</Th><Th>Description</Th><Th right>Amount</Th></>}>
+          {fees.map((l) => <tr key={l.id} className="border-t border-border-row"><td className={`${BANK_TD} whitespace-nowrap font-data text-xs`}>{l.transaction_date}</td>
+            <td className={BANK_TD}>{clean(l.description) || <span className="text-text-muted">No description</span>}</td><td className={NUM}>{bankMoney(l.amount)}</td></tr>)}
+        </Table></div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle bg-surface-inert px-4 py-2.5">
+          <p className="text-sm">{fees.length} {fees.length === 1 ? 'line' : 'lines'} · total <span className="font-data tabular-nums">{bankMoney(decimalText(feeTotal))}</span></p>
+          <Button variant="secondary" disabled={busy || fees.length > 1000} onClick={() => onPost({ bankLines: fees, glLines: [],
+            preset: { kind: 'fee', description: `Bank charges ${fees[0]!.transaction_date} to ${fees.at(-1)!.transaction_date}` } })}>Review bank charges</Button>
+        </div>
+      </>)}
+    </div>
   </section>;
 }

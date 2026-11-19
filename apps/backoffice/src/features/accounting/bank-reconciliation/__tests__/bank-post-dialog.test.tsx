@@ -84,7 +84,7 @@ describe('bank post dialog — grouped payout proposal', () => {
     render(<BankPostDialog reconciliation={bankDetailFixture.reconciliation} bankLines={[payout]} glLines={[]} accounts={[charges]}
       preset={{ kind: 'settlement', clearingIds: [line(9, '2026-10-01', '1116', '0').id], clearingGross: '7014000.00', clearingLabel: 'Card (EDC) sales of 2026-10-01', description: 'Card payout' }}
       onClose={vi.fn()} onReady={onReady} />);
-    expect(screen.getByText('Rp 102,210.00')).toBeInTheDocument();
+    expect(screen.getByText('Rp 102.210')).toBeInTheDocument();
     expect(screen.getByText('1.46%')).toBeInTheDocument();
     expect(screen.getByLabelText('Expense account')).toHaveValue(charges.id);
     fireEvent.click(screen.getByRole('button', { name: 'Review journal entry' }));

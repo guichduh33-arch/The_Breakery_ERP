@@ -33,9 +33,17 @@ export function localizedBankAmount(value: unknown, format: 'dot' | 'comma'): st
  return decimalText(decimalCents((negative?"-":"")+source));
 }
 
+/**
+ * Locale métier id-ID (PRODUCT.md § Operating Context) : point des milliers,
+ * virgule décimale, signe ASCII comme `formatCurrency`. Les centimes ne
+ * s'affichent que s'ils existent — un relevé en porte parfois (−89.291.124,74),
+ * une vente jamais. Calcul en bigint : aucun arrondi flottant sur un montant.
+ */
 export function bankMoney(value: unknown): string {
- if (value === null || value === undefined) return 'Unavailable';
+ if (value === null || value === undefined) return '—';
  const cents = decimalCents(value);
  const magnitude = cents < 0n ? -cents : cents;
- return `${cents < 0n ? '−' : ''}Rp ${(magnitude / 100n).toLocaleString('en-US')}.${(magnitude % 100n).toString().padStart(2, '0')}`;
+ const whole = (magnitude / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+ const fraction = magnitude % 100n;
+ return `${cents < 0n ? '-' : ''}Rp ${whole}${fraction === 0n ? '' : `,${fraction.toString().padStart(2, '0')}`}`;
 }
