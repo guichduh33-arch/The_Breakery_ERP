@@ -2165,6 +2165,23 @@ sous-titre annonce des bons « reçus » alors que la fonction prend tout sauf
 brouillon et annulé ; la tuile d'unités commandées additionne des unités
 différentes ; les fournisseurs sont dédoublonnés par nom et non par identifiant.
 
+**État — développé et prouvé en dev le 2026-11-20**, branche
+`feat/s3-20-achats-par-article`. Migration
+`20261120000020_s3_20_purchase_items_by_article.sql` appliquée en dev : famille
+`get_purchase_items` bumpée en v2 depuis le corps live (agrégat par article
+serveur, totaux non tronqués, période précédente, dépense par jour, filtres
+catégorie, article et statut), v1 retirée (seul appelant : le crochet du
+back-office, basculé ; `s40_reports.test.sql` basculé) ; fonction neuve
+`get_purchase_item_lines_v1` pour les lignes d'un article, paginées. Les trois
+défauts factuels sont corrigés : sous-titre « bons en attente, partiels ou
+reçus », quantité en unité de base par article (la tuile d'unités disparaît),
+fournisseurs comptés par identifiant. Page : vue par article triable et
+cherchable, comparaison à la période précédente, graphique de dépense dans le
+temps et classement des articles, descente paginée. Date de réception affichée :
+celle du bon entièrement reçu. pgTAP `s3_20_purchase_items_by_article.test.sql`
+23/23 en dev, dont 1 005 lignes au-delà de l'ancien plafond. Vitest de la page
+8/8. Non publié.
+
 **Fichiers**
 - `supabase/migrations/20260624000012_create_get_purchase_items_v1_rpc.sql` —
   point de départ, **ne pas éditer** ; partir du **corps live**

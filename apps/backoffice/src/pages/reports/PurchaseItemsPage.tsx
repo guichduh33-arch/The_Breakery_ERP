@@ -1,187 +1,176 @@
 // apps/backoffice/src/pages/reports/PurchaseItemsPage.tsx
 //
-// Lot F (campagne Reports 2026-08-15) — vague Inventory, page 8/10. Migrée sur
-// le socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
+// « Purchase Items » — les achats PAR ARTICLE. S3-20 (2026-11-20) : la page
+// était un journal de lignes plafonné à 1 000, dont les totaux et le classement
+// portaient sur ce plafond. Elle devient la symétrique des ventes par article :
 //
-// CE QUI NE CHANGE PAS : les lignes viennent de `get_purchase_items_v1` et sont
-// servies telles quelles ; le FILTRE FOURNISSEUR reste, en URL-state (R-17 : la
-// vue est partageable et survit au rechargement) ; les drill-downs posés au lot
-// A2 vers le bon de commande et vers le produit sont conservés ; la bannière du
-// plafond serveur (1000 lignes) aussi, avec ce qu'elle implique — le classement
-// des produits porte alors sur un SOUS-ENSEMBLE, et le sous-titre le dit au lieu
-// de laisser croire à un Top de la période entière (R-08).
+//  1. L'AGRÉGAT EST SERVEUR (`get_purchase_items_v2`) : valeur, part, quantité,
+//     coût moyen, bons et fournisseurs par article, sur TOUTES les lignes de la
+//     période. Aucune bannière de troncature : il n'y a plus de plafond.
+//  2. LES QUANTITÉS SONT EN UNITÉ DE BASE. L'ancienne tuile « Units ordered »
+//     additionnait des sacs et des kilos ; elle disparaît, la quantité vit par
+//     article, dans son unité.
+//  3. LES FOURNISSEURS SONT COMPTÉS PAR IDENTIFIANT, côté serveur (la page les
+//     dédoublonnait par nom).
+//  4. LE PÉRIMÈTRE EST DIT JUSTE : tout bon confirmé (en attente, partiel ou
+//     reçu), brouillons et annulés exclus — le sous-titre disait « reçus ».
+//  5. CHAQUE ARTICLE SE DESCEND vers ses lignes d'achat, paginées serveur.
 //
-// Ce qui change : le graphe en barres horizontales devient une CARTE DE
-// VENTILATION à pistes. Un classement de valeurs ÉTIQUETÉES n'a pas besoin d'un
-// axe : la carte donne le libellé, la part et le montant sur la même ligne, là
-// où le graphe faisait lire une longueur puis chercher le nom sur l'axe — et il
-// tronquait les noms à 24 caractères pour tenir. Même arbitrage que les donuts
-// de Cost & Spend Analytics au lot E.
-//
-// PAS DE COMPARAISON : l'écran est un JOURNAL de lignes d'achat, pas un
-// agrégat. « Les lignes de la période précédente » ne se mettent pas en regard
-// de celles-ci ligne à ligne ; l'agrégat comparable, lui, vit dans Purchase by
-// Date et Purchase by Supplier, qui le portent tous deux.
-//
-// Params URL : `start` / `end` / `supplier_id` — les bornes portaient déjà les
-// noms du socle, aucun repli legacy n'est nécessaire.
+// Filtres dans l'URL (socle S3-22) : fournisseur, catégorie, statut, plus
+// `product_id` posé par un lien entrant. La recherche ne touche que la table.
+// Params URL conservés : `start` / `end` / `supplier_id` (liens des autres
+// rapports d'achat).
 
-import { useMemo, type JSX } from 'react';
-import { selectClassName, cn } from '@breakery/ui';
+import { useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
+import { Delta } from '@/components/kpi/Delta.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import { ReportTable } from '@/features/reports/components/ReportTable.js';
 import { BreakdownCard, type BreakdownRow } from '@/features/reports/components/BreakdownCard.js';
-import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { TrendLineChart } from '@/features/reports/components/charts/TrendLineChart.js';
+import { PurchaseItemLinesDrawer } from '@/features/reports/components/PurchaseItemLinesDrawer.js';
+import {
+  PURCHASE_ITEMS_SORT_SPECS, buildPurchaseItemsColumns,
+} from '@/features/reports/components/purchaseItemsColumns.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
-import { categoricalColor, formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
+import { useReportFilters, type ReportFilterDef } from '@/features/reports/hooks/useReportFilters.js';
 import {
-  formatCount, formatPct1, periodLabel, sharePct, topSlice,
-} from '@/features/reports/utils/reportFigures.js';
-import { supabase } from '@/lib/supabase.js';
-import {
-  usePurchaseItems, type PurchaseItemLine,
+  PURCHASE_ITEM_STATUSES, usePurchaseItems, type PurchaseItemRow, type PurchaseItemStatus,
 } from '@/features/reports/hooks/usePurchaseItems.js';
+import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
+import { categoricalColor, formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
+import { formatCount, pctChange, periodLabel, topSlice } from '@/features/reports/utils/reportFigures.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { supabase } from '@/lib/supabase.js';
 
 interface SupplierOption { id: string; name: string }
 
-const csvColumns: CsvColumn<PurchaseItemLine>[] = [
-  { header: 'PO#',           accessor: (r) => r.po_number,         format: 'text' },
-  { header: 'Date',          accessor: (r) => r.order_date,        format: 'text' },
-  { header: 'Supplier',      accessor: (r) => r.supplier_name,     format: 'text' },
-  { header: 'Product',       accessor: (r) => r.product_name,      format: 'text' },
-  { header: 'SKU',           accessor: (r) => r.sku,               format: 'text' },
-  { header: 'Qty',           accessor: (r) => r.quantity,          format: 'number' },
-  { header: 'Received',      accessor: (r) => r.received_quantity, format: 'number' },
-  { header: 'Unit cost (IDR)', accessor: (r) => r.unit_cost,       format: 'idr-round100' },
-  { header: 'Subtotal (IDR)', accessor: (r) => r.subtotal,         format: 'idr-round100' },
-  { header: 'Status',        accessor: (r) => r.status,            format: 'text' },
+const csvColumns: CsvColumn<PurchaseItemRow>[] = [
+  { header: 'Article',            accessor: (r) => r.product_name,       format: 'text' },
+  { header: 'SKU',                accessor: (r) => r.sku,                format: 'text' },
+  { header: 'Category',           accessor: (r) => r.category_name ?? '', format: 'text' },
+  { header: 'Quantity (base)',    accessor: (r) => r.base_quantity,      format: 'number' },
+  { header: 'Base unit',          accessor: (r) => r.base_unit ?? '',    format: 'text' },
+  { header: 'Purchase unit',      accessor: (r) => r.purchase_unit ?? 'mixed', format: 'text' },
+  { header: 'Value (IDR)',        accessor: (r) => r.value,              format: 'idr-round100' },
+  { header: 'Share %',            accessor: (r) => r.share_pct.toFixed(2), format: 'text' },
+  { header: 'Avg unit cost (IDR)', accessor: (r) => r.avg_unit_cost ?? '', format: 'idr' },
+  { header: 'Previous value (IDR)', accessor: (r) => r.previous_value,   format: 'idr-round100' },
+  { header: 'POs',                accessor: (r) => r.po_count,           format: 'number' },
+  { header: 'Suppliers',          accessor: (r) => r.supplier_count,     format: 'number' },
+  { header: 'Last received',      accessor: (r) => r.last_received_date ?? '', format: 'text' },
 ];
 
-const NUM_CELL = 'py-2 text-right font-data tabular-nums';
+type FilterKey = 'supplier_id' | 'category_id' | 'status';
 
-interface ProductAgg { id: string; name: string; value: number; qty: number }
+const STATUS_LABELS: Record<PurchaseItemStatus, string> = {
+  pending: 'Pending', partial: 'Partially received', received: 'Received',
+};
 
-/** Valeur achetée par produit, décroissante. */
-function aggregateProducts(lines: PurchaseItemLine[]): ProductAgg[] {
-  const acc = new Map<string, ProductAgg>();
-  for (const l of lines) {
-    const cur = acc.get(l.product_id)
-      ?? { id: l.product_id, name: l.product_name, value: 0, qty: 0 };
-    cur.value += l.subtotal;
-    cur.qty   += l.quantity;
-    acc.set(l.product_id, cur);
-  }
-  return [...acc.values()].sort((a, b) => b.value - a.value);
+const SEARCH_KEY = 'q';
+const PRODUCT_KEY = 'product_id';
+const EXTRA_FILTER_KEYS: readonly string[] = [SEARCH_KEY, PRODUCT_KEY];
+
+const isStatus = (v: string): v is PurchaseItemStatus =>
+  (PURCHASE_ITEM_STATUSES as readonly string[]).includes(v);
+
+interface KpiDescriptor {
+  key: string; label: string; value: string; title?: string; delta?: number | null; note?: string;
 }
-
-interface KpiDescriptor { key: string; label: string; value: string; title?: string; note?: string | undefined }
 
 export default function PurchaseItemsPage(): JSX.Element {
   const period = useReportPeriod();
-  const { start, end } = period;
-  // R-17 — filtre en URL-state (convention S57) : la vue devient partageable et
-  // survit au rechargement.
-  const [supplierId, setSupplierId] = useUrlState('supplier_id', '');
+  const { start, end, compare } = period;
+  const [opened, setOpened] = useState<{ id: string; name: string } | null>(null);
+  const [productId] = useUrlState(PRODUCT_KEY, '');
 
   const { data: supplierOptions } = useQuery<SupplierOption[]>({
     queryKey: ['suppliers-options'],
-    queryFn:  async () => {
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from('suppliers')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
+        .from('suppliers').select('id, name').eq('is_active', true).order('name');
       if (error) throw error;
       return data ?? [];
     },
     staleTime: 5 * 60 * 1000,
   });
+  const { data: categories } = useAllCategories();
 
-  const { data, isLoading, error } = usePurchaseItems({
-    start, end, supplierId: supplierId || null,
+  const filterDefs = useMemo<readonly ReportFilterDef<FilterKey>[]>(() => [
+    {
+      kind: 'select', key: 'supplier_id', label: 'Supplier', allLabel: 'All suppliers',
+      options: (supplierOptions ?? []).map((s) => ({ value: s.id, label: s.name })),
+    },
+    {
+      kind: 'select', key: 'category_id', label: 'Category', allLabel: 'All categories',
+      options: (categories ?? []).map((c) => ({ value: c.id, label: c.name })),
+    },
+    {
+      kind: 'select', key: 'status', label: 'PO status', allLabel: 'All statuses', strict: true,
+      options: PURCHASE_ITEM_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+    },
+  ], [supplierOptions, categories]);
+  const filters = useReportFilters(filterDefs, { extraKeys: EXTRA_FILTER_KEYS });
+  const supplierId = filters.values.supplier_id;
+  const categoryId = filters.values.category_id;
+  const status = isStatus(filters.values.status) ? filters.values.status : null;
+
+  const q = usePurchaseItems({
+    start, end,
+    supplierId: supplierId || null, categoryId: categoryId || null,
+    productId: productId || null, status,
   });
+  const hidden  = q.isError || q.isFetching;
+  const rows    = useMemo(() => (hidden ? [] : q.data?.items ?? []), [hidden, q.data]);
+  const summary = hidden ? undefined : q.data?.summary;
 
-  const lines     = useMemo(() => data?.lines ?? [], [data]);
-  const truncated = data?.truncated === true;
-
-  const products = useMemo(() => aggregateProducts(lines), [lines]);
-  const top      = topSlice(products, (p) => p.value, 'purchased value', 8);
-  const productRows: BreakdownRow[] = top.rows.map((p, i) => ({
-    key: p.id || p.name,
-    label: p.name,
-    amount: p.value,
-    sharePct: sharePct(p.value, top.total),
-    color: categoricalColor(i),
-    count: `${formatCount(p.qty)} pcs`,
+  const top = topSlice(rows, (r) => r.value, 'purchased value', 8);
+  const breakdown: BreakdownRow[] = top.rows.map((r, i) => ({
+    key: r.product_id, label: r.product_name, amount: r.value,
+    sharePct: r.share_pct, color: categoricalColor(i),
   }));
 
-  const orderedQty  = lines.reduce((s, l) => s + l.quantity, 0);
-  const receivedQty = lines.reduce((s, l) => s + l.received_quantity, 0);
-  const receivedShare = orderedQty > 0 ? sharePct(receivedQty, orderedQty) : null;
-  const poCount       = new Set(lines.map((l) => l.po_id)).size;
-  const supplierCount = new Set(lines.map((l) => l.supplier_name)).size;
+  const trend = useMemo(() => (hidden ? [] : (q.data?.trend ?? []).map((t) => ({
+    day: t.date.slice(5, 10), value: t.value, previous: t.previous_value,
+  }))), [hidden, q.data]);
 
   const tiles: KpiDescriptor[] = [
     {
       key: 'total', label: 'Purchased value',
-      value: formatIdrCompact(data?.summary.total_value ?? 0),
-      title: formatIdrFull(data?.summary.total_value ?? 0),
-      note:  `${formatCount(data?.summary.line_count ?? 0)} line${(data?.summary.line_count ?? 0) === 1 ? '' : 's'}`,
+      value: formatIdrCompact(summary?.total_value ?? 0), title: formatIdrFull(summary?.total_value ?? 0),
+      ...(compare ? { delta: pctChange(summary?.total_value ?? 0, summary?.previous_total_value) } : {}),
+      note: `${formatCount(summary?.line_count ?? 0)} line${summary?.line_count === 1 ? '' : 's'}`,
     },
-    {
-      key: 'orders', label: 'Purchase orders',
-      value: formatCount(poCount),
-      note:  truncated ? 'across the listed lines' : undefined,
-    },
-    {
-      key: 'suppliers', label: 'Suppliers',
-      value: formatCount(supplierCount),
-      note:  supplierId === '' ? undefined : 'filtered to one supplier',
-    },
-    {
-      key: 'products', label: 'Products',
-      value: formatCount(products.length),
-    },
-    {
-      key: 'qty', label: 'Units ordered',
-      value: formatCount(orderedQty),
-      note:  `${formatCount(receivedQty)} received`,
-    },
-    {
-      key: 'received', label: 'Received rate',
-      value: receivedShare === null ? '—' : formatPct1(receivedShare),
-      note:  'of ordered units',
-    },
+    { key: 'orders',    label: 'Purchase orders', value: formatCount(summary?.po_count ?? 0) },
+    { key: 'suppliers', label: 'Suppliers',       value: formatCount(summary?.supplier_count ?? 0) },
+    { key: 'products',  label: 'Articles',        value: formatCount(summary?.product_count ?? 0) },
   ];
+
+  const columns = useMemo(
+    () => buildPurchaseItemsColumns({ summary, compare, onOpen: setOpened }),
+    [summary, compare],
+  );
+
+  const activeCount = Object.keys(filters.active).length + (productId !== '' ? 1 : 0);
+  const meta = [
+    periodLabel(start, end),
+    'pending, partial and received orders — drafts and cancelled excluded',
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
+  ].join(' · ');
 
   const toolbar = (
     <>
-      <PeriodControl period={period} />
-      {/* <select> natif — @breakery/ui n'exporte pas de composant Select. */}
-      <label className="flex items-center gap-2 text-sm text-text-secondary">
-        <span className="sr-only">Supplier</span>
-        <select
-          className={cn(selectClassName, 'h-9 w-auto')}
-          value={supplierId}
-          onChange={(e) => setSupplierId(e.target.value)}
-          aria-label="Filter by supplier"
-        >
-          <option value="">All suppliers</option>
-          {(supplierOptions ?? []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </label>
+      <PeriodControl period={period} showCompare />
       <ExportMenu
-        csv={{ rows: lines, columns: csvColumns, filename: `purchase-items-${start}_${end}` }}
-        disabled={lines.length === 0}
+        csv={{ rows, columns: csvColumns, filename: `purchase-items-${start}_${end}` }}
+        disabled={rows.length === 0 || hidden}
       />
     </>
   );
@@ -189,17 +178,15 @@ export default function PurchaseItemsPage(): JSX.Element {
   return (
     <ReportShell
       title="Purchase Items"
-      subtitle={`${periodLabel(start, end)} · line items across received purchase orders`}
+      subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
       toolbar={toolbar}
-      error={error}
-      isEmpty={!isLoading && data !== undefined && lines.length === 0}
-      emptyState={{
-        title: 'No purchase lines',
-        description: 'No purchase line for this period and supplier.',
-      }}
+      filters={<ReportFilterBar defs={filterDefs} filters={filters} />}
+      error={q.error}
+      isEmpty={!q.isLoading && q.data !== undefined && rows.length === 0}
+      emptyState={{ title: 'No purchase', description: 'No article was ordered for this period and filters.' }}
       kpis={
-        <KpiBand isLoading={isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
+        <KpiBand isLoading={q.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
           {tiles.map((t, i) => (
             <KpiTile
               key={t.key}
@@ -209,96 +196,64 @@ export default function PurchaseItemsPage(): JSX.Element {
               hero={i === 0}
               testId={`kpi-${t.key}`}
             >
-              {t.note !== undefined && (
-                <span className={i === 0 ? KPI_NOTE_HERO : KPI_NOTE}>{t.note}</span>
-              )}
+              {t.delta !== undefined && <Delta value={t.delta} period="prev" onInk={i === 0} />}
+              {t.note !== undefined && <span className={i === 0 ? KPI_NOTE_HERO : KPI_NOTE}>{t.note}</span>}
             </KpiTile>
           ))}
         </KpiBand>
       }
     >
-      {truncated && (
-        <p role="status" className="rounded-sm border border-warning bg-warning-soft px-4 py-2 text-sm text-warning">
-          First 1000 lines shown — narrow the date range to see them all.
-        </p>
-      )}
-
-      <div className="mt-3">
+      <div className="mt-3 grid gap-3 xl:grid-cols-[1.7fr_1fr]">
+        <PanelCard title="Spend over time" isLoading={q.isLoading} testId="chart-purchase-trend">
+          <TrendLineChart
+            data={trend}
+            xKey="day"
+            currentKey="value"
+            currentName="Purchased value"
+            {...(compare ? { compareKey: 'previous', compareName: 'Previous period' } : {})}
+            ariaLabel={`Purchased value per day from ${start} to ${end}${compare ? ', with the previous period' : ''}.`}
+          />
+        </PanelCard>
         <BreakdownCard
-          title="Top products by value"
-          // R-08 — `products` agrège `lines`, que la RPC plafonne à 1000. Quand
-          // la troncature est active, le classement porte sur un sous-ensemble.
-          subtitle={truncated
-            ? 'Ranked across the first 1000 lines only — not the whole period.'
-            : (top.note ?? 'Share of the purchased value over the period.')}
+          title="Top articles by value"
+          subtitle={top.note ?? 'Share of the purchased value over the period.'}
           variant="track"
-          rows={productRows}
-          total={{ label: 'Total purchased', amount: top.total }}
-          isLoading={isLoading}
-          emptyText="No purchase line to ventilate for this period."
+          rows={breakdown}
+          total={{ label: 'Total purchased', amount: summary?.total_value ?? 0 }}
+          isLoading={q.isLoading}
+          emptyText="No purchase to rank for this period."
           testId="breakdown-purchase-products"
         />
       </div>
 
       <PanelCard
-        title="Purchase lines"
+        title="Articles"
+        aside={<span className="text-xs text-text-muted">Pick an article to see its purchase lines</span>}
         className="mt-3"
-        subtitle="Every ordered line, with its order, its product and its status."
-        isLoading={isLoading}
+        isLoading={q.isLoading}
         testId="purchase-items-table"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">
-              Purchase order, date, supplier, product, quantities, unit cost, subtotal and status per line
-            </caption>
-            <thead>
-              <tr className="border-b border-border-subtle text-text-secondary">
-                <th scope="col" className="py-2 text-left">PO#</th>
-                <th scope="col" className="py-2 text-left">Date</th>
-                <th scope="col" className="py-2 text-left">Supplier</th>
-                <th scope="col" className="py-2 text-left">Product</th>
-                <th scope="col" className="py-2 text-left">SKU</th>
-                <th scope="col" className="py-2 text-right">Qty</th>
-                <th scope="col" className="py-2 text-right">Received</th>
-                <th scope="col" className="py-2 text-right">Unit cost</th>
-                <th scope="col" className="py-2 text-right">Subtotal</th>
-                <th scope="col" className="py-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((r, idx) => (
-                <tr key={`${r.po_id}-${r.product_id}-${idx}`} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium">
-                    {/* Lot A2 — po_id / product_id étaient disponibles, aucun lien posé. */}
-                    <DrilldownLink entity="purchase_order" id={r.po_id} label={r.po_number} />
-                  </td>
-                  <td className="py-2 font-data text-xs text-text-secondary">{String(r.order_date).slice(0, 10)}</td>
-                  <td className="py-2 text-text-secondary">{r.supplier_name}</td>
-                  <td className="py-2">
-                    <DrilldownLink entity="product" id={r.product_id} label={r.product_name} />
-                  </td>
-                  <td className="py-2 font-data text-xs text-text-secondary">{r.sku}</td>
-                  <td className={NUM_CELL}>{formatCount(r.quantity)}</td>
-                  <td className={NUM_CELL}>{formatCount(r.received_quantity)}</td>
-                  <td className={NUM_CELL}>{formatIdrFull(r.unit_cost)}</td>
-                  <td className={NUM_CELL}>{formatIdrFull(r.subtotal)}</td>
-                  <td className="py-2 capitalize text-text-secondary">{r.status}</td>
-                </tr>
-              ))}
-            </tbody>
-            {lines.length > 0 && data !== undefined && (
-              <tfoot>
-                <tr className="border-t border-border-subtle font-semibold">
-                  <td className="py-2" colSpan={8}>Total ({formatCount(data.summary.line_count)} lines)</td>
-                  <td className={NUM_CELL}>{formatIdrFull(data.summary.total_value)}</td>
-                  <td />
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <ReportTable
+          rows={rows}
+          columns={columns}
+          sortSpecs={PURCHASE_ITEMS_SORT_SPECS}
+          rowKey={(r) => r.product_id}
+          caption="Quantity, value, share, average unit cost and orders per purchased article"
+          showFooter={summary !== undefined}
+          search={{ label: 'Search articles', placeholder: 'Search articles', noun: 'article', urlKey: SEARCH_KEY }}
+          emptyText="No article purchased."
+          testId="purchase-items-report-table"
+        />
       </PanelCard>
+
+      <PurchaseItemLinesDrawer
+        product={hidden ? null : opened}
+        start={start}
+        end={end}
+        supplierId={supplierId || null}
+        status={status}
+        onClose={() => { setOpened(null); }}
+      />
     </ReportShell>
   );
 }

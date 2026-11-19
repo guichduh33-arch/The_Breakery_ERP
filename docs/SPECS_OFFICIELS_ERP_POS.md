@@ -1008,6 +1008,10 @@ moyen de paiement, pas par table).
 - l'heure de création, l'heure de paiement et le numéro de table visibles sur
   les ventes ;
 - des rapports filtrables, faciles à lire, accompagnés de graphiques utiles.
+**FAIT** — Achats par article développés en dev le 2026-11-20 (`S3-20`) :
+agrégat par article serveur sans plafond de lignes, filtres fournisseur,
+catégorie, article et statut, comparaison à la période précédente, descente
+paginée vers les lignes. La production attend la publication.
 **OUVERT** — Le sort des rapports qui se recouvrent (fusion ou rôle distinct) :
 à trancher par Mamat, paire par paire. Plan d'exécution : le bloc « qualité des
 rapports » de `audit-2026-11/05_MASTER_PLAN_FINITION.md`.

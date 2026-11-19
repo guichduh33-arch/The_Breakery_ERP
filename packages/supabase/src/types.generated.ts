@@ -9877,10 +9877,25 @@ export type Database = {
         }
         Returns: Json
       }
-      get_purchase_items_v1: {
+      get_purchase_item_lines_v1: {
         Args: {
           p_date_end: string
           p_date_start: string
+          p_limit?: number
+          p_offset?: number
+          p_product_id: string
+          p_status?: string
+          p_supplier_id?: string
+        }
+        Returns: Json
+      }
+      get_purchase_items_v2: {
+        Args: {
+          p_category_id?: string
+          p_date_end: string
+          p_date_start: string
+          p_product_id?: string
+          p_status?: string
           p_supplier_id?: string
         }
         Returns: Json
