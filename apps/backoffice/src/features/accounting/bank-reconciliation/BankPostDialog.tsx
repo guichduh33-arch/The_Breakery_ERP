@@ -18,9 +18,38 @@ export function BankPostDialog({ reconciliation, bankLines, glLines, accounts, o
   const [date,setDate] = useState(reconciliation.period_end);
   const [description,setDescription] = useState('');
   const [error,setError] = useState('');
+  const [day,setDay] = useState('');
+  const [dayAccount,setDayAccount] = useState('');
+  const [loadingDay,setLoadingDay] = useState(false);
   const clearing = useBankClearing(reconciliation.id,kind === 'settlement');
   const available = clearing.data?.pages.flatMap((p) => p.items) ?? [];
+  const clearingCodes = [...new Set(available.map((line) => line.account_code))].sort();
+  // Une journée de ventes compte des centaines de lignes carte / QRIS : le filtre
+  // limite l'affichage au jour choisi, la sélection reste vérifiée au centime.
+  const shown = day ? available.filter((line) => line.entry_date === day && (!dayAccount || line.account_code === dayAccount)) : available;
   const chosen = available.filter((line) => selected.includes(line.id));
+  async function selectDay() {
+    if (!day || !dayAccount) { setError('Choose a sales date and a clearing account.'); return; }
+    setError(''); setLoadingDay(true);
+    try {
+      let pages = clearing.data?.pages ?? [];
+      let hasNext = clearing.hasNextPage;
+      // Toutes les pages d'abord : les lignes sont triées par identifiant, pas par date.
+      while (hasNext) {
+        const next = await clearing.fetchNextPage();
+        if (next.error) throw next.error;
+        pages = next.data?.pages ?? pages; hasNext = next.hasNextPage;
+      }
+      const lines = pages.flatMap((p) => p.items).filter((line) => line.entry_date === day && line.account_code === dayAccount);
+      if (lines.length === 0) { setError('No unsettled clearing lines for this date and account.'); return; }
+      if (new Set([...selected, ...lines.map((l) => l.id)]).size > 1000) { setError('More than 1,000 lines in one entry. Settle this date in two entries.'); return; }
+      // Ajout, pas remplacement : un jour où la caisse a mal ventilé carte et QRIS
+      // se règle en une seule écriture sur les deux comptes d'attente.
+      setSelected((old) => [...new Set([...old, ...lines.map((line) => line.id)])]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load the clearing lines. Try again.');
+    } finally { setLoadingDay(false); }
+  }
   const bankTotal = bankLines.reduce((sum,line) => sum + decimalCents(line.amount),0n);
   const sourceTotal = (kind === 'net_fee' ? glLines : chosen).reduce((sum,line) => sum + decimalCents(line.amount),0n);
   let feeAmount: bigint | null = null;
@@ -59,10 +88,18 @@ export function BankPostDialog({ reconciliation, bankLines, glLines, accounts, o
     {kind === 'net_fee' && <p className="text-sm text-text-secondary">Select the existing bank receipt lines in the ledger panel before opening this form. Only the actual fee is posted; the receipt is not created again.</p>}
     {kind === 'settlement' && <section aria-label="Available clearing lines" className="space-y-2">
       <p className="font-medium">Unsettled card / QRIS ledger lines</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="space-y-1 text-sm">Sales date<Input type="date" value={day} onChange={(e) => setDay(e.target.value)} /></label>
+        <label className="space-y-1 text-sm">Clearing account<Select value={dayAccount} onChange={(e) => setDayAccount(e.target.value)}>
+          <option value="">Choose account</option>{clearingCodes.map((code) => <option key={code} value={code}>{code}</option>)}</Select></label>
+        <Button variant="secondary" disabled={loadingDay || !day || !dayAccount} onClick={() => { void selectDay(); }}>{loadingDay ? 'Loading all lines…' : 'Add the whole day'}</Button>
+        {selected.length > 0 && <Button variant="secondary" onClick={() => setSelected([])}>Clear selection</Button>}
+      </div>
+      <p className="text-sm text-text-secondary">{selected.length} lines selected. Actual fee = selected clearing − bank movement.</p>
       {clearing.isLoading && <p role="status">Loading clearing…</p>}
       {clearing.error && <p role="alert" className="text-danger">{clearing.error.message}<Button variant="secondary" onClick={() => { void clearing.refetch(); }}>Retry</Button></p>}
       <div className="max-h-64 overflow-auto border border-border-subtle"><table className="w-full text-sm"><thead><tr><th>Select</th><th>Date / entry</th><th>Source</th><th>Amount</th></tr></thead><tbody>
-        {available.map((line) => <tr key={line.id}><td><input className={FOCUS_RING} type="checkbox" aria-label={`Select clearing ${line.entry_number} ${line.id.slice(0,8)}`} checked={selected.includes(line.id)}
+        {shown.map((line) => <tr key={line.id}><td><input className={FOCUS_RING} type="checkbox" aria-label={`Select clearing ${line.entry_number} ${line.id.slice(0,8)}`} checked={selected.includes(line.id)}
           onChange={(e) => setSelected((old) => e.target.checked ? [...old,line.id] : old.filter((id) => id !== line.id))} /></td><td className="whitespace-nowrap">{line.entry_date}<br />{line.entry_number}</td><td className="max-w-sm break-words">{line.account_code} · {line.description}</td><td className="whitespace-nowrap font-data">{bankMoney(line.amount)}</td></tr>)}
       </tbody></table></div>
       {!clearing.isLoading && !clearing.error && available.length === 0 && <p>No eligible clearing lines.</p>}
