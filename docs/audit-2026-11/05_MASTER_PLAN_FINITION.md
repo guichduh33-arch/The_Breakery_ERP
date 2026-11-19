@@ -1557,8 +1557,15 @@ exige cette permission pour la session d'un autre (v14 ne le vérifiait pas), et
 l'aperçu de clôture passe en v2 (migration
 `20261119000007_s3_01_close_other_shift_preview.sql`, la v1 se retire avec v14).
 Sur un refus « terminal occupé » ou « session déjà ouverte », l'écran d'ouverture
-relit la session courante. **Non fait** : la production, l'installation du paquet
-caisse, l'essai à l'écran.
+relit la session courante.
+**Production, relevé du 2026-11-20** (PR #743, fusion dans `master`) :
+`20261119000002` et `20261119000007` sont appliquées ; le paquet caisse
+`e7c43cfd`, qui ouvre par `open_shift_v1`, est installé sur le poste et la page
+de caisse rechargée ; la connexion par PIN est constatée à l'écran
+([relevé](../runbooks/etat-environnements.md)). **Non fait** : le retrait
+`20261119000003`, qui attend une APK tablette tirée de ce paquet (les tablettes
+en 1.23 ouvrent encore par écriture directe) ; l'ouverture d'une session à
+l'écran.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — unicité par terminal, terminal obligatoire
@@ -1597,8 +1604,11 @@ version courante, et passent sur v15 ; v12 (et v11 en dev) portent un ancien
 corps complet, qui clôturerait sans figer, et perdent leur droit d'exécution
 client. Preuve
 pgTAP `s3_02_frozen_shift_totals.test.sql`, 20 sur 20 en dev le 2026-11-19, garde
-de la clôture d'une autre session comprise. **Non fait** : la production, l'essai à
-l'écran.
+de la clôture d'une autre session comprise.
+**Production, relevé du 2026-11-20** : `20261119000004` est appliquée et la
+caisse `e7c43cfd` clôture par `close_shift_v15`. **Non fait** : le retrait
+`20261119000006`, qui attend la même APK tablette que `S3-01` (la 1.23 clôture
+encore par `close_shift_v14`) ; une clôture à l'écran.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — colonnes de totaux par moyen de paiement,
@@ -1666,6 +1676,11 @@ pgTAP `s3_03_undo_without_drawer_treasury.test.sql`, qui reproduit l'état de
 production dans sa transaction, 10 sur 10 en dev. Le déploiement de la
 séparation du tiroir en production reste hors de ce lot : c'est un changement
 comptable à décider.
+**Production, relevé du 2026-11-20** (PR #744) : `undo_shift_close_v2` et la
+fonction de contre-passation qu'elle appelle sont ajoutées, sans
+`undo_shift_close_v1`, jamais créée en production ; empreintes égales au dev.
+La caisse `e7c43cfd` porte le bouton d'annulation. **Non fait** : une annulation
+à l'écran.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction d'annulation, gatée propriétaire,
