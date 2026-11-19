@@ -101,7 +101,7 @@ export default function PosPage() {
 
   // POS audit 2026-06-12 lot 3 — close-shift flow. The summary query only
   // runs while the modal is requested so the preview is fresh at open time;
-  // close_shift_v14 recomputes server-side regardless.
+  // close_shift_v15 recomputes server-side regardless.
   const [closeShiftOpen, setCloseShiftOpen] = useState(false);
   const closeSummaryQuery = useShiftCloseSummary(
     closeShiftOpen ? (currentShift?.id ?? null) : null,

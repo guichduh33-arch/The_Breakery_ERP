@@ -91,13 +91,13 @@ export function useCloseShift() {
       if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
       if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
       if (input.denominations !== undefined)    args.p_denominations = input.denominations;
-      const { data, error } = await supabase.rpc('close_shift_v14', args);
+      const { data, error } = await supabase.rpc('close_shift_v15', args);
       // Un refus retourné permet au serveur de commiter le compteur PIN.
       if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
         throw new Error('Invalid manager PIN');
       }
       if (error) {
-        // close_shift_v14 : une commande ouverte et impayée bloque la clôture.
+        // close_shift_v15 : une commande ouverte et impayée bloque la clôture.
         // Le DETAIL porte les numéros : le caissier sait lesquelles traiter.
         if (error.message.includes('unpaid_orders_open')) {
           const orders = typeof error.details === 'string' && error.details !== '' ? `: ${error.details}` : '';

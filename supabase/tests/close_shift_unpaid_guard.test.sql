@@ -1,5 +1,5 @@
 -- Une caisse ne se clôture pas en laissant une commande impayée derrière elle
--- (close_shift_v14), et le dashboard sépare les ardoises des commandes en
+-- (close_shift_v15), et le dashboard sépare les ardoises des commandes en
 -- salle (get_dashboard_open_orders_v4). Constat production du 2026-11-16.
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
@@ -89,9 +89,9 @@ SELECT is(
 -- Clôture : bloquée tant que la commande ouverte existe.
 SELECT set_config('request.jwt.claims', current_setting('upg.actor'), true);
 SELECT throws_ok(
-  format($$SELECT close_shift_v14(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s1')),
+  format($$SELECT close_shift_v15(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s1')),
   'P0001', 'unpaid_orders_open',
-  'T4: close_shift_v14 refuses a shift with an unpaid open order');
+  'T4: close_shift_v15 refuses a shift with an unpaid open order');
 SELECT throws_ok(
   format($$SELECT close_shift_v13(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s1')),
   'P0001', 'unpaid_orders_open',
@@ -100,7 +100,7 @@ SELECT is(
   (SELECT status::text FROM pos_sessions WHERE id = current_setting('upg.s1')::uuid),
   'open', 'T6: the refused shift stays open');
 SELECT throws_ok(
-  format($$SELECT close_shift_v14(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s3')),
+  format($$SELECT close_shift_v15(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s3')),
   'P0001', 'unpaid_orders_open',
   'T7: a picked-up tablet order still in draft also blocks the close');
 
@@ -108,7 +108,7 @@ SELECT throws_ok(
 -- l'annulation et la reprise d'historique ne bloquent pas.
 UPDATE orders SET is_held = true WHERE id = current_setting('upg.open')::uuid;
 SELECT lives_ok(
-  format($$SELECT close_shift_v14(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s1')),
+  format($$SELECT close_shift_v15(%L::uuid, 0, NULL, NULL, NULL, NULL, NULL, NULL, '{}'::jsonb)$$, current_setting('upg.s1')),
   'T8: held, voided and historical orders do not block the close');
 SELECT is(
   (SELECT status::text FROM pos_sessions WHERE id = current_setting('upg.s1')::uuid),
@@ -120,7 +120,7 @@ SELECT lives_ok(
   'T10: a tab does not block the close (through the v10 envelope)');
 
 -- Droits et versions.
-SELECT ok(NOT has_function_privilege('anon','public.close_shift_v14(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)','EXECUTE'),
+SELECT ok(NOT has_function_privilege('anon','public.close_shift_v15(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)','EXECUTE'),
   'T11: anon cannot close a shift');
 SELECT ok(NOT has_function_privilege('anon','public.get_dashboard_open_orders_v4()','EXECUTE'),
   'T12: anon cannot read the open orders panel');

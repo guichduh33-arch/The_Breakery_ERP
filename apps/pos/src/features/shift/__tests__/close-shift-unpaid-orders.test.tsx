@@ -8,7 +8,7 @@ const { rpc, invoke, clear } = vi.hoisted(() => ({ rpc: vi.fn(), invoke: vi.fn()
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc, functions: { invoke } } }));
 vi.mock('@/stores/shiftStore', () => ({ useShiftStore: (select: (state: { clear: () => void }) => unknown) => select({ clear }) }));
 
-// close_shift_v14 refuse la clôture tant qu'une commande ouverte reste impayée.
+// close_shift_v15 refuse la clôture tant qu'une commande ouverte reste impayée.
 describe('clôture refusée par une commande impayée', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
@@ -30,7 +30,7 @@ describe('clôture refusée par une commande impayée', () => {
       await expect(result.current.mutateAsync({ session_id: 'shift', counted_cash: 0 }))
         .rejects.toThrow('Unpaid orders are still open: P16112026019, T115112026117. Pay them, put them on a tab, hold or void them before closing the shift.');
     });
-    expect(rpc).toHaveBeenCalledWith('close_shift_v14', expect.objectContaining({ p_session_id: 'shift' }));
+    expect(rpc).toHaveBeenCalledWith('close_shift_v15', expect.objectContaining({ p_session_id: 'shift' }));
     expect(clear).not.toHaveBeenCalled();
     expect(invoke).not.toHaveBeenCalled();
     client.clear();

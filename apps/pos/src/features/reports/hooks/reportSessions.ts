@@ -114,7 +114,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
   return useQuery<POSReportsSessions>({
     queryKey: ['pos-reports-sessions', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_sessions_report_v4', {
+      const { data, error } = await supabase.rpc('get_pos_sessions_report_v5', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
