@@ -5021,6 +5021,9 @@ export type Database = {
           closing_cash: number | null
           closing_denominations: Json | null
           closing_notes: string | null
+          closing_order_count: number | null
+          closing_payment_totals: Json | null
+          closing_sales_total: number | null
           counted_card: number | null
           counted_qris: number | null
           expected_cash: number | null
@@ -5043,6 +5046,9 @@ export type Database = {
           closing_cash?: number | null
           closing_denominations?: Json | null
           closing_notes?: string | null
+          closing_order_count?: number | null
+          closing_payment_totals?: Json | null
+          closing_sales_total?: number | null
           counted_card?: number | null
           counted_qris?: number | null
           expected_cash?: number | null
@@ -5065,6 +5071,9 @@ export type Database = {
           closing_cash?: number | null
           closing_denominations?: Json | null
           closing_notes?: string | null
+          closing_order_count?: number | null
+          closing_payment_totals?: Json | null
+          closing_sales_total?: number | null
           counted_card?: number | null
           counted_qris?: number | null
           expected_cash?: number | null
@@ -7636,6 +7645,20 @@ export type Database = {
       }
     }
     Functions: {
+      close_shift_v15: {
+        Args: {
+          p_approver_id?: string
+          p_counted_card?: number
+          p_counted_cash: number
+          p_counted_qris?: number
+          p_denominations?: Json
+          p_idempotency_key?: string
+          p_manager_pin?: string
+          p_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       get_invoice_print_template_v1: {
         Args: never
         Returns: {
@@ -7668,6 +7691,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_pos_sessions_report_v5: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
       }
       get_pos_transaction_history_v2: {
         Args: { p_order_number?: string; p_session_id: string }
@@ -8307,6 +8334,15 @@ export type Database = {
       }
       get_zreport_snapshot_v3: { Args: { p_zreport_id: string }; Returns: Json }
       is_business_owner_v1: { Args: never; Returns: boolean }
+      open_shift_v1: {
+        Args: {
+          p_opening_cash: number
+          p_opening_denominations?: Json
+          p_opening_notes?: string
+          p_terminal_id: string
+        }
+        Returns: Json
+      }
       pay_existing_order_v25: {
         Args: {
           p_customer_id?: string
@@ -8481,6 +8517,10 @@ export type Database = {
           p_reason: string
           p_waste_reason?: Database["public"]["Enums"]["waste_reason"]
         }
+        Returns: Json
+      }
+      undo_shift_close_v1: {
+        Args: { p_manager_pin: string; p_reason?: string; p_session_id: string }
         Returns: Json
       }
       update_b2b_pickup_v2: {
