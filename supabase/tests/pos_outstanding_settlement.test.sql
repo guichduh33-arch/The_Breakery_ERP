@@ -112,7 +112,7 @@ SELECT public.void_order_rpc_v14(current_setting('out.order')::uuid,'Outstanding
  'pos',current_setting('out.refund_shift')::uuid);
 INSERT INTO outstanding_results SELECT is((SELECT payment_session_id FROM refunds WHERE order_id=current_setting('out.order')::uuid),
  current_setting('out.refund_shift')::uuid,'void cash belongs to refund shift');
-INSERT INTO outstanding_results SELECT is((public.get_shift_close_preview_v1(current_setting('out.refund_shift')::uuid)->>'expectedCash')::numeric,
+INSERT INTO outstanding_results SELECT is((public.get_shift_close_preview_v2(current_setting('out.refund_shift')::uuid)->>'expectedCash')::numeric,
  65000::numeric,'preview deducts full cash refund once in refund shift');
 INSERT INTO outstanding_results SELECT is(public.get_shift_close_print_v1(current_setting('out.receiving')::uuid),result,
  'closed receiving report unchanged after later void') FROM receiving_snapshot;
@@ -147,7 +147,7 @@ SELECT public.refund_order_rpc_v15(
  p_authorized_by:=current_setting('out.actor')::uuid,p_idempotency_key:=gen_random_uuid(),
  p_acting_auth_user_id:=(SELECT auth_user_id FROM user_profiles WHERE id=current_setting('out.actor')::uuid),
  p_refund_source:='pos',p_session_id:=current_setting('out.small_shift')::uuid);
-INSERT INTO outstanding_results SELECT is((public.get_shift_close_preview_v1(current_setting('out.small_shift')::uuid)->>'expectedCash')::numeric,
+INSERT INTO outstanding_results SELECT is((public.get_shift_close_preview_v2(current_setting('out.small_shift')::uuid)->>'expectedCash')::numeric,
  100::numeric,'partial refund reduces current drawer once');
 INSERT INTO outstanding_results SELECT is((SELECT current_stock FROM products WHERE id=current_setting('out.product')::uuid),99::numeric,'partial refund restores exact quantity');
 

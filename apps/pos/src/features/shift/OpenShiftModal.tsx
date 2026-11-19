@@ -41,6 +41,7 @@ import {
 import { todayIsoDate, formatTimeWita, formatIdr } from '@breakery/utils';
 import { sumDenominations } from '@breakery/domain';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { OpenShiftError, useOpenShift } from './hooks/useShift';
 import { useLanDevices } from './hooks/useLanDevices';
 import { useDenominationCountEnabled } from './hooks/useDenominationCountEnabled';
@@ -73,9 +74,9 @@ function openShiftErrorMessage(err: unknown): string {
     case 'terminal_invalid':
       return 'Select an active cash terminal to open the shift.';
     case 'terminal_session_open':
-      return 'A shift is already open on this terminal. Close it first.';
+      return 'A shift is already open on this terminal. Its cashier, or a manager from Live sessions, must close it first.';
     case 'user_session_open':
-      return 'You already have an open shift on another terminal.';
+      return 'You already have an open shift. It is loading now.';
     case 'invalid_opening_cash':
       return 'The opening cash amount is not valid.';
     case 'forbidden':
@@ -122,6 +123,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
         : null;
 
   const openShift = useOpenShift();
+  const queryClient = useQueryClient();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.openingCashPresets;
 
@@ -185,6 +187,13 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       setNotes('');
       setDenoms({});
     } catch (err) {
+      // Revue S3 : la session vue par ce poste peut être périmée (clôture
+      // annulée ailleurs, session ouverte sur un autre appareil). On relit la
+      // session courante ; si elle est à ce caissier, le POS la reprend.
+      if (err instanceof OpenShiftError
+          && (err.code === 'user_session_open' || err.code === 'terminal_session_open')) {
+        void queryClient.invalidateQueries({ queryKey: ['pos_sessions', 'current'] });
+      }
       const message = openShiftErrorMessage(err);
       setSubmitError(message);
       toast.error(message);

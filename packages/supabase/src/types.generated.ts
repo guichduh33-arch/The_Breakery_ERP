@@ -8078,10 +8078,6 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_sessions_report_v4: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
       get_pos_top_products_v4: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -8228,6 +8224,10 @@ export type Database = {
       }
       get_sales_by_table_v4: {
         Args: { p_end_date: string; p_filters?: Json; p_start_date: string }
+        Returns: Json
+      }
+      get_shift_close_preview_v2: {
+        Args: { p_session_id: string }
         Returns: Json
       }
       get_staff_performance_v3: {
@@ -9265,24 +9265,6 @@ export type Database = {
           p_notes?: string
           p_session_id: string
         }
-        Returns: Json
-      }
-      close_shift_v14: {
-        Args: {
-          p_approver_id?: string
-          p_counted_card?: number
-          p_counted_cash: number
-          p_counted_qris?: number
-          p_denominations?: Json
-          p_idempotency_key?: string
-          p_manager_pin?: string
-          p_notes?: string
-          p_session_id: string
-        }
-        Returns: Json
-      }
-      get_shift_close_preview_v1: {
-        Args: { p_session_id: string }
         Returns: Json
       }
       refund_order_rpc_v15: {

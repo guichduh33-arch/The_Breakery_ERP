@@ -65,6 +65,8 @@ CREATE TRIGGER guard_frozen_shift_totals
 -- close_shift_v15 = close_shift_v14 + gel des totaux, entre la construction
 -- de l'instantané du rapport Z et son insertion. Les totaux sont lus dans cet
 -- instantané : le rapport Z et la session portent les mêmes sommes.
+-- Pour S3-01 (une session par terminal), clôturer la session d'un autre
+-- caissier exige pos.session.close_other ; v14 ne le vérifiait pas.
 -- Pour S3-03 (annulation de clôture), la recherche de l'écriture d'écart
 -- existante ignore une écriture contre-passée : une session rouverte puis
 -- reclôturée passe sa nouvelle écriture d'écart.
@@ -112,6 +114,7 @@ DECLARE
   v_unpaid_count  INT;
   v_unpaid_list   TEXT;
   v_order_count   INT;
+  v_opened_by     UUID;
 BEGIN
   IF p_session_id IS NULL THEN
     RAISE EXCEPTION 'session_id_required' USING ERRCODE = 'P0001';
@@ -138,11 +141,17 @@ BEGIN
   IF NOT public.has_permission(v_uid, 'shift.close') THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'P0003';
   END IF;
-  SELECT status::text, opening_cash, cash_in_total, cash_out_total
-    INTO v_status, v_opening, v_in_tot, v_out_tot
+  SELECT status::text, opening_cash, cash_in_total, cash_out_total, opened_by
+    INTO v_status, v_opening, v_in_tot, v_out_tot, v_opened_by
     FROM pos_sessions WHERE id = p_session_id FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'session_not_found' USING ERRCODE = 'P0002';
+  END IF;
+  -- v15 (S3-01, décision de Mamat du 2026-11-19) : une session par terminal ;
+  -- clôturer la session d'un autre caissier exige pos.session.close_other.
+  IF v_opened_by <> v_profile
+     AND NOT public.has_permission(v_uid, 'pos.session.close_other') THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'P0003';
   END IF;
   IF v_status <> 'open' THEN
     RETURN jsonb_build_object(
@@ -544,6 +553,9 @@ BEGIN
        WHERE al.action = 'shift.close'
          AND al.entity_type = 'pos_sessions'
          AND al.entity_id = s.id
+         -- v5 (S3-03) : une session rouverte garde la trace de son ancienne
+         -- clôture ; elle ne doit pas en afficher les comptages.
+         AND s.status = 'closed'
        ORDER BY al.created_at DESC
        LIMIT 1
     ) sc ON TRUE
@@ -637,4 +649,5 @@ $function$;
 REVOKE ALL ON FUNCTION public.get_pos_sessions_report_v5(date,date) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_pos_sessions_report_v5(date,date) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_pos_sessions_report_v5(date,date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_pos_sessions_report_v5(date,date) TO service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

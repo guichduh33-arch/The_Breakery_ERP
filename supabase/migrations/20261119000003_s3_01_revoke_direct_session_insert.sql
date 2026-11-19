@@ -7,7 +7,15 @@
 -- DEFINER, n'a pas besoin de ce droit. La règle d'insertion perm_create devient
 -- sans objet pour le rôle authenticated ; on la retire pour qu'aucune lecture
 -- ne la prenne pour un chemin vivant.
-REVOKE INSERT ON public.pos_sessions FROM authenticated;
-REVOKE INSERT ON public.pos_sessions FROM anon;
-REVOKE INSERT ON public.pos_sessions FROM PUBLIC;
+--
+-- Même raisonnement pour la modification et la suppression directes, relevées
+-- par la revue du lot (S3-02, S3-03) : une clôture par UPDATE direct ne
+-- figerait pas les totaux et ne poserait aucun rapport Z, et une remise en open
+-- directe contournerait undo_shift_close_v1. Aucun appelant applicatif au
+-- 2026-11-19 : la clôture, les mouvements de caisse et l'annulation passent
+-- tous par des fonctions SECURITY DEFINER.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.pos_sessions FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.pos_sessions FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.pos_sessions FROM PUBLIC;
 DROP POLICY IF EXISTS perm_create ON public.pos_sessions;
+DROP POLICY IF EXISTS perm_update ON public.pos_sessions;

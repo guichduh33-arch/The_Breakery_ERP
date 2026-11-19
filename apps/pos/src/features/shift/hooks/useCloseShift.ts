@@ -137,6 +137,10 @@ export function useCloseShift() {
         if (error.message.includes('counted_method_invalid')) {
           throw new Error('Counted amounts must be zero or positive');
         }
+        // S3-01 : la session d'un autre caissier exige pos.session.close_other.
+        if (error.message === 'forbidden') {
+          throw new Error('You are not allowed to close this shift');
+        }
         throw new Error(error.message);
       }
       const result = data as unknown as CloseShiftResult;

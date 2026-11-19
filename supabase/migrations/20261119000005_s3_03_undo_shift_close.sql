@@ -16,7 +16,8 @@
 --   2. le règlement du tiroir (fond rendu à la petite caisse, reste en fonds non
 --      déposés), posé à l'insertion du rapport Z : contre-passé de même, et la
 --      ligne shift_cash_treasury redevient « non réglée » pour que la clôture
---      suivante règle à nouveau ;
+--      suivante règle à nouveau. Refus si les fonds non déposés contiennent
+--      moins que ce que la clôture y a mis (décision de Mamat du 2026-11-19) ;
 --   3. le rapport Z brouillon : supprimé, son contenu entier gardé dans le
 --      payload de la trace d'audit. Il est unique par session : la clôture
 --      suivante en crée un neuf ;
@@ -113,6 +114,7 @@ DECLARE
   v_var_je    uuid;
   v_var_rev   uuid;
   v_set_rev   uuid;
+  v_undeposited numeric;
 BEGIN
   IF p_session_id IS NULL THEN
     RAISE EXCEPTION 'session_id_required' USING ERRCODE = 'P0001';
@@ -179,9 +181,22 @@ BEGIN
       v_profile, jsonb_build_object('kind', 'shift_close_reversal', 'session_id', v_s.id));
   END IF;
 
-  -- 2. Le règlement du tiroir.
+  -- 2. Le règlement du tiroir. Décision de Mamat du 2026-11-19 : si l'argent
+  -- déposé en fonds non déposés en est déjà sorti (dépôt en banque, retrait),
+  -- l'annulation est refusée ; la contre-passation rendrait ce compte négatif.
   SELECT * INTO v_t FROM shift_cash_treasury WHERE session_id = v_s.id FOR UPDATE;
   v_has_t := FOUND;
+  IF v_has_t AND v_t.settlement_je_id IS NOT NULL AND COALESCE(v_t.safe_deposit, 0) > 0 THEN
+    SELECT COALESCE(SUM(l.debit - l.credit), 0) INTO v_undeposited
+      FROM journal_entry_lines l
+      JOIN journal_entries j ON j.id = l.journal_entry_id
+     WHERE l.account_id = resolve_mapping_account('CASH_WALLET_UNDEPOSITED')
+       AND j.status IN ('posted', 'locked');
+    IF v_undeposited < v_t.safe_deposit THEN
+      RAISE EXCEPTION 'undeposited_cash_moved' USING ERRCODE = 'P0001',
+        DETAIL = format('undeposited balance %s is below the %s this close deposited', v_undeposited, v_t.safe_deposit);
+    END IF;
+  END IF;
   IF v_has_t AND v_t.settlement_je_id IS NOT NULL THEN
     v_set_rev := public._reverse_shift_journal_entry_v1(
       v_t.settlement_je_id, 'Shift cash settlement reversed (close undone)',
@@ -246,7 +261,7 @@ COMMENT ON FUNCTION public.undo_shift_close_v1(uuid, text, text) IS
   'S3-03 — le propriétaire annule la dernière clôture d''un terminal tant que son '
   'rapport Z est un brouillon. Refus : forbidden, pin_required, invalid_pin (retour), '
   'session_not_found, session_not_closed, terminal_unknown, session_not_last, '
-  'user_session_open, zreport_not_draft.';
+  'user_session_open, zreport_not_draft, undeposited_cash_moved.';
 
 REVOKE ALL ON FUNCTION public.undo_shift_close_v1(uuid, text, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.undo_shift_close_v1(uuid, text, text) FROM anon;

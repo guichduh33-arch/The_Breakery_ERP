@@ -82,7 +82,40 @@ INSERT INTO s302_results(tap) SELECT throws_ok(format(
  'UPDATE public.pos_sessions SET closing_sales_total = 1 WHERE id = %L',current_setting('s302.s')),
  'P0001','closing_totals_frozen','Frozen totals cannot be rewritten on a closed session');
 
+-- S3-01 (décision du 2026-11-19) : la session d'un autre caissier se clôture
+-- seulement avec pos.session.close_other ; l'aperçu suit la même règle.
+DO $other$
+DECLARE a uuid := gen_random_uuid(); p uuid := gen_random_uuid();
+  m uuid := gen_random_uuid(); mp uuid := gen_random_uuid(); s uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users(id) VALUES(a),(m);
+  INSERT INTO user_profiles(id,auth_user_id,role_code,full_name,employee_code,is_active,pin_hash) VALUES
+    (p,a,'CASHIER','S3-02 other','S302-X-'||left(p::text,8),true,'invalid-test-hash'),
+    (mp,m,'CASHIER','S3-02 manager','S302-M-'||left(mp::text,8),true,'invalid-test-hash');
+  INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted,reason) VALUES
+    (p,'shift.close',true,'S3-02 coverage'),(p,'pos.session.close_other',false,'S3-02 coverage'),
+    (mp,'shift.close',true,'S3-02 coverage'),(mp,'pos.session.close_other',false,'S3-02 coverage')
+    ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=EXCLUDED.is_granted,expires_at=NULL;
+  INSERT INTO pos_sessions(id,opened_by,opening_cash,status) VALUES(s,p,0,'open');
+  PERFORM set_config('s302.other_s',s::text,true);
+  PERFORM set_config('s302.other_mp',mp::text,true);
+  PERFORM set_config('s302.manager',jsonb_build_object('sub',m,'role','authenticated')::text,true);
+END $other$;
+SELECT set_config('request.jwt.claims',current_setting('s302.manager'),true);
+INSERT INTO s302_results(tap) SELECT throws_ok(format('SELECT public.get_shift_close_preview_v2(%L)',current_setting('s302.other_s')),
+ 'P0001','no_open_shift','Without pos.session.close_other, another cashier''s shift cannot be previewed');
+INSERT INTO s302_results(tap) SELECT throws_ok(format('SELECT public.close_shift_v15(%L,0)',current_setting('s302.other_s')),
+ 'P0003','forbidden','Without pos.session.close_other, another cashier''s shift cannot be closed');
+UPDATE user_permission_overrides SET is_granted=true
+ WHERE user_profile_id=current_setting('s302.other_mp')::uuid AND permission_code='pos.session.close_other';
+INSERT INTO s302_results(tap) SELECT ok(public.get_shift_close_preview_v2(current_setting('s302.other_s')::uuid) ? 'expectedCash',
+ 'With pos.session.close_other, a manager previews another cashier''s shift');
+INSERT INTO s302_results(tap) SELECT is(public.close_shift_v15(current_setting('s302.other_s')::uuid,0)->>'status','closed',
+ 'With pos.session.close_other, a manager closes another cashier''s shift');
+
 -- Droits.
+INSERT INTO s302_results(tap) SELECT ok(NOT has_function_privilege('anon',
+ 'public.get_shift_close_preview_v2(uuid)','EXECUTE'),'anon cannot execute get_shift_close_preview_v2');
 INSERT INTO s302_results(tap) SELECT ok(NOT has_function_privilege('anon',
  'public.close_shift_v15(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)','EXECUTE'),'anon cannot execute close_shift_v15');
 INSERT INTO s302_results(tap) SELECT ok(NOT has_function_privilege('anon',

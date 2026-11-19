@@ -80,6 +80,26 @@ UPDATE z_reports SET status='signed',signed_at=now(),signed_by=current_setting('
 INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
  current_setting('s303.s'),'246810'),'P0001','zreport_not_draft','A signed Z-report forbids the undo');
 UPDATE z_reports SET status='draft',signed_at=NULL,signed_by=NULL WHERE shift_id=current_setting('s303.s')::uuid;
+-- L'argent déposé en fonds non déposés en est sorti (dépôt en banque) : refus
+-- (décision de Mamat du 2026-11-19). L'écriture de sortie est retirée ensuite.
+DO $moved$
+DECLARE v_acc uuid := resolve_mapping_account('CASH_WALLET_UNDEPOSITED');
+  v_other uuid := resolve_mapping_account('SALE_PAYMENT_CASH'); v_bal numeric; v_out numeric; v_je uuid;
+BEGIN
+  SELECT COALESCE(SUM(l.debit-l.credit),0) INTO v_bal FROM journal_entry_lines l
+    JOIN journal_entries j ON j.id=l.journal_entry_id WHERE l.account_id=v_acc AND j.status IN ('posted','locked');
+  v_out := v_bal - 49899;  -- il reste 49 899, sous les 49 900 que la clôture a déposés
+  INSERT INTO journal_entries(entry_number,entry_date,description,reference_type,status,total_debit,total_credit)
+    VALUES(next_journal_entry_number(CURRENT_DATE),CURRENT_DATE,'S3-03 fixture: cash taken to the bank','manual','posted',v_out,v_out)
+    RETURNING id INTO v_je;
+  INSERT INTO journal_entry_lines(journal_entry_id,account_id,debit,credit) VALUES(v_je,v_other,v_out,0),(v_je,v_acc,0,v_out);
+  PERFORM set_config('s303.moved_je',v_je::text,true);
+END $moved$;
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+ current_setting('s303.s'),'246810'),'P0001','undeposited_cash_moved',
+ 'The undo is refused once the deposited cash has left the undeposited funds');
+DELETE FROM journal_entry_lines WHERE journal_entry_id=current_setting('s303.moved_je')::uuid;
+DELETE FROM journal_entries WHERE id=current_setting('s303.moved_je')::uuid;
 
 -- Annulation.
 CREATE TEMP TABLE s303_undo AS

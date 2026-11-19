@@ -2,7 +2,14 @@
 // S67 (12 D2.3) — flag ON : la grille remplace montant libre + quick amounts.
 // S3-01 — le terminal de caisse est obligatoire à l'ouverture.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
+
+// OpenShiftModal relit la session courante sur un refus de terminal (revue S3).
+function render(node: ReactElement) {
+  return rtlRender(<QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>);
+}
 
 const openShiftMutation = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockDenomEnabled = vi.hoisted(() => vi.fn(() => true));

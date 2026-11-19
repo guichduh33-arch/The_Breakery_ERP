@@ -7,6 +7,8 @@
 -- le veut le versionnement monotone des fonctions.
 DROP FUNCTION IF EXISTS public.close_shift_v14(uuid, numeric, text, uuid, uuid, text, numeric, numeric, jsonb);
 DROP FUNCTION IF EXISTS public.get_pos_sessions_report_v4(date, date);
+-- Remplacée par get_shift_close_preview_v2 (migration 20261119000007).
+DROP FUNCTION IF EXISTS public.get_shift_close_preview_v1(uuid);
 
 -- Les versions plus anciennes encore présentes (relevé du 2026-11-19 : v10,
 -- v12 et v13 en production, v10 à v13 en dev) précèdent ce chantier, et des

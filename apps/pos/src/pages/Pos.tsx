@@ -45,6 +45,7 @@ import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 const OrderHistoryPanel = lazy(() => import('@/features/order-history/OrderHistoryPanel').then((module) => ({ default: module.OrderHistoryPanel })));
 const LiveSessionsModal = lazy(() => import('@/features/shift/LiveSessionsModal').then((module) => ({ default: module.LiveSessionsModal })));
+const OtherShiftCloseFlow = lazy(() => import('@/features/shift/components/OtherShiftCloseFlow').then((module) => ({ default: module.OtherShiftCloseFlow })));
 const ChangePinModal = lazy(() => import('@/features/auth/ChangePinModal').then((module) => ({ default: module.ChangePinModal })));
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
@@ -79,6 +80,8 @@ export default function PosPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveSessionsOpen, setLiveSessionsOpen] = useState(false);
+  // S3-01 — session d'un autre caissier qu'un manager clôture.
+  const [otherShiftToClose, setOtherShiftToClose] = useState<{ id: string; cashier: string } | null>(null);
   // Critique run 3 (polish) — les entrées « Held Orders » et « Customer List »
   // du tiroir étaient disabled en permanence : Pos ne passait jamais leurs
   // handlers. Le tiroir ouvre désormais la même modale d'ardoises que la barre
@@ -300,6 +303,12 @@ export default function PosPage() {
       {liveSessionsOpen && <LiveSessionsModal
         open={liveSessionsOpen}
         onClose={() => setLiveSessionsOpen(false)}
+        onCloseOtherShift={(s) => { setLiveSessionsOpen(false); setOtherShiftToClose({ id: s.id, cashier: s.cashier_name }); }}
+      />}
+      {otherShiftToClose && <OtherShiftCloseFlow
+        sessionId={otherShiftToClose.id}
+        cashierName={otherShiftToClose.cashier}
+        onClose={() => setOtherShiftToClose(null)}
       />}
       {currentUserId && changePinOpen && (
         <ChangePinModal
