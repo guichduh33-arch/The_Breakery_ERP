@@ -119,7 +119,13 @@ export function buildPurchaseItemsColumns({
           <span className="block"><Delta value={pctChange(r.value, r.previous_value)} period="prev" /></span>
         </span>
       ),
-      footer: summary !== undefined ? formatIdrFull(summary.previous_total_value) : null,
+      // Le total précédent compte aussi les articles achetés seulement avant :
+      // il ne vaut pas la somme de la colonne, le titre le dit.
+      footer: summary !== undefined ? (
+        <span title="Includes articles bought only in the previous period">
+          {formatIdrFull(summary.previous_total_value)}
+        </span>
+      ) : null,
     }] : []),
     {
       id: 'orders', header: 'POs', sortKey: 'orders', align: 'right',
@@ -130,7 +136,8 @@ export function buildPurchaseItemsColumns({
       cell: (r) => formatCount(r.supplier_count),
     },
     {
-      id: 'received', header: 'Last received', sortKey: 'received',
+      // Date du dernier bon ENTIÈREMENT reçu : un bon partiel n'en porte pas.
+      id: 'received', header: 'Last full receipt', sortKey: 'received',
       className: 'whitespace-nowrap font-data text-xs text-text-secondary',
       cell: (r) => (r.last_received_date !== null ? r.last_received_date.slice(0, 10) : DASH),
     },

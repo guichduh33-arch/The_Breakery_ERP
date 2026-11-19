@@ -130,7 +130,9 @@ BEGIN
       'base_quantity',      c.base_qty,
       'value',              c.value,
       'share_pct',          CASE WHEN t.total IS NULL THEN 0 ELSE round(c.value / t.total * 100, 2) END,
-      'avg_unit_cost',      CASE WHEN c.base_qty > 0 THEN round(c.value / c.base_qty, 2) END,
+      -- 4 décimales : une unité de base petite (le gramme) coûte souvent moins
+      -- d'une roupie ; l'écran arrondit à l'affichage.
+      'avg_unit_cost',      CASE WHEN c.base_qty > 0 THEN round(c.value / c.base_qty, 4) END,
       'line_count',         c.line_count,
       'po_count',           c.po_count,
       'supplier_count',     c.supplier_count,
@@ -149,9 +151,11 @@ BEGIN
   by_day AS (
     SELECT order_date, period, SUM(value) AS value FROM l GROUP BY order_date, period
   ),
+  -- Série d'entiers et non d'horodatages : le jour ne dépend pas du fuseau de
+  -- la session.
   days AS (
-    SELECT d::date AS day, (d::date - v_start) AS rk
-    FROM generate_series(v_start, v_end, interval '1 day') d
+    SELECT v_start + k AS day, k AS rk
+    FROM generate_series(0, v_end - v_start) k
   ),
   trend AS (
     SELECT COALESCE(jsonb_agg(jsonb_build_object(

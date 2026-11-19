@@ -2179,7 +2179,8 @@ fournisseurs comptés par identifiant. Page : vue par article triable et
 cherchable, comparaison à la période précédente, graphique de dépense dans le
 temps et classement des articles, descente paginée. Date de réception affichée :
 celle du bon entièrement reçu. pgTAP `s3_20_purchase_items_by_article.test.sql`
-23/23 en dev, dont 1 005 lignes au-delà de l'ancien plafond. Vitest de la page
+26/26 en dev, dont 1 005 lignes au-delà de l'ancien plafond, unités
+mélangées, statuts et borne de 366 jours. Relecture indépendante appliquée. Vitest de la page
 8/8. Non publié.
 
 **Fichiers**

@@ -11,7 +11,7 @@
 BEGIN;
 \ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(23);
+SELECT plan(26);
 
 DO $fix$
 DECLARE
@@ -51,6 +51,17 @@ BEGIN
   VALUES ('T_S320_PO5', v_sa, 'received', '2001-02-25', '2001-02-25') RETURNING id INTO v_po5;
   INSERT INTO purchase_order_items (po_id, product_id, quantity, unit, unit_cost, unit_factor_to_base)
   VALUES (v_po5, v_p1, 3, 'kg', 1000, 1);
+
+  -- Seconde fenêtre isolée (juin 2001) : P1 acheté en sac de 25 kg (reçu) puis
+  -- en kilos (partiel) → unités mélangées, 30 kg de base, 1 000 le kilo.
+  INSERT INTO purchase_orders (po_number, supplier_id, status, order_date, received_date)
+  VALUES ('T_S320_PO6', v_sa, 'received', '2001-06-05', '2001-06-05') RETURNING id INTO v_po3;
+  INSERT INTO purchase_order_items (po_id, product_id, quantity, unit, unit_cost, unit_factor_to_base)
+  VALUES (v_po3, v_p1, 1, 'bag', 25000, 25);
+  INSERT INTO purchase_orders (po_number, supplier_id, status, order_date)
+  VALUES ('T_S320_PO7', v_sa, 'partial', '2001-06-06') RETURNING id INTO v_po4;
+  INSERT INTO purchase_order_items (po_id, product_id, quantity, unit, unit_cost, unit_factor_to_base)
+  VALUES (v_po4, v_p1, 5, 'kg', 1000, 1);
 
   PERFORM set_config('s320.sa', v_sa::text, true);
   PERFORM set_config('s320.sb', v_sb::text, true);
@@ -144,6 +155,19 @@ INSERT INTO s320_results(tap) SELECT ok(
         NULL, NULL, 50, 1000)->'lines') = 5
   AND public.get_purchase_item_lines_v1('2001-03-01','2001-03-10', current_setting('s320.p1')::uuid)->'lines'->0->>'received_date' = '2001-03-05',
   'Lines of one article are paginated and carry the receipt date');
+-- Unités mélangées, statuts reçu et partiel, borne de 366 jours.
+INSERT INTO s320_results(tap) SELECT ok(
+  (public.get_purchase_items_v2('2001-06-01','2001-06-10')->'items'->0->'purchase_unit') = 'null'::jsonb
+  AND (public.get_purchase_items_v2('2001-06-01','2001-06-10')->'items'->0->>'base_quantity')::numeric = 30
+  AND (public.get_purchase_items_v2('2001-06-01','2001-06-10')->'items'->0->>'avg_unit_cost')::numeric = 1000,
+  'Mixed purchase units: no single unit, quantity and cost in base units');
+INSERT INTO s320_results(tap) SELECT ok(
+  (public.get_purchase_items_v2('2001-06-01','2001-06-10', NULL, NULL, NULL, 'received')->'summary'->>'total_value')::numeric = 25000
+  AND (public.get_purchase_items_v2('2001-06-01','2001-06-10', NULL, NULL, NULL, 'partial')->'summary'->>'total_value')::numeric = 5000,
+  'Received and partial status filters restrict');
+INSERT INTO s320_results(tap) SELECT is(
+  public.get_purchase_items_v2('1999-01-01','2001-06-10')->'period'->>'start', '2000-06-09',
+  'A range longer than 366 days is clamped to 366 days');
 RESET ROLE;
 
 SELECT pg_temp.authenticate_pin(current_setting('s320.denied')::uuid);

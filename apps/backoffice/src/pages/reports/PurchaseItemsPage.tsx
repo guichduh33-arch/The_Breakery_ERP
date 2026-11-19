@@ -21,7 +21,7 @@
 // Params URL conservés : `start` / `end` / `supplier_id` (liens des autres
 // rapports d'achat).
 
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
@@ -65,7 +65,7 @@ const csvColumns: CsvColumn<PurchaseItemRow>[] = [
   { header: 'Previous value (IDR)', accessor: (r) => r.previous_value,   format: 'idr-round100' },
   { header: 'POs',                accessor: (r) => r.po_count,           format: 'number' },
   { header: 'Suppliers',          accessor: (r) => r.supplier_count,     format: 'number' },
-  { header: 'Last received',      accessor: (r) => r.last_received_date ?? '', format: 'text' },
+  { header: 'Last full receipt',  accessor: (r) => r.last_received_date ?? '', format: 'text' },
 ];
 
 type FilterKey = 'supplier_id' | 'category_id' | 'status';
@@ -121,6 +121,10 @@ export default function PurchaseItemsPage(): JSX.Element {
   const supplierId = filters.values.supplier_id;
   const categoryId = filters.values.category_id;
   const status = isStatus(filters.values.status) ? filters.values.status : null;
+
+  // Le tiroir se ferme sur un VRAI changement de portée (période, filtre),
+  // jamais sur un rafraîchissement d'arrière-plan : il perdrait sa page.
+  useEffect(() => { setOpened(null); }, [start, end, supplierId, categoryId, productId, status]);
 
   const q = usePurchaseItems({
     start, end,
@@ -247,7 +251,7 @@ export default function PurchaseItemsPage(): JSX.Element {
       </PanelCard>
 
       <PurchaseItemLinesDrawer
-        product={hidden ? null : opened}
+        product={opened}
         start={start}
         end={end}
         supplierId={supplierId || null}
