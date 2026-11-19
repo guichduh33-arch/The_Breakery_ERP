@@ -21,7 +21,7 @@ export function useShiftCloseSummary(sessionId: string | null) {
     staleTime: 0,
     queryFn: async (): Promise<ShiftCloseSummary> => {
       // Même calcul serveur pour la prévisualisation et le rapport figé.
-      const { data, error } = await supabase.rpc('get_shift_close_preview_v1', { p_session_id: sessionId! });
+      const { data, error } = await supabase.rpc('get_shift_close_preview_v2', { p_session_id: sessionId! });
       if (error) throw new Error(error.message);
       const result = data as unknown as ShiftCloseSummary;
       if (!result || !Object.values(result).every((value) => typeof value === 'number' && Number.isFinite(value))) {

@@ -18,7 +18,7 @@ describe('useShiftCloseSummary', () => {
     mocks.rpc.mockResolvedValue({ data: summary, error: null });
     const { result } = renderHook(() => useShiftCloseSummary('session-1'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mocks.rpc).toHaveBeenCalledWith('get_shift_close_preview_v1', { p_session_id: 'session-1' });
+    expect(mocks.rpc).toHaveBeenCalledWith('get_shift_close_preview_v2', { p_session_id: 'session-1' });
     expect(result.current.data).toEqual(summary);
   });
   it('fails closed when the server preview is unavailable', async () => {

@@ -159,7 +159,7 @@ export function usePOSReportsVoidsRefunds(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_sessions_report_v4(p_start_date,
+// Source of truth: server RPC `get_pos_sessions_report_v5(p_start_date,
 // p_end_date)`. One row per pos_session (drawer lifecycle), anchored on its
 // WITA opening day — this REPLACES the Activity tab's confusing "Session Open N
 // ≠ Session Close M" counters with a single lifecycle count. Each row carries:

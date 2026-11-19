@@ -1530,6 +1530,36 @@ seulement. Revue indépendante : aucun bloquant, remarques corrigées.
 
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 2.
 
+**État — développé et prouvé en dev le 2026-11-19**, branche
+`feat/s3-sessions-caisse`, lot des sessions de caisse avec `S3-02` et `S3-03`
+([ADR-043](../adr/043-sessions-de-caisse-terminal-et-annulation-de-cloture.md)).
+Le POS ouvrait sa session par une écriture directe dans `pos_sessions`, terminal
+facultatif. Migration `20261119000002_s3_01_open_shift_terminal_required.sql` :
+un index unique partiel (une session ouverte par terminal) et la fonction
+d'ouverture `open_shift_v1`, qui exige un terminal de caisse actif ; l'exclusion
+« une session ouverte par caissier » reste. Migration
+`20261119000003_s3_01_revoke_direct_session_insert.sql`, à appliquer en
+production après l'installation du paquet caisse : retrait du droit d'écriture
+directe. Écran d'ouverture : terminal obligatoire, présélectionné s'il est le
+seul, message en clair pour chaque refus. Les 6 sessions historiques sans
+terminal (relevé production du 2026-11-19, toutes clôturées, du 31 octobre au
+2 novembre) sont **marquées**, non rattachées : rien ne prouve le poste qui les a
+ouvertes ; le commentaire de la colonne dit qu'un terminal vide désigne une
+session antérieure à la règle. Preuve pgTAP `s3_01_open_shift_terminal.test.sql`,
+19 sur 19 en dev le 2026-11-19.
+**Après la revue indépendante du même jour** : la migration de retrait retire
+aussi la modification et la suppression directes (une clôture ou une remise en
+open par écriture directe contournerait `S3-02` et `S3-03`). Décision de Mamat
+du 2026-11-19 (ADR-043, point 7) : une session oubliée ne bloque pas le
+terminal ; qui détient `pos.session.close_other` la clôture depuis la liste des
+sessions en cours, qui montre désormais le code du terminal. `close_shift_v15`
+exige cette permission pour la session d'un autre (v14 ne le vérifiait pas), et
+l'aperçu de clôture passe en v2 (migration
+`20261119000007_s3_01_close_other_shift_preview.sql`, la v1 se retire avec v14).
+Sur un refus « terminal occupé » ou « session déjà ouverte », l'écran d'ouverture
+relit la session courante. **Non fait** : la production, l'installation du paquet
+caisse, l'essai à l'écran.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — unicité par terminal, terminal obligatoire
 - `supabase/migrations/<nouveau>` — reprise des 6 sessions sans terminal
@@ -1546,6 +1576,29 @@ sessions historiques sont rattachées ou marquées.
 ### `[S3-02]` Figer les totaux à la clôture de session
 
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 2.
+
+**État — développé et prouvé en dev le 2026-11-19**, même lot que `S3-01`.
+Écart signalé au relevé du corps vivant : le rapport Z créé à la clôture
+figeait déjà les encaissements par moyen et le chiffre d'affaires dans son
+instantané, et le rapport de session les y lisait ; seul le nombre de commandes
+restait calculé à la lecture, et rien n'était porté par la session elle-même.
+Migration `20261119000004_s3_02_freeze_shift_totals.sql` : trois colonnes sur
+la session, renseignées par `close_shift_v15` depuis l'instantané du rapport Z
+(les deux portent donc les mêmes sommes), un déclencheur qui refuse de les
+réécrire tant que la session reste clôturée, et `get_pos_sessions_report_v5`
+qui les lit. Corps repris du vivant ; égalité fichier-base vérifiée par
+empreinte sur les trois fonctions. Les sessions clôturées avant la règle gardent
+des totaux vides : les recalculer aujourd'hui serait un chiffre du jour présenté
+comme figé. Migration `20261119000006_s3_02_retire_close_shift_v14.sql`, après
+installation du paquet caisse : retrait de `close_shift_v14` et du rapport v4.
+Les versions plus anciennes encore présentes sont de deux sortes (relevé du
+2026-11-19) : v10 et v13 sont des enveloppes qui transmettent l'appel à la
+version courante, et passent sur v15 ; v12 (et v11 en dev) portent un ancien
+corps complet, qui clôturerait sans figer, et perdent leur droit d'exécution
+client. Preuve
+pgTAP `s3_02_frozen_shift_totals.test.sql`, 20 sur 20 en dev le 2026-11-19, garde
+de la clôture d'une autre session comprise. **Non fait** : la production, l'essai à
+l'écran.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — colonnes de totaux par moyen de paiement,
@@ -1567,6 +1620,39 @@ session affiche les valeurs figées.
 
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 2. Remplace l'état
 intermédiaire de recomptage, explicitement abandonné.
+
+**État — développé et prouvé en dev le 2026-11-19**, même lot que `S3-01`.
+Précisions de Mamat du même jour, gravées dans
+[ADR-043](../adr/043-sessions-de-caisse-terminal-et-annulation-de-cloture.md) :
+« la dernière » s'entend par terminal, et un rapport Z signé interdit
+l'annulation. Écart signalé : la clôture ne pose pas que l'écriture d'écart ; à
+la création du rapport Z, elle règle aussi le tiroir en comptabilité (fond rendu
+à la petite caisse, reste en fonds non déposés) et rend la session immuable.
+L'annulation défait donc les deux écritures et remet le règlement à faire, sans
+quoi la clôture suivante l'aurait compté deux fois. Migration
+`20261119000005_s3_03_undo_shift_close.sql` : `undo_shift_close_v1`, réservée au
+propriétaire, PIN vérifié avec verrouillage ; contre-passation miroir des deux
+écritures, datée du jour ; suppression du rapport Z brouillon, son contenu gardé
+dans la trace d'audit avec l'état d'avant de la session. L'index d'idempotence
+des écritures n'admet qu'une écriture par type, référence et étiquette : la
+contre-passation porte sa propre étiquette, et l'écriture d'origine reçoit une
+étiquette « contre-passée », ses montants et ses lignes inchangés.
+`close_shift_v15` ignore une écriture d'écart contre-passée. Le rapport de
+session du POS montre au propriétaire un bouton d'annulation sur les sessions
+clôturées. Preuve pgTAP `s3_03_undo_shift_close.test.sql`, 21 sur 21 en dev le
+2026-11-19 : refus (non-propriétaire, PIN absent ou faux, session sans terminal,
+session non dernière, rapport Z signé, session ouverte), annulation, chaque
+compte touché revenu à zéro, puis reclôture avec ses propres écritures, son
+rapport Z et ses totaux.
+**Après la revue indépendante du même jour** : décision de Mamat (ADR-043,
+point 6), l'annulation est refusée si les fonds non déposés contiennent moins
+que ce que la clôture y a mis ; le cas est ajouté au test, joué en dev dans un
+passage réduit (15 sur 15), la suite complète du fichier revient à la CI. Le rapport de session
+n'affiche plus les comptages de l'ancienne clôture sur une session rouverte.
+**Non fait** : la production, l'essai à l'écran ; le PDF du rapport Z brouillon
+éventuellement stocké reste dans le stockage ; l'étiquette technique d'une
+écriture contre-passée est réécrite, ce qu'un futur verrou d'immuabilité des
+écritures devra prendre en compte.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction d'annulation, gatée propriétaire,

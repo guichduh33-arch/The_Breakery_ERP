@@ -6,7 +6,7 @@
 // variance cells, CSV button). Mocks usePOSReportsSessions + useAuthStore.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import POSSessionsReportPage from '../POSSessionsReportPage';
 import type { POSReportsSessions } from '../hooks/usePOSReports';
@@ -23,10 +23,15 @@ vi.mock('../hooks/usePOSReports', () => ({
   usePOSReportsSessions: () => state.current,
 }));
 
-const authState = { current: { canRead: true } };
+const authState = { current: { canRead: true, role: 'CASHIER' } };
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: <T,>(selector: (s: { hasPermission: (code: string) => boolean }) => T) =>
-    selector({ hasPermission: () => authState.current.canRead }),
+  useAuthStore: <T,>(selector: (s: { hasPermission: (code: string) => boolean; user: { role_code: string } }) => T) =>
+    selector({ hasPermission: () => authState.current.canRead, user: { role_code: authState.current.role } }),
+}));
+// S3-03 — le modal d'annulation a son propre test ; ici on ne vérifie que son ouverture.
+vi.mock('@/features/shift/components/UndoShiftCloseModal', () => ({
+  UndoShiftCloseModal: ({ open, sessionId }: { open: boolean; sessionId: string | null }) =>
+    open ? <div data-testid="undo-modal">{sessionId}</div> : null,
 }));
 
 function renderPage() {
@@ -117,11 +122,26 @@ function populated(): POSReportsSessions {
 describe('POSSessionsReportPage', () => {
   beforeEach(() => {
     state.current = { data: undefined, isLoading: false, isError: false };
-    authState.current = { canRead: true };
+    authState.current = { canRead: true, role: 'CASHIER' };
+  });
+
+  it('offers the owner to undo a closed session only (S3-03)', () => {
+    authState.current = { canRead: true, role: 'SUPER_ADMIN' };
+    state.current = { data: populated(), isLoading: false, isError: false };
+    renderPage();
+    expect(within(screen.getByTestId('session-open-1')).queryByTestId('session-undo-close')).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByTestId('session-closed-1')).getByTestId('session-undo-close'));
+    expect(screen.getByTestId('undo-modal')).toHaveTextContent('closed-1');
+  });
+
+  it('does not offer the undo to a non-owner (S3-03)', () => {
+    state.current = { data: populated(), isLoading: false, isError: false };
+    renderPage();
+    expect(screen.queryByTestId('session-undo-close')).not.toBeInTheDocument();
   });
 
   it('renders the ReportsForbidden splash when the user lacks permission', () => {
-    authState.current = { canRead: false };
+    authState.current = { canRead: false, role: 'CASHIER' };
     renderPage();
     expect(screen.getByText(/reports are restricted/i)).toBeInTheDocument();
   });

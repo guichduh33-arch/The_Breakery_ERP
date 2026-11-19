@@ -24,6 +24,14 @@ vi.mock('../hooks/useLiveSessions', () => ({
   useLiveSessions: () => sessionsState.current,
 }));
 
+// S3-01 — le bouton de clôture d'une autre session dépend de l'utilisateur.
+const authState = { current: { userId: 'me', canCloseOthers: false } };
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: <T,>(sel: (s: { user: { id: string }; hasPermission: (c: string) => boolean }) => T) =>
+    sel({ user: { id: authState.current.userId },
+      hasPermission: (c) => c === 'pos.session.close_other' && authState.current.canCloseOthers }),
+}));
+
 function withQuery(node: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
@@ -46,6 +54,24 @@ function session(overrides: Partial<LiveSession> = {}): LiveSession {
 describe('LiveSessionsModal', () => {
   beforeEach(() => {
     sessionsState.current = { data: [], isLoading: false, isError: false, isFetching: false };
+    authState.current = { userId: 'me', canCloseOthers: false };
+  });
+
+  it('lets a manager close another cashier\'s shift, never their own (S3-01)', () => {
+    authState.current = { userId: 'me', canCloseOthers: true };
+    sessionsState.current = { ...sessionsState.current,
+      data: [session({ id: 'other', opened_by: 'u1' }), session({ id: 'mine', opened_by: 'me' })] };
+    const onCloseOther = vi.fn();
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} onCloseOtherShift={onCloseOther} />));
+    expect(within(screen.getByTestId('live-session-mine')).queryByTestId('live-session-close')).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByTestId('live-session-other')).getByTestId('live-session-close'));
+    expect(onCloseOther).toHaveBeenCalledWith(expect.objectContaining({ id: 'other' }));
+  });
+
+  it('hides the close button without pos.session.close_other (S3-01)', () => {
+    sessionsState.current = { ...sessionsState.current, data: [session({ id: 'other', opened_by: 'u1' })] };
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} onCloseOtherShift={vi.fn()} />));
+    expect(screen.queryByTestId('live-session-close')).not.toBeInTheDocument();
   });
 
   it('renders the Live Sessions header and active count when open', () => {

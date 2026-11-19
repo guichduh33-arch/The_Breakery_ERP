@@ -33,15 +33,20 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useLiveSessions, type LiveSession } from './hooks/useLiveSessions';
 import { StaleSessionBadge } from './components/StaleSessionBadge';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface LiveSessionsModalProps {
   open: boolean;
   onClose: () => void;
+  /** S3-01 — clôturer la session d'un autre caissier (pos.session.close_other). */
+  onCloseOtherShift?: (session: LiveSession) => void;
 }
 
-export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JSX.Element {
+export function LiveSessionsModal({ open, onClose, onCloseOtherShift }: LiveSessionsModalProps): JSX.Element {
   const sessions = useLiveSessions();
   const queryClient = useQueryClient();
+  const me = useAuthStore((s) => s.user?.id);
+  const canCloseOthers = useAuthStore((s) => s.hasPermission('pos.session.close_other'));
 
   function refresh(): void {
     void queryClient.invalidateQueries({ queryKey: ['pos-live-sessions'] });
@@ -100,7 +105,9 @@ export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JS
         )}
         <ul className="space-y-3">
           {rows.map((s) => (
-            <LiveSessionRow key={s.id} session={s} />
+            <LiveSessionRow key={s.id} session={s}
+              {...(onCloseOtherShift && canCloseOthers && s.opened_by !== me
+                ? { onCloseShift: () => onCloseOtherShift(s) } : {})} />
           ))}
         </ul>
       </div>
@@ -123,7 +130,11 @@ function formatElapsed(iso: string): string {
   return `${days}d ${hours % 24}h`;
 }
 
-function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
+function LiveSessionRow({ session, onCloseShift }: {
+  session: LiveSession;
+  /** Présent pour un utilisateur qui peut clôturer la session d'un autre. */
+  onCloseShift?: () => void;
+}): JSX.Element {
   return (
     <li
       className="rounded-lg border border-border-subtle bg-bg-input p-4"
@@ -162,6 +173,13 @@ function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
           {session.order_count} transactions
         </span>
       </div>
+      {onCloseShift && (
+        <div className="mt-3 flex justify-end">
+          <Button variant="secondary" size="sm" onClick={onCloseShift} data-testid="live-session-close">
+            Close shift
+          </Button>
+        </div>
+      )}
     </li>
   );
 }

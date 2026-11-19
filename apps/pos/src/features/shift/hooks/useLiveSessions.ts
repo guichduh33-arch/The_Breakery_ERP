@@ -15,7 +15,7 @@ export interface LiveSession {
   opened_at: string;
   opened_by: string;
   cashier_name: string;
-  /** Convenience: terminal label (sessions don't have a terminal id yet so we synthesize one from the session uuid). */
+  /** Code du terminal (S3-01) ; repli sur un libellé tiré de l'id pour une session sans terminal. */
   terminal_label: string;
   /** Sum of completed-order totals attached to this session. */
   cash_movements_total: number;
@@ -31,6 +31,7 @@ interface RawRow {
   cash_in_total: number;
   cash_out_total: number;
   opened_by_user: { full_name: string | null } | null;
+  terminal: { code: string | null } | null;
   orders: { count: number }[] | null;
 }
 
@@ -41,7 +42,7 @@ export function useLiveSessions() {
       const { data, error } = await supabase
         .from('pos_sessions')
         .select(
-          'id, opening_cash, opened_at, opened_by, cash_in_total, cash_out_total, opened_by_user:user_profiles!pos_sessions_opened_by_fkey(full_name), orders(count)',
+          'id, opening_cash, opened_at, opened_by, cash_in_total, cash_out_total, opened_by_user:user_profiles!pos_sessions_opened_by_fkey(full_name), terminal:lan_devices!pos_sessions_terminal_id_fkey(code), orders(count)',
         )
         .eq('status', 'open')
         .order('opened_at', { ascending: false });
@@ -55,7 +56,7 @@ export function useLiveSessions() {
         opened_at: r.opened_at,
         opened_by: r.opened_by,
         cashier_name: r.opened_by_user?.full_name ?? 'Unknown',
-        terminal_label: `TERM-${r.id.slice(0, 8).toUpperCase()}`,
+        terminal_label: r.terminal?.code ?? `TERM-${r.id.slice(0, 8).toUpperCase()}`,
         cash_movements_total: Number(r.cash_in_total) - Number(r.cash_out_total),
         order_count: r.orders?.[0]?.count ?? 0,
       }));

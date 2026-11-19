@@ -4,12 +4,13 @@
 //
 // One row per drawer lifecycle (pos_session), REPLACING the Activity tab's
 // confusing "Session Open N ≠ Session Close M" counters with a single lifecycle
-// count. Source serveur unique : get_pos_sessions_report_v4 — même plage WITA.
+// count. Source serveur unique : get_pos_sessions_report_v5 — même plage WITA.
 // Chaque ligne : statut (open/closed), caissier, ouverture→clôture, fond de
 // caisse, ventes live du tiroir, et l'écart figé des 3 volets (cash/QRIS/carte).
 // Export CSV.
 
-import { type JSX } from 'react';
+import { useState, type JSX } from 'react';
+import { UndoShiftCloseModal } from '@/features/shift/components/UndoShiftCloseModal';
 import { Layers, Coins, Scale } from 'lucide-react';
 import { Currency, KpiTile, EmptyState, Button, cn } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
@@ -102,6 +103,10 @@ function downloadCsv(period: ReportsPeriod, data: POSReportsSessions): void {
 
 function SessionsReport({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsSessions(period);
+  // S3-03 — l'annulation de clôture est un geste du propriétaire ; le serveur
+  // vérifie le rôle, le PIN, le terminal et le rapport Z.
+  const isOwner = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN');
+  const [undoTarget, setUndoTarget] = useState<POSReportsSession | null>(null);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading sessions…</p>;
   if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load sessions.</p>;
@@ -175,15 +180,25 @@ function SessionsReport({ period }: { period: ReportsPeriod }): JSX.Element {
                 <th className="px-3 py-2 font-semibold text-right">Cash Δ</th>
                 <th className="px-3 py-2 font-semibold text-right">QRIS Δ</th>
                 <th className="px-3 py-2 font-semibold text-right">Card Δ</th>
+                {isOwner && <th className="px-3 py-2 font-semibold"><span className="sr-only">Actions</span></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
               {sessions.map((s) => (
-                <SessionRow key={s.sessionId} session={s} />
+                <SessionRow key={s.sessionId} session={s}
+                  {...(isOwner ? { onUndoClose: () => setUndoTarget(s) } : {})} />
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      {isOwner && (
+        <UndoShiftCloseModal
+          open={undoTarget !== null}
+          sessionId={undoTarget?.sessionId ?? null}
+          cashierName={undoTarget?.cashierName ?? ''}
+          onClose={() => setUndoTarget(null)}
+        />
       )}
     </div>
   );
@@ -194,7 +209,11 @@ function VarianceCell({ value }: { value: number | null }): JSX.Element {
   return <span className={cn('font-mono tabular-nums', tone)}>{text}</span>;
 }
 
-function SessionRow({ session: s }: { session: POSReportsSession }): JSX.Element {
+function SessionRow({ session: s, onUndoClose }: {
+  session: POSReportsSession;
+  /** Présent pour le propriétaire seul. */
+  onUndoClose?: () => void;
+}): JSX.Element {
   const isOpen = s.status === 'open';
   return (
     <tr data-testid={`session-${s.sessionId}`} className="hover:bg-bg-overlay">
@@ -240,6 +259,15 @@ function SessionRow({ session: s }: { session: POSReportsSession }): JSX.Element
       <td className="px-3 py-2 text-right">
         <VarianceCell value={s.card.variance} />
       </td>
+      {onUndoClose && (
+        <td className="px-3 py-2 text-right">
+          {!isOpen && (
+            <Button variant="ghost" size="sm" onClick={onUndoClose} data-testid="session-undo-close">
+              Undo close
+            </Button>
+          )}
+        </td>
+      )}
     </tr>
   );
 }

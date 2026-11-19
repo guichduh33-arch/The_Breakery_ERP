@@ -29,6 +29,34 @@ export function useCurrentShift() {
   });
 }
 
+/** Codes de refus de open_shift_v1 (S3-01). */
+export type OpenShiftErrorCode =
+  | 'terminal_required'
+  | 'terminal_invalid'
+  | 'terminal_session_open'
+  | 'user_session_open'
+  | 'invalid_opening_cash'
+  | 'forbidden';
+
+const OPEN_SHIFT_CODES: readonly OpenShiftErrorCode[] = [
+  'terminal_required', 'terminal_invalid', 'terminal_session_open',
+  'user_session_open', 'invalid_opening_cash', 'forbidden',
+];
+
+export class OpenShiftError extends Error {
+  constructor(public readonly code: OpenShiftErrorCode | 'unknown', message: string) {
+    super(message);
+    this.name = 'OpenShiftError';
+  }
+}
+
+function isActiveShift(v: unknown): v is ActiveShift {
+  if (typeof v !== 'object' || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return typeof o.id === 'string' && typeof o.opened_at === 'string'
+    && typeof o.opening_cash === 'number';
+}
+
 export function useOpenShift() {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
@@ -38,24 +66,26 @@ export function useOpenShift() {
     mutationFn: async (input: {
       opening_cash: number;
       opening_notes?: string;
-      terminal_id?: string | null;
+      /** S3-01 — terminal de caisse obligatoire, vérifié par le serveur. */
+      terminal_id: string;
       /** S67 (12 D2.3) — grille de coupures d'ouverture (flag config ON). */
       opening_denominations?: Record<string, number> | null;
-    }) => {
+    }): Promise<ActiveShift> => {
       if (!userId) throw new Error('not_authenticated');
-      const { data, error } = await supabase
-        .from('pos_sessions')
-        .insert({
-          opened_by:     userId,
-          opening_cash:  input.opening_cash,
-          opening_notes: input.opening_notes ?? null,
-          terminal_id:   input.terminal_id ?? null,
-          opening_denominations: input.opening_denominations ?? null,
-        })
-        .select('id, opened_at, opening_cash')
-        .single();
-      if (error) throw error;
-      return data;
+      // S3-01 — l'ouverture passe par open_shift_v1 : le serveur exige un
+      // terminal de caisse actif et refuse une 2ᵉ session sur le même poste.
+      const { data, error } = await supabase.rpc('open_shift_v1', {
+        p_terminal_id:  input.terminal_id,
+        p_opening_cash: input.opening_cash,
+        ...(input.opening_notes ? { p_opening_notes: input.opening_notes } : {}),
+        ...(input.opening_denominations ? { p_opening_denominations: input.opening_denominations } : {}),
+      });
+      if (error) {
+        const code = OPEN_SHIFT_CODES.find((c) => error.message === c);
+        throw new OpenShiftError(code ?? 'unknown', error.message);
+      }
+      if (!isActiveShift(data)) throw new OpenShiftError('unknown', 'invalid_response');
+      return { id: data.id, opened_at: data.opened_at, opening_cash: data.opening_cash };
     },
     onSuccess: (shift) => {
       setCurrent(shift);
