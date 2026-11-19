@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore.js';
-import { readBankCatalog, readBankClearing, readBankDetail, readBankList, readBankSuggestions } from './api.js';
+import { readBankCatalog, readBankClearing, readBankClearingDays,readBankDetail, readBankList, readBankSuggestions } from './api.js';
 
 export function useBankCatalog() {
   const profile = useAuthStore((s) => s.user?.id);
@@ -31,6 +31,12 @@ export function useBankClearing(reconciliationId: string, open: boolean) {
   return useInfiniteQuery({ queryKey: ['bank-reconciliation','clearing',profile,reconciliationId], initialPageParam: null as string | null,
     queryFn: ({ pageParam }) => readBankClearing(reconciliationId,pageParam), getNextPageParam: (page) => page.next ?? undefined,
     enabled: open && allowed && Boolean(reconciliationId) });
+}
+export function useBankClearingDays(reconciliationId: string, enabled: boolean) {
+  const profile = useAuthStore((s) => s.user?.id);
+  const allowed = useAuthStore((s) => s.hasPermission('accounting.bank.read'));
+  return useQuery({ queryKey: ['bank-reconciliation','clearing-days',profile,reconciliationId],
+    queryFn: () => readBankClearingDays(reconciliationId), enabled: enabled && allowed && Boolean(reconciliationId) });
 }
 export function useBankSuggestions(reconciliationId: string, enabled: boolean) {
   const profile = useAuthStore((s) => s.user?.id);

@@ -75,3 +75,20 @@ describe('bank post dialog — settlement by sales day', () => {
     expect(screen.getByText(/^0 lines selected/)).toBeInTheDocument();
   });
 });
+
+describe('bank post dialog — grouped payout proposal', () => {
+  const charges = { id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', code: '6122', name: 'Bank charges', account_class: 6 };
+  it('computes the fee from the sales day, defaults to bank charges and sends the exact payload', () => {
+    const onReady = vi.fn();
+    const payout = { ...bankDetailFixture.bank_lines[0]!, amount: '6911790.00', transaction_date: '2026-10-02' };
+    render(<BankPostDialog reconciliation={bankDetailFixture.reconciliation} bankLines={[payout]} glLines={[]} accounts={[charges]}
+      preset={{ kind: 'settlement', clearingIds: [line(9, '2026-10-01', '1116', '0').id], clearingGross: '7014000.00', clearingLabel: 'Card (EDC) sales of 2026-10-01', description: 'Card payout' }}
+      onClose={vi.fn()} onReady={onReady} />);
+    expect(screen.getByText('Rp 102,210.00')).toBeInTheDocument();
+    expect(screen.getByText('1.46%')).toBeInTheDocument();
+    expect(screen.getByLabelText('Expense account')).toHaveValue(charges.id);
+    fireEvent.click(screen.getByRole('button', { name: 'Review journal entry' }));
+    expect(onReady).toHaveBeenCalledWith(expect.objectContaining({ kind: 'settlement', fee: '102210.00', counterAccountId: charges.id,
+      clearingIds: [line(9, '2026-10-01', '1116', '0').id], date: '2026-10-02', description: 'Card payout' }));
+  });
+});

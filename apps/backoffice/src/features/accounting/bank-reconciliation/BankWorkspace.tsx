@@ -15,6 +15,8 @@ import { BankUnmatchDialog } from './BankUnmatchDialog.js';
 import { BankRecovery } from './BankRecovery.js';
 import { BankLinesTable } from './BankLinesTable.js';
 import { BankSuggestions } from './BankSuggestions.js';
+import { BankGroupSuggestions, type GroupPost } from './BankGroupSuggestions.js';
+import { selectionVerdict } from './groupSuggestions.js';
 import { useBankDetail } from './useBankQueries.js';
 import { bankMoney, decimalCents, decimalText } from './money.js';
 
@@ -28,8 +30,9 @@ export function BankWorkspace({ reconciliationId, catalog }: { reconciliationId:
   const [bankIds,setBankIds] = useState<string[]>([]);
   const [glIds,setGlIds] = useState<string[]>([]);
   const [search,setSearch] = useState('');
-  const [unmatchedOnly,setUnmatchedOnly] = useState(false);
-  const [form,setForm] = useState<null | 'import' | 'balances' | 'post' | 'finalize'>(null);
+  const [unmatchedOnly,setUnmatchedOnly] = useState(true);
+  const [form,setForm] = useState<null | 'import' | 'balances' | 'finalize'>(null);
+  const [post,setPost] = useState<GroupPost | null>(null);
   const [unmatch,setUnmatch] = useState<string | null>(null);
   const [action,setAction] = useState<Action | null>(null);
   const pages = query.data?.pages ?? [];
@@ -42,45 +45,73 @@ export function BankWorkspace({ reconciliationId, catalog }: { reconciliationId:
   const selectedGl = gl.filter((line) => glIds.includes(line.id) && !line.match_id);
   const bankSum = selectedBank.reduce((sum,line) => sum + decimalCents(line.amount),0n);
   const glSum = selectedGl.reduce((sum,line) => sum + decimalCents(line.amount),0n);
+  const verdict = selectionVerdict(bankSum,glSum,selectedBank.length,selectedGl.length);
   const editable = canManage && rec.status === 'draft' && !query.isFetching && !query.isError;
   const account = catalog.bank_accounts.find((a) => a.id === rec.account_id);
-  const displayBank = bank.filter((line) => (!unmatchedOnly || !line.match_id) && `${line.description} ${line.reference} ${line.transaction_date}`.toLowerCase().includes(search.toLowerCase()));
-  const displayGl = gl.filter((line) => (!unmatchedOnly || !line.match_id) && `${line.description} ${line.entry_number} ${line.entry_date}`.toLowerCase().includes(search.toLowerCase()));
+  const displayBank = bank.filter((line) => (!unmatchedOnly || !line.match_id) && `${line.description} ${line.reference} ${line.transaction_date} ${line.amount}`.toLowerCase().includes(search.toLowerCase()));
+  const displayGl = gl.filter((line) => (!unmatchedOnly || !line.match_id) && `${line.description} ${line.entry_number} ${line.entry_date} ${line.amount}`.toLowerCase().includes(search.toLowerCase()));
   const toggle = (setter: typeof setBankIds) => (id: string, checked: boolean) => setter((old) => checked ? [...new Set([...old,id])] : old.filter((entry) => entry !== id));
   const manage = (payload: BankManageSnapshot) => { setForm(null); setUnmatch(null); setAction({ operation: 'bank_manage',payload }); };
   const balanceDelta = data.balances.bank_closing === null ? null : decimalText(decimalCents(data.balances.gl_closing) - decimalCents(data.balances.bank_closing));
   const allLoaded = query.hasNextPage === false && !query.isFetching && !query.isError;
+  const explained = bank.filter((line) => Boolean(line.match_id)).length;
+  const total = rec.row_count ?? bank.length;
+  const progress = total === 0 ? 100 : Math.round((explained / total) * 100);
+  const openBank = bank.filter((line) => !line.match_id);
+  const openAmount = openBank.reduce((sum,line) => sum + decimalCents(line.amount),0n);
+  const feesPosted = data.entries.reduce((sum,entry) => sum + decimalCents(entry.fee_amount),0n);
   const finalizeReady = canValidate && rec.status === 'draft' && allLoaded && bank.every((line) => Boolean(line.match_id))
     && rec.opening_balance !== null && rec.closing_balance !== null && data.source_integrity?.state !== 'changed';
+  const draft = rec.status === 'draft';
+  const clearSelection = () => { setBankIds([]); setGlIds([]); };
   return <div className="min-w-0 space-y-4">
     <BankRecovery target={rec.id} />
-    <div className="flex flex-wrap justify-between items-start gap-3"><div><h2 className="text-lg font-medium">{account?.code} · {account?.name ?? 'Bank account'}</h2><p className="text-sm text-text-secondary">{rec.period_start} → {rec.period_end} · {rec.status === 'finalized' ? 'Finalized · frozen snapshot' : 'Draft'}</p></div>
-      <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={query.isFetching} onClick={() => { setBankIds([]); setGlIds([]); void query.refetch(); }}>Refresh</Button>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-medium">{account?.code} · {account?.name ?? 'Bank account'}</h2>
+      <p className="text-sm text-text-secondary">{rec.period_start} → {rec.period_end} · <span className={draft ? 'text-warning' : 'text-success'}>{draft ? 'Draft' : 'Finalized · frozen snapshot'}</span></p></div>
+      <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={query.isFetching} onClick={() => { clearSelection(); void query.refetch(); }}>Refresh</Button>
         {canManage && <><Button variant="secondary" disabled={!editable} onClick={() => setForm('balances')}>Statement balances</Button><Button variant="secondary" disabled={!editable} onClick={() => setForm('import')}>Add statement file</Button></>}
         {canValidate && <Button disabled={!finalizeReady} onClick={() => setForm('finalize')}>Finalize</Button>}</div>
     </div>
     {query.error && <p role="alert" className="text-sm text-danger">{query.error.message}. Loaded data may be outdated. Refresh before continuing.</p>}
     {data.source_integrity?.state === 'changed' && <p role="alert" className="rounded border border-danger p-3 text-sm text-danger">The ledger changed after the recorded finalization. The frozen result is preserved; investigate the source changes before finalizing the next period. Recorded closing {bankMoney(data.source_integrity.recorded_gl_closing)} · current closing {bankMoney(data.source_integrity.current_gl_closing)}.</p>}
-    <div className="grid grid-cols-4 gap-3">{[
-      ['Bank opening',bankMoney(data.balances.bank_opening)],['Bank closing',bankMoney(data.balances.bank_closing)],['Ledger closing',bankMoney(data.balances.gl_closing)],['Ledger − bank',bankMoney(balanceDelta)],
-    ].map(([label,value]) => <div key={label} className="min-w-0 rounded border border-border-subtle bg-bg-elevated p-3"><p className="text-xs text-text-secondary">{label}</p><p className="overflow-x-auto whitespace-nowrap font-data text-lg tabular-nums">{value}</p></div>)}</div>
-    <div className="flex flex-wrap items-center gap-3"><Input className="max-w-sm" aria-label="Filter loaded bank and ledger lines" placeholder="Filter loaded descriptions or references" value={search} onChange={(e) => setSearch(e.target.value)} />
-      <label className="flex gap-2 items-center text-sm"><input className={FOCUS_RING} type="checkbox" checked={unmatchedOnly} onChange={(e) => setUnmatchedOnly(e.target.checked)} />Unmatched only</label>
-      <span className="text-xs text-text-muted">Filters apply to loaded lines. {allLoaded ? 'All pages loaded.' : 'More pages may remain.'}</span></div>
-    <div className="grid min-w-0 grid-cols-2 gap-4">
-      <BankLinesTable title="Bank statement" lines={displayBank.map((l) => ({ id: l.id,date: l.transaction_date,label: l.description,reference: l.reference,amount: l.amount,matchId: l.match_id }))} selected={bankIds} editable={editable} onToggle={toggle(setBankIds)} onUnmatch={setUnmatch} />
-      <BankLinesTable title="Bank ledger" lines={displayGl.map((l) => ({ id: l.id,date: l.entry_date,label: l.description,reference: `${l.entry_number} · ${l.reference_type}`,amount: l.amount,matchId: l.match_id }))} selected={glIds} editable={editable} onToggle={toggle(setGlIds)} onUnmatch={setUnmatch} />
-    </div>
-    {query.hasNextPage && <Button variant="secondary" disabled={query.isFetchingNextPage} onClick={() => { void query.fetchNextPage(); }}>{query.isFetchingNextPage ? 'Loading…' : 'Load more statement and ledger lines'}</Button>}
-    {rec.status === 'draft' && <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-border-strong bg-bg-elevated p-3">
+    <section aria-label="Reconciliation progress" className="space-y-3 rounded border border-border-subtle bg-bg-elevated p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm"><p><strong>{explained}</strong> of <strong>{total}</strong> bank lines explained</p>
+        <p className="text-text-secondary">Left to explain: {openBank.length} {openBank.length === 1 ? 'line' : 'lines'} ·<span className="font-data">{bankMoney(decimalText(openAmount))}</span>{allLoaded ? '' : ' (loaded lines)'}</p></div>
+      <div role="progressbar" aria-label="Bank lines explained" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="h-2 overflow-hidden rounded bg-border-subtle">
+        <div className="h-full bg-success" style={{ width: `${progress}%` }} /></div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">{[
+        ['Bank opening',bankMoney(data.balances.bank_opening)],['Bank closing',bankMoney(data.balances.bank_closing)],['Ledger closing',bankMoney(data.balances.gl_closing)],
+        ['Ledger − bank',bankMoney(balanceDelta)],['Bank fees posted',bankMoney(decimalText(feesPosted))],
+      ].map(([label,value]) => <div key={label} className="min-w-0"><p className="text-xs text-text-secondary">{label}</p><p className="overflow-x-auto whitespace-nowrap font-data text-base tabular-nums sm:text-lg">{value}</p></div>)}</div>
+    </section>
+    {draft && canManage && <ol className="grid gap-2 text-sm text-text-secondary sm:grid-cols-4">
+      {['Review grouped proposals: card / QRIS payouts, transfers with fees, bank charges.','Accept exact one-to-one matches.','Select the remaining lines on both sides; the bar below tells you what fits.','Enter statement balances, then finalize.']
+        .map((step,index) => <li key={step} className="rounded border border-border-subtle p-2"><span className="font-medium text-text-primary">{index + 1}.</span> {step}</li>)}
+    </ol>}
+    {draft && canManage && <BankGroupSuggestions reconciliationId={rec.id} bankLines={bank} glLines={gl} allLoaded={allLoaded} canPost={canPost} busy={!editable} onPost={setPost} />}
+    {canManage && draft && <BankSuggestions reconciliationId={rec.id} onReview={manage} />}
+    <section aria-label="Manual matching" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3"><h2 className="font-medium">Manual matching</h2>
+        <Input className="max-w-sm" aria-label="Filter loaded bank and ledger lines" placeholder="Filter by description, reference, date or amount" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <label className="flex items-center gap-2 text-sm"><input className={FOCUS_RING} type="checkbox" checked={unmatchedOnly} onChange={(e) => setUnmatchedOnly(e.target.checked)} />Unmatched only</label>
+        <span className="text-xs text-text-muted">Filters apply to loaded lines. {allLoaded ? 'All pages loaded.' : 'More pages may remain.'}</span></div>
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+        <BankLinesTable title="Bank statement" lines={displayBank.map((l) => ({ id: l.id,date: l.transaction_date,label: l.description,reference: l.reference,amount: l.amount,matchId: l.match_id }))} selected={bankIds} editable={editable} onToggle={toggle(setBankIds)} onUnmatch={setUnmatch} />
+        <BankLinesTable title="Bank ledger" lines={displayGl.map((l) => ({ id: l.id,date: l.entry_date,label: l.description,reference: `${l.entry_number} · ${l.reference_type}`,amount: l.amount,matchId: l.match_id }))} selected={glIds} editable={editable} onToggle={toggle(setGlIds)} onUnmatch={setUnmatch} />
+      </div>
+      {query.hasNextPage && <Button variant="secondary" disabled={query.isFetchingNextPage} onClick={() => { void query.fetchNextPage(); }}>{query.isFetchingNextPage ? 'Loading…' : 'Load more statement and ledger lines'}</Button>}
+    </section>
+    {draft && <div className="bottom-0 z-10 flex sm:sticky flex-wrap items-center justify-between gap-3 rounded border border-border-strong bg-bg-elevated p-3 shadow">
       <div className="text-sm"><p>{selectedBank.length} bank movements: <span className="font-data">{bankMoney(decimalText(bankSum))}</span> ↔ {selectedGl.length} ledger lines: <span className="font-data">{bankMoney(decimalText(glSum))}</span></p>
-        <p className="text-text-secondary">Difference <span className="font-data">{bankMoney(decimalText(bankSum-glSum))}</span>. Exact amounts only.</p></div>
-      <div className="flex gap-2"><Button variant="secondary" onClick={() => { setBankIds([]); setGlIds([]); }}>Clear selection</Button>
-        {canPost && <Button variant="secondary" disabled={!editable || selectedBank.length === 0} onClick={() => setForm('post')}>Settlement / fees</Button>}
-        {canManage && <Button disabled={!editable || selectedBank.length === 0 || selectedGl.length === 0 || selectedBank.length > 1000 || selectedGl.length > 1000 || bankSum !== glSum} onClick={() => manage({ kind: 'match',reconciliationId: rec.id,bankIds: selectedBank.map((l) => l.id).sort(),glIds: selectedGl.map((l) => l.id).sort() })}>Review match</Button>}</div>
+        <p className="text-text-secondary">Difference <span className="font-data">{bankMoney(decimalText(bankSum-glSum))}</span>.{' '}
+          {verdict.kind === 'exact' ? 'Exact match.' : verdict.kind === 'fee' ? `The bank kept ${bankMoney(verdict.fee)} as a fee.` : verdict.kind === 'mismatch' ? 'Amounts do not fit as a match or a fee.' : 'Select lines on both sides, or bank lines only for a bank entry.'}</p></div>
+      <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={clearSelection}>Clear selection</Button>
+        {canPost && <Button variant="secondary" disabled={!editable || selectedBank.length === 0} onClick={() => setPost({ bankLines: selectedBank,glLines: selectedGl,preset: { kind: selectedGl.length > 0 ? 'net_fee' : 'settlement' } })}>Settlement / fees</Button>}
+        {canPost && verdict.kind === 'fee' && <Button disabled={!editable || selectedBank.length > 1000 || selectedGl.length > 1000} onClick={() => setPost({ bankLines: selectedBank,glLines: selectedGl,
+          preset: { kind: 'net_fee',description: `Bank fee on ${selectedGl.map((l) => l.entry_number).slice(0,3).join(', ')}` } })}>Match with fee {bankMoney(verdict.fee)}</Button>}
+        {canManage && <Button disabled={!editable || verdict.kind !== 'exact' || selectedBank.length > 1000 || selectedGl.length > 1000} onClick={() => manage({ kind: 'match',reconciliationId: rec.id,bankIds: selectedBank.map((l) => l.id).sort(),glIds: selectedGl.map((l) => l.id).sort() })}>Review match</Button>}</div>
     </div>}
-    {canManage && rec.status === 'draft' && <BankSuggestions reconciliationId={rec.id} onReview={manage} />}
-    {canValidate && rec.status === 'draft' && !finalizeReady && <p className="text-sm text-text-secondary">To finalize, load every page, explain every bank line, enter statement balances and resolve any source integrity warning. Unmatched ledger lines require individual transit reasons.</p>}
+    {canValidate && draft && !finalizeReady && <p className="text-sm text-text-secondary">To finalize, load every page, explain every bank line, enter statement balances and resolve any source integrity warning. Unmatched ledger lines require individual transit reasons.</p>}
     <details className="rounded border border-border-subtle bg-bg-elevated p-4"><summary className="cursor-pointer font-medium">Sources, journal entries and match history</summary><div className="mt-3 space-y-3 text-sm">
       {data.imports.map((i) => <p className="break-all" key={i.id}>{i.file_name} · {i.sheet_name}<br /><span className="font-data text-xs">SHA-256 {i.source_sha256}</span></p>)}
       {data.entries.map((entry) => <p key={entry.id}>{entry.kind} · fee {bankMoney(entry.fee_amount)} · {canReadLedger && <Link className={`text-gold underline ${FOCUS_RING}`} to={`/backoffice/accounting/general-ledger?account_id=${rec.account_id}&start=${rec.period_start}&end=${rec.period_end}`}>View bank ledger</Link>} · <span className="font-data text-xs">{entry.journal_entry_id}</span></p>)}
@@ -90,9 +121,10 @@ export function BankWorkspace({ reconciliationId, catalog }: { reconciliationId:
     </div></details>
     {form === 'import' && <BankImportDialog accounts={catalog.bank_accounts} existing={rec} onClose={() => setForm(null)} onReady={(statement) => manage({ kind: 'import',statement })} />}
     {form === 'balances' && <BankBalanceDialog reconciliation={rec} onClose={() => setForm(null)} onReady={manage} />}
-    {form === 'post' && <BankPostDialog reconciliation={rec} bankLines={selectedBank} glLines={selectedGl} accounts={catalog.counter_accounts} clearingAccounts={catalog.clearing_accounts} onClose={() => setForm(null)} onReady={(payload) => { setForm(null); setAction({ operation: 'bank_post',payload }); }} />}
+    {post && <BankPostDialog key={`${post.preset.kind}:${post.bankLines.map((l) => l.id).join(',')}`} reconciliation={rec} bankLines={post.bankLines} glLines={post.glLines} preset={post.preset}
+      accounts={catalog.counter_accounts} clearingAccounts={catalog.clearing_accounts} onClose={() => setPost(null)} onReady={(payload) => { setPost(null); setAction({ operation: 'bank_post',payload }); }} />}
     {form === 'finalize' && <BankFinalizeDialog reconciliationId={rec.id} unmatched={gl.filter((l) => !l.match_id)} onClose={() => setForm(null)} onReady={(payload) => { setForm(null); setAction({ operation: 'bank_finalize',payload }); }} />}
     {unmatch && <BankUnmatchDialog reconciliationId={rec.id} matchId={unmatch} onClose={() => setUnmatch(null)} onReady={manage} />}
-    {action && <BankAttemptDialog operation={action.operation} target={rec.id} payload={action.payload} onClose={() => setAction(null)} onSuccess={() => { setBankIds([]); setGlIds([]); }} />}
+    {action && <BankAttemptDialog operation={action.operation} target={rec.id} payload={action.payload} onClose={() => setAction(null)} onSuccess={clearSelection} />}
   </div>;
 }

@@ -184,7 +184,7 @@ SELECT throws_ok($q$SELECT public.bank_reconciliation_match_v2(rec,bank_ids[1:2]
  '22023','unique_match_lines_required','duplicate GL identifiers rejected');
 
 CREATE FUNCTION pg_temp.bank_post(p_fee numeric DEFAULT 3,p_pin text DEFAULT '285741') RETURNS jsonb LANGUAGE sql AS $$
- SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[3]],
+ SELECT public.bank_reconciliation_post_v6(rec,ARRAY[bank_ids[3]],
   ARRAY[(SELECT id FROM bank_gl WHERE label='card100'),(SELECT id FROM bank_gl WHERE label='card_refund10')],
   expense,p_fee,'2096-01-04','Actual card settlement',p_pin,'ba030000-0000-4000-a000-000000000001') FROM bank_fixture;
 $$;
@@ -219,14 +219,14 @@ SELECT public.bank_reconciliation_unmatch_v1((post_result->>'match_id')::uuid,'C
 SELECT is((SELECT count(*)::int FROM public.journal_entries j,bank_fixture f WHERE j.id=(f.post_result->>'je_id')::uuid),1,'unmatch never removes journal');
 SELECT is((SELECT count(*)::int FROM public.bank_reconciliation_clearing_claims WHERE gl_line_id IN(SELECT id FROM bank_gl)),2,'unmatch never releases clearing reservations');
 SELECT ok((pg_temp.bank_post()->>'idempotent_replay')::boolean,'replay after unmatch does not create a new journal');
-SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[3]],
+SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v6(rec,ARRAY[bank_ids[3]],
  ARRAY[(SELECT id FROM bank_gl WHERE label='card100'),(SELECT id FROM bank_gl WHERE label='card_refund10')],
  expense,3,'2096-01-04','Actual card settlement','285741',gen_random_uuid()) FROM bank_fixture$q$,
  '22023','bank_line_unavailable_for_posting','source bank line cannot emit second journal after unmatch');
 SELECT public.bank_reconciliation_match_v2(rec,ARRAY[bank_ids[3]],ARRAY[(post_result->>'bank_gl_line_id')::uuid],gen_random_uuid()) FROM bank_fixture;
-INSERT INTO bank_results SELECT 'fee',public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[4]],'{}',expense,0,
+INSERT INTO bank_results SELECT 'fee',public.bank_reconciliation_post_v6(rec,ARRAY[bank_ids[4]],'{}',expense,0,
  '2096-01-05','Isolated actual bank fee','285741',gen_random_uuid(),'fee') FROM bank_fixture;
-INSERT INTO bank_results SELECT 'interest',public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[5]],'{}',income,0,
+INSERT INTO bank_results SELECT 'interest',public.bank_reconciliation_post_v6(rec,ARRAY[bank_ids[5]],'{}',income,0,
  '2096-01-06','Actual bank interest','285741',gen_random_uuid(),'interest') FROM bank_fixture;
 SELECT ok((SELECT (result->>'ok')::boolean FROM bank_results WHERE label='fee'),'isolated outgoing fee posts against explicit expense');
 SELECT ok((SELECT (result->>'ok')::boolean FROM bank_results WHERE label='interest'),'incoming interest posts against explicit income');

@@ -9063,6 +9063,10 @@ export type Database = {
         Returns: Json
       }
       bank_reconciliation_catalog_v1: { Args: never; Returns: Json }
+      bank_reconciliation_clearing_days_v1: {
+        Args: { p_reconciliation_id: string }
+        Returns: Json
+      }
       bank_reconciliation_clearing_v3: {
         Args: {
           p_after?: string
@@ -9109,7 +9113,7 @@ export type Database = {
         }
         Returns: Json
       }
-      bank_reconciliation_post_v5: {
+      bank_reconciliation_post_v6: {
         Args: {
           p_bank_gl_line_ids?: string[]
           p_bank_line_ids: string[]

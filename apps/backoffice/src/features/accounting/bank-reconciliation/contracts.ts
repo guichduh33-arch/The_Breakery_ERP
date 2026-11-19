@@ -1,5 +1,6 @@
 import { bankUuid } from '@/lib/bankAttemptSchema.js';
 import { decimalCents, decimalText } from './money.js';
+import type { ClearingDay } from './groupSuggestions.js';
 export interface BankAccount { id: string; code: string; name: string; account_class: number }
 export interface BankCatalog { bank_accounts: BankAccount[]; clearing_accounts: BankAccount[]; counter_accounts: BankAccount[] }
 export interface BankReconciliation {
@@ -74,6 +75,12 @@ export function parseDetail(value: unknown): BankDetail {
     balances: { bank_opening: nullableAmount(balances.bank_opening), bank_closing: nullableAmount(balances.bank_closing), gl_opening: amount(balances.gl_opening), gl_closing: amount(balances.gl_closing), bank_total: amount(balances.bank_total) },
     source_integrity: integrity ? { state: string(integrity.state), recorded_gl_closing: integrity.recorded_gl_closing == null ? null : amount(integrity.recorded_gl_closing), current_gl_closing: integrity.current_gl_closing == null ? null : amount(integrity.current_gl_closing) } : null,
     next_bank_after: cursor(v.next_bank_after), next_gl_after: v.next_gl_after == null ? null : id(v.next_gl_after), match_history_truncated: v.match_history_truncated === true };
+}
+export function parseClearingDay(value: unknown): ClearingDay {
+  const v = record(value);
+  if (typeof v.line_count !== 'number' || !Number.isSafeInteger(v.line_count) || v.line_count < 1) throw new Error('Invalid clearing day count.');
+  return { entry_date: string(v.entry_date), account_id: id(v.account_id), account_code: string(v.account_code), account_name: optionalText(v.account_name),
+    line_count: v.line_count, gross: amount(v.gross), line_ids: v.line_ids == null ? null : rows(v.line_ids).map(id) };
 }
 export function parseSuggestions(value: unknown): { items: BankSuggestion[]; next_after: number | null } {
   const v = record(value); return { items: rows(v.items).map((entry) => {
