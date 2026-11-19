@@ -1,8 +1,9 @@
 // apps/backoffice/src/features/inventory-alerts/components/ProductionAlertsTab.tsx
 // Session 13 / Phase 2.D — Production alerts tab.
 //
-// Lecteur mince de get_production_suggestions_v1 (migration Phase 2.A). La RPC
-// peut ne pas exister ; on dégrade proprement vers une liste vide.
+// Lecteur mince de la famille get_production_suggestions (crochet
+// useProductionSuggestions). La RPC peut ne pas exister ; on dégrade
+// proprement vers une liste vide.
 //
 // Refonte design 2026-08-08 — DataTable partagé. La priorité passe d'un texte
 // coloré à une pastille sur fond teinté : `bg-danger/15` ne produisait rien,
@@ -18,8 +19,9 @@ import {
   type ProductionSuggestion,
 } from '../hooks/useProductionSuggestions.js';
 import { ProductCell } from './ProductCell.js';
+import { ProductionStepCell } from './ProductionStepCell.js';
 
-// `get_production_suggestions_v1` ne renvoie PAS l'unité du produit : les trois
+// La famille `get_production_suggestions` ne renvoie PAS l'unité du produit : les trois
 // quantités de cet onglet passent donc `null` à `formatQuantity` (audit UX/UI
 // 2026-08-13). Elles gagnent les séparateurs de milliers id-ID et perdent les
 // zéros morts du `toFixed`, sans qu'on invente un « pcs » que la RPC ne dit pas.
@@ -72,6 +74,19 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     ),
   },
   {
+    // S3-09 — « Produce » est déjà arrondi à ce pas, côté serveur.
+    id: 'step',
+    header: 'Batch step',
+    align: 'right',
+    render: (r) => (
+      <ProductionStepCell
+        productId={r.product_id}
+        productName={r.product_name}
+        step={r.production_rounding_step}
+      />
+    ),
+  },
+  {
     id: 'priority',
     header: 'Priority',
     render: (r) => (
@@ -92,7 +107,7 @@ export function ProductionAlertsTab(): JSX.Element {
 
   return (
     <DataTable<ProductionSuggestion>
-      caption="Product, quantity on hand, daily sales, coverage, quantity to produce and priority per production suggestion"
+      caption="Product, quantity on hand, daily sales, coverage, quantity to produce rounded up to the batch step, batch step and priority per production suggestion"
       columns={COLUMNS}
       rows={rows}
       getRowKey={(r) => r.product_id}
