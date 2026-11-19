@@ -1815,6 +1815,17 @@ comptable équilibrée.
 **Risque prod** 🟢 · **Source** — Arbitrage §2bis lot 9. La couverture reste à
 **3 jours** ; seul l'arrondi change.
 
+**État — développé et prouvé en dev le 2026-11-20**, branche
+`feat/s3-09-arrondi-suggestions`. Migration
+`20261120000010_s3_09_production_rounding_step.sql` appliquée en dev : colonne
+facultative `products.production_rounding_step`, fonction de réglage
+`set_production_rounding_step_v1` (permission `products.update`, trace dans
+`audit_logs`), famille `get_production_suggestions` bumpée en v5 depuis le corps
+live, v4 retirée (seul appelant : le crochet du back-office, basculé). L'onglet
+des suggestions montre et règle le pas (« Batch step »). pgTAP
+`s3_09_production_rounding_step.test.sql` 12/12 en dev : 17 → 24 avec un pas
+de 12, 20 avec un pas de 5, 17 sans pas. Vitest ciblé 7/7. Non publié.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — un pas d'arrondi par produit
 - `apps/backoffice/src/features/inventory-alerts/hooks/useProductionSuggestions.ts`

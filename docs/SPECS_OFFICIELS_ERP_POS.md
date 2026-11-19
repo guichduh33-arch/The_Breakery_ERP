@@ -644,6 +644,9 @@ l'arrondi est entier.
 **RÈGLE** — La quantité suggérée s'arrondit au pas métier (douzaines, dizaines).
 La couverture reste à 3 jours.
 **À LIVRER** — L'arrondi.
+**FAIT** — Développé en dev le 2026-11-20 (`S3-09`) : un pas facultatif par
+produit, réglé dans l'onglet des suggestions de production ; la quantité
+suggérée s'arrondit au pas supérieur. La production attend la publication.
 
 **ABANDONNÉ** — Le suivi des causes d'écart de rendement : l'écran de saisie
 n'était importé par personne. Les trois composants, leurs tests et le réglage de
