@@ -1,5 +1,5 @@
 // S3-03 — le propriétaire annule la dernière clôture d'un terminal
-// (undo_shift_close_v1). Le PIN est un argument de la fonction : c'est elle
+// (undo_shift_close_v2). Le PIN est un argument de la fonction : c'est elle
 // qui le vérifie, avec verrouillage. Le serveur décide de tout le reste.
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -40,7 +40,7 @@ export function useUndoShiftClose() {
   return useMutation({
     retry: false,
     mutationFn: async ({ sessionId, managerPin, reason }: UndoShiftCloseInput) => {
-      const { data, error } = await supabase.rpc('undo_shift_close_v1', {
+      const { data, error } = await supabase.rpc('undo_shift_close_v2', {
         p_session_id: sessionId,
         p_manager_pin: managerPin,
         ...(reason?.trim() ? { p_reason: reason.trim() } : {}),
@@ -65,7 +65,7 @@ export function useUndoShiftClose() {
   });
 }
 
-/** Message lisible pour chaque refus de undo_shift_close_v1. */
+/** Message lisible pour chaque refus de undo_shift_close_v2. */
 export function undoShiftCloseMessage(err: unknown): string {
   const code = err instanceof UndoShiftCloseError ? err.code : 'unknown';
   switch (code) {

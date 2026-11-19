@@ -1,4 +1,4 @@
--- S3-03 : le propriétaire annule la dernière clôture d'un terminal (undo_shift_close_v1).
+-- S3-03 : le propriétaire annule la dernière clôture d'un terminal (undo_shift_close_v2).
 -- Comptes, terminaux, sessions et écritures de ce test disparaissent avec le ROLLBACK.
 BEGIN;
 SELECT no_plan();
@@ -55,21 +55,21 @@ INSERT INTO s303_results(tap) SELECT ok((SELECT var_je IS NOT NULL AND set_je IS
 
 -- Refus.
 SELECT set_config('request.jwt.claims',current_setting('s303.cashier'),true);
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.s'),'135791'),'P0003','forbidden','A non-owner cannot undo a close');
 SELECT set_config('request.jwt.claims',current_setting('s303.owner'),true);
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,NULL)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,NULL)',
  current_setting('s303.s')),'P0001','pin_required','The owner PIN is required');
-INSERT INTO s303_results(tap) SELECT is(public.undo_shift_close_v1(current_setting('s303.s')::uuid,'000000')->>'error',
+INSERT INTO s303_results(tap) SELECT is(public.undo_shift_close_v2(current_setting('s303.s')::uuid,'000000')->>'error',
  'invalid_pin','A wrong PIN is refused');
 UPDATE user_profiles SET failed_login_attempts=0,locked_until=NULL WHERE id=current_setting('s303.op')::uuid;
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.legacy'),'246810'),'P0001','terminal_unknown','A session without terminal cannot be undone');
 -- Une session plus récente sur le même terminal : la clôture n'est plus la dernière.
 INSERT INTO pos_sessions(id,opened_by,opening_cash,status,terminal_id,opened_at)
   VALUES('00000000-0000-4000-8000-000000000303',current_setting('s303.c2p')::uuid,0,'open',
          current_setting('s303.t')::uuid,now()+interval '1 minute');
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.s'),'246810'),'P0001','session_not_last','A close followed by a newer session on the terminal is refused');
 -- La session plus récente change de terminal : la clôture redevient la dernière du sien.
 UPDATE pos_sessions SET terminal_id=current_setting('s303.t2')::uuid
@@ -77,7 +77,7 @@ UPDATE pos_sessions SET terminal_id=current_setting('s303.t2')::uuid
 -- Un rapport Z signé : refus.
 UPDATE z_reports SET status='signed',signed_at=now(),signed_by=current_setting('s303.op')::uuid
  WHERE shift_id=current_setting('s303.s')::uuid;
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.s'),'246810'),'P0001','zreport_not_draft','A signed Z-report forbids the undo');
 UPDATE z_reports SET status='draft',signed_at=NULL,signed_by=NULL WHERE shift_id=current_setting('s303.s')::uuid;
 -- L'argent déposé en fonds non déposés en est sorti (dépôt en banque) : refus
@@ -95,7 +95,7 @@ BEGIN
   INSERT INTO journal_entry_lines(journal_entry_id,account_id,debit,credit) VALUES(v_je,v_other,v_out,0),(v_je,v_acc,0,v_out);
   PERFORM set_config('s303.moved_je',v_je::text,true);
 END $moved$;
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.s'),'246810'),'P0001','undeposited_cash_moved',
  'The undo is refused once the deposited cash has left the undeposited funds');
 DELETE FROM journal_entry_lines WHERE journal_entry_id=current_setting('s303.moved_je')::uuid;
@@ -103,7 +103,7 @@ DELETE FROM journal_entries WHERE id=current_setting('s303.moved_je')::uuid;
 
 -- Annulation.
 CREATE TEMP TABLE s303_undo AS
-  SELECT public.undo_shift_close_v1(current_setting('s303.s')::uuid,'246810','Recount requested') AS r;
+  SELECT public.undo_shift_close_v2(current_setting('s303.s')::uuid,'246810','Recount requested') AS r;
 INSERT INTO s303_results(tap) SELECT is((SELECT r->>'ok' FROM s303_undo),'true','The owner undoes the last close');
 INSERT INTO s303_results(tap) SELECT ok((SELECT status='open' AND closed_at IS NULL AND closing_cash IS NULL
  AND variance_total IS NULL AND closing_sales_total IS NULL AND closing_order_count IS NULL
@@ -129,7 +129,7 @@ INSERT INTO s303_results(tap) SELECT ok((SELECT actor_id=current_setting('s303.o
  AND payload->'zreport' IS NOT NULL
  FROM audit_logs WHERE action='shift.close_undone' AND entity_id=current_setting('s303.s')::uuid),
  'The audit log carries the owner profile, the reason and the state before');
-INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v1(%L,%L)',
+INSERT INTO s303_results(tap) SELECT throws_ok(format('SELECT public.undo_shift_close_v2(%L,%L)',
  current_setting('s303.s'),'246810'),'P0001','session_not_closed','An open session cannot be undone');
 
 -- Reclôture : nouvelle écriture d'écart, nouveau rapport Z, nouveau règlement.
@@ -147,8 +147,8 @@ INSERT INTO s303_results(tap) SELECT is((SELECT closing_sales_total FROM pos_ses
  50000::numeric(15,2),'The second close freezes the totals again');
 
 -- Droits.
-INSERT INTO s303_results(tap) SELECT ok(NOT has_function_privilege('anon','public.undo_shift_close_v1(uuid,text,text)','EXECUTE'),
- 'anon cannot execute undo_shift_close_v1');
+INSERT INTO s303_results(tap) SELECT ok(NOT has_function_privilege('anon','public.undo_shift_close_v2(uuid,text,text)','EXECUTE'),
+ 'anon cannot execute undo_shift_close_v2');
 INSERT INTO s303_results(tap) SELECT ok(NOT has_function_privilege('authenticated',
  'public._reverse_shift_journal_entry_v1(uuid,text,uuid,jsonb)','EXECUTE'),'authenticated cannot execute the reversal helper');
 
