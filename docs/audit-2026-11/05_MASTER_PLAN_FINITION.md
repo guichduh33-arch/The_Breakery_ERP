@@ -1590,9 +1590,12 @@ qui les lit. Corps repris du vivant ; égalité fichier-base vérifiée par
 empreinte sur les trois fonctions. Les sessions clôturées avant la règle gardent
 des totaux vides : les recalculer aujourd'hui serait un chiffre du jour présenté
 comme figé. Migration `20261119000006_s3_02_retire_close_shift_v14.sql`, après
-installation du paquet caisse : retrait de `close_shift_v14` et du rapport v4,
-et retrait du droit d'exécution client sur les versions plus anciennes encore
-présentes (v10, v12, v13 en production), qui clôtureraient sans figer. Preuve
+installation du paquet caisse : retrait de `close_shift_v14` et du rapport v4.
+Les versions plus anciennes encore présentes sont de deux sortes (relevé du
+2026-11-19) : v10 et v13 sont des enveloppes qui transmettent l'appel à la
+version courante, et passent sur v15 ; v12 (et v11 en dev) portent un ancien
+corps complet, qui clôturerait sans figer, et perdent leur droit d'exécution
+client. Preuve
 pgTAP `s3_02_frozen_shift_totals.test.sql`, 20 sur 20 en dev le 2026-11-19, garde
 de la clôture d'une autre session comprise. **Non fait** : la production, l'essai à
 l'écran.
