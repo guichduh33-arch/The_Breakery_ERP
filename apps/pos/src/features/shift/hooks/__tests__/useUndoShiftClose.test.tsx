@@ -1,4 +1,4 @@
-// S3-03 — annulation de clôture par le propriétaire (undo_shift_close_v1).
+// S3-03 — annulation de clôture par le propriétaire (undo_shift_close_v2).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -14,11 +14,11 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useUndoShiftClose (S3-03)', () => {
   beforeEach(() => { rpc.mockReset(); });
 
-  it('sends the PIN as an argument of undo_shift_close_v1, with the trimmed reason', async () => {
+  it('sends the PIN as an argument of undo_shift_close_v2, with the trimmed reason', async () => {
     rpc.mockResolvedValue({ data: { ok: true, session_id: 's1', status: 'open' }, error: null });
     const { result } = renderHook(() => useUndoShiftClose(), { wrapper });
     await act(async () => { await result.current.mutateAsync({ sessionId: 's1', managerPin: '246810', reason: '  Recount  ' }); });
-    expect(rpc).toHaveBeenCalledWith('undo_shift_close_v1', { p_session_id: 's1', p_manager_pin: '246810', p_reason: 'Recount' });
+    expect(rpc).toHaveBeenCalledWith('undo_shift_close_v2', { p_session_id: 's1', p_manager_pin: '246810', p_reason: 'Recount' });
   });
 
   it('turns a wrong PIN response into invalid_pin', async () => {

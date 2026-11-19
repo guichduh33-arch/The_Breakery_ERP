@@ -1653,6 +1653,19 @@ n'affiche plus les comptages de l'ancienne clôture sur une session rouverte.
 éventuellement stocké reste dans le stockage ; l'étiquette technique d'une
 écriture contre-passée est réécrite, ce qu'un futur verrou d'immuabilité des
 écritures devra prendre en compte.
+**Écart signalé au relevé de production du 2026-11-19**, avant livraison : la
+migration `20261030000007_shift_cash_drawer.sql` (compte « Cash Drawer » 1119,
+suivi `shift_cash_treasury`, émission du fond et règlement du tiroir) est
+appliquée en dev, jamais en production ; en production, les ventes espèces et
+les fonds non déposés partagent le compte 1110. La v1 de l'annulation lisait ce
+suivi et ne pouvait pas s'exécuter en production. Migration
+`20261119000008_s3_03_undo_shift_close_v2.sql` : `undo_shift_close_v2` lit et
+remet à zéro le suivi du tiroir seulement s'il existe ; sans lui, elle
+contre-passe l'écart, retire le rapport Z brouillon et rouvre la session. Preuve
+pgTAP `s3_03_undo_without_drawer_treasury.test.sql`, qui reproduit l'état de
+production dans sa transaction, 10 sur 10 en dev. Le déploiement de la
+séparation du tiroir en production reste hors de ce lot : c'est un changement
+comptable à décider.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction d'annulation, gatée propriétaire,
