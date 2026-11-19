@@ -8519,7 +8519,7 @@ export type Database = {
         }
         Returns: Json
       }
-      undo_shift_close_v1: {
+      undo_shift_close_v2: {
         Args: { p_manager_pin: string; p_reason?: string; p_session_id: string }
         Returns: Json
       }
