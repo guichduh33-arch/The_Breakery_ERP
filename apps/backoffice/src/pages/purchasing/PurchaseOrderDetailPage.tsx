@@ -384,7 +384,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
         <div className="space-y-6">
           <PoInvoicePanel po={po} hasPayments={hasPayments} fullyPaid={paymentStatus === 'paid'}
             paymentsKnown={payments.data !== undefined} onBusyChange={setInvoiceBusy} />
-          <PurchaseOrderContent po={po} />
+          <PurchaseOrderContent po={po} canCancelReceipt={canCancel} />
         </div>
 
         <div className="space-y-6">

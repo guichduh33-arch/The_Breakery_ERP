@@ -679,6 +679,10 @@ fournisseur inexistant.
 mouvement de stock, le coût moyen et la dette fournisseur.
 **À LIVRER** — Cette annulation. La marchandise avariée rendue au fournisseur
 reste sans chemin : à noter comme limite.
+**FAIT** — Développée en dev le 2026-11-20 (`S3-05`) : action « Cancel receipt »
+sur chaque réception. Une réception payée au comptant reste refusée, faute de
+chemin pour annuler un paiement fournisseur. La production attend la
+publication.
 
 **FAIT** — Ni frais de port, ni escompte n'existent sur un bon de commande. Une
 facture avec port ne peut pas être saisie à son montant réel.
