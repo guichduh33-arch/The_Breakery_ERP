@@ -309,13 +309,20 @@ cuisine et numérotées** : la reprise d'une commande de tablette remet le statu
 ### 6.3 Sessions de caisse
 
 **FAIT** — Statuts `open` et `closed` uniquement. Il n'existe **aucun** état de
-recomptage. Une session par **utilisateur** (pas par terminal). Le terminal est
-facultatif : 6 sessions sur 22 n'en portent aucun.
+recomptage. Une session ouverte par caissier **et** par terminal : l'ouverture
+passe par la famille `open_shift`, qui exige un terminal de caisse actif, et un
+index unique refuse une seconde session ouverte sur un terminal (migration
+`20261119000002_s3_01_open_shift_terminal_required.sql`). Les sessions
+antérieures à cette règle peuvent être sans terminal : 6 en production au relevé
+du 2026-11-19, toutes clôturées, marquées comme telles et non rattachées.
 
 **FAIT** — La clôture enregistre le comptage, l'attendu, l'écart, le comptage
-carte et QRIS, les coupures et l'approbateur d'écart. Elle **n'enregistre ni les
-totaux par moyen de paiement, ni le chiffre d'affaires, ni le nombre de
-commandes**.
+carte et QRIS, les coupures et l'approbateur d'écart. Depuis la migration
+`20261119000004_s3_02_freeze_shift_totals.sql`, elle fige aussi sur la session
+les encaissements par moyen de paiement, le chiffre d'affaires et le nombre de
+commandes, lus dans l'instantané du rapport Z ; un déclencheur refuse de les
+réécrire tant que la session reste clôturée. Les sessions clôturées avant n'ont
+pas de totaux figés.
 
 **FAIT** — 22 sessions, **2 à cheval sur plusieurs jours**, la plus longue de
 **75 heures**.
@@ -336,10 +343,19 @@ obligatoire à l'ouverture.
 de commandes sont **figés** à la clôture.
 **RÈGLE** — La dernière clôture peut être **annulée** par le propriétaire, ce qui
 contre-passe l'écriture d'écart et remet la session en `open`.
+**RÈGLE** — « La dernière » s'entend par terminal : aucune session plus récente
+n'a été ouverte sur ce terminal. Un rapport Z signé interdit l'annulation ; elle
+défait aussi le règlement du tiroir et retire le rapport Z brouillon (décision de
+Mamat du 2026-11-19,
+[ADR-043](adr/043-sessions-de-caisse-terminal-et-annulation-de-cloture.md)).
 **FAIT** — L'alerte des 24 h : la liste des sessions en cours du POS marque une
 session ouverte depuis plus de 24 h. Elle ne se voit qu'à l'ouverture de cette
 liste ; aucune clôture automatique n'existe.
-**À LIVRER** — Les trois autres règles ci-dessus.
+**FAIT** — L'annulation : la famille `undo_shift_close` (migration
+`20261119000005_s3_03_undo_shift_close.sql`), PIN du propriétaire vérifié avec
+verrouillage, trace `shift.close_undone` dans le journal d'audit avec l'état
+d'avant. Le rapport des sessions du POS la propose au propriétaire sur une
+session clôturée.
 **ABANDONNÉ** — L'état intermédiaire `recounting` : remplacé par l'annulation de
 clôture.
 **OUVERT** — Le numéro de session lisible (`SHF-YYYYMMDD-NN`) : recommandé, non
