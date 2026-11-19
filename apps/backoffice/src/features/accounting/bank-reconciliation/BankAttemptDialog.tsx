@@ -68,7 +68,7 @@ function AttemptSummary({ operation, payload }: { operation: BankOperation; payl
   }
   if (operation === 'bank_post') {
     const v = payload as BankPostSnapshot;
-    return <div className="text-sm space-y-2"><p><strong>{v.kind === 'net_fee' ? 'Actual fees on an existing bank receipt' : v.kind === 'settlement' ? 'Card / QRIS settlement' : v.kind === 'fee' ? 'Bank fees' : 'Bank interest'}</strong> · {v.date}</p>
+    return <div className="text-sm space-y-2"><p><strong>{v.kind === 'net_fee' ? 'Bank fee on an existing receipt or transfer' :v.kind === 'settlement' ? 'Card / QRIS settlement' : v.kind === 'fee' ? 'Bank fees' : 'Bank interest'}</strong> · {v.date}</p>
       <p>{v.description}</p><p>{v.bankIds.length} bank movements · {v.clearingIds.length} clearing lines · {v.bankGlIds.length} existing bank ledger lines.</p>
       <p>Actual fee: {bankMoney(v.fee)}</p><p>This creates a balanced journal entry and an audited association. Removing the association later does not reverse the journal entry.</p></div>;
   }

@@ -54,7 +54,7 @@ DO $$ DECLARE f record;v jsonb;spec record;BEGIN
  END LOOP;
 END $$;
 CREATE FUNCTION pg_temp.bank_post(p_fee numeric DEFAULT 3,p_pin text DEFAULT '285741') RETURNS jsonb LANGUAGE sql AS $$
- SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[3]],
+ SELECT public.bank_reconciliation_post_v6(rec,ARRAY[bank_ids[3]],
   ARRAY[(SELECT id FROM bank_gl WHERE label='card100'),(SELECT id FROM bank_gl WHERE label='card_refund10')],
   expense,p_fee,'2096-01-04','Actual card settlement',p_pin,'ba030000-0000-4000-a000-000000000001') FROM bank_fixture;
 $$;

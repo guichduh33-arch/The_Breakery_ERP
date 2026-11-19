@@ -1,19 +1,24 @@
 import { Button } from '@/components/BackofficeUi.js';
 import type { BankManageSnapshot } from '@/lib/bankAttemptSchema.js';
+import { BANK_TD } from './bankUi.js';
 import { bankMoney } from './money.js';
 import { useBankSuggestions } from './useBankQueries.js';
+const clean = (text: string) => text.replace(/"/g, '').trim();
 export function BankSuggestions({ reconciliationId, onReview }: { reconciliationId: string; onReview: (payload: BankManageSnapshot) => void }) {
   const query = useBankSuggestions(reconciliationId,true);
   const suggestions = query.data?.pages.flatMap((page) => page.items) ?? [];
-  return <section aria-label="Exact match suggestions" className="rounded border border-border-subtle bg-bg-elevated p-4 space-y-3">
-    <h2 className="font-medium">Exact match suggestions</h2><p className="text-sm text-text-secondary">Same date and amount, unique across all eligible unmatched lines. Ambiguous transactions require manual selection.</p>
-    {query.isLoading && <p role="status">Checking suggestions…</p>}
-    {query.error && <p role="alert" className="text-sm text-danger">{query.error.message}<Button variant="secondary" onClick={() => { void query.refetch(); }}>Retry</Button></p>}
-    {!query.isLoading && !query.error && suggestions.length === 0 && <p className="text-sm">No unambiguous exact matches.</p>}
-    <div className="max-h-72 overflow-auto divide-y divide-border-subtle">{suggestions.map((s) => <div key={s.bank_line_id} className="flex items-center justify-between gap-3 py-2 text-sm">
-      <div className="min-w-0"><p>{s.bank_date} · <span className="font-data whitespace-nowrap">{bankMoney(s.bank_amount)}</span> · {s.entry_number}</p><p className="break-words text-text-secondary">{s.bank_description} ↔ {s.gl_description}</p></div>
-      <Button className="shrink-0" variant="secondary" onClick={() => onReview({ kind: 'match',reconciliationId,bankIds: [s.bank_line_id],glIds: [s.gl_line_id] })}>Review match</Button>
-    </div>)}</div>
-    {query.hasNextPage && <Button variant="secondary" disabled={query.isFetchingNextPage} onClick={() => { void query.fetchNextPage(); }}>Load more suggestions</Button>}
+  return <section aria-label="Exact match suggestions" className="overflow-hidden rounded-md border border-border-subtle bg-bg-elevated">
+    <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-3.5"><h2 className="text-lg font-medium tracking-tight">Exact matches</h2>
+      <p className="text-xs text-text-muted">Same date and amount, one candidate on each side.</p></div>
+    {query.isLoading && <p role="status" className="px-4 py-3 text-sm">Checking suggestions…</p>}
+    {query.error && <p role="alert" className="px-4 py-3 text-sm text-danger">{query.error.message} <Button variant="secondary" onClick={() => { void query.refetch(); }}>Retry</Button></p>}
+    {!query.isLoading && !query.error && suggestions.length === 0 && <p className="px-4 py-3 text-sm text-text-secondary">No unambiguous exact match. Ambiguous lines stay for manual matching.</p>}
+    {suggestions.length > 0 && <div className="mt-2 max-h-72 overflow-auto"><table className="w-full min-w-[36rem] text-sm"><tbody>{suggestions.map((s) => <tr key={s.bank_line_id} className="border-t border-border-row">
+      <td className={`${BANK_TD} whitespace-nowrap font-data text-xs`}>{s.bank_date}</td>
+      <td className={`${BANK_TD} break-words`}><p>{clean(s.bank_description)}</p><p className="text-xs text-text-muted"><span className="font-data">{s.entry_number}</span> · {s.gl_description}</p></td>
+      <td className={`${BANK_TD} whitespace-nowrap text-right font-data tabular-nums`}>{bankMoney(s.bank_amount)}</td>
+      <td className={`${BANK_TD} text-right`}><Button variant="secondary" onClick={() => onReview({ kind: 'match',reconciliationId,bankIds: [s.bank_line_id],glIds: [s.gl_line_id] })}>Review match</Button></td>
+    </tr>)}</tbody></table></div>}
+    {query.hasNextPage && <div className="border-t border-border-subtle px-4 py-2.5"><Button variant="secondary" disabled={query.isFetchingNextPage} onClick={() => { void query.fetchNextPage(); }}>Load more suggestions</Button></div>}
   </section>;
 }

@@ -22,7 +22,7 @@ describe('bank RPC boundary',() => {
   it('posts only the requested fees and passes PIN as an RPC argument, outside the durable payload',async () => {
     mockRpc.mockResolvedValue({ data: { ok: true,entry_id: line,je_id: rec,bank_gl_line_id: match,match_id: match },error: null });
     await sendBankPost(post,rec,'654321',() => true);
-    expect(mockRpc).toHaveBeenCalledWith('bank_reconciliation_post_v5',expect.objectContaining({ p_kind: 'net_fee',p_bank_gl_line_ids: [match],p_clearing_line_ids: [],p_fee_amount: 2000.29,p_manager_pin: '654321',p_idempotency_key: rec }));
+    expect(mockRpc).toHaveBeenCalledWith('bank_reconciliation_post_v6',expect.objectContaining({ p_kind: 'net_fee',p_bank_gl_line_ids: [match],p_clearing_line_ids: [],p_fee_amount: 2000.29,p_manager_pin: '654321',p_idempotency_key: rec }));
     expect(post).not.toHaveProperty('pin');
   });
   it('treats committed invalid PIN refusals as failures, and never invents success from a malformed response',async () => {

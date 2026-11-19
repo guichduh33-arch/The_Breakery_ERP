@@ -10,6 +10,7 @@ vi.mock('../useBankQueries.js',() => ({
   useBankDetail: () => ({ data: { pages: [state.detail] },isFetching: state.isFetching,isError: false,error: null,hasNextPage: state.hasNextPage,refetch: vi.fn() }),
   useBankSuggestions: () => ({ data: { pages: [{ items: [] }] },isLoading: false,error: null,hasNextPage: false }),
   useBankClearing: () => ({ data: { pages: [] },isLoading: false,error: null,hasNextPage: false }),
+  useBankClearingDays: () => ({ data: [],isLoading: false,error: null }),
 }));
 vi.mock('@/lib/supabase.js',() => ({ supabase: { rpc: () => { throw new Error('Unexpected mutation'); } } }));
 import { BankWorkspace } from '../BankWorkspace.js';
@@ -23,13 +24,28 @@ describe('bank workspace',() => {
     expect(checks).toHaveLength(2); checks.forEach((node) => fireEvent.click(node));
     expect(button).toBeEnabled(); fireEvent.click(button);
     expect(screen.getByText(/Match 1 bank movements with 1 ledger lines/)).toBeInTheDocument();
-    expect(screen.getAllByText('Rp 1,379,998.62').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Rp 1.379.998,62').length).toBeGreaterThan(0);
   });
   it('refuses a one-cent mismatch',() => {
     const value = structuredClone(bankDetailFixture); value.gl_lines[0]!.amount = '1379998.61'; state.detail = value;
     render(<BankWorkspace reconciliationId={fixtureRec} catalog={bankCatalogFixture} />,{ wrapper });
     screen.getAllByRole('checkbox').filter((node) => node.getAttribute('aria-label')?.startsWith('Select')).forEach((node) => fireEvent.click(node));
-    expect(screen.getByRole('button',{ name: 'Review match' })).toBeDisabled(); expect(screen.getByText('Rp 0.01')).toBeInTheDocument();
+    expect(screen.getByRole('button',{ name: 'Review match' })).toBeDisabled(); expect(screen.getByText('Rp 0,01')).toBeInTheDocument();
+  });
+  it('turns a selection that differs by a bank fee into a prefilled fee entry',() => {
+    const value = structuredClone(bankDetailFixture); value.bank_lines[0]!.amount = '1377498.62'; state.detail = value;
+    render(<BankWorkspace reconciliationId={fixtureRec} catalog={bankCatalogFixture} />,{ wrapper });
+    screen.getAllByRole('checkbox').filter((node) => node.getAttribute('aria-label')?.startsWith('Select')).forEach((node) => fireEvent.click(node));
+    expect(screen.getByRole('button',{ name: 'Review match' })).toBeDisabled();
+    expect(screen.getByText(/The bank kept Rp 2.500 as a fee/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{ name: 'Match with fee Rp 2.500' }));
+    expect(screen.getByLabelText('Entry type')).toHaveValue('net_fee');
+    expect(screen.getByText('Amounts check out')).toBeInTheDocument();
+  });
+  it('shows progress and the remaining amount to explain',() => {
+    render(<BankWorkspace reconciliationId={fixtureRec} catalog={bankCatalogFixture} />,{ wrapper });
+    expect(screen.getByRole('progressbar',{ name: 'Bank lines explained' })).toHaveAttribute('aria-valuenow','0');
+    expect(screen.getByText(/^1 bank line open/)).toBeInTheDocument();
   });
   it('keeps finalization blocked until all pages and all bank lines are resolved',() => {
     state.hasNextPage = true;
@@ -44,6 +60,8 @@ describe('bank workspace',() => {
     expect(screen.getByRole('alert')).toHaveTextContent('ledger changed');
     expect(screen.getByRole('button',{ name: 'Finalize' })).toBeDisabled();
     expect(screen.queryByRole('button',{ name: 'Settlement / fees' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox',{ name: 'Unmatched only' }));
+    expect(screen.getAllByRole('checkbox').filter((node) => node.getAttribute('aria-label')?.startsWith('Select'))).toHaveLength(2);
     screen.getAllByRole('checkbox').filter((node) => node.getAttribute('aria-label')?.startsWith('Select')).forEach((node) => expect(node).toBeDisabled());
   });
   it('hides monetary actions for read-only users',() => {
