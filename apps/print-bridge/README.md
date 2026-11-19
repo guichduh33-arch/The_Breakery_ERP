@@ -40,7 +40,7 @@ avec `--env-file=<chemin-absolu>` (runtime compatible avec le dépôt).
 | `HUB_ALLOWED_ORIGINS` | **oui** | Origines web admises, séparées par des virgules (`https://hôte:port`) ; au moins une |
 | `HUB_REGISTRY_FILE` | conseillé | Chemin absolu persistant du registre des appareils ; défaut `hub-registry.json` dans le répertoire courant |
 | `PORT` | non | HTTPS/WSS, défaut 3001 |
-| `RECEIPT_PRINTER_IP`, `RECEIPT_PRINTER_PORT` | non | Reçus sans cible explicite et tiroir ; port par défaut 9100 |
+| `RECEIPT_PRINTER_IP`, `RECEIPT_PRINTER_PORT` | non | Reçus sans cible explicite et tiroir ; port par défaut 9100. La même adresse et le même port doivent figurer dans le registre (imprimante déclarée au back-office), sinon `403 printer_forbidden` |
 | `POS_DIST_DIR` | non | Chemin absolu du bundle POS, contenant `index.html` et ses assets |
 | `HUB_BUFFER_FILE` | conseillé | Chemin absolu persistant du ring-buffer, hors des répertoires de release ; défaut `hub-buffer.jsonl` |
 | `HUB_CLOUD_URL` | en pratique | URL HTTPS de `lan-heartbeat-batch` sur la cible confirmée |

@@ -153,15 +153,15 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LoginResponse' }
         '400':
-          description: missing_fields | invalid_pin_format
+          description: missing_fields | invalid_pin_format | invalid_device_type
         '401':
-          description: invalid_pin (with attempts_remaining)
+          description: invalid_pin (with attempts_remaining) | user_not_found
         '403':
-          description: user_inactive | user_not_found
-        '423':
-          description: account_locked (with minutes_left)
+          description: user_inactive | account_locked (with minutes_left) | permission_denied (required_permission missing)
         '429':
           description: rate_limited (with retry_after_sec)
+        '503':
+          description: session_policy_unavailable
 
   /auth-get-session:
     get:
@@ -224,14 +224,18 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ChangePinRequest' }
       responses:
-        '204':
-          description: PIN rotated
+        '200':
+          description: 'PIN rotated — { ok: true, weak, weak_reason? }'
         '400':
-          description: invalid_pin_format | pin_reused
+          description: missing_fields | invalid_new_pin_format | current_pin_required
         '401':
-          description: invalid_pin (current_pin mismatch)
+          description: invalid_current_pin | active_profile_required
         '403':
-          description: permission_denied (admin override without users.update)
+          description: permission_denied | super_admin_only
+        '404':
+          description: user_not_found
+        '429':
+          description: rate_limited | account_locked
 
 components:
   schemas:
@@ -255,6 +259,9 @@ components:
         device_type:
           type: string
           enum: [pos, backoffice]
+        required_permission:
+          type: string
+          description: 'Optional: refuse the login (403) when the user lacks this permission.'
 
     LoginResponse:
       type: object

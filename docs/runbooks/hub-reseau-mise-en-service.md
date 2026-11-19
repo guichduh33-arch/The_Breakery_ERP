@@ -66,15 +66,23 @@ alors sans registre, donc sans aucun appareil autorisé.
 Le pont lit `process.env` et ne charge aucun `.env` seul. La liste complète des
 variables, obligatoires et facultatives, est dans le
 [README du pont](../../apps/print-bridge/README.md#configuration-du-processus).
-Les quatre que le pont exige pour démarrer :
+Les trois sans lesquelles le pont refuse de démarrer :
 
 - `HUB_TLS_CERT` et `HUB_TLS_KEY` ;
-- `HUB_ALLOWED_ORIGINS`, au moins une origine ;
-- et, en pratique, `HUB_REGISTRY_FILE` en chemin absolu (section 2).
+- `HUB_ALLOWED_ORIGINS`, au moins une origine.
+
+À poser aussi, même si le pont démarre sans : `HUB_REGISTRY_FILE` et
+`HUB_BUFFER_FILE` en chemins absolus (section 2), et `RECEIPT_PRINTER_IP`
+(avec `RECEIPT_PRINTER_PORT` si ce n'est pas 9100) pour les reçus sans
+imprimante explicite et pour le tiroir. Cette imprimante de reçus doit aussi
+être déclarée dans le back-office avec la même adresse et le même port
+(section 6) : sinon le pont refuse le tiroir et ces reçus
+(`403 printer_forbidden`).
 
 `HUB_ALLOWED_ORIGINS` liste les pages servies **ailleurs** qui appellent le pont,
-sous la forme exacte `https://hôte:port`, séparées par des virgules. La page que
-le pont sert lui-même (`POS_DIST_DIR`) est admise d'office sur son propre nom.
+sous la forme exacte `https://hôte:port`, séparées par des virgules. Une page
+servie par le pont lui-même appelle sa propre origine, que le pont admet
+d'office.
 
 Pour la synchronisation des autorisations, poser `HUB_CLOUD_URL` à l'URL HTTPS
 de `lan-heartbeat-batch` sur la cible vérifiée, et `HUB_CLOUD_SECRET` au secret
@@ -120,14 +128,21 @@ Depuis le PC puis depuis un terminal du LAN :
 
 1. **Back-office → LAN devices** (permission `lan.devices.read` pour voir,
    `lan.devices.manage` pour agir) : déclarer l'appareil s'il n'existe pas, puis
-   **Create activation code**. Le code est à usage unique et expire ; l'heure
-   d'expiration s'affiche.
-2. Sur le terminal, **Settings → Devices** : saisir le code. Le terminal tire
-   son propre secret, l'envoie au cloud et le garde ; le code ne sert plus.
-3. Back-office : l'appareil passe à **Paired**. Ouvrir **Permissions** et ne
-   cocher que les capacités utiles (le tiroir, `Open cash drawer`, seulement sur
-   la caisse).
-4. Attendre la synchronisation suivante du hub (de l'ordre de dix secondes) :
+   **Create activation code**. Le code est à usage unique et expire vite ;
+   l'heure d'expiration s'affiche. Seuls une caisse, une tablette ou un écran
+   cuisine s'appairent ainsi.
+2. Sur le terminal, **Settings → Devices** : saisir le code. L'activation exige
+   Internet. Le terminal tire son propre secret, l'envoie au cloud et le garde ;
+   le code ne sert plus.
+3. Back-office : l'appareil passe à **Paired**. Il a reçu les capacités par
+   défaut de son type (une caisse imprime et ouvre le tiroir, une tablette
+   envoie des commandes et imprime des tickets, un écran cuisine lit et met à
+   jour la cuisine). **Permissions** sert à les ajuster : retirer ce qui n'a
+   pas lieu d'être, par exemple le tiroir (`Open cash drawer`) hors de la
+   caisse.
+4. Déclarer l'imprimante de reçus et chaque imprimante de cuisine comme
+   appareils de type imprimante, actifs, avec leur adresse et leur port.
+5. Attendre la synchronisation suivante du hub (de l'ordre de dix secondes) :
    le registre arrive alors sur le PC. Ensuite seulement, le terminal joint le
    bus et imprime.
 

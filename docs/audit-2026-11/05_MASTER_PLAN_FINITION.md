@@ -2036,8 +2036,11 @@ démarrer (`HUB_TLS_CERT`, `HUB_TLS_KEY`, `HUB_ALLOWED_ORIGINS`), plus
 `HUB_REGISTRY_FILE`, absente aussi, dont le défaut relatif perd le registre, et
 retire `HUB_TOKEN`, que le code ne lit plus, ainsi que le mode ouvert qu'il
 décrivait. Le fragment OpenAPI de `packages/supabase/README.md` porte les PIN
-en en-têtes (`x-login-pin`, `x-current-pin`, `x-new-pin`), comme le code.
-Garde des liens relatifs verte. **Reste** : la preuve sur un poste neuf.
+en en-têtes (`x-login-pin`, `x-current-pin`, `x-new-pin`), comme le code, et
+ses statuts d'erreur des deux fonctions de PIN suivent le code relu le même
+jour. Relecture indépendante appliquée (imprimante de reçus à déclarer pour le
+tiroir, capacités par défaut des appareils). Garde des liens relatifs verte le
+2026-11-20. **Reste** : la preuve sur un poste neuf.
 
 **Fichiers**
 - `docs/runbooks/<nouveau>-hub-reseau-mise-en-service.md`
