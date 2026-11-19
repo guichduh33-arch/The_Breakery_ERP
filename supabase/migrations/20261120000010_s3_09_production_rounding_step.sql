@@ -30,6 +30,8 @@ AS $function$
 DECLARE
   v_actor  UUID := _current_profile_id();  -- audit_logs.actor_id = user_profiles.id
   v_before NUMERIC;
+  -- La colonne garde 3 décimales : on valide et on trace la valeur STOCKÉE.
+  v_step   NUMERIC := round(p_step, 3);
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'not_authenticated' USING ERRCODE = 'P0001';
@@ -37,7 +39,7 @@ BEGIN
   IF NOT has_permission(auth.uid(), 'products.update') OR v_actor IS NULL THEN
     RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
   END IF;
-  IF p_step IS NOT NULL AND (p_step <= 0 OR p_step::text IN ('NaN','Infinity') OR p_step > 100000) THEN
+  IF p_step IS NOT NULL AND (p_step::text IN ('NaN','Infinity','-Infinity') OR v_step <= 0 OR v_step > 100000) THEN
     RAISE EXCEPTION 'invalid_rounding_step' USING ERRCODE = '22023',
       HINT = 'step must be > 0 and <= 100000, or null to clear';
   END IF;
@@ -49,16 +51,16 @@ BEGIN
   END IF;
 
   UPDATE products
-     SET production_rounding_step = p_step,
+     SET production_rounding_step = v_step,
          updated_at = now()
    WHERE id = p_product_id;
 
   INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, metadata, payload)
   VALUES (v_actor, 'product.production_rounding_step_set', 'products', p_product_id,
           jsonb_build_object('rpc_version', 'v1'),
-          jsonb_build_object('before', v_before, 'after', p_step));
+          jsonb_build_object('before', v_before, 'after', v_step));
 
-  RETURN jsonb_build_object('product_id', p_product_id, 'production_rounding_step', p_step);
+  RETURN jsonb_build_object('product_id', p_product_id, 'production_rounding_step', v_step);
 END $function$;
 
 CREATE FUNCTION public.get_production_suggestions_v5(p_lookback_days integer DEFAULT 7, p_priority_high integer DEFAULT 3, p_priority_medium integer DEFAULT 7)

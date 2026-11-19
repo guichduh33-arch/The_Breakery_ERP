@@ -1823,7 +1823,8 @@ facultative `products.production_rounding_step`, fonction de réglage
 `audit_logs`), famille `get_production_suggestions` bumpée en v5 depuis le corps
 live, v4 retirée (seul appelant : le crochet du back-office, basculé). L'onglet
 des suggestions montre et règle le pas (« Batch step »). pgTAP
-`s3_09_production_rounding_step.test.sql` 12/12 en dev : 17 → 24 avec un pas
+`s3_09_production_rounding_step.test.sql` 14/14 en dev (relecture indépendante
+appliquée : pas validé et tracé après arrondi à 3 décimales) : 17 → 24 avec un pas
 de 12, 20 avec un pas de 5, 17 sans pas. Vitest ciblé 7/7. Non publié.
 
 **Fichiers**

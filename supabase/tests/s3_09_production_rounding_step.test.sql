@@ -10,7 +10,7 @@ BEGIN;
 \ir helpers/released_report_days.sql
 \ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(12);
+SELECT plan(14);
 
 DO $fix$
 DECLARE
@@ -80,6 +80,9 @@ INSERT INTO s309_results(tap) SELECT is(pg_temp.s309_suggested(), 20::numeric,
 INSERT INTO s309_results(tap) SELECT throws_ok(
   format('SELECT public.set_production_rounding_step_v1(%L, 0)', current_setting('s309.bun')),
   '22023', 'invalid_rounding_step', 'A zero step is refused');
+INSERT INTO s309_results(tap) SELECT throws_ok(
+  format('SELECT public.set_production_rounding_step_v1(%L, 0.0004)', current_setting('s309.bun')),
+  '22023', 'invalid_rounding_step', 'A step that rounds to zero at 3 decimals is refused');
 SELECT public.set_production_rounding_step_v1(current_setting('s309.bun')::uuid, NULL);
 INSERT INTO s309_results(tap) SELECT is(pg_temp.s309_suggested(), 17::numeric,
   'Clearing the step restores the whole-number rounding');
@@ -91,7 +94,10 @@ INSERT INTO s309_results(tap) SELECT is((SELECT count(*) FROM audit_logs
     AND actor_id = (SELECT id FROM user_profiles WHERE auth_user_id = current_setting('s309.owner')::uuid)),
   3::bigint, 'Each change is audited under the owner profile');
 
--- Un compte sans products.update ne règle rien.
+-- Un compte sans products.update ne règle rien. Garde lisible si les données
+-- de la base ne portent aucun tel compte.
+INSERT INTO s309_results(tap) SELECT isnt(NULLIF(current_setting('s309.cashier', true), ''), NULL,
+  'Fixture: an active account without products.update exists');
 SELECT pg_temp.authenticate_pin(current_setting('s309.cashier')::uuid);
 SET LOCAL ROLE authenticated;
 INSERT INTO s309_results(tap) SELECT throws_ok(

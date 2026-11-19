@@ -67,7 +67,7 @@ export function useProductionSuggestions() {
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
       const { data, error } = await rpc('get_production_suggestions_v5', {});
       if (error !== null) {
-        if (/does not exist|undefined function/i.test(error.message)) return [];
+        if (/does not exist|undefined function|could not find the function/i.test(error.message)) return [];
         throw new Error(error.message);
       }
       if (data === null || data === undefined) return [];
@@ -99,7 +99,7 @@ export function useSetProductionRoundingStep() {
           throw new Error('You are not allowed to change this product.');
         }
         if (error.message.includes('invalid_rounding_step')) {
-          throw new Error('The step must be a positive number.');
+          throw new Error('The step must be greater than 0 and at most 100,000.');
         }
         throw new Error('Unable to save the production step.');
       }

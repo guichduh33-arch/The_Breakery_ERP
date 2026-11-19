@@ -643,7 +643,7 @@ refus serveur. Levé par la règle de visibilité par permission (§5.2).
 l'arrondi est entier.
 **RÈGLE** — La quantité suggérée s'arrondit au pas métier (douzaines, dizaines).
 La couverture reste à 3 jours.
-**À LIVRER** — L'arrondi.
+**À LIVRER** — L'arrondi, en production.
 **FAIT** — Développé en dev le 2026-11-20 (`S3-09`) : un pas facultatif par
 produit, réglé dans l'onglet des suggestions de production ; la quantité
 suggérée s'arrondit au pas supérieur. La production attend la publication.

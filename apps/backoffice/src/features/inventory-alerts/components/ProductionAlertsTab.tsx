@@ -21,7 +21,7 @@ import {
 import { ProductCell } from './ProductCell.js';
 import { ProductionStepCell } from './ProductionStepCell.js';
 
-// `get_production_suggestions_v1` ne renvoie PAS l'unité du produit : les trois
+// La famille `get_production_suggestions` ne renvoie PAS l'unité du produit : les trois
 // quantités de cet onglet passent donc `null` à `formatQuantity` (audit UX/UI
 // 2026-08-13). Elles gagnent les séparateurs de milliers id-ID et perdent les
 // zéros morts du `toFixed`, sans qu'on invente un « pcs » que la RPC ne dit pas.
