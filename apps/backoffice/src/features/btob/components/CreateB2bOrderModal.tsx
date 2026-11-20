@@ -17,8 +17,9 @@
 // a negotiated row exists for the selected product, else fall back to the
 // catalog price as before.
 
-import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { Trash2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
@@ -29,7 +30,7 @@ import {
 } from '../hooks/useCreateB2bOrder.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useProductsForB2bOrder, type B2bOrderProductOption } from '../hooks/useProductsForB2bOrder.js';
-import { useB2bStockAvailability } from '../hooks/useB2bStockAvailability.js';
+import { checkB2bStockAvailability, useB2bStockAvailability } from '../hooks/useB2bStockAvailability.js';
 import { useCustomerNegotiatedPrices } from '@/features/customers/hooks/useCustomerNegotiatedPrices.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -71,6 +72,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const [formError, setFormError]         = useState<string | null>(null);
   const [creditPayload, setCreditPayload] = useState<CreditLimitExceededPayload | null>(null);
+  const submitting = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -161,7 +163,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || submitting.current) return;
+    submitting.current = true;
     setFormError(null);
     setCreditPayload(null);
 
@@ -177,9 +180,20 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
       idempotencyKey,
     };
 
+    // Une vérification neuve porte sur le panier de CET envoi, jamais sur la
+    // query d'un formulaire modifié ensuite. Sa fin ne retarde pas la création.
+    const stockCheck = checkB2bStockAvailability(payload.items);
     try {
       await createMut.mutateAsync(payload);
       handleClose();
+      // Le toast global reste visible après le démontage du dialogue.
+      void stockCheck.then((available) => {
+        if (available === false) {
+          toast.warning('B2B order created. Stock is currently insufficient. Replenish stock before confirming pickup.', { duration: 20000, closeButton: true });
+        } else if (available === null) {
+          toast.warning('B2B order created. Stock availability was not verified. Stock must be checked again at pickup.', { duration: 20000, closeButton: true });
+        }
+      }).catch(() => undefined);
     } catch (err) {
       if (err instanceof CreateB2bOrderError) {
         if (err.code === 'credit_limit_exceeded' && err.payload !== undefined) {
@@ -203,6 +217,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
       } else {
         setFormError('Something went wrong. Please retry.');
       }
+    } finally {
+      submitting.current = false;
     }
   }
 
