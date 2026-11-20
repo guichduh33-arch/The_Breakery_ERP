@@ -899,11 +899,19 @@ le 2026-11-14, avec les valeurs par défaut du dépôt ; la famille
 `get_b2b_settings` le rend. L'autre table à enregistrement unique du schéma,
 `business_config`, porte aussi le sien (relevé du même jour).
 
-**FAIT** — Le stock d'une commande B2B sort **à la saisie**, pas au retrait. 119
-commandes sont en attente.
-**RÈGLE** — Le stock doit sortir **au retrait**.
-**À LIVRER** — Le déplacement, le garde-fou de suffisance au retrait, et la
-reprise des 119 commandes déjà déduites.
+**FAIT** — Le 2026-11-20, la production déduit encore le stock B2B à la saisie.
+Le relevé distingue 85 commandes natives toutes retirées et 192 imports
+financiers sans mouvements de vente : aucun stock n'est à réinjecter sur ce
+relevé. Le statut `b2b_pending` désigne un solde à payer, pas un retrait à faire.
+**RÈGLE** — Le stock sort **au retrait**. À la création, la disponibilité est
+contrôlée et un manque avertit sans bloquer ; au passage à livré, un manque de
+stock général bloque. Paiement et retrait restent indépendants. Les imports
+financiers historiques restent sans mouvement de stock
+([ADR-044](adr/044-stock-b2b-au-retrait.md)).
+**À LIVRER** — La bascule de ce contrat de stock en production, après
+vérification des commandes natives existantes et de la compatibilité du
+back-office. Toute reprise de masse éventuelle reste soumise aux sauvegardes
+et à une restauration éprouvée.
 
 **FAIT** — La facture B2B est numérotée `INV/<année>/<séquence>`, en dur.
 L'imputation des règlements est en premier entré premier sorti, avec ciblage

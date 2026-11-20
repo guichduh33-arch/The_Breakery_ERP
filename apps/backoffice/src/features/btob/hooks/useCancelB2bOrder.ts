@@ -6,7 +6,7 @@
 // passe par le helper partagé `_restore_sale_stock`, miroir de la vente.
 //
 // Cancels an UNPAID b2b invoice: the RPC reverses the creation JE
-// (DR revenue / CR AR), restores stock (sale_void), decrements the customer's
+// (DR revenue / CR AR), restores collected stock only, decrements the customer's
 // cached balance and sets the order status='voided'. It is BLOCKED when any
 // allocation exists (order_has_payments) — the user must handle the payment
 // first. Idempotent via p_idempotency_key. Gate b2b.order.cancel.
@@ -24,6 +24,8 @@ export type CancelB2bOrderErrorCode =
   | 'order_has_payments'
   | 'reason_required'
   | 'fiscal_period_closed'
+  | 'dedicated_workflow'
+  | 'stock_tracking_changed'
   | 'unknown';
 
 export class CancelB2bOrderError extends Error {
@@ -48,6 +50,8 @@ export interface CancelB2bOrderResult {
 }
 
 export function classify(message: string): CancelB2bOrderErrorCode {
+  if (message.includes('financial_import_requires_dedicated_workflow')) return 'dedicated_workflow';
+  if (message.includes('b2b_stock_tracking_changed')) return 'stock_tracking_changed';
   if (message.includes('order_has_payments'))     return 'order_has_payments';
   if (message.includes('order_not_cancellable'))  return 'order_not_cancellable';
   if (message.includes('not_a_b2b_order'))        return 'not_a_b2b_order';
@@ -67,7 +71,7 @@ export function useCancelB2bOrder() {
   const qc = useQueryClient();
   return useMutation<CancelB2bOrderResult, CancelB2bOrderError, CancelB2bOrderArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('cancel_b2b_order_v3', {
+      const { data, error } = await supabase.rpc('cancel_b2b_order_v5', {
         p_order_id:        args.orderId,
         p_reason:          args.reason,
         p_idempotency_key: args.idempotencyKey,
@@ -81,6 +85,8 @@ export function useCancelB2bOrder() {
         qc.invalidateQueries({ queryKey: B2B_DASHBOARD_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: ['customers'] }),
         qc.invalidateQueries({ queryKey: ['b2b-invoices'] }),
+        ...['stock-levels', 'stock-movements', 'stock-movements-feed', 'products', 'products-typeahead',
+          'inventory-dashboard', 'b2b-stock-availability'].map((key) => qc.invalidateQueries({ queryKey: [key] })),
       ]);
     },
   });

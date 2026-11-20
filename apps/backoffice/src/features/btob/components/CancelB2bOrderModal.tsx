@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/btob/components/CancelB2bOrderModal.tsx
 // Session 56 — DEV-S52-03 : cancel an unpaid b2b_pending invoice.
-// Wraps cancel_b2b_order (reverse JE + sale_void stock, vitrine incluse + balance).
+// Wraps cancel_b2b_order (contre-écriture, stock déjà retiré seulement, encours).
 // Blocked server-side when any allocation exists (order_has_payments).
 // One modal opening = one idempotency key (rotated on close, S55 pattern).
 
@@ -16,6 +16,8 @@ const ERROR_COPY: Record<string, string> = {
   reason_required:       'A reason of at least 3 characters is required.',
   permission_denied:     'You do not have permission to cancel B2B invoices (needs b2b.order.cancel).',
   fiscal_period_closed:  'The fiscal period of this invoice is closed.',
+  dedicated_workflow:    'This imported invoice requires a dedicated correction workflow.',
+  stock_tracking_changed: 'Stock tracking changed after collection. This invoice requires a stock review before cancellation.',
   unknown:               'Something went wrong. Please retry.',
 };
 
@@ -63,12 +65,12 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
       <DialogContent className="max-w-md">
         <DialogTitle>Cancel invoice {orderNumber}</DialogTitle>
         <DialogDescription className="sr-only">
-          Cancels an unpaid B2B invoice: reverses its journal entry, restores stock and decreases the customer balance.
+          Cancels an unpaid B2B invoice: reverses its journal entry and decreases the customer balance. Stock is restored only if pickup was confirmed.
         </DialogDescription>
         <div className="space-y-3">
           <div className="rounded border border-red bg-red-soft px-3 py-2 text-xs text-red">
-            This reverses the invoice journal entry, restores stock and decreases the
-            customer balance. It cannot be undone via UI.
+            This reverses the invoice journal entry and decreases the customer balance.
+            Stock is restored only if pickup was confirmed. It cannot be undone via UI.
           </div>
           <label className="flex flex-col text-sm">
             Reason (min. 3 characters)

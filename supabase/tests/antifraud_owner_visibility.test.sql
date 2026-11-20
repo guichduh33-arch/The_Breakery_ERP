@@ -105,19 +105,19 @@ INSERT INTO public.customers(id,name,customer_type,b2b_credit_limit,b2b_current_
 SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM antifraud_actors WHERE role_code='ADMIN'));
 SET LOCAL ROLE authenticated;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.has_permission(auth.uid(),'pos.sale.create') AND public.has_permission(auth.uid(),'b2b.order.create'),'B2B create permission is independent of POS sale');
-INSERT INTO antifraud_payload SELECT 'b2b',public.create_b2b_order_v10(customer_id,
+INSERT INTO antifraud_payload SELECT 'b2b',public.create_b2b_order_v11(customer_id,
  jsonb_build_array(jsonb_build_object('product_id',product_id,'quantity',1,'unit_price',1)),NULL,NULL,b2b_key) FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT is((value->>'total')::numeric,10000::numeric,'B2B creation uses server price') FROM antifraud_payload WHERE name='b2b';
-INSERT INTO antifraud_payload SELECT 'edit',public.edit_b2b_order_v3((value->>'order_id')::uuid,
+INSERT INTO antifraud_payload SELECT 'edit',public.edit_b2b_order_v4((value->>'order_id')::uuid,
  (SELECT jsonb_agg(jsonb_build_object('id',i.id,'product_id',i.product_id,'quantity',i.quantity)) FROM public.order_items i WHERE i.order_id=(value->>'order_id')::uuid),
  'Confirmed B2B notes',(SELECT o.updated_at FROM public.orders o WHERE o.id=(value->>'order_id')::uuid),gen_random_uuid())
  FROM antifraud_payload WHERE name='b2b';
 INSERT INTO antifraud_results(tap) SELECT ok(value IS NOT NULL,'ADMIN edits a B2B order without POS sale permission') FROM antifraud_payload WHERE name='edit';
-INSERT INTO antifraud_payload SELECT 'pickup',public.update_b2b_pickup_v2((value->>'order_id')::uuid,current_date,true) FROM antifraud_payload WHERE name='b2b';
+INSERT INTO antifraud_payload SELECT 'pickup',public.update_b2b_pickup_v4((value->>'order_id')::uuid,current_date,true) FROM antifraud_payload WHERE name='b2b';
 INSERT INTO antifraud_results(tap) SELECT ok(value IS NOT NULL,'ADMIN validates B2B delivery without POS sale permission') FROM antifraud_payload WHERE name='pickup';
 INSERT INTO antifraud_payload SELECT 'payment',public.record_b2b_payment_v6((SELECT customer_id FROM antifraud_ids),10000,'transfer',
  p_idempotency_key=>(SELECT payment_key FROM antifraud_ids),p_invoice_ids=>ARRAY[(value->>'order_id')::uuid]) FROM antifraud_payload WHERE name='b2b';
-INSERT INTO antifraud_results(tap) SELECT ok((public.create_b2b_order_v10(customer_id,
+INSERT INTO antifraud_results(tap) SELECT ok((public.create_b2b_order_v11(customer_id,
  jsonb_build_array(jsonb_build_object('product_id',product_id,'quantity',1,'unit_price',1)),NULL,NULL,b2b_key)->>'idempotent_replay')::boolean,
  'B2B creation retry after full payment returns its original order') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok((public.record_b2b_payment_v6((SELECT customer_id FROM antifraud_ids),10000,'transfer',

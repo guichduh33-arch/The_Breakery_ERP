@@ -99,11 +99,21 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - [ ] Le prix de ligne reste résolu serveur (`_resolve_b2b_line_price`) ; aucun
       `unit_price` client honoré.
 - [ ] `b2b_current_balance` mis à jour dans la même transaction que l'INSERT orders.
-- [ ] `_record_sale_stock` toujours appelé pour chaque item (flag-aware :
-      `track_inventory` direct, sinon `deduct_stock` via recette).
+- [ ] Aucune déduction à la création ; disponibilité informative sans quantité
+      confidentielle, avertissement non bloquant même si le contrôle échoue.
 - [ ] `order_number` ET `invoice_number` posés ; la séquence de facturation reste
       `_next_b2b_invoice_number`.
 - [ ] Types regen via MCP après la migration.
+
+### Avant de toucher au retrait B2B
+- [ ] `_record_sale_stock` appelé au retrait seulement ; besoins communs des
+      lignes et recettes agrégés sous verrou, stock général suffisant exigé.
+- [ ] Vitrine inchangée ; semi-finis suivis non dépliés ; compteur non suivi
+      inchangé, mouvement de vente conservé pour le coût des ventes.
+- [ ] Rejeu sans nouvelle sortie ; annulation avant retrait sans restitution,
+      après retrait selon les quantités réellement sorties.
+- [ ] Imports financiers exclus ; aucun `b2b_pending` assimilé à un retrait
+      manquant. Relever les commandes natives avant toute reprise.
 
 ### Avant de toucher au règlement (paiement / annulation)
 - [ ] Le refus d'annulation quand une allocation existe est conservé.

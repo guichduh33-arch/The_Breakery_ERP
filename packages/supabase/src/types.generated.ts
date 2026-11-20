@@ -4504,6 +4504,7 @@ export type Database = {
           voided_at: string | null
           voided_by: string | null
           waiter_id: string | null
+          b2b_stock_consumed_at: string | null
         }
         Insert: {
           b2b_delivered_at?: string | null
@@ -4546,6 +4547,7 @@ export type Database = {
           voided_at?: string | null
           voided_by?: string | null
           waiter_id?: string | null
+          b2b_stock_consumed_at?: string | null
         }
         Update: {
           b2b_delivered_at?: string | null
@@ -4588,6 +4590,7 @@ export type Database = {
           voided_at?: string | null
           voided_by?: string | null
           waiter_id?: string | null
+          b2b_stock_consumed_at?: string | null
         }
         Relationships: [
           {
@@ -7491,6 +7494,69 @@ export type Database = {
           },
         ]
       }
+      b2b_order_stock_consumptions: {
+        Row: {
+          inventory_tracked: boolean
+          legacy: boolean
+          order_id: string
+          product_id: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          inventory_tracked: boolean
+          legacy?: boolean
+          order_id: string
+          product_id: string
+          quantity: number
+          unit: string
+        }
+        Update: {
+          inventory_tracked?: boolean
+          legacy?: boolean
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_order_stock_consumptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_order_stock_consumptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "b2b_order_stock_consumptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "b2b_order_stock_consumptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_order_stock_consumptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
     }
     Views: {
       mv_stock_variance: {
@@ -7847,16 +7913,6 @@ export type Database = {
         }
         Returns: Json
       }
-      create_b2b_order_v10: {
-        Args: {
-          p_customer_id: string
-          p_delivery_date?: string
-          p_idempotency_key?: string
-          p_items: Json
-          p_notes?: string
-        }
-        Returns: Json
-      }
       create_opname_v3: {
         Args: {
           p_business_day?: string
@@ -7866,16 +7922,6 @@ export type Database = {
         Returns: Json
       }
       create_product_v5: { Args: { p_payload: Json }; Returns: Json }
-      edit_b2b_order_v3: {
-        Args: {
-          p_expected_updated_at: string
-          p_idempotency_key: string
-          p_items: Json
-          p_notes: string
-          p_order_id: string
-        }
-        Returns: Json
-      }
       finalize_opname_v7: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
@@ -8555,14 +8601,6 @@ export type Database = {
         Args: { p_manager_pin: string; p_reason?: string; p_session_id: string }
         Returns: Json
       }
-      update_b2b_pickup_v2: {
-        Args: {
-          p_mark_delivered?: boolean
-          p_order_id: string
-          p_pickup_date?: string
-        }
-        Returns: Json
-      }
       update_invoice_print_template_v1: {
         Args: { p_expected_revision: number; p_settings: Json }
         Returns: {
@@ -9181,14 +9219,6 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v3: {
-        Args: {
-          p_idempotency_key?: string
-          p_order_id: string
-          p_reason: string
-        }
-        Returns: Json
-      }
       cancel_goods_receipt_v1: {
         Args: { p_grn_id: string; p_idempotency_key?: string; p_reason: string }
         Returns: Json
@@ -9277,6 +9307,7 @@ export type Database = {
           voided_at: string | null
           voided_by: string | null
           waiter_id: string | null
+          b2b_stock_consumed_at: string | null
         }
         SetofOptions: {
           from: "*"
@@ -10360,6 +10391,7 @@ export type Database = {
           voided_at: string | null
           voided_by: string | null
           waiter_id: string | null
+          b2b_stock_consumed_at: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11146,6 +11178,46 @@ export type Database = {
       }
       void_zreport_v3: {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
+        Returns: Json
+      }
+      check_b2b_stock_availability_v1: {
+        Args: { p_items: Json }
+        Returns: Json
+      }
+      cancel_b2b_order_v5: {
+        Args: {
+          p_idempotency_key?: string
+          p_order_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      update_b2b_pickup_v4: {
+        Args: {
+          p_mark_delivered?: boolean
+          p_order_id: string
+          p_pickup_date?: string
+        }
+        Returns: Json
+      }
+      edit_b2b_order_v4: {
+        Args: {
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_items: Json
+          p_notes: string
+          p_order_id: string
+        }
+        Returns: Json
+      }
+      create_b2b_order_v11: {
+        Args: {
+          p_customer_id: string
+          p_delivery_date?: string
+          p_idempotency_key?: string
+          p_items: Json
+          p_notes?: string
+        }
         Returns: Json
       }
     }

@@ -1,8 +1,7 @@
 // apps/backoffice/src/pages/btob/B2BDashboardPage.tsx
 //
 // Session 14 / Phase 5.B — B2B Wholesale dashboard.
-// Session 24 / Phase 2.A.3 — "+ New B2B Order" now opens CreateB2bOrderModal
-// which calls create_b2b_order_v10 (closes deviation D-W6-B2B-01).
+// La création ouvre le formulaire partagé et appelle la famille create_b2b_order.
 
 import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';

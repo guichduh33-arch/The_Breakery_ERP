@@ -38,8 +38,8 @@ BEGIN
   v_key := gen_random_uuid();
   v_result := pg_temp.create_b2b_edit_fixture(v_customer,v_items,NULL,NULL,v_key);
   v_order := (v_result->>'order_id')::uuid;
-  INSERT INTO channel_stock_checks SELECT 'create deducts general stock, display case '||v_case,
-   current_stock=8 FROM public.products WHERE id=v_product;
+  INSERT INTO channel_stock_checks SELECT 'create keeps general stock, display case '||v_case,
+   current_stock=10 FROM public.products WHERE id=v_product;
   SELECT count(*) INTO v_count FROM public.stock_movements WHERE reference_id=v_order;
   v_result := pg_temp.create_b2b_edit_fixture(v_customer,v_items,NULL,NULL,v_key);
   INSERT INTO channel_stock_checks SELECT 'create replay is stock-neutral, display case '||v_case,
@@ -48,26 +48,23 @@ BEGIN
   SELECT id INTO v_line FROM public.order_items WHERE order_id=v_order;
   SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
   v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',4));
-  v_result := public.edit_b2b_order_v3(v_order,v_items,NULL,v_revision,gen_random_uuid());
-  INSERT INTO channel_stock_checks SELECT 'edit increase deducts general only, case '||v_case,
-   current_stock=6 FROM public.products WHERE id=v_product;
+  v_result := public.edit_b2b_order_v4(v_order,v_items,NULL,v_revision,gen_random_uuid());
+  INSERT INTO channel_stock_checks SELECT 'edit increase keeps general stock, case '||v_case,
+   current_stock=10 FROM public.products WHERE id=v_product;
   SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
-  -- La hausse qui dépasserait le général est atomiquement refusée, même avec flag négatif.
-  BEGIN
-   PERFORM public.edit_b2b_order_v3(v_order,
-    jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',11)),
-    NULL,v_revision,gen_random_uuid());
-   INSERT INTO channel_stock_checks VALUES('edit oversell rejected, case '||v_case,false);
-  EXCEPTION WHEN SQLSTATE 'P0002' THEN
-   INSERT INTO channel_stock_checks VALUES('edit oversell rejected, case '||v_case,true);
-  END;
-  INSERT INTO channel_stock_checks SELECT 'failed edit leaves general unchanged, case '||v_case,
-   current_stock=6 FROM public.products WHERE id=v_product;
+  -- La disponibilité est un avertissement de création/édition ; le retrait est le gate.
+  INSERT INTO channel_stock_checks VALUES('edit oversell warned, case '||v_case,
+   public.check_b2b_stock_availability_v1(jsonb_build_array(jsonb_build_object('product_id',v_product,'quantity',11)))='{"available":false}'::jsonb);
+  INSERT INTO channel_stock_checks SELECT 'availability check leaves general unchanged, case '||v_case,
+   current_stock=10 FROM public.products WHERE id=v_product;
   v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',1));
-  v_result := public.edit_b2b_order_v3(v_order,v_items,NULL,v_revision,gen_random_uuid());
-  INSERT INTO channel_stock_checks SELECT 'edit decrease restores general only, case '||v_case,
+  v_result := public.edit_b2b_order_v4(v_order,v_items,NULL,v_revision,gen_random_uuid());
+  INSERT INTO channel_stock_checks SELECT 'edit decrease keeps general stock, case '||v_case,
+   current_stock=10 FROM public.products WHERE id=v_product;
+  PERFORM public.update_b2b_pickup_v4(v_order,NULL,true);
+  INSERT INTO channel_stock_checks SELECT 'pickup deducts only general stock, case '||v_case,
    current_stock=9 FROM public.products WHERE id=v_product;
-  PERFORM public.cancel_b2b_order_v3(v_order,'Independent display test',gen_random_uuid());
+  PERFORM public.cancel_b2b_order_v5(v_order,'Independent display test',gen_random_uuid());
   INSERT INTO channel_stock_checks SELECT 'cancel restores general stock, case '||v_case,
    current_stock=10 FROM public.products WHERE id=v_product;
   INSERT INTO channel_stock_checks SELECT 'display quantity and existence unchanged, case '||v_case,
@@ -89,9 +86,10 @@ BEGIN
  v_result := pg_temp.create_b2b_edit_fixture(v_customer,
    jsonb_build_array(jsonb_build_object('product_id',v_recipe,'quantity',2)),NULL,NULL,gen_random_uuid());
  v_order := (v_result->>'order_id')::uuid;
+ PERFORM public.update_b2b_pickup_v4(v_order,NULL,true);
  INSERT INTO channel_stock_checks SELECT 'recipe consumes displayed ingredient general stock',
    current_stock=6 FROM public.products WHERE id=v_product;
- PERFORM public.cancel_b2b_order_v3(v_order,'Independent recipe display test',gen_random_uuid());
+ PERFORM public.cancel_b2b_order_v5(v_order,'Independent recipe display test',gen_random_uuid());
  INSERT INTO channel_stock_checks SELECT 'recipe cancellation restores general stock',
    current_stock=10 FROM public.products WHERE id=v_product;
  INSERT INTO channel_stock_checks SELECT 'recipe sale and cancellation leave display unchanged',
@@ -99,8 +97,9 @@ BEGIN
    FROM public.display_stock WHERE product_id=v_product;
  UPDATE public.products SET current_stock=0 WHERE id=v_product;
  BEGIN
-  PERFORM pg_temp.create_b2b_edit_fixture(v_customer,
+  v_result := pg_temp.create_b2b_edit_fixture(v_customer,
    jsonb_build_array(jsonb_build_object('product_id',v_recipe,'quantity',1)),NULL,NULL,gen_random_uuid());
+  PERFORM public.update_b2b_pickup_v4((v_result->>'order_id')::uuid,NULL,true);
   INSERT INTO channel_stock_checks VALUES('recipe rejects missing general stock despite negative flag',false);
  EXCEPTION WHEN SQLSTATE 'P0002' THEN
   INSERT INTO channel_stock_checks VALUES('recipe rejects missing general stock despite negative flag',true);

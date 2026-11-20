@@ -21,7 +21,7 @@ import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'r
 import { Trash2, Plus } from 'lucide-react';
 import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import {
   useCreateB2bOrder,
   CreateB2bOrderError,
@@ -29,6 +29,7 @@ import {
 } from '../hooks/useCreateB2bOrder.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useProductsForB2bOrder, type B2bOrderProductOption } from '../hooks/useProductsForB2bOrder.js';
+import { useB2bStockAvailability } from '../hooks/useB2bStockAvailability.js';
 import { useCustomerNegotiatedPrices } from '@/features/customers/hooks/useCustomerNegotiatedPrices.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -143,11 +144,12 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     const p = Number.parseFloat(r.unitPrice);
     if (!Number.isFinite(q) || q <= 0) return false;
     if (!Number.isFinite(p) || p < 0)  return false;
-    const product = productById.get(r.productId);
-    // Untracked products consume recipe components; the RPC validates their stock.
-    if (product?.track_inventory === true && product.current_stock !== null && product.current_stock < q) return false;
     return true;
   });
+
+  const availability = useB2bStockAvailability(items.map((item) => ({
+    product_id: item.productId, quantity: Number.parseFloat(item.quantity),
+  })), open && itemsValid);
 
   const canSubmit = customerId !== '' && items.length > 0 && itemsValid && !createMut.isPending;
 
@@ -186,9 +188,6 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
           return;
         }
         switch (err.code) {
-          case 'insufficient_stock':
-            setFormError('Insufficient stock for one of the products. Refresh and adjust quantities.');
-            break;
           case 'customer_not_b2b':
             setFormError('Selected customer is not a B2B account.');
             break;
@@ -275,9 +274,6 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             </p>
             <div className="space-y-2">
               {items.map((row, idx) => {
-                const product   = row.productId !== '' ? productById.get(row.productId) ?? null : null;
-                const q         = Number.parseFloat(row.quantity);
-                const overstock = product?.track_inventory === true && product.current_stock !== null && Number.isFinite(q) && q > product.current_stock;
                 return (
                   <div key={row.rowKey} className="grid grid-cols-12 gap-2 items-start">
                     <Select
@@ -304,7 +300,6 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                       value={row.quantity}
                       onChange={(e) => updateRow(row.rowKey, { quantity: e.target.value })}
                       className="col-span-2"
-                      aria-invalid={overstock}
                     />
                     <Input
                       type="number"
@@ -328,16 +323,18 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
                     </Button>
-                    {overstock && product?.current_stock != null && (
-                      <p className="col-span-12 text-xs text-red">
-                        Only {formatQuantity(product.current_stock, null)} in stock for {product.name}.
-                      </p>
-                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+
+          <p className="text-sm text-text-muted">Stock is not reserved. General stock is checked and deducted when pickup is confirmed.</p>
+          {itemsValid && availability.isFetching && <p role="status" className="text-sm text-text-muted">Checking stock availability…</p>}
+          {itemsValid && !availability.isFetching && availability.data === false && (
+            <p role="status" className="text-sm text-warning">There is not enough stock for this order right now. You can still create it. Stock must be sufficient when pickup is confirmed.</p>
+          )}
+          {itemsValid && availability.isError && <p role="status" className="text-sm text-warning">Stock availability could not be checked. You can still create this order. Stock is checked again at pickup.</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">

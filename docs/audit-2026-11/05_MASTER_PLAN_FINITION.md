@@ -805,29 +805,51 @@ matérialisées, la purge du rate-limit et les notifications.
 ### `[S1-15]` Sortir le stock B2B au retrait, non à la saisie
 
 **Risque prod** 🔴
-**Source** — Arbitrage §2bis lot 8. Le stock d'une commande B2B sort
-aujourd'hui **à la saisie** ; **119 commandes** sont en attente avec un stock
-déjà déduit.
+**Source** — Arbitrage `B13`, §2bis lot 5, précisé par Mamat le 2026-11-20
+([ADR-044](../adr/044-stock-b2b-au-retrait.md)). Le relevé initial confondait
+le statut de paiement « en attente » avec un retrait non effectué : le
+2026-11-20, les 85 commandes natives sont toutes retirées ; les 192 imports
+financiers sans mouvement de vente sont exclus de toute reprise, comme
+confirmé par Mamat ce jour-là.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — déplacer la déduction vers le retrait,
   ajouter un garde-fou de suffisance au retrait (le stock négatif reste
   **toujours** bloqué en B2B, ADR-036)
-- `supabase/migrations/<nouveau>` — reprise des 119 commandes déjà déduites
+- `supabase/migrations/<nouveau>` — état de consommation et préflight des
+  commandes natives ; aucune réinjection de stock sans cas identifié
 - `apps/backoffice/src/features/btob/components/CreateB2bOrderModal.tsx`
 - `apps/backoffice/src/features/btob/components/B2bPickupDialog.tsx`
-- `apps/backoffice/src/features/btob/__tests__/create-b2b-order-stock.test.ts`
-  et `b2b-pickup-dialog.test.tsx` — **à mettre à jour, ils encodent l'ancien
-  comportement**
+- `apps/backoffice/src/features/btob/__tests__/create-b2b-order-stock.test.tsx`
+  et `b2b-pickup-dialog.test.tsx` — disponibilité informative à la création,
+  blocage au retrait et reprise après réponse perdue
 - `supabase/tests/`
 
-**Preuve** — pgTAP : créer une commande B2B ne bouge pas le stock ; le retrait le
-bouge ; un retrait sans stock suffisant est refusé même avec le stock négatif
-autorisé. Puis relevé du stock des produits des 119 commandes, avant et après la
-reprise.
+**Preuve** — pgTAP : créer ou modifier une commande B2B ne bouge pas le stock ;
+la disponibilité insuffisante avertit sans bloquer la création. Le retrait
+déduit une seule fois et refuse un manque même avec le stock négatif autorisé.
+L'annulation avant retrait ne rend rien ; après retrait, elle restitue les
+quantités réellement sorties. Imports financiers, vitrine et encours sont
+préservés. Relever les commandes natives avant la bascule ; toute reprise de
+quantités requiert ses preuves avant/après.
 
-**Attention** — La reprise des 119 commandes est une écriture de masse sur le
-stock de production. Elle ne part pas sans `S1-01`.
+**Attention** — Une reprise de masse du stock de production ne part pas sans
+`S1-01`. Le préflight préparé refuse la bascule si une commande native non
+retirée à examiner apparaît ; il ne traite jamais un import financier comme
+un stock à restituer.
+
+**État — développé en dev le 2026-11-20**, branche
+`feat/s1-15-b2b-stock-pickup`, base `d2266ed3`. Création et édition neutres en
+stock ; contrôle indicatif sans quantités à la création ; retrait atomique et
+bloquant ; restitution selon l'instantané des sorties réelles. Huit migrations
+appliquées sur dev, types régénérés pour les seuls objets du lot. Le relevé du
+20 novembre à 21 h 12 UTC+8 compte 218 assertions pgTAP réussies, zéro ignorée,
+sur 17 fichiers ; quatre gros fichiers attendent la CI. Revue indépendante
+appliquée : ledger conservé pour les non-suivis, annulation possible après
+changement du suivi sans modifier un compteur non suivi, fractions du contrôle
+informatif agrégées sans résidu flottant. Aucun changement de stock ni
+déploiement applicatif effectué en production dans ce lot. Relevé détaillé dans
+le [runbook des environnements](../runbooks/etat-environnements.md).
 
 ---
 

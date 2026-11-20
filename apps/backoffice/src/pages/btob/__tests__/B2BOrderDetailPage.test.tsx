@@ -163,7 +163,7 @@ describe('B2B order detail', () => {
   it('refreshes delivery status after confirming pickup without marking the order paid', async () => {
     rpc.mockImplementation(() => {
       state.delivered = true;
-      return Promise.resolve({ data: { order_id: 'o1' }, error: null });
+      return Promise.resolve({ data: { order_id: 'o1', pickup_date: '2026-09-15', b2b_delivered_at: '2026-09-15T10:00:00Z' }, error: null });
     });
     setup();
     fireEvent.click(await screen.findByRole('button', { name: 'Mark delivered' }));
