@@ -114,6 +114,11 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 6. `S1-15` — dépend de `S1-01`, encore en cours : elle ne part pas sans elle.
 7. `S1-20`.
 
+**Actualisation du 20 novembre 2026 pour `S1-15`** — livraison sans reprise de
+quantités, voir son état ci-dessous. Le prérequis `S1-01` reste applicable à
+toute reprise de masse ; le relevé historique du 15 novembre n'est pas un
+comptage actualisé des autres domaines.
+
 ---
 
 # Sprint 1 — Stabilisation et ambiguïtés critiques
@@ -838,18 +843,28 @@ quantités requiert ses preuves avant/après.
 retirée à examiner apparaît ; il ne traite jamais un import financier comme
 un stock à restituer.
 
-**État — développé en dev le 2026-11-20**, branche
-`feat/s1-15-b2b-stock-pickup`, base `d2266ed3`. Création et édition neutres en
-stock ; contrôle indicatif sans quantités à la création ; retrait atomique et
-bloquant ; restitution selon l'instantané des sorties réelles. Huit migrations
-appliquées sur dev, types régénérés pour les seuls objets du lot. Le relevé du
-20 novembre à 21 h 12 UTC+8 compte 218 assertions pgTAP réussies, zéro ignorée,
-sur 17 fichiers ; quatre gros fichiers attendent la CI. Revue indépendante
-appliquée : ledger conservé pour les non-suivis, annulation possible après
-changement du suivi sans modifier un compteur non suivi, fractions du contrôle
-informatif agrégées sans résidu flottant. Aucun changement de stock ni
-déploiement applicatif effectué en production dans ce lot. Relevé détaillé dans
-le [runbook des environnements](../runbooks/etat-environnements.md).
+**État — livré en production le 2026-11-20**, PR #753, SHA applicatif
+`c51737cf7bc440db5253d02f7b25d40eb89a708c`. CI push `44750342179` et pgTAP
+manuel `44750356869` réussis : BO complet 2 599 tests réussis et un ignoré
+préexistant ; POS 1 569 réussis ; 388 fichiers pgTAP réussis, sans assertion
+ignorée détectée. La voie shared ignore 258 tests live : aucune suite live
+n'est réputée validée par ce résultat.
+
+Le BO a été préparé par le workflow protégé `44754730840`, puis le changement
+DB a été appliqué atomiquement après gel et drain des anciens appels. Les
+85 natives antérieures portent leur marqueur de consommation et 237 groupes
+de sorties sont conservés ; aucun import n'est marqué. Les 18 ensembles
+d'invariants sont identiques avant/après : aucune reprise de quantités, aucun
+changement de coût, vitrine, comptabilité, encours ou import.
+
+Le déploiement préparé a été promu sans reconstruction ; ses 383 fichiers
+publics correspondent au manifeste et ciblent uniquement la production V3.
+Le warning de stock insuffisant et le bouton de création actif ont été vus
+à l'écran sur ce bundle, puis le formulaire fermé sans enregistrer. Le refus
+et la déduction au retrait sont vérifiés sur DEV ; aucun retrait réel ni
+paiement de test en production, ni deux retraits réellement simultanés, n'ont
+été exercés. Décision et coût d'annulation courant préservés. Preuves datées
+dans le [runbook des environnements](../runbooks/etat-environnements.md).
 
 ---
 
