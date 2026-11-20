@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/purchasing/hooks/useUpdatePurchaseOrder.ts
 //
-// Session 46 — R4: edit a PO header + line items via update_purchase_order_v1.
+// Session 46 — R4: edit a PO header + line items via update_purchase_order_v2.
 // Gated server-side by purchasing.po.edit. The PO is LOCKED (D6) as soon as the
 // first GRN OR the first payment exists, or once it leaves 'pending' — the RPC
 // raises po_locked (P0001), surfaced here as a friendly message.
@@ -20,6 +20,7 @@ export type UpdatePOErrorCode =
   | 'product_not_raw_material'
   | 'quantity_must_be_positive'
   | 'unit_cost_must_be_non_negative'
+  | 'invalid_discount_or_fee'
   | 'invalid_payment_terms'
   | 'supplier_not_found'
   | 'unknown';
@@ -37,6 +38,7 @@ export interface UpdatePOItemArg {
   unit?:               string;
   unit_factor_to_base?: number;
   unit_cost:           number;
+  discount_amount?:    number;   // S3-06 — line discount, as an amount
   notes?:              string;
 }
 
@@ -46,6 +48,8 @@ export interface UpdatePOArgs {
   expectedDate?:  string | null;
   paymentTerms?:  'cash' | 'credit';
   notes?:         string;
+  discountAmount?: number;             // S3-06 — order-level discount
+  deliveryFee?:   number;              // S3-06 — invoiced delivery fee
   items?:         UpdatePOItemArg[];   // replaces ALL lines when present
 }
 
@@ -68,6 +72,8 @@ export function updatePoErrorMessage(code: UpdatePOErrorCode): string {
       return 'You do not have permission to edit purchase orders.';
     case 'product_not_raw_material':
       return 'Only raw-material products can be ordered.';
+    case 'invalid_discount_or_fee':
+      return 'A discount exceeds its line or the subtotal, or the delivery fee is negative.';
     case 'supplier_not_found':
       return 'Selected supplier is not available.';
     default:
@@ -84,6 +90,8 @@ function classify(message: string): UpdatePOErrorCode {
   if (message.includes('product_not_found'))               return 'product_not_found';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('unit_cost_must_be_non_negative'))  return 'unit_cost_must_be_non_negative';
+  if (/line_discount_out_of_range|discount_exceeds_subtotal|discount_must_be_non_negative|delivery_fee_must_be_non_negative/.test(message))
+    return 'invalid_discount_or_fee';
   if (message.includes('invalid_payment_terms'))           return 'invalid_payment_terms';
   if (message.includes('supplier_not_found'))              return 'supplier_not_found';
   return 'unknown';
@@ -94,13 +102,15 @@ export function useUpdatePurchaseOrder() {
   return useMutation<UpdatePOResult, UpdatePOError, UpdatePOArgs>({
     mutationFn: async (args) => {
       const patch: Record<string, unknown> = {};
-      if (args.supplierId !== undefined)   patch['supplier_id']   = args.supplierId;
-      if (args.expectedDate !== undefined) patch['expected_date'] = args.expectedDate;
-      if (args.paymentTerms !== undefined) patch['payment_terms'] = args.paymentTerms;
-      if (args.notes !== undefined)        patch['notes']         = args.notes;
-      if (args.items !== undefined)        patch['items']         = args.items;
+      if (args.supplierId !== undefined)   patch.supplier_id   = args.supplierId;
+      if (args.expectedDate !== undefined) patch.expected_date = args.expectedDate;
+      if (args.paymentTerms !== undefined) patch.payment_terms = args.paymentTerms;
+      if (args.notes !== undefined)        patch.notes         = args.notes;
+      if (args.discountAmount !== undefined) patch.discount_amount = args.discountAmount;
+      if (args.deliveryFee !== undefined)  patch.delivery_fee  = args.deliveryFee;
+      if (args.items !== undefined)        patch.items         = args.items;
 
-      const { data, error } = await supabase.rpc('update_purchase_order_v1', {
+      const { data, error } = await supabase.rpc('update_purchase_order_v2', {
         p_po_id: args.poId,
         p_patch: patch as unknown as Json,
       });

@@ -42,3 +42,14 @@ export {
   type PoLineForAllocation,
   type AllocationResult,
 } from './landedCostAllocation.js';
+
+// S3-06 — totaux d'un bon avec escomptes et port (miroir de _po_cost_allocation_v1).
+export {
+  computePurchaseOrderTotals,
+  receiptShare,
+  splitProRataCents,
+  type PoTotalsInput,
+  type PoTotalsLineInput,
+  type PoTotals,
+  type PoLineAllocation,
+} from './purchaseOrderTotals.js';

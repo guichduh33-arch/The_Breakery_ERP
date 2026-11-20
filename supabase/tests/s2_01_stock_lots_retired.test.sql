@@ -36,10 +36,10 @@ SELECT has_table('public', 'stock_lots', 'ADR-004 — stock_lots reste, dormante
 SELECT has_column('public', 'stock_movements', 'lot_id', 'stock_movements.lot_id reste (historique)');
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.receive_purchase_order_v7(uuid,jsonb,uuid)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.receive_purchase_order_v8(uuid,jsonb,uuid)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.revert_production_v5(uuid,text)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.get_product_dashboard_v9(uuid,integer)', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.receive_purchase_order_v7(uuid,jsonb,uuid)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.receive_purchase_order_v8(uuid,jsonb,uuid)', 'EXECUTE')
   AND has_function_privilege('authenticated', 'public.revert_production_v5(uuid,text)', 'EXECUTE')
   AND has_function_privilege('authenticated', 'public.get_product_dashboard_v9(uuid,integer)', 'EXECUTE'),
   'Les trois versions neuves : authenticated oui, anon non');

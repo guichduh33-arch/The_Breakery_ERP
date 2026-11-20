@@ -43,33 +43,33 @@ BEGIN
     (p4,'GRNC4-'||left(p4::text,8),'GRN cancel P4',cat,500,0,0,'pcs','finished',true,true,true);
 
   -- Bon 1 : 2 cartons de 10 à 2000 ; on en reçoit un (10 pièces à 200).
-  po1 := (public.create_purchase_order_v2(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
+  po1 := (public.create_purchase_order_v3(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
     'product_id',p1,'quantity',2,'unit','box','unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
-  po2 := (public.create_purchase_order_v2(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
+  po2 := (public.create_purchase_order_v3(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
     'product_id',p2,'quantity',2,'unit','box','unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
-  po3 := (public.create_purchase_order_v2(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
+  po3 := (public.create_purchase_order_v3(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
     'product_id',p3,'quantity',1,'unit','box','unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
-  po4 := (public.create_purchase_order_v2(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
+  po4 := (public.create_purchase_order_v3(p_supplier_id:=s,p_items:=jsonb_build_array(jsonb_build_object(
     'product_id',p4,'quantity',2,'unit','box','unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
   UPDATE public.purchase_order_items SET unit_factor_to_base=10 WHERE po_id IN (po1,po2,po3,po4);
 
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po1;
-  g1 := (public.receive_purchase_order_v7(po1,jsonb_build_array(jsonb_build_object(
+  g1 := (public.receive_purchase_order_v8(po1,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po2;
-  g2a := (public.receive_purchase_order_v7(po2,jsonb_build_array(jsonb_build_object(
+  g2a := (public.receive_purchase_order_v8(po2,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
-  g2b := (public.receive_purchase_order_v7(po2,jsonb_build_array(jsonb_build_object(
+  g2b := (public.receive_purchase_order_v8(po2,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po3;
-  g3 := (public.receive_purchase_order_v7(po3,jsonb_build_array(jsonb_build_object(
+  g3 := (public.receive_purchase_order_v8(po3,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po4;
-  g4 := (public.receive_purchase_order_v7(po4,jsonb_build_array(jsonb_build_object(
+  g4 := (public.receive_purchase_order_v8(po4,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
 
   -- Bon 3 : le stock a été consommé après réception (fixture directe du cache).
@@ -222,14 +222,14 @@ BEGIN
     unit,product_type,is_active,track_inventory,deduct_stock)
   SELECT p,'GRNC5-'||left(p::text,8),'GRN cancel P5',category_id,500,0,0,'pcs','finished',true,true,true
     FROM public.products WHERE id=f.p1;
-  po := (public.create_purchase_order_v2(
+  po := (public.create_purchase_order_v3(
     p_supplier_id:=(SELECT supplier_id FROM public.purchase_orders WHERE id=f.po1),
     p_items:=jsonb_build_array(jsonb_build_object('product_id',p,'quantity',1,'unit','box',
       'unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
   UPDATE public.purchase_order_items SET unit_factor_to_base=10 WHERE po_id=po;
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po;
-  g := (public.receive_purchase_order_v7(po,jsonb_build_array(jsonb_build_object(
+  g := (public.receive_purchase_order_v8(po,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
   SELECT id INTO STRICT j FROM public.journal_entries WHERE reference_type='purchase' AND reference_id=g;
   -- Simulation d'une réception d'avant régularisation : stock débité sur 1141.
@@ -264,14 +264,14 @@ BEGIN
     unit,product_type,is_active,track_inventory,deduct_stock)
   SELECT p,'GRNC6-'||left(p::text,8),'GRN cancel P6',category_id,500,10,100,'pcs','finished',true,true,true
     FROM public.products WHERE id=f.p1;
-  po := (public.create_purchase_order_v2(
+  po := (public.create_purchase_order_v3(
     p_supplier_id:=(SELECT supplier_id FROM public.purchase_orders WHERE id=f.po1),
     p_items:=jsonb_build_array(jsonb_build_object('product_id',p,'quantity',1,'unit','box',
       'unit_factor_to_base',10,'unit_cost',2000)),
     p_payment_terms:='credit',p_vat_rate:=0)->>'po_id')::uuid;
   UPDATE public.purchase_order_items SET unit_factor_to_base=10 WHERE po_id=po;
   SELECT id INTO STRICT l FROM public.purchase_order_items WHERE po_id=po;
-  g := (public.receive_purchase_order_v7(po,jsonb_build_array(jsonb_build_object(
+  g := (public.receive_purchase_order_v8(po,jsonb_build_array(jsonb_build_object(
     'po_item_id',l,'received_quantity',1)),gen_random_uuid())->>'grn_id')::uuid;
   PERFORM public.record_stock_movement_v2(p_product_id:=p,p_movement_type:='waste',
     p_quantity:=-5,p_reason:='Spoiled after receipt',p_unit:='pcs');

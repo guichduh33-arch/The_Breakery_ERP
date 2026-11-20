@@ -87,7 +87,14 @@ export function PurchaseOrderContent({
                       <td className={NUM_CELL}>{fmtQty(it.received_quantity)}</td>
                       <td className="px-3 py-2 text-text-secondary">{it.unit}</td>
                       <td className={NUM_CELL}>{fmtIdr(it.unit_cost)}</td>
-                      <td className={`${NUM_CELL} font-medium`}>{fmtIdr(it.subtotal)}</td>
+                      <td className={`${NUM_CELL} font-medium`}>
+                        {fmtIdr(Number(it.subtotal ?? 0) - Number(it.discount_amount ?? 0))}
+                        {Number(it.discount_amount ?? 0) > 0 && (
+                          <span className="block text-xs font-normal text-text-secondary">
+                            after {fmtIdr(it.discount_amount)} discount
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

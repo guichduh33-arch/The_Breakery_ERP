@@ -1,5 +1,5 @@
 -- supabase/tests/po_update.test.sql
--- Session 46 / Wave A6 — pgTAP suite for update_purchase_order_v1.
+-- Session 46 / Wave A6 — pgTAP suite for update_purchase_order_v2.
 --
 -- Tests:
 --   T1  — Permission gate: non-authorized user (CASHIER) raises P0003
@@ -10,7 +10,7 @@
 --   T6  — Happy path: replace items → totals recomputed
 --   T7  — Non-raw-material product rejected in items patch (P0001)
 --   T8  — Audit row inserted with action='po.updated'
---   T9  — REVOKE: anon cannot execute update_purchase_order_v1
+--   T9  — REVOKE: anon cannot execute update_purchase_order_v2
 --
 -- Run via MCP execute_sql inside BEGIN ... ROLLBACK.
 
@@ -79,19 +79,19 @@ BEGIN
   );
 
   -- PO 1: stays pending (for edit tests).
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_pending_id;
 
   -- PO 2: will have a GRN (for lock-on-GRN test).
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_locked_id;
 
   -- PO 3: will be cancelled (for lock-on-status test).
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cancel_id;
@@ -103,7 +103,7 @@ BEGIN
   DECLARE v_item_id UUID;
   BEGIN
     SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_locked_id::uuid LIMIT 1;
-    PERFORM receive_purchase_order_v7(
+    PERFORM receive_purchase_order_v8(
       p_po_id          := v_po_locked_id::uuid,
       p_received_items := jsonb_build_array(
         jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 10)
@@ -130,7 +130,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM update_purchase_order_v1(
+      PERFORM update_purchase_order_v2(
         p_po_id := current_setting('t46u.po_pending', true)::uuid,
         p_patch := '{"notes":"cashier try"}'::jsonb
       );
@@ -138,7 +138,7 @@ SELECT throws_ok(
   $gate$,
   'P0003',
   NULL,
-  'T1: CASHIER forbidden (P0003) on update_purchase_order_v1'
+  'T1: CASHIER forbidden (P0003) on update_purchase_order_v2'
 );
 
 -- ─── T2: Lock on GRN ─────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM update_purchase_order_v1(
+      PERFORM update_purchase_order_v2(
         p_po_id := current_setting('t46u.po_locked', true)::uuid,
         p_patch := '{"notes":"after GRN"}'::jsonb
       );
@@ -186,7 +186,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM update_purchase_order_v1(
+      PERFORM update_purchase_order_v2(
         p_po_id := current_setting('t46u.po_pending', true)::uuid,
         p_patch := '{"notes":"after payment"}'::jsonb
       );
@@ -210,7 +210,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM update_purchase_order_v1(
+      PERFORM update_purchase_order_v2(
         p_po_id := current_setting('t46u.po_cancel', true)::uuid,
         p_patch := '{"notes":"after cancel"}'::jsonb
       );
@@ -231,7 +231,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := update_purchase_order_v1(
+  v_result := update_purchase_order_v2(
     p_po_id := current_setting('t46u.po_pending', true)::uuid,
     p_patch := '{"notes":"updated notes","payment_terms":"credit"}'::jsonb
   );
@@ -262,7 +262,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := update_purchase_order_v1(
+  v_result := update_purchase_order_v2(
     p_po_id := current_setting('t46u.po_pending', true)::uuid,
     p_patch := jsonb_build_object(
       'items', jsonb_build_array(
@@ -295,7 +295,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM update_purchase_order_v1(
+      PERFORM update_purchase_order_v2(
         p_po_id := current_setting('t46u.po_pending', true)::uuid,
         p_patch := jsonb_build_object(
           'items', jsonb_build_array(
@@ -324,12 +324,12 @@ SELECT ok(
   'T8: audit_logs row with action=po.updated inserted for the update(s)'
 );
 
--- ─── T9: REVOKE — anon cannot execute update_purchase_order_v1 ───────────────
+-- ─── T9: REVOKE — anon cannot execute update_purchase_order_v2 ───────────────
 SELECT is(
   (SELECT has_function_privilege('anon',
-     'update_purchase_order_v1(uuid,jsonb)', 'execute')),
+     'update_purchase_order_v2(uuid,jsonb)', 'execute')),
   false,
-  'T9: anon does not have EXECUTE on update_purchase_order_v1'
+  'T9: anon does not have EXECUTE on update_purchase_order_v2'
 );
 
 SELECT * FROM finish();

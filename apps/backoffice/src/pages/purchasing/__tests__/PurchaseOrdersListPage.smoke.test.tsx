@@ -22,6 +22,10 @@ const ROWS: PurchaseOrderListRow[] = [
     payment_terms:    'credit',
     subtotal:         600000,
     vat_amount:       60000,
+
+    discount_amount: 0,
+
+    delivery_fee: 0,
     total_amount:     660000,
     order_date:       '2026-04-17',
     expected_date:    '2026-04-17',
@@ -52,6 +56,10 @@ const ROWS: PurchaseOrderListRow[] = [
     payment_terms:    'cash',
     subtotal:         90000,
     vat_amount:       0,
+
+    discount_amount: 0,
+
+    delivery_fee: 0,
     total_amount:     90000,
     order_date:       '2026-03-17',
     expected_date:    '2026-03-17',

@@ -38,6 +38,10 @@ const PURCHASES: SupplierPOListRow[] = [
     payment_terms:    'credit',
     subtotal:         1140909,
     vat_amount:       114091,
+
+    discount_amount: 0,
+
+    delivery_fee: 0,
     total_amount:     1255000,
     order_date:       '2026-04-17',
     expected_date:    '2026-04-18',
@@ -69,6 +73,10 @@ const PURCHASES: SupplierPOListRow[] = [
     payment_terms:    'cash',
     subtotal:         550000,
     vat_amount:       55000,
+
+    discount_amount: 0,
+
+    delivery_fee: 0,
     total_amount:     605000,
     order_date:       '2026-03-23',
     expected_date:    '2026-03-23',

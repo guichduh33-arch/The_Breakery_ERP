@@ -1,12 +1,12 @@
 -- supabase/tests/po_create.test.sql
--- Session 46 / Wave B0 — pgTAP suite for create_purchase_order_v2.
+-- Session 46 / Wave B0 — pgTAP suite for create_purchase_order_v3.
 --
 -- Covers the two behaviours v2 adds over the dropped v1:
 --   T1 — persists unit_factor_to_base on the created line (R2/D5)
 --   T2 — factor defaults to 1 when omitted (backward-compatible)
 --   T3 — rejects a non raw_material product (R1/D1, P0001)
 --   T4 — CASHIER forbidden (P0003 gate preserved)
---   T5 — anon does not have EXECUTE on create_purchase_order_v2 (REVOKE)
+--   T5 — anon does not have EXECUTE on create_purchase_order_v3 (REVOKE)
 --   T6 — v1 has been dropped (monotonic versioning)
 --
 -- Run via MCP execute_sql inside BEGIN ... ROLLBACK.
@@ -61,7 +61,7 @@ BEGIN
     json_build_object('sub', v_mgr_uid::text, 'role','authenticated')::text, true);
 
   -- Create a PO with a NON-base unit + explicit factor 1000 (e.g. sack→kg).
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id,
     p_items := jsonb_build_array(
       jsonb_build_object('product_id', v_prod_raw_id, 'quantity', 2,
@@ -96,7 +96,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := current_setting('t46c.supplier', true)::uuid,
     p_items := jsonb_build_array(
       jsonb_build_object('product_id', current_setting('t46c.prod_raw', true)::uuid,
@@ -123,7 +123,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM create_purchase_order_v2(
+      PERFORM create_purchase_order_v3(
         p_supplier_id := current_setting('t46c.supplier', true)::uuid,
         p_items := jsonb_build_array(
           jsonb_build_object('product_id', current_setting('t46c.prod_fin', true)::uuid,
@@ -146,7 +146,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM create_purchase_order_v2(
+      PERFORM create_purchase_order_v3(
         p_supplier_id := current_setting('t46c.supplier', true)::uuid,
         p_items := jsonb_build_array(
           jsonb_build_object('product_id', current_setting('t46c.prod_raw', true)::uuid,
@@ -163,9 +163,9 @@ SELECT throws_ok(
 -- ─── T5: anon REVOKE ──────────────────────────────────────────────────────────
 SELECT is(
   (SELECT has_function_privilege('anon',
-     'create_purchase_order_v2(uuid,jsonb,date,date,text,numeric,text,uuid)', 'execute')),
+     'create_purchase_order_v3(uuid,jsonb,date,date,text,numeric,text,uuid,numeric,numeric)', 'execute')),
   false,
-  'T5: anon does not have EXECUTE on create_purchase_order_v2'
+  'T5: anon does not have EXECUTE on create_purchase_order_v3'
 );
 
 -- ─── T6: v1 dropped ───────────────────────────────────────────────────────────
