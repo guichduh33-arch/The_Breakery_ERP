@@ -26,6 +26,36 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 21 novembre 2026, 00 h 17 — analyse de panier en production (`S3-22`)
+
+Relevés du 21 novembre 2026, 00 h 13 à 00 h 17 UTC+8. Observés directement.
+Source applicative : `e79f91b7fa20a6289b4b4d79a25c90cf721199bd`, fusion de
+la PR #755. Aucune installation POS nécessaire. Ce lot est publié ; sa
+vérification en usage connecté reste ouverte.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Candidat intégré | CI `44766165198` et pgTAP manuel `44766272557` réussis ; 389 fichiers SQL, 48 reports tous relancés seuls avec succès. BO complet local : 2 611 tests réussis, un ignoré préexistant ; Basket : 23 tests réussis. POS CI : 1 569 tests réussis | Le skip BO concerne un ancien scénario fournisseur ; la voie shared ignore 258 tests live dans 49 fichiers |
+| Préparation BO | Workflow protégé `44770803640`, tentative 1, `stage_only`, réussi. Déploiement `dpl_DZtcpmY8UitAUHFLFXbaf1A2tyFG` READY, projet BO et métadonnée SHA conformes ; domaine encore sur `dpl_HaKB7Q4BJp69YMSnA5zcbgLSTAbW` avant migration | Approbation technique via le mécanisme Production par le compte désigné `guichduh33-arch`, dans le mandat ; aucun nouvel accord personnel de Mamat attribué |
+| Production V3 | Cible `yjhhhmjgsmyzyymvixot` ; seule migration `20261120000048_basket_analysis_filters.sql` appliquée. Corps normalisé de la famille `get_basket_analysis` égal au DEV testé ; ancienne signature supprimée ; exécution anon refusée, authenticated et service_role autorisées | Aucun test avec création de commande, paiement ou autre écriture métier en production |
+| Résultat SQL | Période fixe du 14 au 20 novembre : 926 paires avant/après, empreinte identique `b1761f4639d6eb5b4774cc2d6c585bd8`. Lecture sous contexte propriétaire transactionnel, puis ROLLBACK | Cette preuve sans filtre ne vaut pas authentification UI ; filtres et droits couverts par les tests DEV |
+| BO servi | Promotion du même déploiement, sans reconstruction ; alias `backoffice.the-breakery.com` associé. Les 383 fichiers publics correspondent au manifeste ; référence production seule, nouvel appel Basket présent, ancien absent | Les cinq fichiers non publics du manifeste ne sont pas déclarés relus par HTTP |
+| Navigateur et exports | Recette locale sur données simulées en clair/sombre, 1024 et 1280 px, filtres et recherche ; CSV téléchargé et relu. Données PDF alignées sur les lignes visibles et vérifiées en tests | Pilote navigateur indisponible malgré récupération : aucune recette connectée de ce BO. Aucun PDF final ouvert ; son en-tête ne mentionne toujours pas les filtres |
+
+Manifeste SHA-256 :
+`74f5ba48a600ca0a8273acba8026f58979e2ffe1e742bd9a4439ea090b68d301`.
+Preuves privées du worktree `C:/Dev/breakery-reports-basket`, sous
+`.release-manifests/basket-analysis/` : `stage-production-proof.json`,
+`prod-sql-proof.json`, `prod-sql-tool-response.json`, `served-production.json`,
+`staged-release/release-manifest.json`, `master-pgtap-summary.json` et
+`bo-report-extraction.json`. Elles ne sont pas transportées par un clone.
+
+Retour : l'ancien BO appelle une signature supprimée ; une simple réaffectation
+d'alias n'est pas un retour compatible. Les corps précédents sont conservés en
+preuve privée ; toute reprise du contrat exige une migration relue et un BO
+compatible. Le graphique Basket reste dans `S3-23` ; les ventes du jour restent
+en attente de l'arbitrage métier indiqué au master plan.
+
 ## Complément du 20 novembre 2026, 22 h 43 — stock B2B au retrait en production (`S1-15`)
 
 Relevés du 20 novembre, 22 h 38 à 22 h 43 UTC+8. Observés directement.
