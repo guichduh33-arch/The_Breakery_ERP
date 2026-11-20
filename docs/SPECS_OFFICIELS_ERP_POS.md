@@ -899,18 +899,25 @@ le 2026-11-14, avec les valeurs par défaut du dépôt ; la famille
 `get_b2b_settings` le rend. L'autre table à enregistrement unique du schéma,
 `business_config`, porte aussi le sien (relevé du même jour).
 
-**FAIT** — Le 2026-11-20, la production déduit encore le stock B2B à la saisie.
-Le relevé distingue 85 commandes natives toutes retirées et 192 imports
-financiers sans mouvements de vente : aucun stock n'est à réinjecter sur ce
-relevé. Le statut `b2b_pending` désigne un solde à payer, pas un retrait à faire.
+**FAIT** — Le 2026-11-20, le contrat de stock au retrait est en production,
+DB V3 et back-office `c51737cf` (PR #753). L'avertissement de stock insuffisant
+et le bouton de création actif ont été observés dans un formulaire fermé sans
+enregistrement. Les 85 natives antérieures sont marquées comme consommées ;
+les 192 imports financiers restent sans mouvement. Aucun stock historique
+n'a été réinjecté. Le statut `b2b_pending` désigne un solde à payer, pas un
+retrait à faire.
 **RÈGLE** — Le stock sort **au retrait**. À la création, la disponibilité est
 contrôlée et un manque avertit sans bloquer ; au passage à livré, un manque de
 stock général bloque. Paiement et retrait restent indépendants. Les imports
 financiers historiques restent sans mouvement de stock
 ([ADR-044](adr/044-stock-b2b-au-retrait.md)).
-**À LIVRER** — La bascule de ce contrat de stock en production, après
-vérification des commandes natives existantes et de la compatibilité du
-back-office. Toute reprise de masse éventuelle reste soumise aux sauvegardes
+**FAIT** — Le 2026-11-20, les contrôles du candidat final ont réussi : CI
+applicative et 388 fichiers pgTAP sur DEV. Les quantités, coûts, vitrine, écritures, encours
+et imports sont identiques avant et après bascule. Aucun retrait ni paiement
+de test n'a été effectué en production ; la concurrence de deux retraits
+réels reste non exercée. Preuves datées dans le
+[runbook des environnements](runbooks/etat-environnements.md).
+**RÈGLE** — Toute reprise de masse éventuelle reste soumise aux sauvegardes
 et à une restauration éprouvée.
 
 **FAIT** — La facture B2B est numérotée `INV/<année>/<séquence>`, en dur.

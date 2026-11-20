@@ -26,6 +26,45 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 20 novembre 2026, 22 h 43 — stock B2B au retrait en production (`S1-15`)
+
+Relevés du 20 novembre, 22 h 38 à 22 h 43 UTC+8. Observés directement.
+Source applicative : `c51737cf7bc440db5253d02f7b25d40eb89a708c`, fusion de
+la PR #753 ; aucune installation POS nécessaire. Décision :
+[ADR-044](../adr/044-stock-b2b-au-retrait.md).
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Candidat final | CI push `44750342179` réussie : BO complet, 397 fichiers et 2 599 tests réussis, un test/fichier ignoré préexistant ; POS 286 fichiers et 1 569 tests réussis. pgTAP manuel `44750356869` réussi : 388 fichiers, 52 reports tous relancés seuls avec succès, aucune assertion ignorée détectée | La voie shared ignore 49 fichiers / 258 tests du package live ; elle ne prouve pas leur exécution |
+| Préparation BO | Workflow protégé `44754730840`, mode `stage_only`, réussi ; approbation par le mécanisme Production du compte `guichduh33-arch`, validation technique de l'agent dans le mandat. Déploiement `dpl_HaKB7Q4BJp69YMSnA5zcbgLSTAbW` READY, domaine encore sur l'ancien `536d0e7c` avant migration | Ce contrôle technique n'est pas présenté comme un nouvel accord personnel de Mamat |
+| Production V3 | Cible `yjhhhmjgsmyzyymvixot`, zéro native non retirée et zéro caisse ouverte. Anciens appels gelés, transactions antérieures drainées, huit migrations appliquées en une transaction. Résultat : 85 natives marquées, 237 groupes de consommation conservés, zéro import marqué ; anciennes fonctions retirées, cinq fonctions finales avec droits anon refusés | Aucune reprise des quantités historiques ; les 192 imports financiers restent exclus |
+| Intégrité DB | Les 18 ensembles d'invariants sont identiques avant/après : quantités, coûts, vitrine, ledgers, écritures et lignes comptables, encours, règlements, allocations, imports et champs B2B. Les cinq RPC et la garde des marqueurs ont leurs corps conformes aux sources | Le coût d'annulation courant est préservé ; pas de reconstitution des anciens drapeaux de suivi |
+| BO servi | Promotion du même déploiement, sans reconstruction. Les deux domaines personnalisés sont associés ; les 383 fichiers publics correspondent au manifeste. Référence Supabase de production seule, cinq appels B2B attendus présents, anciens appels absents | Les cinq fichiers non publics du manifeste ne sont pas déclarés comme relus par HTTP |
+| Navigateur connecté | Bundle chargé `/assets/index-CCRsoZa8.js` ; warning de manque observé avec bouton de création actif. Formulaire fermé par Cancel, sans soumission ; liste inchangée à 277 commandes | Refus et déduction au retrait prouvés par pgTAP DEV ; aucun retrait réel, paiement de test ou retrait simultané à deux sessions en production |
+
+Manifeste SHA-256 :
+`1f735d383ff8ef158f72933f0eab8650005421bf0249a7a192d8b063ceee8e43`.
+Paquet SQL atomique SHA-256 :
+`72341ede009636ce0a5d5710b185cc7e4eef5d7ddcbeda147b0c560ba525e156`.
+Les preuves privées du worktree sont dans `.release-manifests/s1-15/` :
+`production-cutover-execution-c517.json`, `stage-proof-c517.json`,
+`served-c517.json`, `ui-production-c517.json`, les rapports `master-c517/`
+et les avis Supabase avant/après. Elles ne sont pas transportées par un clone.
+La capture de l'avertissement reste hors Git avec les visualisations du poste.
+
+Avis Supabase du lot : les nouvelles fonctions SECURITY DEFINER accessibles
+aux comptes authentifiés sont intentionnelles, sous leurs gates ; aucune
+nouvelle exécution anon. Un [avis INFO de clé étrangère sans index couvrant](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)
+concerne le produit de l'instantané. Les opérations du lot recherchent par
+commande et utilisent la clé primaire ; aucun benchmark de volumétrie ni
+optimisation indépendante n'est déclaré livré.
+
+Retour : les anciennes fonctions ont été supprimées. Un ancien BO ne suffit
+pas à revenir au contrat précédent ; conserver les mouvements et corriger en
+avant selon l'ADR. Le prérequis de sauvegarde et de restauration éprouvée reste
+entier pour une éventuelle reprise de masse. Ni PITR, ni copie hors site, ni
+restauration n'ont été activés ou certifiés par cette livraison.
+
 ## Complément du 20 novembre 2026 — stock B2B au retrait, vérification DEV
 
 Relevé en UTC+8, branche `feat/s1-15-b2b-stock-pickup`, base Git `d2266ed3`.
