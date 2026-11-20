@@ -2029,6 +2029,19 @@ ligne.
 écrit**. De plus `apps/print-bridge/README.md` omet les 4 variables TLS
 obligatoires — **le pont ne démarre pas** si on suit la documentation.
 
+**État — rédigé le 2026-11-20**, branche `docs/s3-18-runbook-hub-reseau` :
+`docs/runbooks/hub-reseau-mise-en-service.md` écrit depuis le code du pont. Le
+README du pont liste les trois variables sans lesquelles le pont refuse de
+démarrer (`HUB_TLS_CERT`, `HUB_TLS_KEY`, `HUB_ALLOWED_ORIGINS`), plus
+`HUB_REGISTRY_FILE`, absente aussi, dont le défaut relatif perd le registre, et
+retire `HUB_TOKEN`, que le code ne lit plus, ainsi que le mode ouvert qu'il
+décrivait. Le fragment OpenAPI de `packages/supabase/README.md` porte les PIN
+en en-têtes (`x-login-pin`, `x-current-pin`, `x-new-pin`), comme le code, et
+ses statuts d'erreur des deux fonctions de PIN suivent le code relu le même
+jour. Relecture indépendante appliquée (imprimante de reçus à déclarer pour le
+tiroir, capacités par défaut des appareils). Garde des liens relatifs verte le
+2026-11-20. **Reste** : la preuve sur un poste neuf.
+
 **Fichiers**
 - `docs/runbooks/<nouveau>-hub-reseau-mise-en-service.md`
 - `apps/print-bridge/README.md` — ajouter les 4 variables
