@@ -8,8 +8,8 @@
 --   T3  : get_daily_sales_v3 CASHIER → 42501 (no reports.sales.read)
 --   T4  : get_daily_sales_v3 Owner happy path → summary.order_count = 2, by_day length = 2
 --   T5  : get_daily_sales_v3 refunds deducted in net (net = gross - refund)
---   T6  : get_purchase_items_v1 CASHIER → 42501
---   T7  : get_purchase_items_v1 Owner → 2 lines returned; p_supplier_id filter scopes correctly
+--   T6  : get_purchase_items_v2 CASHIER → 42501
+--   T7  : get_purchase_items_v2 Owner → 2 lines counted; p_supplier_id filter scopes correctly
 --   T8  : get_purchase_by_date_v1 CASHIER → 42501
 --   T9  : get_purchase_by_date_v1 Owner → summary.po_count = 1
 --   T10 : get_purchase_by_supplier_v2 CASHIER → 42501
@@ -296,7 +296,7 @@ SELECT ok(
 );
 
 -- ============================================================
--- S40.3 — get_purchase_items_v1 (T6-T7)
+-- S40.3 — get_purchase_items_v2 (T6-T7) ; v1 retirée par S3-20
 -- ============================================================
 
 -- T6 : CASHIER → 42501
@@ -306,7 +306,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_purchase_items_v1('2024-01-01','2024-12-31', NULL);
+    PERFORM get_purchase_items_v2('2024-01-01','2024-12-31', NULL);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -314,7 +314,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t6_pass')::boolean,
-  'T6: get_purchase_items_v1 CASHIER raises 42501'
+  'T6: get_purchase_items_v2 CASHIER raises 42501'
 );
 
 -- T7 : Owner → lines returned for seeded PO; supplier filter works
@@ -332,23 +332,23 @@ BEGIN
   v_supplier_id := current_setting('breakery.t_s40_supplier_id')::uuid;
 
   -- All lines in window
-  v_result := get_purchase_items_v1(
+  v_result := get_purchase_items_v2(
     (CURRENT_DATE - INTERVAL '7 days')::text,
     CURRENT_DATE::text,
     NULL
   );
-  v_line_count := jsonb_array_length(v_result->'lines');
+  v_line_count := (v_result->'summary'->>'line_count')::int;
 
   -- Filtered by our test supplier → should return exactly our 2 seeded items
-  v_result := get_purchase_items_v1(
+  v_result := get_purchase_items_v2(
     (CURRENT_DATE - INTERVAL '7 days')::text,
     CURRENT_DATE::text,
     v_supplier_id
   );
-  v_filt_count := jsonb_array_length(v_result->'lines');
+  v_filt_count := (v_result->'summary'->>'line_count')::int;
 
   -- Unknown supplier → 0 lines
-  v_result := get_purchase_items_v1(
+  v_result := get_purchase_items_v2(
     (CURRENT_DATE - INTERVAL '7 days')::text,
     CURRENT_DATE::text,
     gen_random_uuid()
@@ -356,13 +356,13 @@ BEGIN
 
   v_ok := (v_filt_count = 2)
       AND (v_line_count >= 2)
-      AND (v_result ? 'period') AND (v_result ? 'summary') AND (v_result ? 'lines') AND (v_result ? 'truncated')
+      AND (v_result ? 'period') AND (v_result ? 'summary') AND (v_result ? 'items') AND (v_result ? 'trend')
       AND ((v_result->'summary'->>'line_count')::int = 0);
   PERFORM set_config('breakery.t7_pass', v_ok::text, false);
 END $$;
 SELECT ok(
   current_setting('breakery.t7_pass')::boolean,
-  'T7: get_purchase_items_v1 → 2 lines for seeded supplier; unknown supplier returns 0'
+  'T7: get_purchase_items_v2 → 2 lines for seeded supplier; unknown supplier returns 0'
 );
 
 -- ============================================================

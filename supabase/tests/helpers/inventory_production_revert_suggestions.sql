@@ -123,11 +123,11 @@ BEGIN
   PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
-  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v4(7, 3, 7) WHERE product_id = v_bag;
+  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v5(7, 3, 7) WHERE product_id = v_bag;
   PERFORM set_config('role','postgres',true);
 
   PERFORM set_config('breakery.t_prod_15_pass',
     CASE WHEN v_count = 1 THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_15_pass') = 'yes',
-  'T_PROD_15: get_production_suggestions_v4 returns row for low-stock product');
+  'T_PROD_15: get_production_suggestions_v5 returns row for low-stock product');

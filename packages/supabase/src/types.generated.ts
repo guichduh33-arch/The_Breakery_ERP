@@ -5643,6 +5643,7 @@ export type Database = {
           name: string
           parent_product_id: string | null
           product_type: string
+          production_rounding_step: number | null
           retail_price: number
           sku: string
           target_gross_margin_pct: number | null
@@ -5679,6 +5680,7 @@ export type Database = {
           name: string
           parent_product_id?: string | null
           product_type?: string
+          production_rounding_step?: number | null
           retail_price: number
           sku: string
           target_gross_margin_pct?: number | null
@@ -5715,6 +5717,7 @@ export type Database = {
           name?: string
           parent_product_id?: string | null
           product_type?: string
+          production_rounding_step?: number | null
           retail_price?: number
           sku?: string
           target_gross_margin_pct?: number | null
@@ -8109,7 +8112,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_production_suggestions_v4: {
+      get_production_suggestions_v5: {
         Args: {
           p_lookback_days?: number
           p_priority_high?: number
@@ -8123,6 +8126,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_sku: string
+          production_rounding_step: number
           suggested_quantity: number
         }[]
       }
@@ -9877,10 +9881,25 @@ export type Database = {
         }
         Returns: Json
       }
-      get_purchase_items_v1: {
+      get_purchase_item_lines_v1: {
         Args: {
           p_date_end: string
           p_date_start: string
+          p_limit?: number
+          p_offset?: number
+          p_product_id: string
+          p_status?: string
+          p_supplier_id?: string
+        }
+        Returns: Json
+      }
+      get_purchase_items_v2: {
+        Args: {
+          p_category_id?: string
+          p_date_end: string
+          p_date_start: string
+          p_product_id?: string
+          p_status?: string
           p_supplier_id?: string
         }
         Returns: Json
@@ -10724,6 +10743,10 @@ export type Database = {
       }
       set_product_units_v2: {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
+        Returns: Json
+      }
+      set_production_rounding_step_v1: {
+        Args: { p_product_id: string; p_step: number }
         Returns: Json
       }
       set_role_permission_v1: {
