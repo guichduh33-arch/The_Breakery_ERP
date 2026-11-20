@@ -447,7 +447,10 @@ exemplaire.
 unique, secret individuel, permissions par sujet, comparaison en temps constant
 (ADR-034). Le modèle « secret partagé de boutique avec repli ouvert » n'existe
 plus. TLS obligatoire au démarrage.
-**À LIVRER** — Le runbook de mise en service du hub, dû et jamais écrit.
+**À LIVRER** — Le runbook de mise en service du hub, éprouvé sur un poste neuf.
+**FAIT** — Rédigé le 2026-11-20 :
+[mise en service du hub réseau](runbooks/hub-reseau-mise-en-service.md). Aucun
+poste neuf ne l'a encore suivi ; cette première mise en service en est la preuve.
 
 **FAIT** — La coquille Android **refuse le trafic en clair par défaut** et
 n'autorise qu'une liste d'hôtes nommés : les trois adresses de développement et
