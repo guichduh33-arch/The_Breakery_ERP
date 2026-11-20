@@ -30,7 +30,7 @@ INSERT INTO corporate_price_tap(tap) SELECT is(public._resolve_b2b_line_price_v1
  (SELECT customer_id FROM corporate_price_fixture),(SELECT id::uuid FROM corporate_price_product)),
  30000::numeric,'wholesale customers receive the saved Corporate price');
 
-CREATE TEMP TABLE corporate_price_order AS SELECT public.create_b2b_order_v10(
+CREATE TEMP TABLE corporate_price_order AS SELECT public.create_b2b_order_v11(
  p_customer_id => (SELECT customer_id FROM corporate_price_fixture),
  p_items => jsonb_build_array(jsonb_build_object('product_id',(SELECT id FROM corporate_price_product),
  'quantity',2,'unit_price',1))) AS result;

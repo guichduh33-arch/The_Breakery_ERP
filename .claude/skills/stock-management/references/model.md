@@ -142,7 +142,7 @@ ENTRY                             INTERNAL                          EXIT
 ─────                             ────────                          ────
 receive_purchase_order (PO→GRN)   record_production                 complete_order_with_payment
  ↓ stock_movements                 ↓ cascade _resolve_recipe_        pay_existing_order
- ↓ (movement_type=purchase)        ↓ consumption — s'ARRÊTE aux      create_b2b_order
+ ↓ (movement_type=purchase)        ↓ consumption — s'ARRÊTE aux      update_b2b_pickup
  ↓ → WAC update (trigger)          ↓ semi-finis stockés (ADR-016)     ↓ tous via _record_sale_stock
  ↓ → JE via le flux achat (GRN)    ↓ stock_movements                  ↓ stock_movements (sale)
  ↓ (plus aucun choix de section)   ↓ (production_in/out)              ↓ → JE via le flux commande

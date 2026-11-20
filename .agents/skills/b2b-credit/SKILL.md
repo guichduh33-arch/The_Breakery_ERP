@@ -95,6 +95,13 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
 14. **Prix B2B résolu serveur** — `create_b2b_order` calcule chaque ligne via
     `_resolve_b2b_line_price` (négocié > catégorie > retail) et **ignore tout
     `unit_price` client** (ADR-020).
+15. **Stock au retrait (ADR-044)** — la création contrôle la disponibilité et
+    avertit sans bloquer ni réserver ; création et édition ne déduisent rien.
+    Le retrait vérifie et déduit une seule fois le stock général, sans vitrine,
+    avec refus si insuffisant même quand le négatif est autorisé. Les imports
+    financiers historiques restent sans mouvement et hors de ce retrait.
+    Lire le corps de l'ADR avant de modifier ce contrat ; vérifier séparément
+    son état de livraison dans le master plan et le runbook des environnements.
 
 ---
 

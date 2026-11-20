@@ -26,6 +26,31 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 20 novembre 2026 — stock B2B au retrait, vérification DEV
+
+Relevé en UTC+8, branche `feat/s1-15-b2b-stock-pickup`, base Git `d2266ed3`.
+Ce complément ne constate aucune livraison en production du lot.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Production V3, lecture seule | 85 commandes natives toutes retirées ; 192 imports financiers sans mouvement de vente, répartis entre septembre et octobre. Mamat confirme que l'absence de mouvement de ces imports est normale | Un solde à payer ne prouve pas une absence de retrait ; refaire ce relevé avant bascule |
+| DEV V3 | Migrations `20261120000040` à `20261120000047` appliquées sur `ikcyvlovptebroadgtvd` : consommation au retrait, disponibilité informative, instantané des sorties et annulation selon le suivi courant | Aucune réinjection de stock en production ; préflight bloquant si une native non retirée apparaît |
+| pgTAP DEV | Relevé à 21 h 12 : 17 fichiers, 20 transactions annulées, 218 assertions réussies, zéro ignorée. Couvre 13 anciennes suites adaptées et quatre nouvelles | Les fichiers `antifraud_owner_visibility`, `b2b_foundation`, `b2b_settlement` et `recipe_reversal_compatibility` attendent la CI ; retraits simultanés non exercés |
+| Types | Régénération MCP fraîche, puis projection AST reproductible sur les seuls objets B2B du lot ; types hors périmètre conservés depuis la base Git | Ce fichier représente `master` plus le lot, pas la parité globale avec DEV. La dérive indépendante de la famille `hold_fired_order` n'est ni livrée ni corrigée ici ; l'ancienne version appelée par le POS existe en production |
+| Helpers de vente et de restitution | Corps relus sur DEV et production : empreintes normalisées égales ; compteur modifié uniquement si le produit est suivi au moment du geste, indépendance B2B/vitrine conservée | Coût d'annulation toujours courant ; l'instantané initial des natives livrées ne reconstitue pas leurs anciens drapeaux de suivi |
+
+Décision et limites : [ADR-044](../adr/044-stock-b2b-au-retrait.md).
+Les preuves privées sont dans `.release-manifests/s1-15/` du worktree du lot :
+`dev-regressions-final.json`, `types-projection-proof.json`,
+`project-types-s1-15.cjs` et les définitions live. Elles ne sont pas transportées
+par un clone. La projection des types n'a changé aucun corps hors B2B.
+
+La production devra appliquer atomiquement le changement de contrat après
+préparation du BO, puis basculer celui-ci. Le préflight refuse une reprise de
+quantités non examinée ; les imports financiers restent exclus. Aucun retour
+automatique vers les anciennes fonctions n'est réputé compatible avec les
+commandes créées après bascule.
+
 ## Complément du 20 novembre 2026, 12 h 40 — achats par article (`S3-20`), arrondi de production (`S3-09`), annulation de réception (`S3-05`) et back-office `b0ed05d6`
 
 Relevé du 20 novembre 2026 entre 12 h 29 et 12 h 40, UTC+8. Observé directement.

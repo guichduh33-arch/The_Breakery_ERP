@@ -51,8 +51,18 @@ BEGIN
     ELSE result:=pay_existing_order_v25(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k); END IF;
    ELSIF path='b2b' THEN
     IF mode='legacy' THEN result:=pg_temp.create_b2b_before_units(f.customer_id,items,NULL,NULL,k);
-    ELSE result:=create_b2b_order_v10(f.customer_id,items,NULL,NULL,k); END IF;
+    ELSE result:=create_b2b_order_v11(f.customer_id,items,NULL,NULL,k); END IF;
     oid:=(result->>'order_id')::uuid;
+    IF mode='legacy' THEN
+     -- Simuler l'initialisation de la migration pour une native antérieure déjà livrée.
+     INSERT INTO b2b_order_stock_consumptions(order_id,product_id,unit,quantity,inventory_tracked,legacy)
+      SELECT oid,sm.product_id,sm.unit,-sum(sm.quantity),coalesce(p.track_inventory,true),true
+      FROM stock_movements sm JOIN products p ON p.id=sm.product_id
+      WHERE sm.reference_id=oid GROUP BY sm.product_id,sm.unit,p.track_inventory;
+     UPDATE orders SET b2b_delivered_at=now(),b2b_stock_consumed_at=now() WHERE id=oid;
+    ELSE
+     PERFORM update_b2b_pickup_v4(oid,NULL,true);
+    END IF;
    ELSE
     IF mode='legacy' THEN result:=pg_temp.complete_order_before_units(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k);
     ELSE result:=complete_order_with_payment_v33(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
@@ -63,7 +73,7 @@ BEGIN
    INSERT INTO unit_compat_tap SELECT is((SELECT -sum(quantity) FROM stock_movements WHERE reference_id=oid AND movement_type='sale'),expected,mode||' '||path||' exact consumption');
    SELECT count(*) INTO count_before FROM stock_movements WHERE reference_id=oid;
    IF path='existing' THEN replay:=pay_existing_order_v25(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k);
-   ELSIF path='b2b' THEN replay:=create_b2b_order_v10(f.customer_id,items,NULL,NULL,k);
+   ELSIF path='b2b' THEN replay:=create_b2b_order_v11(f.customer_id,items,NULL,NULL,k);
    ELSE replay:=complete_order_with_payment_v33(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
    INSERT INTO unit_compat_tap SELECT is((replay->>'order_id')::uuid,oid,mode||' '||path||' replay original order');
    INSERT INTO unit_compat_tap SELECT is((SELECT recipe_consumption_revision FROM orders WHERE id=oid),marker,mode||' '||path||' replay keeps revision');
@@ -87,11 +97,11 @@ BEGIN
    again:=void_order_rpc_v13(c.order_id,'Unit compatibility void',f.profile_id,f.auth_id,k);
    INSERT INTO unit_compat_tap SELECT ok((again->>'idempotent_replay')::boolean AND (SELECT count(*) FROM stock_movements WHERE reference_id=c.order_id)=count_before,c.mode||' void replay no movements');
   ELSIF c.path='b2b' THEN
-   r:=cancel_b2b_order_v3(c.order_id,'Unit compatibility cancel',k);
+   r:=cancel_b2b_order_v5(c.order_id,'Unit compatibility cancel',k);
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(quantity) FROM stock_movements WHERE reference_id=c.order_id AND movement_type='sale_void'),c.consumed,c.mode||' B2B cancellation restores original calculation');
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(quantity) FROM stock_movements WHERE reference_id=c.order_id),0::numeric,c.mode||' B2B cancellation nets zero');
    SELECT count(*) INTO count_before FROM stock_movements WHERE reference_id=c.order_id;
-   again:=cancel_b2b_order_v3(c.order_id,'Unit compatibility cancel',k);
+   again:=cancel_b2b_order_v5(c.order_id,'Unit compatibility cancel',k);
    INSERT INTO unit_compat_tap SELECT ok((again->>'idempotent_replay')::boolean AND (SELECT count(*) FROM stock_movements WHERE reference_id=c.order_id)=count_before,c.mode||' B2B cancellation replay no movements');
   ELSE
    SELECT id INTO item FROM order_items WHERE order_id=c.order_id;

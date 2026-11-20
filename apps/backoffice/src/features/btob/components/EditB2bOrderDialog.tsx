@@ -102,7 +102,7 @@ function EditForm({ orderId, initial, onClose }: {
           className={`mt-1 w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`} rows={3} />
       </div>
     </fieldset>
-    <p className="text-sm text-text-muted">The server updates the total, stock and customer balance together.</p>
+    <p className="text-sm text-text-muted">The server updates the total and customer balance together. Stock is checked and deducted at pickup.</p>
     <div className="flex justify-end gap-2">
       <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>Close</Button>
       <Button type="submit" disabled={busy || !attempt.allowed || Boolean(attempt.storageError) || (!attempt.pending && !valid)}>

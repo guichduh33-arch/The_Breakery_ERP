@@ -47,7 +47,7 @@ customers.b2b_credit_limit     ↓ prix résolu SERVEUR          ↓ DR Cash/Ban
 customers.b2b_current_balance  ↓ validate_b2b_credit_limit    ↓ INSERT b2b_payments
   (cache AR, CHECK ≥ 0)        ↓ INSERT orders (b2b_pending)  ↓ INSERT b2b_payment_allocations
                                ↓ order_number + invoice_number   (ciblé p_invoice_ids puis
-                               ↓ _record_sale_stock               FIFO sur le reliquat)
+                               ↓ aucun stock à la saisie          FIFO sur le reliquat)
                                ↓ DR B2B_AR / CR revenue (4131) ↓ orders.paid_at + status='paid'
                                ↓ balance += total                sur règlement COMPLET
                                ↓ audit_logs b2b.order.created ↓ balance -= amount
@@ -59,7 +59,7 @@ cancel_b2b_order              adjust_b2b_balance            reconcile_b2b_balanc
   ↓ gate b2b.order.cancel       ↓ gate b2b.balance.adjust     ↓ gate b2b.read
   ↓ refuse si une allocation    ↓ PIN manager serveur         ↓ cache vs Σ outstanding
     existe déjà                   (_verify_pin_with_lockout)  ↓ has_drift, AUCUN auto-fix
-  ↓ stock rendu (sale_void)    ↓ JE contrepartie 1132 ⇄ 6520
+  ↓ stock rendu si retiré     ↓ JE contrepartie 1132 ⇄ 6520
   ↓ JE inverse DR revenue      ↓ reason ≥ 3 caractères       AR Aging (lecture seule)
     / CR AR                    ↓ balance ±= delta            ────────────────────────
   ↓ balance -= total           ↓ audit_logs                  view_ar_aging (SECURITY INVOKER)
@@ -67,6 +67,14 @@ cancel_b2b_order              adjust_b2b_balance            reconcile_b2b_balanc
   ↓ audit_logs                                                 ↓ agrège l'OUTSTANDING partiel
     b2b.order.cancelled                                        ↓ clé = invoice_date (pas de due_date)
 ```
+
+**Contrat de stock décidé le 2026-11-20 — ADR-044** : la disponibilité à la
+création est informative et sans réservation. Le retrait par la famille
+`update_b2b_pickup` contrôle et déduit le stock général une seule fois ; un
+manque bloque ce retrait, jamais la création. Il ne touche ni la vitrine ni
+le paiement. Les imports financiers historiques sont exclus. Vérifier l'état
+de livraison dans le master plan et le runbook des environnements : le modèle
+ci-dessus décrit le contrat cible, pas une preuve de production.
 
 ---
 

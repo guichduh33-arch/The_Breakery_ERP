@@ -2,8 +2,7 @@
 --
 -- A : produit non-tracké (track_inventory=false, deduct_stock=false, stock 0) → commande B2B
 --     réussit AVEC un JE (avant : insufficient_stock inconditionnel + reference_type rejeté).
--- B : produit tracké + allow_negative=false + stock 0 → lève insufficient_stock (guard préservé).
--- C : produit tracké + allow_negative=true + stock 0 → refusé (ADR-036).
+-- B/C : création acceptée, retrait refusé sans stock, quel que soit le flag négatif.
 --
 -- Run via MCP execute_sql sous BEGIN/ROLLBACK. Auth simulée via request.jwt.claim.sub (EMP000).
 
@@ -31,7 +30,7 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 
 -- A : non-tracké stock 0 → vendable + JE
 DO $a$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v10('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v11('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40001-0000-0000-0000-000000000001','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('A', (v->>'order_id') IS NOT NULL AND (v->>'je_id') IS NOT NULL);
@@ -39,25 +38,27 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('A', false); END $a$;
 
 -- B : tracké + allow_negative=false + stock 0 → insufficient_stock
 UPDATE business_config SET allow_negative_stock=false;
-DO $b$ BEGIN
-  PERFORM create_b2b_order_v10('ccc40001-0000-0000-0000-000000000001',
+DO $b$ DECLARE v jsonb; BEGIN
+  v := create_b2b_order_v11('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40002-0000-0000-0000-000000000002','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
+  PERFORM update_b2b_pickup_v4((v->>'order_id')::uuid,NULL,true);
   INSERT INTO _r VALUES ('B', false);
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('B', SQLERRM LIKE '%insufficient_stock%'); END $b$;
 
 -- C : tracké + allow_negative=true + stock 0 → refusé
 UPDATE business_config SET allow_negative_stock=true;
 DO $c$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v10('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v11('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40002-0000-0000-0000-000000000002','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
+  PERFORM update_b2b_pickup_v4((v->>'order_id')::uuid,NULL,true);
   INSERT INTO _r VALUES ('C', false);
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('C', SQLSTATE = 'P0002'); END $c$;
 
 SELECT ok((SELECT pass FROM _r WHERE name='A'), 'T4-A: produit non-tracké vendable en B2B (fix N1) avec JE valide');
-SELECT ok((SELECT pass FROM _r WHERE name='B'), 'T4-B: tracké + allow_negative=false + stock 0 lève insufficient_stock');
-SELECT ok((SELECT pass FROM _r WHERE name='C'), 'T4-C: B2B requires general stock even when allow_negative=true');
+SELECT ok((SELECT pass FROM _r WHERE name='B'), 'T4-B: pickup requires stock when allow_negative=false');
+SELECT ok((SELECT pass FROM _r WHERE name='C'), 'T4-C: pickup requires stock even when allow_negative=true');
 
 SELECT * FROM finish();
 ROLLBACK;

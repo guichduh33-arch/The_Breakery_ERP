@@ -23,7 +23,7 @@ export function useB2bEditProducts() {
   return useQuery({
     queryKey: ['b2b-edit-products'], staleTime: 60_000,
     queryFn: async () => {
-      // Le sélecteur ne lit aucun stock confidentiel ; la disponibilité est validée par la RPC.
+      // Le sélecteur ne lit aucun stock confidentiel ; le retrait contrôle la disponibilité.
       const { data, error } = await supabase.from('products').select('id,name,sku')
         .eq('is_active', true).is('deleted_at', null).order('name').limit(500);
       if (error) throw new Error(error.message);
@@ -37,7 +37,6 @@ export const editErrorMessage = (message: string) => {
   if (message.includes('order_has_payments')) return 'This order has a payment and can no longer be edited.';
   if (message.includes('order_not_editable')) return 'Only unpaid orders that have not been collected can be edited.';
   if (message.includes('credit_limit_exceeded')) return 'The change would exceed the customer credit limit.';
-  if (message.includes('insufficient_stock')) return 'There is not enough stock for this change.';
   if (message.includes('fiscal_period') || message.includes('period_undefined')) return 'The current accounting period is closed or unavailable.';
   if (message.includes('dedicated_workflow')) return 'This order requires a dedicated correction workflow.';
   if (message.includes('permission_denied')) return 'You do not have permission to edit B2B orders.';
@@ -51,7 +50,7 @@ export function useEditB2bOrder() {
     mutationFn: async ({ snapshot, key, current }: { snapshot: B2bEditSnapshot; key: string; current: () => boolean }) => {
       const session = captureFinancialSession();
       if (!session.current() || !current()) throw new FinancialAttemptError('Your session changed. Reopen this form.');
-      const { data, error } = await supabase.rpc('edit_b2b_order_v3', {
+      const { data, error } = await supabase.rpc('edit_b2b_order_v4', {
         p_order_id: snapshot.orderId, p_items: snapshot.items, p_notes: snapshot.notes,
         p_expected_updated_at: snapshot.expectedUpdatedAt, p_idempotency_key: key,
       });
@@ -71,8 +70,7 @@ export function useEditB2bOrder() {
       if (!current()) return;
       await Promise.all([
         ...['b2b-invoices', 'b2b-dashboard', 'b2b-customers', 'customers', 'customer-detail',
-          'orders', 'order-detail', 'products', 'products-typeahead', 'stock-levels', 'stock-movements',
-          'display-stock', 'display-movements', 'b2b-order-products'].map((key) => qc.invalidateQueries({ queryKey: [key] })),
+          'orders', 'order-detail'].map((key) => qc.invalidateQueries({ queryKey: [key] })),
         qc.invalidateQueries({ queryKey: ['b2b-order-items', snapshot.orderId] }),
         qc.invalidateQueries({ queryKey: ['b2b', 'balance-drift'] }),
         qc.invalidateQueries({ queryKey: B2B_EDIT_KEY }),
