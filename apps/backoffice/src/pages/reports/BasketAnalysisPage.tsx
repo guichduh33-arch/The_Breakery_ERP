@@ -14,7 +14,7 @@
 // était arbitraire. La paire de tête est nommée dans la bande KPI, et la
 // colonne « Lift » porte sa définition sous la table.
 
-import { useMemo, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { CsvColumn } from '@breakery/domain';
 import { Input } from '@breakery/ui';
@@ -24,7 +24,14 @@ import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { KpiBand } from '@/features/reports/components/KpiBand.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { ReportFilterBar } from '@/features/reports/components/ReportFilterBar.js';
+import { ReportTable, type ReportColumn } from '@/features/reports/components/ReportTable.js';
+import {
+  PaymentFilterNote, SALES_ORDER_FILTER_DEFS, toSalesOrderFilters,
+} from '@/features/reports/components/salesOrderFilters.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useReportFilters } from '@/features/reports/hooks/useReportFilters.js';
+import type { SortSpec } from '@/features/reports/hooks/useSortedRows.js';
 import {
   useBasketAnalysis, type BasketPair,
 } from '@/features/reports/hooks/useBasketAnalysis.js';
@@ -40,8 +47,21 @@ const csvColumns: CsvColumn<BasketPair>[] = [
   { header: 'Lift',         accessor: (r) => r.lift.toFixed(2),     format: 'text' },
 ];
 
-const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 const INK_LINK = 'text-gold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+const EXTRA_FILTER_KEYS = ['q'] as const;
+type SortKey = 'product_a' | 'product_b' | 'co_occurrence' | 'confidence' | 'lift';
+const SORT_SPECS: Record<SortKey, SortSpec<BasketPair>> = {
+  product_a: { kind: 'string', value: (r) => r.product_a_name },
+  product_b: { kind: 'string', value: (r) => r.product_b_name },
+  co_occurrence: { kind: 'number', value: (r) => r.co_occurrence_count },
+  confidence: { kind: 'number', value: (r) => r.confidence },
+  lift: { kind: 'number', value: (r) => r.lift },
+};
+
+function productLink(id: string, name: string): JSX.Element {
+  const url = buildDrilldownUrl('product', id);
+  return url !== null ? <Link to={url} className={INK_LINK}>{name}</Link> : <>{name}</>;
+}
 
 interface KpiDescriptor {
   key: string; label: string; value: string; note: string;
@@ -64,10 +84,17 @@ export default function BasketAnalysisPage(): JSX.Element {
   // Audit R-17 — le plafond reste en URL-state (convention S57) : la vue est
   // partageable et survit au rechargement.
   const [topNRaw, setTopNRaw] = useUrlState('top_n', '10');
-  const topN = Math.min(100, Math.max(1, Number(topNRaw) || 10));
+  const topN = Math.min(100, Math.max(1, Math.trunc(Number(topNRaw)) || 10));
 
-  const { data, isLoading, error } = useBasketAnalysis(start, end, topN);
+  const filters = useReportFilters(SALES_ORDER_FILTER_DEFS, { extraKeys: EXTRA_FILTER_KEYS });
+  const { order_type: orderType, payment_method: paymentMethod, table_number: tableNumber } = filters.values;
+  const orderFilters = useMemo(() => toSalesOrderFilters({
+    order_type: orderType, payment_method: paymentMethod, table_number: tableNumber,
+  }), [orderType, paymentMethod, tableNumber]);
+  const { data, isLoading, error } = useBasketAnalysis(start, end, topN, orderFilters);
   const rows = useMemo(() => data ?? [], [data]);
+  const [visibleRows, setVisibleRows] = useState<readonly BasketPair[]>([]);
+  const exportRows = [...visibleRows];
 
   const best = useMemo(
     () => rows.reduce<BasketPair | null>((b, r) => (b === null || r.lift > b.lift ? r : b), null),
@@ -79,6 +106,18 @@ export default function BasketAnalysisPage(): JSX.Element {
     [rows],
   );
   const coOccurrences = rows.reduce((s, r) => s + r.co_occurrence_count, 0);
+  const columns = useMemo<ReportColumn<BasketPair, SortKey>[]>(() => [
+    { id: 'product_a', header: 'Product A', sortKey: 'product_a', footer: 'Listed pairs',
+      cell: (r) => productLink(r.product_id_a, r.product_a_name), searchText: (r) => r.product_a_name },
+    { id: 'product_b', header: 'Product B', sortKey: 'product_b',
+      cell: (r) => productLink(r.product_id_b, r.product_b_name), searchText: (r) => r.product_b_name },
+    { id: 'co_occurrence', header: 'Co-occurrence', sortKey: 'co_occurrence', align: 'right',
+      cell: (r) => formatCount(r.co_occurrence_count), footer: formatCount(coOccurrences) },
+    { id: 'confidence', header: 'Confidence', sortKey: 'confidence', align: 'right',
+      cell: (r) => formatPct1(r.confidence * 100) },
+    { id: 'lift', header: 'Lift', sortKey: 'lift', align: 'right', className: 'font-semibold',
+      cell: (r) => formatLift(r.lift) },
+  ], [coOccurrences]);
 
   // Aucune comparaison : la RPC ne rend qu'une fenêtre, et un lift comparé d'une
   // période à l'autre changerait de paires en route. Chaque tuile porte donc une
@@ -95,7 +134,7 @@ export default function BasketAnalysisPage(): JSX.Element {
     },
     {
       key: 'co-occurrences', label: 'Co-occurrences', value: formatCount(coOccurrences),
-      note:  'baskets across the listed pairs',
+      note:  'pair occurrences, not unique baskets',
     },
     {
       key: 'best-confidence', label: 'Best confidence',
@@ -104,10 +143,12 @@ export default function BasketAnalysisPage(): JSX.Element {
     },
   ];
 
+  const activeCount = Object.keys(filters.active).length;
   const meta = [
     periodLabel(start, end),
     `${formatCount(rows.length)} pair${rows.length === 1 ? '' : 's'}`,
     'ranked by lift — cross-sell opportunities',
+    ...(activeCount > 0 ? [`${activeCount} filter${activeCount === 1 ? '' : 's'} active`] : []),
   ].join(' · ');
 
   const toolbar = (
@@ -126,14 +167,14 @@ export default function BasketAnalysisPage(): JSX.Element {
       </label>
       <PeriodControl period={period} />
       <ExportMenu
-        csv={{ rows, columns: csvColumns, filename: `basket-analysis-${start}_${end}` }}
+        csv={{ rows: exportRows, columns: csvColumns, filename: `basket-analysis-${start}_${end}` }}
         pdf={{
           template: 'basket',
-          data:     rows,
+          data:     exportRows,
           period:   { start, end },
           filename: `basket-analysis-${start}_${end}`,
         }}
-        disabled={rows.length === 0}
+        disabled={isLoading || error !== null || rows.length === 0 || exportRows.length === 0}
       />
     </>
   );
@@ -144,11 +185,17 @@ export default function BasketAnalysisPage(): JSX.Element {
       subtitle={meta}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Sales' }]}
       toolbar={toolbar}
+      filters={
+        <ReportFilterBar defs={SALES_ORDER_FILTER_DEFS} filters={filters}
+          note={paymentMethod !== '' ? <PaymentFilterNote /> : undefined} />
+      }
       error={error}
       isEmpty={!isLoading && error === null && data !== undefined && rows.length === 0}
       emptyState={{
         title: 'No paired sales',
-        description: 'No paired sales in the selected range.',
+        description: activeCount > 0
+          ? 'No paired sales match these filters in the selected range.'
+          : 'No paired sales in the selected range.',
       }}
       kpis={
         <KpiBand isLoading={isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
@@ -172,45 +219,14 @@ export default function BasketAnalysisPage(): JSX.Element {
         }
         testId="basket-pairs-table"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">
-              Product pairs frequently bought together, with co-occurrence, confidence and lift
-            </caption>
-            <thead>
-              <tr className="border-b border-border-subtle text-text-secondary">
-                <th scope="col" className="py-2 text-left">Product A</th>
-                <th scope="col" className="py-2 text-left">Product B</th>
-                <th scope="col" className="py-2 text-right">Co-occurrence</th>
-                <th scope="col" className="py-2 text-right">Confidence</th>
-                <th scope="col" className="py-2 text-right">Lift</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const urlA = buildDrilldownUrl('product', r.product_id_a);
-                const urlB = buildDrilldownUrl('product', r.product_id_b);
-                return (
-                  <tr key={`${r.product_id_a}_${r.product_id_b}`} className="border-b border-border-subtle">
-                    <td className="py-2">
-                      {urlA !== null
-                        ? <Link to={urlA} className={INK_LINK}>{r.product_a_name}</Link>
-                        : r.product_a_name}
-                    </td>
-                    <td className="py-2">
-                      {urlB !== null
-                        ? <Link to={urlB} className={INK_LINK}>{r.product_b_name}</Link>
-                        : r.product_b_name}
-                    </td>
-                    <td className={NUM_CELL}>{formatCount(r.co_occurrence_count)}</td>
-                    <td className={NUM_CELL}>{formatPct1(r.confidence * 100)}</td>
-                    <td className={`${NUM_CELL} font-semibold`}>{formatLift(r.lift)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <p className="mb-3 text-xs text-text-secondary">
+          Figures describe the selected top pairs. Search narrows the table and exports only.
+        </p>
+        <ReportTable rows={rows} columns={columns} sortSpecs={SORT_SPECS}
+          rowKey={(r) => `${r.product_id_a}_${r.product_id_b}`}
+          caption="Product pairs frequently bought together, with co-occurrence, confidence and lift"
+          showFooter search={{ label: 'Search pairs', placeholder: 'Search products', noun: 'pair', urlKey: 'q' }}
+          testId="basket-report-table" onVisibleRowsChange={setVisibleRows} />
       </PanelCard>
     </ReportShell>
   );

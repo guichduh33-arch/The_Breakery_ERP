@@ -2403,6 +2403,21 @@ place avec une table, et la table est sa dimension. Le lien d'une table vers ses
 commandes transporte le filtre. Les familles `get_combo_sales` et
 `get_sales_by_table` sont bumpées, production égale au dev. Relevé dans
 `docs/runbooks/etat-environnements.md`, section du 11 novembre au soir.
+**Étape 2, quatrième lot — développé le 2026-11-20**, branche
+`codex/reports-basket-filters` : l'analyse de panier reçoit les trois filtres
+communs et la table partagée avec tri et recherche persistée dans l'URL. Les
+filtres restreignent les commandes avant les supports, la confiance et le lift ;
+un paiement mixte ne duplique pas un panier. CSV et données du PDF suivent les
+paires visibles et leur ordre ; un résultat vide bloque l'export. Le pied
+additionne les occurrences de paires, jamais les ratios, et le libellé distingue
+ces occurrences des paniers uniques. Migration
+`20261120000048_basket_analysis_filters.sql` appliquée en DEV V3 ; pgTAP du lot
+23/23 et suite financière existante 12/12, sous transaction annulée, sans test
+ignoré. Types régénérés : seul le bloc de la famille `get_basket_analysis` est
+repris de la sortie complète, dont les dérives DEV indépendantes restent hors
+lot. Recette locale sur données simulées, thèmes clair et sombre, largeurs de
+bureau ; CSV téléchargé et relu. Vérification BO complète et livraison restent
+à terminer. Le graphique de répartition de cette page reste porté par `S3-23`.
 Restent sur l'étape 2 les autres rapports de vente. Les ventes par heure
 attendent `S3-23`, qui change déjà leur portée (toute la période au lieu d'un
 jour) : deux bumps de la même famille se marcheraient dessus. Les ventes du jour sont

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useBasketAnalysis.ts
 //
-// Wraps `get_basket_analysis_v6(p_date_start, p_date_end, p_top_n)`.
+// Filtres de commande appliqués avant les supports et les paires côté serveur.
 // ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
 // Audit Reports 2026-08-01 lot C / D1 — bumped v2 -> v3 : la v2 etait SECURITY
 // INVOKER sans gate, donc lisible par tout compte authentifie (la RLS de
@@ -9,6 +9,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { salesFiltersKey, toRpcFilters, type SalesOrderFilters } from '../utils/salesFilters.js';
 
 export interface BasketPair {
   product_id_a:        string;
@@ -29,15 +30,18 @@ export function useBasketAnalysis(
   dateStart: string,
   dateEnd:   string,
   topN       = 10,
+  filters?: SalesOrderFilters,
 ) {
   return useQuery<BasketPair[]>({
-    queryKey: [...BASKET_ANALYSIS_QK, dateStart, dateEnd, topN] as const,
+    queryKey: [...BASKET_ANALYSIS_QK, dateStart, dateEnd, topN, ...salesFiltersKey(filters)] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_basket_analysis_v6', {
+      const rpcFilters = toRpcFilters(filters);
+      const { data, error } = await supabase.rpc('get_basket_analysis_v7', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
         p_top_n:      topN,
+        ...(rpcFilters !== null ? { p_filters: rpcFilters } : {}),
       });
       if (error) throw error;
       return (data ?? []).map((r) => ({
