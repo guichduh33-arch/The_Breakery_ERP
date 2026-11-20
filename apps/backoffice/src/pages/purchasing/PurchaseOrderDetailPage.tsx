@@ -27,7 +27,6 @@ import {
   useUpdatePurchaseOrder,
   updatePoErrorMessage,
   type UpdatePOErrorCode,
-  type UpdatePOItemArg,
 } from '@/features/purchasing/hooks/useUpdatePurchaseOrder.js';
 import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
@@ -45,6 +44,7 @@ import {
   validatePOFormDraft,
   type POFormDraftValue,
 } from '@/features/purchasing/components/POFormDraft.js';
+import { poToFormDraftValue, toUpdatePOItems } from '@/features/purchasing/components/poFormMapping.js';
 import { PageHeader, PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { RestrictedState } from '@/components/RestrictedState.js';
 import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
@@ -232,25 +232,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
   function openEdit(): void {
     setEditError(undefined);
-    const vatRate = Number(po!.subtotal) > 0
-      ? Math.round((Number(po!.vat_amount) / Number(po!.subtotal)) * 10000) / 10000
-      : 0.11;
-    setEditValue({
-      supplierId:   po!.supplier_id,
-      expectedDate: po!.expected_date ?? '',
-      orderDate:    po!.order_date ?? '',
-      paymentTerms: (po!.payment_terms === 'cash' ? 'cash' : 'credit'),
-      vatRate,
-      notes:        po!.notes ?? '',
-      items: po!.purchase_order_items.map((it) => ({
-        productId:        it.product_id,
-        quantity:         Number(it.quantity),
-        unit:             it.unit ?? '',
-        unitFactorToBase: Number(it.unit_factor_to_base ?? 1),
-        unitCost:         Number(it.unit_cost),
-        notes:            it.notes ?? '',
-      })),
-    });
+    setEditValue(poToFormDraftValue(po!));
     setShowEdit(true);
   }
 
@@ -259,22 +241,16 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     setEditError(undefined);
     const validation = validatePOFormDraft(editValue);
     if (validation !== undefined) { setEditError(validation); return; }
-    const items: UpdatePOItemArg[] = editValue.items.map((it) => ({
-      product_id:           it.productId,
-      quantity:             it.quantity,
-      unit_factor_to_base:  it.unitFactorToBase,
-      unit_cost:            it.unitCost,
-      ...(it.unit.trim()  !== '' ? { unit:  it.unit.trim() }  : {}),
-      ...(it.notes.trim() !== '' ? { notes: it.notes.trim() } : {}),
-    }));
     try {
       await updatePo.mutateAsync({
-        poId:         po!.id,
-        supplierId:   editValue.supplierId,
-        expectedDate: editValue.expectedDate !== '' ? editValue.expectedDate : null,
-        paymentTerms: editValue.paymentTerms,
-        notes:        editValue.notes,
-        items,
+        poId:           po!.id,
+        supplierId:     editValue.supplierId,
+        expectedDate:   editValue.expectedDate !== '' ? editValue.expectedDate : null,
+        paymentTerms:   editValue.paymentTerms,
+        notes:          editValue.notes,
+        discountAmount: editValue.discountAmount,
+        deliveryFee:    editValue.deliveryFee,
+        items:          toUpdatePOItems(editValue),
       });
       setShowEdit(false);
       setEditValue(null);
@@ -363,7 +339,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel
             </button>
           )}
-          {/* Session 46 — Edit is wired to update_purchase_order_v1, gated by
+          {/* Session 46 — Edit is wired to update_purchase_order_v2, gated by
               purchasing.po.edit and locked once received or paid (D6). */}
           {canEdit && (
             <button
@@ -392,7 +368,9 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <SectionLabel as="h2" size="sm" className="text-gold">Financial Summary</SectionLabel>
             <dl className="space-y-2 text-sm">
               <SummaryRow label="Subtotal" value={fmtIdr(po.subtotal)} />
+              {Number(po.discount_amount ?? 0) > 0 && <SummaryRow label="Order discount" value={fmtIdr(-Number(po.discount_amount))} />}
               <SummaryRow label="Tax"      value={fmtIdr(po.vat_amount)} />
+              {Number(po.delivery_fee ?? 0) > 0 && <SummaryRow label="Delivery fee" value={fmtIdr(po.delivery_fee)} />}
             </dl>
             <div className="flex items-baseline justify-between border-t border-border-subtle pt-3">
               <SectionLabel as="span" size="sm">Total</SectionLabel>

@@ -1773,6 +1773,32 @@ chemin. C'est assumé (§10 des specs).
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 9. Une facture avec port ne
 peut pas être saisie à son montant réel.
 
+**État — développé et prouvé en dev le 2026-11-20**, branche
+`feat/s3-06-po-frais-escomptes`. Migrations `20261120000030` à
+`20261120000033` appliquées en dev : colonnes d'escompte (bon et ligne) et de
+port, répartition au centime par le plus fort reste, nouvelles versions de la
+création, de la modification et de la réception de bon. Le port se saisit tel
+que facturé, sans PPN ajoutée ; la PPN porte sur le montant après escomptes. La réception valorise chaque ligne
+à sa part du total du bon, port et escomptes compris, en différence cumulée :
+les réceptions partielles d'une ligne retombent exactement sur sa part.
+L'écriture de réception et l'annulation de réception (`S3-05`) sont inchangées.
+pgTAP `s3_06_po_delivery_fee_discounts.test.sql` 36/36 en dev (bon de 3 lignes,
+port 30 000 réparti à 30 000,00 exactement, là où un arrondi ligne à ligne
+donnerait 30 000,01). Le back-office saisit escompte de ligne, escompte global
+et port, affiche le coût par unité et la part de port à la réception ; parcours
+création, modification et réception vus au navigateur sur dev. Non publié.
+**Limites relevées** :
+- le module `landedCostAllocation.ts` n'est pas utilisé : il répartit en
+  flottants sans garantir la somme ; un module voisin exact le remplace ;
+- les rapports d'achats par article lisent encore le prix unitaire brut, sans
+  escompte ni port ;
+- une réception annulée au milieu de réceptions partielles peut décaler d'un
+  centime la valeur des suivantes ;
+- un bon déjà reçu en partie avant la publication voit ses réceptions suivantes
+  calculées par la nouvelle règle : quelques centimes d'écart possibles avec
+  son total. Aucun bon dans ce cas en dev le 2026-11-20 ; à relever en
+  production avant publication.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — port au niveau du bon, réparti **au prorata**
   sur les lignes ; escompte global et par ligne

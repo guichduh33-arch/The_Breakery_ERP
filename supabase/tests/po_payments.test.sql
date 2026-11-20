@@ -69,7 +69,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 100, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_credit_id;
@@ -78,7 +78,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 50, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'cash', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cash_id;
@@ -88,7 +88,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 20, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_pending_id;
@@ -97,7 +97,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 10, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cancelled_id;
@@ -310,7 +310,7 @@ BEGIN
 
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
-  PERFORM receive_purchase_order_v7(
+  PERFORM receive_purchase_order_v8(
     p_po_id          := v_po_id,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 50)

@@ -49,6 +49,8 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         ...(value.orderDate !== '' ? { orderDate: value.orderDate } : {}),
         paymentTerms:  value.paymentTerms,
         vatRate:       value.vatRate,
+        discountAmount: value.discountAmount,
+        deliveryFee:   value.deliveryFee,
         ...(value.notes.trim() !== '' ? { notes: value.notes.trim() } : {}),
         idempotencyKey: idempotencyKey.current,
       });

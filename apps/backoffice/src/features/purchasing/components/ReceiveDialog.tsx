@@ -7,9 +7,16 @@
 //
 // ADR-027 — plus de sélecteur « Receive into section » : le stock est global,
 // une réception ne demande plus aucun choix d'emplacement.
+//
+// S3-06 — chaque ligne affiche son coût par unité, escomptes, PPN et port
+// compris (ce qui entre au coût moyen), et le pied la valeur de la réception
+// avec sa part de port. Miroir de receive_purchase_order : ventilation par
+// ligne dans l'ordre serveur (création, puis identifiant), différence cumulée.
 
 import { useMemo, useRef, useState, type JSX } from 'react';
 import { Dialog, DialogDescription } from '@breakery/ui';
+import { computePurchaseOrderTotals, receiptShare } from '@breakery/domain';
+import { formatCurrency } from '@breakery/utils';
 import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -50,6 +57,39 @@ export function ReceiveDialog({
     return m;
   }, [po.purchase_order_items]);
 
+  const allocationById = useMemo(() => {
+    const ordered = [...po.purchase_order_items].sort((a, b) =>
+      a.created_at === b.created_at ? (a.id < b.id ? -1 : 1) : (a.created_at < b.created_at ? -1 : 1));
+    const totals = computePurchaseOrderTotals({
+      lines: ordered.map((it) => ({
+        quantity: Number(it.quantity), unitCost: Number(it.unit_cost),
+        discountAmount: Number(it.discount_amount ?? 0),
+      })),
+      discountAmount: Number(po.discount_amount ?? 0),
+      deliveryFee:    Number(po.delivery_fee ?? 0),
+      vatRate:        0,
+      vatAmount:      Number(po.vat_amount ?? 0),
+    });
+    const m: Record<string, { lineTotal: number; feeShare: number }> = {};
+    ordered.forEach((it, i) => {
+      const l = totals.lines[i];
+      if (l !== undefined) m[it.id] = { lineTotal: l.lineTotal, feeShare: l.feeShare };
+    });
+    return m;
+  }, [po]);
+
+  const receipt = po.purchase_order_items.reduce((acc, it) => {
+    const a = allocationById[it.id];
+    const q = qtyByItem[it.id] ?? 0;
+    if (a === undefined || q <= 0) return acc;
+    const ordered = Number(it.quantity);
+    const before = Number(it.received_quantity);
+    return {
+      value: acc.value + receiptShare(a.lineTotal, ordered, before, q),
+      fee:   acc.fee + receiptShare(a.feeShare, ordered, before, q),
+    };
+  }, { value: 0, fee: 0 });
+
   const itemsWithQty = po.purchase_order_items
     .map((it) => ({ poItemId: it.id, receivedQuantity: qtyByItem[it.id] ?? 0 }))
     .filter((it) => it.receivedQuantity > 0);
@@ -83,6 +123,7 @@ export function ReceiveDialog({
                   <th scope="col" className="text-right px-3 py-2 w-24">Ordered</th>
                   <th scope="col" className="text-right px-3 py-2 w-24">Already</th>
                   <th scope="col" className="text-right px-3 py-2 w-24">Remaining</th>
+                  <th scope="col" className="text-right px-3 py-2 w-28">Cost / unit</th>
                   <th scope="col" className="text-right px-3 py-2 w-28">Receive now</th>
                 </tr>
               </thead>
@@ -98,6 +139,11 @@ export function ReceiveDialog({
                       <td className="px-3 py-2 text-right tabular-nums">{Number(it.quantity)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{Number(it.received_quantity)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{remain}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(it.quantity) > 0
+                          ? formatCurrency((allocationById[it.id]?.lineTotal ?? 0) / Number(it.quantity))
+                          : '—'}
+                      </td>
                       <td className="px-3 py-2">
                         <input
                           type="number"
@@ -117,6 +163,11 @@ export function ReceiveDialog({
               </tbody>
             </table>
           </div>
+          <p className="text-xs text-text-secondary" data-testid="receive-value">
+            Cost per unit includes discounts, VAT and the delivery fee share.
+            {' '}This receipt: <span className="font-data tabular-nums text-text-primary">{formatCurrency(receipt.value)}</span>
+            {receipt.fee > 0 && <> (incl. delivery fee <span className="font-data tabular-nums">{formatCurrency(receipt.fee)}</span>)</>}
+          </p>
           {error !== undefined && error !== '' && (
             <div role="alert" className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
               {error}

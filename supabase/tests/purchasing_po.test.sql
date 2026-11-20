@@ -3,7 +3,7 @@
 --
 -- Covers the 5 migrations 20260517000110-114:
 --   - purchase_orders + purchase_order_items + goods_receipt_notes tables + RLS
---   - create_purchase_order_v2
+--   - create_purchase_order_v3
 --   - receive_purchase_order_v1 (atomic, lot upfront, JE via trigger)
 --   - cancel_purchase_order_v1
 --   - trg_create_purchase_je trigger attached
@@ -122,7 +122,7 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- T_PO_06 — create_purchase_order_v2 happy path as manager
+-- T_PO_06 — create_purchase_order_v3 happy path as manager
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -151,7 +151,7 @@ BEGIN
     )
   );
 
-  v_result := create_purchase_order_v2(
+  v_result := create_purchase_order_v3(
     p_supplier_id   := current_setting('breakery.t_po_supplier', true)::uuid,
     p_items         := v_items,
     p_expected_date := current_date + 7,
@@ -207,7 +207,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v7(
+  v_result := receive_purchase_order_v8(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
@@ -280,7 +280,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v7(
+  PERFORM receive_purchase_order_v8(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
@@ -313,14 +313,14 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr_uid::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_mgr_uid::text, 'role','authenticated')::text, true);
 
-  v_r1 := create_purchase_order_v2(
+  v_r1 := create_purchase_order_v3(
     p_supplier_id     := current_setting('breakery.t_po_supplier', true)::uuid,
     p_items           := jsonb_build_array(
       jsonb_build_object('product_id', current_setting('breakery.t_po_prod_a', true), 'quantity', 1, 'unit','kg', 'unit_cost', 3000)
     ),
     p_idempotency_key := v_key
   );
-  v_r2 := create_purchase_order_v2(
+  v_r2 := create_purchase_order_v3(
     p_supplier_id     := current_setting('breakery.t_po_supplier', true)::uuid,
     p_items           := jsonb_build_array(
       jsonb_build_object('product_id', current_setting('breakery.t_po_prod_a', true), 'quantity', 1, 'unit','kg', 'unit_cost', 3000)
@@ -371,7 +371,7 @@ SELECT throws_ok(
       SELECT auth_user_id INTO v_uid FROM user_profiles WHERE employee_code='EMP001';
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM create_purchase_order_v2(
+      PERFORM create_purchase_order_v3(
         p_supplier_id   := current_setting('breakery.t_po_supplier', true)::uuid,
         p_items         := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.t_po_prod_a', true), 'quantity', 1, 'unit','kg', 'unit_cost', 3000))
       );
@@ -395,7 +395,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := create_purchase_order_v2(
+  v_result := create_purchase_order_v3(
     p_supplier_id := current_setting('breakery.t_po_supplier', true)::uuid,
     p_items       := jsonb_build_array(
       jsonb_build_object('product_id', current_setting('breakery.t_po_prod_a', true), 'quantity', 2, 'unit','kg', 'unit_cost', 3000)

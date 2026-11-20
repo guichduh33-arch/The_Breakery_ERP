@@ -5,7 +5,7 @@
 // 'incoming', which does NOT feed WAC and posts NO journal entry), this routes
 // through the battle-tested Purchasing money-path so the purchase is fully
 // integrated:
-//   1. create_purchase_order_v2  → a 1-line PO (payment_terms='credit')
+//   1. create_purchase_order_v3  → a 1-line PO (payment_terms='credit')
 //   2. receive_purchase_order → GRN ⇒ DR Inventory / CR Purchase Payable JE
 //                                  + movement_type='purchase' (WAC + price trend)
 //   3. record_po_payment_v2      → DR Payable / CR Cash|Bank JE (only when paid)
@@ -118,7 +118,7 @@ export function useRecordDirectPurchase() {
       const rpc = supabase.rpc.bind(supabase) as unknown as Rpc;
 
       // ── 1. Create the 1-line PO (credit terms → we control the payment) ──────
-      const createRes = await rpc('create_purchase_order_v2', {
+      const createRes = await rpc('create_purchase_order_v3', {
         p_supplier_id: args.supplierId,
         p_items: [{
           product_id:          args.productId,
@@ -148,7 +148,7 @@ export function useRecordDirectPurchase() {
       if (poItemId === undefined) throw new DirectPurchaseError('lookup', 'PO line not found after create');
 
       // ── 3. Receive → GRN (DR Inventory / CR Payable JE) + purchase movement ──
-      const recvRes = await rpc('receive_purchase_order_v7', {
+      const recvRes = await rpc('receive_purchase_order_v8', {
         p_po_id:       po.po_id,
         p_received_items: [{ po_item_id: poItemId, received_quantity: args.quantity }],
         p_idempotency_key: subKey(args.idempotencyKey, 'receive'),

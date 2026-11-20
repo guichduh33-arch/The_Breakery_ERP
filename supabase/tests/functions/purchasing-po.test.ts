@@ -89,7 +89,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const sb = jwtClient(managerToken);
 
     // 1. Create PO with 2 lines.
-    const { data: createRes, error: createErr } = await sb.rpc('create_purchase_order_v2', {
+    const { data: createRes, error: createErr } = await sb.rpc('create_purchase_order_v3', {
       p_supplier_id:   supplier.id,
       p_items: [
         { product_id: prodA.id, quantity: 10, unit: 'kg',  unit_cost: 3000 },
@@ -115,7 +115,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const itemA = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodA.id)!;
     const itemB = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodB.id)!;
 
-    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v7', {
+    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v8', {
       p_po_id:          po.po_id,
       p_received_items: [{ po_item_id: itemA.id, received_quantity: 5 }],
       p_idempotency_key: crypto.randomUUID(),
@@ -151,7 +151,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     expect(purchaseMovs.length).toBeGreaterThanOrEqual(1);
 
     // 6. Full receipt of remainder — 5 more of A and 20 of B.
-    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v7', {
+    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v8', {
       p_po_id:          po.po_id,
       p_received_items: [
         { po_item_id: itemA.id, received_quantity: 5 },
@@ -195,9 +195,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     expect(cancelErr?.message ?? '').toMatch(/PO_ALREADY_RECEIVED/);
   });
 
-  it('cashier forbidden on create_purchase_order_v2', async () => {
+  it('cashier forbidden on create_purchase_order_v3', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('create_purchase_order_v2', {
+    const { error } = await sb.rpc('create_purchase_order_v3', {
       p_supplier_id: supplier.id,
       p_items: [{ product_id: prodA.id, quantity: 1, unit: 'kg', unit_cost: 3000 }],
     });
@@ -206,7 +206,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
 
   it('cancel before receipt succeeds', async () => {
     const sb = jwtClient(managerToken);
-    const { data: createRes } = await sb.rpc('create_purchase_order_v2', {
+    const { data: createRes } = await sb.rpc('create_purchase_order_v3', {
       p_supplier_id: supplier.id,
       p_items: [{ product_id: prodA.id, quantity: 2, unit: 'kg', unit_cost: 3000 }],
     });
