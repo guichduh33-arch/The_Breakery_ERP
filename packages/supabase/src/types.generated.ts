@@ -2812,6 +2812,10 @@ export type Database = {
       }
       goods_receipt_notes: {
         Row: {
+          cancel_idempotency_key: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           grn_number: string
           id: string
@@ -2827,6 +2831,10 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          cancel_idempotency_key?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           grn_number: string
           id?: string
@@ -2842,6 +2850,10 @@ export type Database = {
           vat_amount: number
         }
         Update: {
+          cancel_idempotency_key?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           grn_number?: string
           id?: string
@@ -2857,6 +2869,13 @@ export type Database = {
           vat_amount?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "goods_receipt_notes_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "goods_receipt_notes_po_id_fkey"
             columns: ["po_id"]
@@ -9159,6 +9178,10 @@ export type Database = {
           p_order_id: string
           p_reason: string
         }
+        Returns: Json
+      }
+      cancel_goods_receipt_v1: {
+        Args: { p_grn_id: string; p_idempotency_key?: string; p_reason: string }
         Returns: Json
       }
       cancel_opname_v1: {

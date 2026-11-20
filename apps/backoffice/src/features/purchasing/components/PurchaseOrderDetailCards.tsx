@@ -1,11 +1,12 @@
 import type { JSX } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@breakery/ui";
-import { Card, EmptyState } from "@/components/BackofficeUi.js";
+import { Card } from "@/components/BackofficeUi.js";
 import { SectionLabel } from "@/components/SectionLabel.js";
 import { formatCurrency, formatDateShortWita, formatQuantity } from "@breakery/utils";
 import type { PurchaseOrderDetail } from "../hooks/usePurchaseOrderDetail.js";
 import type { PoPaymentStatus } from "../hooks/usePoPayments.js";
+import { GoodsReceiptNotesCard } from "./GoodsReceiptNotesCard.js";
 
 /** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data
  *  Rule). `tabular-nums` seul ne suffit pas — sans `font-data`, le chiffre sort
@@ -31,7 +32,9 @@ function fmtQty(quantity: number | string | null): string {
   return formatQuantity(quantity ?? 0, null);
 }
 
-export function PurchaseOrderContent({ po }: { po: PurchaseOrderDetail }): JSX.Element {
+export function PurchaseOrderContent({
+  po, canCancelReceipt = false,
+}: { po: PurchaseOrderDetail; canCancelReceipt?: boolean }): JSX.Element {
   return <>
           <Card variant="default" padding="md" className="space-y-4">
             <SectionLabel as="h2" size="sm" className="text-gold">Order Information</SectionLabel>
@@ -92,51 +95,7 @@ export function PurchaseOrderContent({ po }: { po: PurchaseOrderDetail }): JSX.E
             </div>
           </Card>
 
-          <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" id="po-grn-heading" className="text-gold">Goods Receipt Notes</SectionLabel>
-            {po.goods_receipt_notes.length === 0 ? (
-              <EmptyState
-                title="No receipts recorded yet"
-                description="The first GRN will appear here once goods have been received."
-                size="sm"
-              />
-            ) : (
-              <div className="overflow-x-auto rounded-md border border-border-subtle">
-                <table className="w-full text-sm" aria-labelledby="po-grn-heading">
-                  <thead className="bg-surface-inert">
-                    <tr>
-                      <th scope="col" className="px-3 py-2 text-left">
-                        <SectionLabel as="span" size="xs">GRN</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-left w-32">
-                        <SectionLabel as="span" size="xs">Date</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">VAT</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">Total</SectionLabel>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {po.goods_receipt_notes.map((g) => (
-                      <tr key={g.id} className="border-t border-border-subtle">
-                        <td className="px-3 py-2 font-mono text-xs">{g.grn_number}</td>
-                        <td className="px-3 py-2 font-data tabular-nums text-text-secondary">{formatDateShortWita(g.received_date)}</td>
-                        <td className={NUM_CELL}>{fmtIdr(g.subtotal)}</td>
-                        <td className={NUM_CELL}>{fmtIdr(g.vat_amount)}</td>
-                        <td className={`${NUM_CELL} font-medium`}>{fmtIdr(g.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
+          <GoodsReceiptNotesCard po={po} canCancelReceipt={canCancelReceipt} />
 
           {po.notes !== null && po.notes !== '' && (
             <Card variant="default" padding="md" className="space-y-2">

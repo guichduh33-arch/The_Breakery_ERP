@@ -1722,6 +1722,33 @@ Vitest ciblé sur les deux cas. **Aucune** clôture automatique n'existe.
 
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 9.
 
+**État — développé et prouvé en dev le 2026-11-20**, branche
+`feat/s3-05-annulation-reception`. Migration
+`20261120000001_s3_05_cancel_goods_receipt.sql` appliquée en dev : fonction
+neuve `cancel_goods_receipt_v1` (permission `purchasing.po.cancel`, raison
+obligatoire, idempotente). Elle écrit un mouvement `purchase_return` par ligne
+reçue, remet le coût moyen par retrait pondéré, contre-passe l'écriture de la
+réception (stock crédité sur le compte courant des matières premières, y compris
+pour une réception d'avant la régularisation de `S1-05`), recalcule le statut du
+bon et trace l'annulation. Refus explicites : stock déjà consommé, paiements
+supérieurs au reçu restant, réception d'import historique, double annulation.
+Le back-office porte l'action « Cancel receipt » sur chaque réception, affiche
+une réception annulée avec sa date et sa raison, et le message d'annulation du
+bon dit la vérité. pgTAP `s3_05_cancel_goods_receipt.test.sql` 41/41 en dev (relecture indépendante
+appliquée : coût moyen laissé inchangé quand l'article a bougé depuis la
+réception, verrous par article dans un ordre fixe, erreur explicite pour une
+ligne sans quantité) ;
+Vitest 16/16 sur trois fichiers ; suite back-office complète verte. Non publié.
+**Limites relevées** :
+- une réception payée au comptant est toujours refusée, faute de chemin pour
+  annuler un paiement fournisseur ;
+- un bon dont toutes les réceptions sont annulées peut être reçu de nouveau,
+  mais ni annulé ni modifié (les deux fonctions refusent dès qu'une réception
+  existe, même annulée) ;
+- les écarts de stock comptent la réception annulée en entrée et son
+  annulation en « autre » (net juste) ; le fournisseur suggéré au
+  réapprovisionnement peut être celui d'une réception annulée.
+
 **Fichiers**
 - `supabase/migrations/<nouveau>` — fonction d'annulation de réception :
   contre-passer le mouvement de stock, le coût moyen et la dette fournisseur

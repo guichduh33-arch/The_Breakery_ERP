@@ -33,9 +33,15 @@ export function CancelDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Cancel purchase order</DialogTitle>
+          {/* S3-05 — `cancel_purchase_order_v1` refuse dès qu'une réception
+              existe, même annulée (il compte toutes les lignes de
+              goods_receipt_notes). Une réception erronée se corrige par
+              « Cancel receipt » sur sa ligne ; il n'existe pas de retour
+              fournisseur. */}
           <DialogDescription>
-            PO {poNumber} — cancellation is final and only allowed before any goods
-            have been received.
+            PO {poNumber} — cancellation is final. It is only possible while no goods
+            receipt exists on this order, even a cancelled one. A wrong receipt is
+            corrected with Cancel receipt on its row in Goods Receipt Notes.
           </DialogDescription>
         </DialogHeader>
 
