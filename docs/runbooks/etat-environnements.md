@@ -26,6 +26,25 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 20 novembre 2026, 12 h 40 — achats par article (`S3-20`), arrondi de production (`S3-09`), annulation de réception (`S3-05`) et back-office `b0ed05d6`
+
+Relevé du 20 novembre 2026 entre 12 h 29 et 12 h 40, UTC+8. Observé directement.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `b0ed05d6` | Fusion de #750 (après #749, qui porte aussi `S3-09`). `ci.yml` run `44667117665` réussi ; pgTAP PR run `44668700416` réussi | pgTAP tourne sur la base de dev |
+| Backend production, avant | Étapes additives déjà présentes, appliquées entre 11 h 35 et 11 h 38 : `s3_09_production_rounding_step_additive`, `s3_20_purchase_items_by_article_additive`, `s3_05_cancel_goods_receipt_additive_part1_columns`, `s3_05_cancel_goods_receipt_additive_part2_function`. Empreintes `md5(prosrc)` égales au dev pour `cancel_goods_receipt_v1`, `get_production_suggestions_v5`, `get_purchase_item_lines_v1`, `get_purchase_items_v2`, `set_production_rounding_step_v1` ; aucune exécutable par `anon`, toutes par `authenticated` | Auteur de l'étape additive non retrouvé ; colonnes de la partie 1 non relues |
+| Back-office | `production-backoffice.yml`, run `44675245835`, réussi après l'approbation de l'environnement Production par le compte `guichduh33-arch` (Mamat) ; déploiement `dpl_HaDxTigSfy5quMKTQkKrJs4jt4Xo` sur `b0ed05d6`, associé à `backoffice.the-breakery.com`. Code servi relu (326 fichiers) : référence de production seule ; appelle les cinq fonctions neuves, jamais `get_production_suggestions_v4` ni `get_purchase_items_v1` | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, retrait | Avant : aucune autre fonction ne cite les deux anciennes versions ; ni la caisse `e7c43cfd`, ni les Edge Functions. `s3_09_s3_20_drop_previous_versions` : `DROP` de `get_production_suggestions_v4` et `get_purchase_items_v1`, les deux `DROP` de `20261120000010` et `20261120000020`. Après : seules `get_production_suggestions_v5` et `get_purchase_items_v2` restent | — |
+| POS | Aucun changement de la caisse depuis `e7c43cfd` ; rien à installer | — |
+
+Toujours non appliqués : les retraits `20261119000003` et `20261119000006`
+du complément ci-dessous, pour les mêmes raisons.
+
+Retour : le back-office `e7c43cfd` appelle les deux fonctions supprimées et n'est
+plus un recours pour les écrans des suggestions de production et des achats par
+article.
+
 ## Complément du 20 novembre 2026, 1 h 30 — rapprochement groupé (#745), annulation de clôture (`S3-03`) et caisse `e7c43cfd`
 
 Relevé du 20 novembre 2026 entre 0 h 10 et 1 h 30, UTC+8. Observé directement.
