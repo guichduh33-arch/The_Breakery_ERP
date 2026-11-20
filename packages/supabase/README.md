@@ -135,6 +135,12 @@ paths:
     post:
       summary: Verify PIN, mint session + JWT
       operationId: loginWithPin
+      parameters:
+        - in: header
+          name: x-login-pin
+          required: true
+          description: The PIN travels in this header only, never in the body.
+          schema: { type: string, pattern: '^[0-9]{6}$' }
       requestBody:
         required: true
         content:
@@ -147,15 +153,15 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LoginResponse' }
         '400':
-          description: missing_fields | invalid_pin_format
+          description: missing_fields | invalid_pin_format | invalid_device_type
         '401':
-          description: invalid_pin (with attempts_remaining)
+          description: invalid_pin (with attempts_remaining) | user_not_found
         '403':
-          description: user_inactive | user_not_found
-        '423':
-          description: account_locked (with minutes_left)
+          description: user_inactive | account_locked (with minutes_left) | permission_denied (required_permission missing)
         '429':
           description: rate_limited (with retry_after_sec)
+        '503':
+          description: session_policy_unavailable
 
   /auth-get-session:
     get:
@@ -203,20 +209,33 @@ paths:
           name: x-session-token
           required: true
           schema: { type: string }
+        - in: header
+          name: x-new-pin
+          required: true
+          schema: { type: string, pattern: '^[0-9]{6}$' }
+        - in: header
+          name: x-current-pin
+          required: false
+          description: 'Required for self rotation; omit for admin override.'
+          schema: { type: string, pattern: '^[0-9]{6}$' }
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ChangePinRequest' }
       responses:
-        '204':
-          description: PIN rotated
+        '200':
+          description: 'PIN rotated — { ok: true, weak, weak_reason? }'
         '400':
-          description: invalid_pin_format | pin_reused
+          description: missing_fields | invalid_new_pin_format | current_pin_required
         '401':
-          description: invalid_pin (current_pin mismatch)
+          description: invalid_current_pin | active_profile_required
         '403':
-          description: permission_denied (admin override without users.update)
+          description: permission_denied | super_admin_only
+        '404':
+          description: user_not_found
+        '429':
+          description: rate_limited | account_locked
 
 components:
   schemas:
@@ -229,15 +248,20 @@ components:
         role_code: { type: string }
         employee_code: { type: string }
 
+    # Body JSON réel. Le PIN n'y figure jamais : il voyage dans `x-login-pin`.
+    # La fonction TypeScript `loginWithPin` reçoit `pin` et le place elle-même
+    # dans l'en-tête.
     LoginRequest:
       type: object
-      required: [user_id, pin, device_type]
+      required: [user_id, device_type]
       properties:
         user_id: { type: string, format: uuid }
-        pin: { type: string, pattern: '^[0-9]{6}$' }
         device_type:
           type: string
           enum: [pos, backoffice]
+        required_permission:
+          type: string
+          description: 'Optional: refuse the login (403) when the user lacks this permission.'
 
     LoginResponse:
       type: object
@@ -262,16 +286,13 @@ components:
           type: array
           items: { type: string }
 
+    # Body JSON réel : `user_id` seul. Les PIN voyagent dans `x-current-pin`
+    # et `x-new-pin`, jamais dans le corps.
     ChangePinRequest:
       type: object
-      required: [user_id, new_pin]
+      required: [user_id]
       properties:
         user_id: { type: string, format: uuid }
-        current_pin:
-          type: string
-          pattern: '^[0-9]{6}$'
-          description: 'Required for self rotation; omit for admin override.'
-        new_pin: { type: string, pattern: '^[0-9]{6}$' }
 ```
 
 ---
