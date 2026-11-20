@@ -6007,6 +6007,7 @@ export type Database = {
       purchase_order_items: {
         Row: {
           created_at: string
+          discount_amount: number
           id: string
           notes: string | null
           po_id: string
@@ -6021,6 +6022,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discount_amount?: number
           id?: string
           notes?: string | null
           po_id: string
@@ -6035,6 +6037,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discount_amount?: number
           id?: string
           notes?: string | null
           po_id?: string
@@ -6086,6 +6089,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          delivery_fee: number
+          discount_amount: number
           expected_date: string | null
           financial_import_document_id: string | null
           id: string
@@ -6115,6 +6120,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          delivery_fee?: number
+          discount_amount?: number
           expected_date?: string | null
           financial_import_document_id?: string | null
           id?: string
@@ -6144,6 +6151,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          delivery_fee?: number
+          discount_amount?: number
           expected_date?: string | null
           financial_import_document_id?: string | null
           id?: string
@@ -8387,7 +8396,7 @@ export type Database = {
         }
         Returns: Json
       }
-      receive_purchase_order_v7: {
+      receive_purchase_order_v8: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
@@ -9503,8 +9512,27 @@ export type Database = {
         Args: { p_month: string }
         Returns: string
       }
-      create_purchase_order_v2: {
+      _po_cost_allocation_v1: {
+        Args: { p_po_id: string }
+        Returns: {
+          discount_share: number
+          fee_share: number
+          line_discount: number
+          line_gross: number
+          line_net: number
+          line_total: number
+          po_item_id: string
+          vat_share: number
+        }[]
+      }
+      _split_pro_rata_v1: {
+        Args: { p_amount: number; p_weights: number[] }
+        Returns: number[]
+      }
+      create_purchase_order_v3: {
         Args: {
+          p_delivery_fee?: number
+          p_discount_amount?: number
           p_expected_date?: string
           p_idempotency_key?: string
           p_items: Json
@@ -10964,7 +10992,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_purchase_order_v1: {
+      update_purchase_order_v2: {
         Args: { p_patch: Json; p_po_id: string }
         Returns: Json
       }

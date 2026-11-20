@@ -18,6 +18,10 @@ export type CreatePOErrorCode =
   | 'product_not_raw_material'
   | 'quantity_must_be_positive'
   | 'unit_cost_must_be_non_negative'
+  | 'line_discount_out_of_range'
+  | 'discount_exceeds_subtotal'
+  | 'discount_must_be_non_negative'
+  | 'delivery_fee_must_be_non_negative'
   | 'unknown';
 
 export class CreatePOError extends Error {
@@ -33,6 +37,7 @@ export interface CreatePOItemArgs {
   unit?:            string;
   unitFactorToBase?: number;   // base-unit conversion factor (default 1)
   unitCost:         number;
+  discountAmount?:  number;    // S3-06 — line discount, as an amount
   notes?:           string;
 }
 
@@ -43,6 +48,8 @@ export interface CreatePOArgs {
   orderDate?:     string;  // YYYY-MM-DD
   paymentTerms?:  'cash' | 'credit';
   vatRate?:       number;  // 0..1, default 0.11
+  discountAmount?: number; // S3-06 — order-level discount, as an amount
+  deliveryFee?:   number;  // S3-06 — invoiced delivery fee, no VAT added
   notes?:         string;
   idempotencyKey: string;  // UUID v4, stable across retries (caller owns it)
 }
@@ -70,6 +77,10 @@ function classify(message: string): CreatePOErrorCode {
   if (message.includes('product_not_found'))               return 'product_not_found';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('unit_cost_must_be_non_negative'))  return 'unit_cost_must_be_non_negative';
+  if (message.includes('line_discount_out_of_range'))      return 'line_discount_out_of_range';
+  if (message.includes('discount_exceeds_subtotal'))       return 'discount_exceeds_subtotal';
+  if (message.includes('discount_must_be_non_negative'))   return 'discount_must_be_non_negative';
+  if (message.includes('delivery_fee_must_be_non_negative')) return 'delivery_fee_must_be_non_negative';
   return 'unknown';
 }
 
@@ -85,12 +96,19 @@ export function useCreatePurchaseOrder() {
           ...(it.unit  !== undefined && it.unit.trim()  !== '' ? { unit:  it.unit.trim() }  : {}),
           ...(it.unitFactorToBase !== undefined ? { unit_factor_to_base: it.unitFactorToBase } : {}),
           unit_cost:  it.unitCost,
+          ...(it.discountAmount !== undefined && it.discountAmount > 0 ? { discount_amount: it.discountAmount } : {}),
           ...(it.notes !== undefined && it.notes.trim() !== '' ? { notes: it.notes.trim() } : {}),
         })),
         p_payment_terms:   args.paymentTerms ?? 'credit',
         p_vat_rate:        args.vatRate      ?? 0.11,
         p_idempotency_key: args.idempotencyKey,
       };
+      if (args.discountAmount !== undefined && args.discountAmount > 0) {
+        rpcArgs.p_discount_amount = args.discountAmount;
+      }
+      if (args.deliveryFee !== undefined && args.deliveryFee > 0) {
+        rpcArgs.p_delivery_fee = args.deliveryFee;
+      }
       if (args.expectedDate !== undefined && args.expectedDate !== '') {
         rpcArgs.p_expected_date = args.expectedDate;
       }
@@ -101,12 +119,12 @@ export function useCreatePurchaseOrder() {
         rpcArgs.p_notes = args.notes.trim();
       }
 
-      // Session 46 — bumped to v2 (raw_material guard + unit_factor_to_base persist).
+      // S3-06 — v3 : escomptes (ligne + global) et frais de livraison.
       const { data, error } = await (supabase.rpc as unknown as (
         fn: string,
         args: Record<string, unknown>,
       ) => Promise<{ data: unknown; error: { message: string } | null }>)(
-        'create_purchase_order_v2',
+        'create_purchase_order_v3',
         rpcArgs,
       );
 

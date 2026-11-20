@@ -22,7 +22,7 @@ describe('POFormDraft smoke', () => {
   it('document layout keeps the draft totals and submits the same form', () => {
     const value: POFormDraftValue = {
       ...emptyPOFormDraftValue(), supplierId: 'sup-1', vatRate: 0.11,
-      items: [{ productId: 'prod-1', quantity: 5, unit: 'kg', unitFactorToBase: 1, unitCost: 3000, notes: '' }],
+      items: [{ productId: 'prod-1', quantity: 5, unit: 'kg', unitFactorToBase: 1, unitCost: 3000, discountAmount: 0, notes: '' }],
     };
     const submit = vi.fn();
     render(<POFormDraft layout="document" value={value} onChange={vi.fn()} suppliers={SUPPLIERS} products={PRODUCTS} onSubmit={submit} />);
@@ -107,7 +107,7 @@ describe('POFormDraft — constrained unit select (R2)', () => {
     return {
       ...emptyPOFormDraftValue(),
       supplierId: 'sup-1',
-      items: [{ productId: 'prod-raw', quantity: 2, unit, unitFactorToBase: factor, unitCost: 12000, notes: '' }],
+      items: [{ productId: 'prod-raw', quantity: 2, unit, unitFactorToBase: factor, unitCost: 12000, discountAmount: 0, notes: '' }],
     };
   }
 
@@ -150,7 +150,7 @@ describe('validatePOFormDraft', () => {
     const v: POFormDraftValue = {
       ...emptyPOFormDraftValue(),
       supplierId: 'sup-1',
-      items: [{ productId: 'prod-1', quantity: 0, unit: 'kg', unitFactorToBase: 1, unitCost: 100, notes: '' }],
+      items: [{ productId: 'prod-1', quantity: 0, unit: 'kg', unitFactorToBase: 1, unitCost: 100, discountAmount: 0, notes: '' }],
     };
     expect(validatePOFormDraft(v)).toMatch(/quantity/);
   });
@@ -159,7 +159,7 @@ describe('validatePOFormDraft', () => {
     const v: POFormDraftValue = {
       ...emptyPOFormDraftValue(),
       supplierId: 'sup-1',
-      items: [{ productId: 'prod-1', quantity: 5, unit: 'kg', unitFactorToBase: 1, unitCost: 100, notes: '' }],
+      items: [{ productId: 'prod-1', quantity: 5, unit: 'kg', unitFactorToBase: 1, unitCost: 100, discountAmount: 0, notes: '' }],
     };
     expect(validatePOFormDraft(v)).toBeUndefined();
   });
@@ -169,8 +169,8 @@ describe('validatePOFormDraft', () => {
       ...emptyPOFormDraftValue(),
       supplierId: 'sup-1',
       items: [
-        { productId: 'prod-1', quantity: 5, unit: '', unitFactorToBase: 1, unitCost: 100, notes: '' },
-        { productId: 'prod-2', quantity: 2, unit: 'pcs', unitFactorToBase: 1, unitCost: 50, notes: 'urgent' },
+        { productId: 'prod-1', quantity: 5, unit: '', unitFactorToBase: 1, unitCost: 100, discountAmount: 0, notes: '' },
+        { productId: 'prod-2', quantity: 2, unit: 'pcs', unitFactorToBase: 1, unitCost: 50, discountAmount: 0, notes: 'urgent' },
       ],
     };
     const items = toCreatePOItems(v);

@@ -62,7 +62,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 10, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.11
   ))->>'po_id' INTO v_po_credit_id;
@@ -71,7 +71,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 5, 'unit', 'kg', 'unit_cost', 2000)
   );
-  SELECT (create_purchase_order_v2(
+  SELECT (create_purchase_order_v3(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'cash', p_vat_rate := 0.11
   ))->>'po_id' INTO v_po_cash_id;
@@ -101,7 +101,7 @@ BEGIN
   SELECT id INTO v_item_c_id FROM purchase_order_items WHERE po_id = v_po_credit LIMIT 1;
   SELECT id INTO v_item_k_id FROM purchase_order_items WHERE po_id = v_po_cash   LIMIT 1;
 
-  v_r_credit := receive_purchase_order_v7(
+  v_r_credit := receive_purchase_order_v8(
     p_po_id          := v_po_credit,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_c_id, 'received_quantity', 10)
@@ -109,7 +109,7 @@ BEGIN
     p_idempotency_key := 'd1d1d1d1-0000-0000-0000-000000000001'::uuid
   );
 
-  v_r_cash := receive_purchase_order_v7(
+  v_r_cash := receive_purchase_order_v8(
     p_po_id          := v_po_cash,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_k_id, 'received_quantity', 5)
@@ -245,7 +245,7 @@ BEGIN
   SELECT id INTO v_item_c_id FROM purchase_order_items WHERE po_id = v_po_credit LIMIT 1;
 
   -- Replay same idempotency_key → returns existing GRN, trigger NOT re-fired.
-  PERFORM receive_purchase_order_v7(
+  PERFORM receive_purchase_order_v8(
     p_po_id          := v_po_credit,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_c_id, 'received_quantity', 10)

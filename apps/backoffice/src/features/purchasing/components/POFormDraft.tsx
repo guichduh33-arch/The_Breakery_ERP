@@ -7,11 +7,14 @@
 // Validation rules:
 //   - At least 1 line item.
 //   - supplier_id required.
-//   - Each line: product, qty > 0, unit_cost >= 0.
+//   - Each line: product, qty > 0, unit_cost >= 0, 0 <= discount <= line value.
+//   - S3-06 : escompte global <= sous-total, port >= 0. Totaux et ventilation
+//     via computePurchaseOrderTotals (miroir de la ventilation serveur).
 
 import { useId, useMemo, type JSX } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
+import { computePurchaseOrderTotals } from '@breakery/domain';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -43,6 +46,8 @@ export interface POFormDraftValue {
   orderDate:      string;
   paymentTerms:   'cash' | 'credit';
   vatRate:        number;     // 0..1
+  discountAmount: number;     // S3-06 — escompte global, en montant
+  deliveryFee:    number;     // S3-06 — port facturé, sans PPN ajoutée
   notes:          string;
   items:          POFormDraftItem[];
 }
@@ -53,6 +58,7 @@ export interface POFormDraftItem {
   unit:              string;
   unitFactorToBase:  number;   // base-unit conversion factor (default 1)
   unitCost:          number;
+  discountAmount:    number;   // S3-06 — escompte de ligne, en montant
   notes:             string;
 }
 
@@ -70,7 +76,7 @@ export interface POFormDraftProps {
 }
 
 export function newEmptyItem(): POFormDraftItem {
-  return { productId: '', quantity: 0, unit: '', unitFactorToBase: 1, unitCost: 0, notes: '' };
+  return { productId: '', quantity: 0, unit: '', unitFactorToBase: 1, unitCost: 0, discountAmount: 0, notes: '' };
 }
 
 /** Resolve the base-unit factor for a chosen unit code on a given product. */
@@ -86,6 +92,8 @@ export function emptyPOFormDraftValue(): POFormDraftValue {
     orderDate:    '',
     paymentTerms: 'credit',
     vatRate:      0.11,
+    discountAmount: 0,
+    deliveryFee:  0,
     notes:        '',
     items:        [newEmptyItem()],
   };
@@ -100,8 +108,15 @@ export function validatePOFormDraft(v: POFormDraftValue): string | undefined {
       return `Line ${i + 1}: quantity must be > 0`;
     if (!Number.isFinite(it.unitCost) || it.unitCost < 0)
       return `Line ${i + 1}: unit cost must be >= 0`;
+    if (!Number.isFinite(it.discountAmount) || it.discountAmount < 0
+        || it.discountAmount > it.quantity * it.unitCost)
+      return `Line ${i + 1}: discount must be between 0 and the line value`;
   }
   if (v.vatRate < 0 || v.vatRate > 1) return 'VAT rate must be between 0 and 1';
+  const net = v.items.reduce((a, it) => a + it.quantity * it.unitCost - it.discountAmount, 0);
+  if (!Number.isFinite(v.discountAmount) || v.discountAmount < 0 || v.discountAmount > net)
+    return 'Order discount must be between 0 and the subtotal';
+  if (!Number.isFinite(v.deliveryFee) || v.deliveryFee < 0) return 'Delivery fee must be >= 0';
   return undefined;
 }
 
@@ -117,6 +132,7 @@ export function toCreatePOItems(v: POFormDraftValue): CreatePOItemArgs[] {
     if (unit !== '') base.unit = unit;
     const notes = it.notes.trim();
     if (notes !== '') base.notes = notes;
+    if (it.discountAmount > 0) base.discountAmount = it.discountAmount;
     return base;
   });
 }
@@ -128,11 +144,20 @@ export function POFormDraft({
   layout = 'stacked',
 }: POFormDraftProps): JSX.Element {
   const reactId = useId();
-  const subtotal = useMemo(() =>
-    value.items.reduce((acc, it) => acc + it.quantity * it.unitCost, 0)
-  , [value.items]);
-  const vatAmount = Math.round(subtotal * value.vatRate * 100) / 100;
-  const total = subtotal + vatAmount;
+  const totals = useMemo(() => computePurchaseOrderTotals({
+    lines: value.items.map((it) => ({
+      quantity: it.quantity, unitCost: it.unitCost, discountAmount: it.discountAmount,
+    })),
+    discountAmount: value.discountAmount,
+    deliveryFee:    value.deliveryFee,
+    vatRate:        value.vatRate,
+  }), [value.items, value.discountAmount, value.deliveryFee, value.vatRate]);
+  const summaryRows: { label: string; amount: number }[] = [
+    { label: 'Subtotal', amount: totals.subtotal },
+    ...(totals.discountAmount > 0 ? [{ label: 'Order discount', amount: -totals.discountAmount }] : []),
+    { label: 'VAT', amount: totals.vatAmount },
+    ...(totals.deliveryFee > 0 ? [{ label: 'Delivery fee', amount: totals.deliveryFee }] : []),
+  ];
 
   function patch(p: Partial<POFormDraftValue>): void {
     onChange({ ...value, ...p });
@@ -257,7 +282,34 @@ export function POFormDraft({
             className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
+
+        {([
+          ['discountAmount', 'Order discount'],
+          ['deliveryFee', 'Delivery fee'],
+        ] as const).map(([key, label]) => (
+          <div key={key} className="space-y-1">
+            <label htmlFor={`${reactId}-${key}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
+              {label}
+            </label>
+            <input
+              id={`${reactId}-${key}`}
+              type="number" min={0} step={1}
+              value={value[key]}
+              onChange={(e) => {
+                const n = Math.max(0, Number(e.target.value) || 0);
+                patch(key === 'discountAmount' ? { discountAmount: n } : { deliveryFee: n });
+              }}
+              disabled={submitting}
+              className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            />
+          </div>
+        ))}
       </div>
+      {value.deliveryFee > 0 && (
+        <p className="text-xs text-text-muted">
+          The delivery fee is spread across the lines by value and added to their stock cost.
+        </p>
+      )}
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -274,6 +326,7 @@ export function POFormDraft({
                 <th scope="col" className="text-right px-3 py-2 w-24">Qty</th>
                 <th scope="col" className="text-left px-3 py-2 w-20">Unit</th>
                 <th scope="col" className="text-right px-3 py-2 w-32">Unit cost</th>
+                <th scope="col" className="text-right px-3 py-2 w-28">Discount</th>
                 <th scope="col" className="text-right px-3 py-2 w-32">Subtotal</th>
                 <th scope="col" className="px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
               </tr>
@@ -349,8 +402,18 @@ export function POFormDraft({
                       className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
+                  <td className="px-3 py-1.5">
+                    <input
+                      type="number" min={0} step={1}
+                      value={it.discountAmount}
+                      onChange={(e) => patchItem(idx, { discountAmount: Math.max(0, Number(e.target.value) || 0) })}
+                      disabled={submitting}
+                      aria-label={`Discount for line ${idx + 1}`}
+                      className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                    />
+                  </td>
                   <td className="px-3 py-1.5 text-right font-data tabular-nums text-text-primary">
-                    {formatCurrency(it.quantity * it.unitCost)}
+                    {formatCurrency(totals.lines[idx]?.net ?? 0)}
                   </td>
                   <td className="px-3 py-1.5 text-center">
                     <button
@@ -367,19 +430,16 @@ export function POFormDraft({
               ))}
             </tbody>
             {layout === 'stacked' && <tfoot className="bg-bg-overlay text-sm">
-              <tr className="border-t border-border-subtle">
-                <td colSpan={4} className="px-3 py-1.5 text-right text-text-secondary">Subtotal</td>
-                <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(subtotal)}</td>
-                <td />
-              </tr>
+              {summaryRows.map((r, i) => (
+                <tr key={r.label} className={i === 0 ? 'border-t border-border-subtle' : undefined}>
+                  <td colSpan={5} className="px-3 py-1.5 text-right text-text-secondary">{r.label}</td>
+                  <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(r.amount)}</td>
+                  <td />
+                </tr>
+              ))}
               <tr>
-                <td colSpan={4} className="px-3 py-1.5 text-right text-text-secondary">VAT</td>
-                <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(vatAmount)}</td>
-                <td />
-              </tr>
-              <tr>
-                <td colSpan={4} className="px-3 py-1.5 text-right font-semibold">Total</td>
-                <td className="px-3 py-1.5 text-right font-data font-semibold tabular-nums">{formatCurrency(total)}</td>
+                <td colSpan={5} className="px-3 py-1.5 text-right font-semibold">Total</td>
+                <td className="px-3 py-1.5 text-right font-data font-semibold tabular-nums">{formatCurrency(totals.total)}</td>
                 <td />
               </tr>
             </tfoot>}
@@ -415,9 +475,10 @@ export function POFormDraft({
           <h2 className="text-lg font-medium tracking-tight">Order summary</h2>
           <p className="mt-1 text-xs text-text-muted">Calculated from the draft lines.</p>
           <dl className="mt-5 space-y-3 text-sm">
-            <div className="flex flex-wrap justify-between gap-2"><dt className="text-text-secondary">Subtotal</dt><dd className="font-data tabular-nums">{formatCurrency(subtotal)}</dd></div>
-            <div className="flex flex-wrap justify-between gap-2"><dt className="text-text-secondary">VAT</dt><dd className="font-data tabular-nums">{formatCurrency(vatAmount)}</dd></div>
-            <div className="space-y-1 border-t border-border-subtle pt-3"><dt className="text-text-secondary">Total</dt><dd className="font-data text-xl font-medium tabular-nums">{formatCurrency(total)}</dd></div>
+            {summaryRows.map((r) => (
+              <div key={r.label} className="flex flex-wrap justify-between gap-2"><dt className="text-text-secondary">{r.label}</dt><dd className="font-data tabular-nums">{formatCurrency(r.amount)}</dd></div>
+            ))}
+            <div className="space-y-1 border-t border-border-subtle pt-3"><dt className="text-text-secondary">Total</dt><dd className="font-data text-xl font-medium tabular-nums">{formatCurrency(totals.total)}</dd></div>
           </dl>
           <p className="mt-5 border-t border-border-subtle pt-4 text-sm text-text-secondary">Goods are received later from the order detail.</p>
         </aside>

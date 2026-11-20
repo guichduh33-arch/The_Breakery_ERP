@@ -59,13 +59,24 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
                 <td className="py-1 text-right tabular-nums">{fmtQty(it.quantity)}</td>
                 <td className="py-1">{it.unit}</td>
                 <td className="py-1 text-right tabular-nums">{fmt(it.unit_cost)}</td>
-                <td className="py-1 text-right tabular-nums">{fmt(it.subtotal)}</td>
+                <td className="py-1 text-right tabular-nums">
+                  {fmt(Number(it.subtotal ?? 0) - Number(it.discount_amount ?? 0))}
+                  {Number(it.discount_amount ?? 0) > 0 && (
+                    <span className="block text-xs text-text-muted">after {fmt(it.discount_amount)} discount</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
           <tfoot className="text-sm">
             <tr><td colSpan={4} className="text-right pt-2">Subtotal</td><td className="text-right pt-2 tabular-nums">{fmt(po.subtotal)}</td></tr>
+            {Number(po.discount_amount ?? 0) > 0 && (
+              <tr><td colSpan={4} className="text-right">Order discount</td><td className="text-right tabular-nums">{fmt(-Number(po.discount_amount))}</td></tr>
+            )}
             <tr><td colSpan={4} className="text-right">VAT</td><td className="text-right tabular-nums">{fmt(po.vat_amount)}</td></tr>
+            {Number(po.delivery_fee ?? 0) > 0 && (
+              <tr><td colSpan={4} className="text-right">Delivery fee</td><td className="text-right tabular-nums">{fmt(po.delivery_fee)}</td></tr>
+            )}
             <tr><td colSpan={4} className="text-right font-semibold">Total</td><td className="text-right font-semibold tabular-nums">{fmt(po.total_amount)}</td></tr>
           </tfoot>
         </table>

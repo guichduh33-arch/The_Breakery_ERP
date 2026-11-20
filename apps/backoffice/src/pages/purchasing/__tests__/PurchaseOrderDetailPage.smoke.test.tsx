@@ -19,6 +19,10 @@ const PO: PurchaseOrderDetail = {
   payment_terms:    'credit',
   subtotal:         600000,
   vat_amount:       60000,
+
+  discount_amount: 0,
+
+  delivery_fee: 0,
   total_amount:     660000,
   order_date:       '2026-04-17',
   expected_date:    '2026-04-17',
@@ -51,6 +55,10 @@ const PO: PurchaseOrderDetail = {
       unit_cost:          60000,
       subtotal:           600000,
       vat_amount:         60000,
+
+      discount_amount: 0,
+
+      delivery_fee: 0,
       total:              660000,
       created_at:         '2026-04-17T00:00:00Z',
       updated_at:         '2026-04-17T00:00:00Z',

@@ -695,6 +695,11 @@ facture avec port ne peut pas être saisie à son montant réel.
 **RÈGLE** — Les frais de livraison **et** les escomptes (global et par ligne)
 doivent exister, le port étant réparti au prorata sur les lignes.
 **À LIVRER** — Les deux.
+**FAIT** — Développés en dev le 2026-11-20 (`S3-06`) : escompte par ligne,
+escompte global et port sur le bon ; port réparti au prorata de la valeur des
+lignes, au centime, et intégré au coût du stock à la réception. Le port se
+saisit tel que facturé : le système n'y ajoute pas de PPN. La production attend
+la publication.
 
 **RÈGLE** — Une seule réponse à « combien je lui dois », celle du journal des
 paiements.

@@ -20,7 +20,7 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 describe('achat direct — idempotence des étapes', () => {
   beforeEach(() => vi.clearAllMocks());
-  it.each(['create_purchase_order_v2', 'receive_purchase_order_v7', 'record_po_payment_v2'])(
+  it.each(['create_purchase_order_v3', 'receive_purchase_order_v8', 'record_po_payment_v2'])(
     'reprend la réponse perdue de %s sans modifier les paramètres ni doubler les écritures', async (lostStep) => {
       const writes = new Map<string, number>();
       const confirmed = new Map<string, unknown>();
@@ -29,8 +29,8 @@ describe('achat direct — idempotence des étapes', () => {
         const key = `${fn}:${String(args.p_idempotency_key)}`;
         if (!confirmed.has(key)) {
           writes.set(fn, (writes.get(fn) ?? 0) + 1);
-          confirmed.set(key, fn === 'create_purchase_order_v2' ? { po_id: 'po', po_number: 'PO', total_amount: 500000 }
-            : fn === 'receive_purchase_order_v7' ? { grn_id: 'grn', grn_number: 'GRN' } : { payment_id: 'payment' });
+          confirmed.set(key, fn === 'create_purchase_order_v3' ? { po_id: 'po', po_number: 'PO', total_amount: 500000 }
+            : fn === 'receive_purchase_order_v8' ? { grn_id: 'grn', grn_number: 'GRN' } : { payment_id: 'payment' });
         }
         if (loseResponse && fn === lostStep) { loseResponse = false; return Promise.reject(new Error('response lost')); }
         return Promise.resolve({ data: confirmed.get(key), error: null });

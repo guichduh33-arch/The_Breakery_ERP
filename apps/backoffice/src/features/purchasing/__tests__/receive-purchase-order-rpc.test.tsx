@@ -27,7 +27,7 @@ describe('purchase receipt RPC contract', () => {
     expect(rpc).toHaveBeenCalledTimes(1);
     await act(async () => { await expect(result.current.mutateAsync(input)).resolves.toBe(receipt); });
     expect(rpc).toHaveBeenCalledTimes(2);
-    const expected = ['receive_purchase_order_v7', { p_po_id: 'po',
+    const expected = ['receive_purchase_order_v8', { p_po_id: 'po',
       p_received_items: [{ po_item_id: 'line', received_quantity: 0.125 }], p_idempotency_key: 'stable-key' }];
     expect(rpc.mock.calls[0]).toEqual(expected);
     expect(rpc.mock.calls[1]).toEqual(expected);
