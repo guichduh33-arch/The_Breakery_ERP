@@ -87,7 +87,7 @@ vérité de chaque tâche reste son propre paragraphe **État**.
 | Tâche | Où elle en est | Ce qui la débloque |
 |---|---|---|
 | `S1-01` production récupérable | Runbook, tests, clés et première sauvegarde faits ; déclenchement de 03 h 30 constaté le 2026-11-18 (6 nuits sur 9), réveil du poste autorisé le même soir | Constater que les nuits suivantes ne manquent plus ; activer le PITR, éprouver une restauration, autoriser la copie Google Drive — gestes de Mamat |
-| `S3-22` socle des rapports | Étapes 1, 3 et 4 et trois lots de l'étape 2 en production | Les autres rapports de vente de l'étape 2 ; les ventes par heure attendent `S3-23` ; les ventes du jour attendent un arbitrage de Mamat |
+| `S3-22` socle des rapports | Étapes 1, 3 et 4 et quatre lots de l'étape 2 en production, relevé du 21 novembre 2026 | Recette connectée du lot panier restante ; autres rapports de vente de l'étape 2 ; ventes par heure avec `S3-23` ; ventes du jour en attente d'arbitrage |
 
 ### Retirée
 
@@ -2403,21 +2403,28 @@ place avec une table, et la table est sa dimension. Le lien d'une table vers ses
 commandes transporte le filtre. Les familles `get_combo_sales` et
 `get_sales_by_table` sont bumpées, production égale au dev. Relevé dans
 `docs/runbooks/etat-environnements.md`, section du 11 novembre au soir.
-**Étape 2, quatrième lot — développé le 2026-11-20**, branche
-`codex/reports-basket-filters` : l'analyse de panier reçoit les trois filtres
+**Étape 2, quatrième lot — publié en production le 2026-11-21** (PR #755,
+SHA applicatif `e79f91b7`) : l'analyse de panier reçoit les trois filtres
 communs et la table partagée avec tri et recherche persistée dans l'URL. Les
 filtres restreignent les commandes avant les supports, la confiance et le lift ;
 un paiement mixte ne duplique pas un panier. CSV et données du PDF suivent les
 paires visibles et leur ordre ; un résultat vide bloque l'export. Le pied
 additionne les occurrences de paires, jamais les ratios, et le libellé distingue
 ces occurrences des paniers uniques. Migration
-`20261120000048_basket_analysis_filters.sql` appliquée en DEV V3 ; pgTAP du lot
+`20261120000048_basket_analysis_filters.sql` appliquée en DEV puis production V3 ; pgTAP du lot
 23/23 et suite financière existante 12/12, sous transaction annulée, sans test
 ignoré. Types régénérés : seul le bloc de la famille `get_basket_analysis` est
 repris de la sortie complète, dont les dérives DEV indépendantes restent hors
 lot. Recette locale sur données simulées, thèmes clair et sombre, largeurs de
-bureau ; CSV téléchargé et relu. Vérification BO complète et livraison restent
-à terminer. Le graphique de répartition de cette page reste porté par `S3-23`.
+bureau ; CSV téléchargé et relu. Suite BO locale complète : 2 611 tests réussis,
+un ignoré préexistant. CI et pgTAP du SHA intégré réussis ; 389 fichiers SQL
+exécutés. Après préparation protégée du BO, migration ciblée et promotion du
+même déploiement : 383 fichiers publics conformes au manifeste, cible production
+seule. Les 926 paires du 14 au 20 novembre et leur empreinte sont inchangées sans
+filtre avant/après migration. Recette connectée non effectuée : pilote navigateur
+indisponible ; PDF final non ouvert. Le lot est publié, sa vérification en usage
+reste ouverte. Relevé et preuves dans `docs/runbooks/etat-environnements.md`,
+complément du 21 novembre. Le graphique reste porté par `S3-23`.
 Restent sur l'étape 2 les autres rapports de vente. Les ventes par heure
 attendent `S3-23`, qui change déjà leur portée (toute la période au lieu d'un
 jour) : deux bumps de la même famille se marcheraient dessus. Les ventes du jour sont
