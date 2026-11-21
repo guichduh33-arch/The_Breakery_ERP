@@ -12,7 +12,8 @@ vi.mock('sonner', () => ({ toast: { warning: toastWarning } }));
 vi.mock('../hooks/useB2bCustomers.js', () => ({ useB2bCustomers: () => ({ data: [
   { id: 'customer', name: 'Hotel', b2b_company_name: 'Hotel', b2b_current_balance: 0, b2b_credit_limit: null },
 ], isLoading: false }) }));
-vi.mock('@/features/customers/hooks/useCustomerNegotiatedPrices.js', () => ({ useCustomerNegotiatedPrices: () => ({ data: [] }) }));
+// Le prix est lu au serveur (useB2bLinePrices, testé à part) : ici il est servi tel quel.
+vi.mock('../hooks/useB2bLinePrices.js', () => ({ useB2bLinePrices: () => ({ data: new Map([['mini', 5000]]), isError: false }) }));
 vi.mock('@/lib/supabase.js', () => ({ supabase: {
   rpc: (name: string, args: unknown) => {
     const result = Promise.resolve(rpc(name, args) as unknown);

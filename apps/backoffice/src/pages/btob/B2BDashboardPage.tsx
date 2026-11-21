@@ -198,19 +198,21 @@ export default function B2BDashboardPage(): JSX.Element {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TopClientsCard rows={dash.data?.topClients ?? []} loading={dash.isLoading} />
-        <RecentOrdersCard rows={dash.data?.recentOrders ?? []} loading={dash.isLoading} />
+        {/* Même règle que les tuiles : indisponible = aucune donnée lue. Un
+            rafraîchissement raté garde les dernières lignes sous le bandeau. */}
+        <TopClientsCard rows={dash.data?.topClients ?? []} loading={dash.isLoading} unavailable={dash.data === undefined} />
+        <RecentOrdersCard rows={dash.data?.recentOrders ?? []} loading={dash.isLoading} unavailable={dash.data === undefined} />
       </div>
 
-      <AgingSummaryCard buckets={dash.data?.aging ?? []} loading={dash.isLoading} />
+      <AgingSummaryCard buckets={dash.data?.aging ?? []} loading={dash.isLoading} unavailable={dash.data === undefined} />
 
       <CreateB2bOrderModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
 
-interface TopClientsCardProps { rows: readonly B2bClientRow[]; loading: boolean }
-function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
+interface TopClientsCardProps { rows: readonly B2bClientRow[]; loading: boolean; unavailable: boolean }
+function TopClientsCard({ rows, loading, unavailable }: TopClientsCardProps): JSX.Element {
   return (
     <Card variant="default" padding="md" className="space-y-3">
       <div className="flex items-center justify-between">
@@ -225,6 +227,8 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
       </div>
       {loading ? (
         <div className="text-sm text-text-secondary">Loading…</div>
+      ) : unavailable ? (
+        <CardUnavailable />
       ) : rows.length === 0 ? (
         <EmptyState icon={Inbox} title="No B2B clients yet" size="sm" />
       ) : (
@@ -251,8 +255,8 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
   );
 }
 
-interface RecentOrdersCardProps { rows: readonly B2bRecentOrder[]; loading: boolean }
-function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element {
+interface RecentOrdersCardProps { rows: readonly B2bRecentOrder[]; loading: boolean; unavailable: boolean }
+function RecentOrdersCard({ rows, loading, unavailable }: RecentOrdersCardProps): JSX.Element {
   return (
     <Card variant="default" padding="md" className="space-y-3">
       <div className="flex items-center justify-between">
@@ -267,6 +271,8 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
       </div>
       {loading ? (
         <div className="text-sm text-text-secondary">Loading…</div>
+      ) : unavailable ? (
+        <CardUnavailable />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Inbox}
@@ -300,8 +306,8 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
   );
 }
 
-interface AgingSummaryCardProps { buckets: readonly B2bAgingBucket[]; loading: boolean }
-function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Element {
+interface AgingSummaryCardProps { buckets: readonly B2bAgingBucket[]; loading: boolean; unavailable: boolean }
+function AgingSummaryCard({ buckets, loading, unavailable }: AgingSummaryCardProps): JSX.Element {
   const totalCount = buckets.reduce((acc, b) => acc + b.count, 0);
   return (
     <Card variant="default" padding="md" className="space-y-3">
@@ -319,6 +325,8 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
       </div>
       {loading ? (
         <div className="text-sm text-text-secondary">Loading…</div>
+      ) : unavailable ? (
+        <CardUnavailable />
       ) : totalCount === 0 ? (
         <EmptyState icon={Inbox} title="No outstanding receivables" size="sm" />
       ) : (
@@ -326,6 +334,13 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
       )}
     </Card>
   );
+}
+
+// Une carte dont la requête a échoué ne dit pas « No B2B clients yet » ni
+// « No outstanding receivables » : c'était un fait faux sur l'argent dû. Le
+// bandeau d'erreur au-dessus porte le « Try again » ; la carte renvoie à lui.
+function CardUnavailable(): JSX.Element {
+  return <p className="text-sm text-text-muted">Unavailable — see the error above.</p>;
 }
 
 function Legend({ tone, label }: { tone: string; label: string }): JSX.Element {

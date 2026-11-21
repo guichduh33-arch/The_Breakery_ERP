@@ -115,6 +115,30 @@ export interface OrderRefundFacts {
   total_refunded: number;
   loyalty_points_redeemed?: number | null;
   items: readonly { is_cancelled: boolean; line_total: number; quantity: number; qty_already_refunded: number }[];
+  customer_id: string | null;
+  payments: readonly { method: string; amount: number }[];
+  refunded_by_method: Readonly<Record<string, number>>;
+}
+
+/**
+ * Le back-office ne rend JAMAIS d'espèces (pas de tiroir-caisse ouvert ici) :
+ * l'argent repart sur un moyen d'origine non-cash qui a encore un reste, ou en
+ * avoir si un client est rattaché. Sans l'un ni l'autre, le bouton ouvrait un
+ * dialogue qui annonçait l'impossibilité — choix du propriétaire
+ * (2026-11-21) : ne pas montrer le geste du tout ; le remboursement se fait en
+ * caisse.
+ */
+// Valeur d'ENUM Postgres : `satisfies` casse le build si elle est renommée.
+const CASH_METHOD = 'cash' satisfies Database['public']['Enums']['payment_method'];
+
+export function hasBackofficeRefundDestination(order: Pick<OrderRefundFacts, 'customer_id' | 'payments' | 'refunded_by_method'>): boolean {
+  if (order.customer_id != null) return true;
+  const paid = new Map<string, number>();
+  for (const payment of order.payments) paid.set(payment.method, (paid.get(payment.method) ?? 0) + payment.amount);
+  for (const [method, amount] of paid) {
+    if (method !== CASH_METHOD && amount - (order.refunded_by_method[method] ?? 0) > 0) return true;
+  }
+  return false;
 }
 
 /**
@@ -127,9 +151,11 @@ export interface OrderRefundFacts {
 export function isOrderRefundable(order: OrderRefundFacts, pendingRefund: boolean): boolean {
   if (pendingRefund) return true;
   if (!REFUNDABLE_STATUSES.has(order.status)) return false;
-  return order.total_refunded < order.total
-    || ((order.loyalty_points_redeemed ?? 0) > 0
-      && order.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity));
+  // Tant que de l'argent reste à rendre, toute ligne choisie porte un montant :
+  // il faut une destination. Les points seuls ne valent qu'une fois l'argent épuisé.
+  if (order.total_refunded < order.total) return hasBackofficeRefundDestination(order);
+  return (order.loyalty_points_redeemed ?? 0) > 0
+    && order.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity);
 }
 
 /**
