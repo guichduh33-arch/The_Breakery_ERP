@@ -20,6 +20,10 @@ vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/l
 vi.mock('@/features/btob/components/B2bOrderItemsPanel.js', () => ({
   B2bOrderItemsPanel: ({ orderId }: { orderId: string }) => <div>Items for {orderId}</div>,
 }));
+// L'historique a ses propres lectures et son test (b2b-order-activity.test.ts).
+vi.mock('@/features/btob/components/B2bOrderActivity.js', () => ({
+  B2bOrderActivity: ({ orderId }: { orderId: string }) => <div>Activity for {orderId}</div>,
+}));
 vi.mock('@/features/btob/components/EditB2bOrderDialog.js', () => ({
   EditB2bOrderDialog: () => <div role="dialog">Edit B2B items</div>,
 }));

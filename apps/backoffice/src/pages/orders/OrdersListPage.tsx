@@ -168,6 +168,11 @@ export default function OrdersListPage(): JSX.Element {
   const counters = useOrdersCounters({ start, end, filters: serverFilters });
   const c = counters.data;
   const countersDown = counters.isError;
+  // Premier chargement des compteurs : l'agrégat peut prendre plusieurs
+  // secondes sur la fenêtre par défaut. Tant qu'aucune donnée n'est arrivée,
+  // les bandes rendent des tirets et le pied compte le chargé : un « 0 »
+  // affirmait une fenêtre vide (ADR-025, tirets plutôt que zéros).
+  const countsUnknown = countersDown || c === undefined;
 
   const loadedLines: OrdersListLine[] = useMemo(
     () => (query.data?.pages ?? []).flatMap((p) => p.lines),
@@ -194,19 +199,20 @@ export default function OrdersListPage(): JSX.Element {
   }, [patchParams]);
 
   const counterItems = useMemo<ListCounter[]>(
-    () => buildStatusCounterItems(c, countersDown, pick),
-    [c, countersDown, pick],
+    () => buildStatusCounterItems(c, countsUnknown, pick),
+    [c, countsUnknown, pick],
   );
 
   // Bande d'argent (ADR-025 D5 amendée) — informative, non cliquable.
   const moneyItems = useMemo<ListCounter[]>(
-    () => buildMoneyCounterItems(c, countersDown, start, end),
-    [c, countersDown, start, end],
+    () => buildMoneyCounterItems(c, countsUnknown, start, end),
+    [c, countsUnknown, start, end],
   );
 
   // Actions de ligne — modales et tiroir de détail.
   const [detailId, setDetailId]     = useState<string | null>(null);
   const [voidTarget, setVoidTarget] = useState<{ id: string; number: string } | null>(null);
+  const voidLine = voidTarget === null ? undefined : loadedLines.find((l) => l.id === voidTarget.id);
   const [unpaidVoidId, setUnpaidVoidId] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; number: string; items: OrderItemEdit[] } | null>(null);
 
@@ -445,7 +451,7 @@ export default function OrdersListPage(): JSX.Element {
                     temps d'un rendu, compter un terme et en afficher un autre. */}
                 {deferredQuickFind.trim() !== ''
                   ? `${lines.length} of the ${loadedLines.length} loaded match “${deferredQuickFind.trim()}”`
-                  : countersDown
+                  : countsUnknown
                     ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString('id-ID')}`}
               </span>
@@ -481,7 +487,7 @@ export default function OrdersListPage(): JSX.Element {
       />
       <CancelUnpaidOrderModal open={unpaidVoidId !== null} orderId={unpaidVoidId} onClose={() => setUnpaidVoidId(null)} />
       {voidTarget !== null && (
-        <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} onClose={() => setVoidTarget(null)} />
+        <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} {...(voidLine ? { total: voidLine.total, paymentMethod: voidLine.payment_method_primary } : {})} onClose={() => setVoidTarget(null)} />
       )}
       {editTarget !== null && (
         <EditOrderItemsModal open orderId={editTarget.id} orderNumber={editTarget.number} currentItems={editTarget.items} onClose={() => setEditTarget(null)} />

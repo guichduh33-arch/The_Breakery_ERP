@@ -15,19 +15,18 @@
 // (CustomerFormModal / LoyaltyAdjustModal / CustomerDeleteConfirm /
 // LoyaltyHistoryDrawer) — only the page chrome changed.
 
-import { useId, useMemo, useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import {
   Award,
   ChevronDown,
   Heart,
-  MoreHorizontal,
   Plus,
   Search,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import { LoyaltyBadge, useDebouncedValue, type DataTableColumn } from '@breakery/ui';
-import { Button, Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
+import { Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { tierFromLifetime } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
@@ -46,6 +45,7 @@ import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 
 // Le cran du Command Palette et de la liste clients — le dépôt n'en a qu'un.
 const SEARCH_DEBOUNCE_MS = 250;
@@ -101,7 +101,6 @@ export default function LoyaltyPage(): JSX.Element {
   const [viewing,   setViewing  ] = useState<Row | undefined>(undefined);
   const [adjusting, setAdjusting] = useState<Row | undefined>(undefined);
   const [deleting,  setDeleting ] = useState<Row | undefined>(undefined);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view loyalty.</div>;
@@ -169,18 +168,18 @@ export default function LoyaltyPage(): JSX.Element {
       header: '',
       align:  'right',
       width:  '60px',
+      // Le menu partagé du back-office : panneau hors du tableau (il était
+      // rogné sur les dernières lignes), Échap, clic extérieur et flèches.
       render: (row) => (
-        <RowActions
-          row={row}
-          isOpen={openMenuId === row.id}
-          onToggle={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
-          canAdjust={canAdjust}
-          canEdit={canUpdate}
-          canDelete={canDelete}
-          onView={(r) => { setOpenMenuId(null); setViewing(r); }}
-          onAdjust={(r) => { setOpenMenuId(null); setAdjusting(r); }}
-          onEdit={(r) => { setOpenMenuId(null); setEditing(r); }}
-          onDelete={(r) => { setOpenMenuId(null); setDeleting(r); }}
+        <RowActionsMenu
+          subject={row.name}
+          testId={`loyalty-actions-${row.id}`}
+          entries={[
+            { key: 'view', label: 'View history', activate: () => { setViewing(row); } },
+            ...(canAdjust ? [{ key: 'adjust', label: 'Adjust points', activate: () => { setAdjusting(row); } }] : []),
+            ...(canUpdate ? [{ key: 'edit', label: 'Edit', activate: () => { setEditing(row); } }] : []),
+            ...(canDelete ? [{ key: 'delete', label: 'Delete', danger: true, activate: () => { setDeleting(row); } }] : []),
+          ]}
         />
       ),
     },
@@ -287,86 +286,5 @@ export default function LoyaltyPage(): JSX.Element {
       <LoyaltyAdjustModal customer={adjusting} onClose={() => setAdjusting(undefined)} />
       <CustomerDeleteConfirm customer={deleting} onClose={() => setDeleting(undefined)} />
     </div>
-  );
-}
-
-interface RowActionsProps {
-  row:        Row;
-  isOpen:     boolean;
-  onToggle:   () => void;
-  canAdjust:  boolean;
-  canEdit:    boolean;
-  canDelete:  boolean;
-  onView:     (r: Row) => void;
-  onAdjust:   (r: Row) => void;
-  onEdit:     (r: Row) => void;
-  onDelete:   (r: Row) => void;
-}
-
-function RowActions({
-  row, isOpen, onToggle, canAdjust, canEdit, canDelete,
-  onView, onAdjust, onEdit, onDelete,
-}: RowActionsProps): JSX.Element {
-  const panelId = useId();
-  return (
-    <div className="relative inline-block">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onToggle}
-        aria-label={`Actions for ${row.name}`}
-        // Pas d'`aria-haspopup="menu"` : cette valeur PROMET le patron menu de
-        // l'APG (tabindex tournant, ↑/↓, Début/Fin, saisie prédictive), et seul
-        // Tab a jamais fonctionné ici. Le panneau est un DISCLOSURE —
-        // `aria-expanded` + `aria-controls` décrivent exactement ce qu'il fait,
-        // et les entrées gardent leur rôle natif `button`. Même arbitrage, pour
-        // la même raison, que les onglets de la TopBar (voir son en-tête) et
-        // que le menu d'export des rapports.
-        aria-expanded={isOpen}
-        {...(isOpen ? { 'aria-controls': panelId } : {})}
-      >
-        <MoreHorizontal className="h-4 w-4" aria-hidden />
-      </Button>
-      {isOpen && (
-        <div
-          id={panelId}
-          role="group"
-          aria-label={`Actions for ${row.name}`}
-          className="absolute right-0 mt-1 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg z-10"
-        >
-          <MenuItem onClick={() => onView(row)}>View history</MenuItem>
-          {canAdjust && <MenuItem onClick={() => onAdjust(row)}>Adjust points</MenuItem>}
-          {canEdit   && <MenuItem onClick={() => onEdit(row)}>Edit</MenuItem>}
-          {canDelete && <MenuItem onClick={() => onDelete(row)} tone="danger">Delete</MenuItem>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MenuItem({
-  children, onClick, tone,
-}: { children: React.ReactNode; onClick: () => void; tone?: 'danger' }): JSX.Element {
-  return (
-    // Pas de `role="menuitem"` : hors d'un vrai patron menu il ne décrit rien
-    // et retire au bouton son rôle natif. Le panneau est un disclosure, ses
-    // entrées sont des boutons — voir l'en-tête de `RowActions`.
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        // `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair
-        // `--bg-overlay`, `--bg-elevated` et `--bg-input` valent TOUS #ffffff.
-        // Sur le panneau blanc du menu, survol et focus repeignaient donc du
-        // blanc sur du blanc — ratio 1,000:1, aucun retour visible. Et
-        // `focus:outline-none` était posé sans remplaçant : au clavier, rien ne
-        // disait quelle entrée était sélectionnée, Delete compris (WCAG 2.4.7).
-        `block w-full px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-4 focus:bg-surface-4 ${FOCUS_RING}`,
-        tone === 'danger' ? 'text-danger' : 'text-text-primary',
-      ].join(' ')}
-    >
-      {children}
-    </button>
   );
 }

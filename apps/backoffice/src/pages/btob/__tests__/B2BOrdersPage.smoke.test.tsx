@@ -178,11 +178,11 @@ vi.mock('@/stores/authStore.js', () => ({
 
 import B2BOrdersPage from '../B2BOrdersPage.js';
 
-function wrap(ui: ReactElement) {
+function wrap(ui: ReactElement, initialEntry = '/backoffice/b2b/orders') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>
     </QueryClientProvider>
   );
 }
@@ -216,8 +216,17 @@ describe('B2BOrdersPage', () => {
     itemsSpy.mockReturnValue(chain);
   });
 
-  it('lists orders by pickup date, with unscheduled orders last', async () => {
+  // Demande de Mamat (2026-11-21) : les commandes les plus récentes d'abord.
+  it('lists the most recently created orders first by default', async () => {
     render(wrap(<B2BOrdersPage />));
+    await waitFor(() => expect(screen.getByText('B2B-0002')).toBeInTheDocument());
+    const numbers = screen.getAllByText(/^B2B-000\d$/).map((n) => n.textContent);
+    expect(numbers).toEqual(['B2B-0002', 'B2B-0001']);
+    expect(screen.getByRole('columnheader', { name: /created/i })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('still sorts by pickup date on demand, with unscheduled orders last', async () => {
+    render(wrap(<B2BOrdersPage />, '/backoffice/b2b/orders?sort=pickup_date&dir=asc'));
     await waitFor(() => expect(screen.getByText('B2B-0002')).toBeInTheDocument());
     const numbers = screen.getAllByText(/^B2B-000\d$/).map((n) => n.textContent);
     expect(numbers).toEqual(['B2B-0001', 'B2B-0002']);

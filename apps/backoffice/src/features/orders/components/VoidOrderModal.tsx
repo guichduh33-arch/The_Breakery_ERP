@@ -10,6 +10,8 @@ import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { formatCurrency } from '@breakery/utils';
+import { paymentMethodLabel } from '@/features/orders/statusMeta.js';
 
 /**
  * Traduction des JETONS de l'EF `void-order`. `useVoidOrder` construit son
@@ -62,9 +64,13 @@ interface Props {
   onClose:     () => void;
   orderId:     string;
   orderNumber: string;
+  /** Montant de la commande, pour nommer ce que le geste annule. */
+  total?:          number;
+  /** Moyen de paiement principal (code), affiché par son libellé. */
+  paymentMethod?:  string | null;
 }
 
-export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): JSX.Element {
+export function VoidOrderModal({ open, onClose, orderId, orderNumber, total, paymentMethod }: Props): JSX.Element {
   const [reason, setReason] = useState('');
   const [pin, setPin]       = useState('');
   const idem = useRef(crypto.randomUUID());
@@ -105,8 +111,24 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
         <DialogDescription className="sr-only">
           Voids the order, restoring inventory to stock. This action cannot be undone.
         </DialogDescription>
+        {/* Ce que le geste annule, en argent, AVANT le PIN (audit Sales
+            2026-11-21) : la fenêtre ne nommait que le stock. La règle des
+            espèces s'annonce ici au lieu de tomber après la saisie du PIN. */}
+        {total !== undefined && (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm" data-testid="void-summary">
+            <dt className="text-text-secondary">Order total</dt>
+            <dd className="text-right font-data tabular-nums text-text-primary">{formatCurrency(total)}</dd>
+            {paymentMethod !== undefined && paymentMethod !== null && (
+              <>
+                <dt className="text-text-secondary">Paid by</dt>
+                <dd className="text-right text-text-primary">{paymentMethodLabel(paymentMethod)}</dd>
+              </>
+            )}
+          </dl>
+        )}
         <p className="rounded bg-danger-soft border border-danger p-3 text-sm text-danger">
           This action cannot be undone. Inventory will be restored to stock.
+          {paymentMethod === 'cash' && ` ${ERROR_COPY.cash_void_requires_open_session}`}
         </p>
         {/* Critique /impeccable 2026-08-13 (P1) — un lecteur d'écran entendait
             « edit text » deux fois sans savoir laquelle était le PIN : labels

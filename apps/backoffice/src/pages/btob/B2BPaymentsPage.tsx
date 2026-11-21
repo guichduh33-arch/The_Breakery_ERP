@@ -30,9 +30,11 @@ import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
-import { useB2bDashboard, type B2bClientRow } from '@/features/btob/hooks/useB2bDashboard.js';
+import { useB2bDashboard } from '@/features/btob/hooks/useB2bDashboard.js';
+import { useB2bDebtors, type B2bDebtorRow } from '@/features/btob/hooks/useB2bDebtors.js';
 import {
   useB2bPaymentsReceived,
+  B2B_PAYMENTS_RECEIVED_CAP,
   type B2bPaymentReceivedRow,
   type B2bPaymentsPeriod,
 } from '@/features/btob/hooks/useB2bPaymentsReceived.js';
@@ -59,6 +61,7 @@ export default function B2BPaymentsPage(): JSX.Element {
   const canRecord = hasPermission('b2b.payment.record');
   const pendingPaymentTargets = usePendingPaymentTargets();
   const dash = useB2bDashboard();
+  const debtors = useB2bDebtors();
   // Session 59 / Task 6a — seed the initial tab from `?tab=` so a JE-source
   // drilldown link (reference_type b2b_*) can land straight on Invoices.
   // No 2-way sync — same pattern as GeneralLedgerPage's URL-seeded selectors.
@@ -85,7 +88,7 @@ export default function B2BPaymentsPage(): JSX.Element {
   const payments = useB2bPaymentsReceived(period);
 
   const filteredPayments = useMemo<B2bPaymentReceivedRow[]>(() => {
-    const rows = payments.data ?? [];
+    const rows = payments.data?.rows ?? [];
     return rows.filter((r) => {
       if (method !== 'all' && r.method !== method) return false;
       if (search === '') return true;
@@ -114,8 +117,10 @@ export default function B2BPaymentsPage(): JSX.Element {
     .filter((b) => b.label !== 'Current')
     .reduce((acc, b) => acc + b.count, 0);
 
-  const filteredOutstanding = (dash.data?.topClients ?? [])
-    .filter((c) => Number(c.b2b_current_balance) > 0)
+  // Tous les débiteurs, pas le top 5 du dashboard (voir useB2bDebtors).
+  const debtorsTotal = debtors.data?.total ?? 0;
+  const debtorsHidden = debtorsTotal - (debtors.data?.rows.length ?? 0);
+  const filteredOutstanding = (debtors.data?.rows ?? [])
     .filter((c) => search === '' || c.name.toLowerCase().includes(search.toLowerCase())
       || (c.b2b_company_name ?? '').toLowerCase().includes(search.toLowerCase()));
 
@@ -161,7 +166,12 @@ export default function B2BPaymentsPage(): JSX.Element {
           unavailable={payments.data === undefined}
           testId="kpi-b2b-total-received"
         >
-          <span className={KPI_NOTE}>{PERIOD_LABEL[period]}</span>
+          {/* La somme est faite sur les lignes lues : plafonnée, elle se dit. */}
+          <span className={KPI_NOTE}>
+            {payments.data?.capped === true
+              ? `Latest ${formatCount(B2B_PAYMENTS_RECEIVED_CAP)} payments only · ${PERIOD_LABEL[period]}`
+              : PERIOD_LABEL[period]}
+          </span>
         </KpiTile>
         <KpiTile
           label="Outstanding"
@@ -172,7 +182,9 @@ export default function B2BPaymentsPage(): JSX.Element {
         />
         <KpiTile
           label="Payments received"
-          value={payments.data === undefined ? '—' : formatCount(filteredPayments.length)}
+          value={payments.data === undefined
+            ? '—'
+            : `${formatCount(filteredPayments.length)}${payments.data.capped ? '+' : ''}`}
           unavailable={payments.data === undefined}
           testId="kpi-b2b-payments-count"
         />
@@ -188,7 +200,7 @@ export default function B2BPaymentsPage(): JSX.Element {
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="border-b border-border-subtle px-3">
             <TabsTrigger value="outstanding">
-              <Clock className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Outstanding ({filteredOutstanding.length})
+              <Clock className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Outstanding ({debtors.data === undefined ? '—' : filteredOutstanding.length})
             </TabsTrigger>
             <TabsTrigger value="aging">
               <AlertCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Aging report
@@ -294,20 +306,30 @@ export default function B2BPaymentsPage(): JSX.Element {
 
           <TabsContent value="outstanding">
             <div className="border-t border-border-subtle">
-              {dash.isLoading ? (
-                <div className="p-6 text-sm text-text-secondary">Loading…</div>
-              ) : dash.error !== null ? (
-                <div className="p-6 text-sm text-text-secondary" role="alert">
-                  Outstanding balances could not be loaded.
-                </div>
+              {debtors.isLoading ? (
+                <div className="p-6 text-sm text-text-secondary" role="status">Loading…</div>
+              ) : debtors.error !== null ? (
+                <p role="alert" className="m-4 rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+                  Outstanding balances could not be loaded.{' '}
+                  <button type="button" className="underline" onClick={() => { void debtors.refetch(); }}>
+                    Try again
+                  </button>
+                </p>
               ) : filteredOutstanding.length === 0 ? (
                 <EmptyState icon={CheckCircle2} title="No outstanding balances" size="md" />
               ) : (
-                <ul className="divide-y divide-border-subtle">
-                  {filteredOutstanding.map((c) => (
-                    <OutstandingRow key={c.id} client={c} canRecord={canRecord} onRecord={openRecord} />
-                  ))}
-                </ul>
+                <>
+                  <ul className="divide-y divide-border-subtle">
+                    {filteredOutstanding.map((c) => (
+                      <OutstandingRow key={c.id} client={c} canRecord={canRecord} onRecord={openRecord} />
+                    ))}
+                  </ul>
+                  {debtorsHidden > 0 && (
+                    <p className="border-t border-border-subtle px-4 py-3 text-xs text-text-secondary">
+                      Showing the {formatCount(debtors.data?.rows.length ?? 0)} largest balances of {formatCount(debtorsTotal)} clients in debt.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </TabsContent>
@@ -349,7 +371,7 @@ export default function B2BPaymentsPage(): JSX.Element {
   );
 }
 
-function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow; canRecord: boolean; onRecord: (customerId: string) => void }): JSX.Element {
+function OutstandingRow({ client, canRecord, onRecord }: { client: B2bDebtorRow; canRecord: boolean; onRecord: (customerId: string) => void }): JSX.Element {
   const overLimit = client.b2b_credit_limit !== null
     && Number(client.b2b_current_balance) > Number(client.b2b_credit_limit);
   return (

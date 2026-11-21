@@ -71,9 +71,10 @@ export default function B2BOrdersPage(): JSX.Element {
   const sortRaw = params.get('sort') ?? '';
   const sortCol: B2bOrdersSortColumn = Object.hasOwn(SORT_TO_COLUMN_ID, sortRaw)
     ? (sortRaw as B2bOrdersSortColumn)
-    : 'pickup_date';
-  // Le planning se lit par jour de retrait croissant, dates inconnues en dernier.
-  const sortDir: B2bOrdersSortDir = params.get('dir') === 'desc' ? 'desc' : 'asc';
+    : 'invoice_date';
+  // Défaut : les commandes les plus récentes d'abord (demande de Mamat du
+  // 2026-11-21). Le tri par retrait reste à un clic sur l'en-tête Pickup.
+  const sortDir: B2bOrdersSortDir = params.get('dir') === 'asc' ? 'asc' : 'desc';
 
   // La recherche part au SERVEUR : elle se COMMET en débounce, sinon chaque
   // frappe déclencherait une requête comptée `exact` sur toute la vue.
@@ -111,8 +112,8 @@ export default function B2BOrdersPage(): JSX.Element {
       const col = COLUMN_ID_TO_SORT[next.columnId];
       if (col === undefined) return;
       patchParams({
-        sort: col === 'pickup_date' ? null : col,
-        dir: next.direction === 'asc' ? null : next.direction,
+        sort: col === 'invoice_date' ? null : col,
+        dir: next.direction === 'desc' ? null : next.direction,
       });
     },
     [patchParams],

@@ -6,6 +6,24 @@ import { LoyaltyAdjustForm } from '../LoyaltyAdjustForm.js';
 const noop = (): void => {};
 
 describe('LoyaltyAdjustForm', () => {
+  // « Redeem points » ouvrait ce formulaire sur « + » : un rachat validé sans
+  // basculer le bouton créditait le client au lieu de le débiter.
+  it('initialSign="-" submits a debit without touching the toggle', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<LoyaltyAdjustForm currentBalance={500} onSubmit={onSubmit} onCancel={noop} initialSign="-" />);
+    expect(screen.getByRole('radio', { name: '-' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '+' })).not.toBeChecked();
+    fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'redeemed croissant' } });
+    fireEvent.click(screen.getByRole('button', { name: /apply/i }));
+    expect(onSubmit).toHaveBeenCalledWith({ delta: -120, reason: 'redeemed croissant' });
+  });
+
+  it('defaults to a credit when no initialSign is given', () => {
+    render(<LoyaltyAdjustForm currentBalance={500} onSubmit={noop} onCancel={noop} />);
+    expect(screen.getByRole('radio', { name: '+' })).toBeChecked();
+  });
+
   it('blocks submit when reason is shorter than 5 chars', () => {
     const onSubmit = vi.fn();
     render(<LoyaltyAdjustForm currentBalance={500} onSubmit={onSubmit} onCancel={noop} />);

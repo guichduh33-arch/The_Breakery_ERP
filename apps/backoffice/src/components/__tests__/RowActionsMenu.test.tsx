@@ -71,3 +71,58 @@ describe('RowActionsMenu — séparateur avant l’action destructrice', () => {
     expect(document.activeElement).toBe(items[1]);
   });
 });
+
+// LE PANNEAU SORT DU TABLEAU (audit Sales 2026-11-21). Rendu dans la cellule,
+// il était rogné par le conteneur du DataTable sur les dernières lignes. Il
+// vit désormais dans un portail sur `body`, en position fixe : ces tests en
+// verrouillent les effets de bord (fermetures, focus).
+describe('RowActionsMenu — portail hors du tableau', () => {
+  beforeEach(() => { cleanup(); });
+  const entries = (): RowActionEntry[] => [
+    { key: 'details', label: 'View details', activate: vi.fn() },
+    { key: 'void', label: 'Void order', danger: true, activate: vi.fn() },
+  ];
+
+  it('rend le panneau dans body, hors du conteneur du déclencheur, focus sur la première entrée', () => {
+    render(<table><tbody><tr><td data-testid="cell"><RowActionsMenu subject="ORD-1" entries={entries()} /></td></tr></tbody></table>);
+    fireEvent.click(screen.getByRole('button', { name: /Actions for ORD-1/i }));
+    const menu = screen.getByRole('menu');
+    expect(menu.parentElement).toBe(document.body);
+    expect(screen.getByTestId('cell')).not.toContainElement(menu);
+    expect(menu.style.position).toBe('fixed');
+    expect(within(menu).getByRole('menuitem', { name: 'View details' })).toHaveFocus();
+  });
+
+  it('Échap ferme et rend le focus au déclencheur', () => {
+    const menu = open(entries());
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByRole('button', { name: /Actions for ORD-1/i })).toHaveFocus();
+  });
+
+  it('un clic à l’extérieur ferme, un clic dans le panneau non', () => {
+    const menu = open(entries());
+    fireEvent.pointerDown(menu);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('un défilement de la page ferme le panneau fixé', () => {
+    open(entries());
+    fireEvent.scroll(window);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('un défilement à l’intérieur du panneau le garde ouvert', () => {
+    const menu = open(entries());
+    fireEvent.scroll(menu);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+  });
+
+  it('un redimensionnement ferme le panneau fixé', () => {
+    open(entries());
+    fireEvent(window, new Event('resize'));
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+});

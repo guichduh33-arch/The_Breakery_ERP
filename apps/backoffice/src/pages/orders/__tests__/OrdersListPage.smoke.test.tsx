@@ -225,6 +225,23 @@ describe('OrdersListPage smoke', () => {
     expect(strip).not.toHaveTextContent(/All orders0/);
   });
 
+  // Production 2026-11-21 : l'agrégat met ~16 s sur la fenêtre par défaut.
+  // Pendant ce temps la bande rendait « 0 » partout et le pied « 50 of 0 ».
+  it('T7b counters still loading render dashes and count the loaded rows', async () => {
+    rpcMock.mockImplementation((name: unknown) =>
+      name === 'get_orders_counters_v6'
+        ? new Promise(() => { /* jamais résolu : chargement en cours */ })
+        : Promise.resolve({ data: { lines: [SAMPLE_ROW], next_cursor_val: null, next_cursor_id: null }, error: null }),
+    );
+    renderRoute('/backoffice/orders');
+    await screen.findByText(/ORD-001/);
+    const strip = screen.getByTestId('orders-counters');
+    expect(strip).toHaveTextContent('—');
+    expect(strip).not.toHaveTextContent(/All orders0/);
+    expect(screen.getByText('1 loaded')).toBeInTheDocument();
+    expect(screen.queryByText(/1 of 0/)).not.toBeInTheDocument();
+  });
+
   // Review PR #367 (finding 1) : une commande réglée PAR STATUT sans ligne
   // order_payments (règlement B2B) lit « Paid », pas « Unpaid ».
   it('T8 settled-by-status row shows Paid in the payment cell', async () => {

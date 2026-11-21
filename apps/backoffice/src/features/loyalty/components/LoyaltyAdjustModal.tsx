@@ -15,9 +15,14 @@ import { useAuthStore } from '@/stores/authStore.js';
 export interface LoyaltyAdjustModalProps {
   customer: CustomerListRow | undefined;
   onClose: () => void;
+  /** Geste demandé. `redeem` pré-sélectionne le débit ; sans valeur, le
+   *  formulaire reste neutre (« Adjust points », crédit par défaut). */
+  direction?: 'add' | 'redeem';
 }
 
-export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProps) {
+const DIALOG_TITLE = { add: 'Add points', redeem: 'Redeem points' } as const;
+
+export function LoyaltyAdjustModal({ customer, onClose, direction }: LoyaltyAdjustModalProps) {
   const adjustMut = useAdjustLoyaltyPoints();
   const open = customer !== undefined;
   const [formError, setFormError] = useState<string | null>(null);
@@ -60,7 +65,7 @@ export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProp
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { setFormError(null); onClose(); } }}>
       <DialogContent className="max-w-md">
-        <DialogTitle>Adjust points — {customer?.name}</DialogTitle>
+        <DialogTitle>{direction === undefined ? 'Adjust points' : DIALOG_TITLE[direction]} — {customer?.name}</DialogTitle>
         <DialogDescription className="sr-only">Manually credit or debit a customer's loyalty balance.</DialogDescription>
         {customer && (
           <>
@@ -78,8 +83,9 @@ export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProp
               </div>
             </div> : <fieldset disabled={blocked}>
               <LoyaltyAdjustForm
-              key={`${customer.id}:${sessionToken}`}
+              key={`${customer.id}:${sessionToken}:${direction ?? 'adjust'}`}
               currentBalance={customer.loyalty_points}
+              initialSign={direction === 'redeem' ? '-' : '+'}
               onSubmit={handleSubmit}
               onCancel={() => { setFormError(null); onClose(); }}
               submitting={attempt.busy}

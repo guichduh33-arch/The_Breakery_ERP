@@ -55,6 +55,8 @@ import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
 
@@ -89,12 +91,12 @@ export function CustomerDetailPage(): JSX.Element {
   const canConvert = hasPermission('customers.store_credit.convert');
   const pendingConversion = useHasPendingFinancial('loyalty_conversion', id ?? '');
 
-  const { data, isLoading } = useCustomerDetail(id);
+  const { data, isLoading, error, refetch } = useCustomerDetail(id);
   const history = useCustomerLoyaltyHistory(id ?? null);
 
   const [tab, setTab] = useState<TabId>('info');
   const [editing, setEditing] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
+  const [adjusting, setAdjusting] = useState<'add' | 'redeem' | null>(null);
   const [granting, setGranting] = useState(false);
   const [converting, setConverting] = useState(false);
 
@@ -120,8 +122,23 @@ export function CustomerDetailPage(): JSX.Element {
       )
     : 100;
 
+  // Un échec (id invalide, droits, réseau) affichait « Loading… » pour
+  // toujours : l'erreur se dit, avec un nouvel essai et un retour à la liste.
+  if (error !== null && !customer) {
+    return (
+      <div className="space-y-3 p-8">
+        <QueryErrorBanner detail={error.message} onRetry={() => { void refetch(); }} data-testid="customer-detail-error">
+          This customer could not be loaded.
+        </QueryErrorBanner>
+        <Link to="/backoffice/customers" className={`text-sm text-text-secondary underline ${FOCUS_RING}`}>
+          Back to customers
+        </Link>
+      </div>
+    );
+  }
+
   if (isLoading || !customer) {
-    return <div className="p-8 text-text-secondary">Loading…</div>;
+    return <div role="status" className="p-8 text-text-secondary">Loading…</div>;
   }
 
   // Object shaped for the reused loyalty/edit modals.
@@ -254,7 +271,7 @@ export function CustomerDetailPage(): JSX.Element {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {canAdjust && (
               <>
-                <Button type="button" size="sm" variant="secondary" onClick={() => setAdjusting(true)}>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setAdjusting('add')}>
                   <Plus className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Add points
                 </Button>
                 <Button
@@ -262,7 +279,7 @@ export function CustomerDetailPage(): JSX.Element {
                   size="sm"
                   variant="secondary"
                   disabled={customer.loyalty_points <= 0}
-                  onClick={() => setAdjusting(true)}
+                  onClick={() => setAdjusting('redeem')}
                 >
                   <Gift className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Redeem points
                 </Button>
@@ -361,9 +378,10 @@ export function CustomerDetailPage(): JSX.Element {
         }}
       />
       <LoyaltyAdjustModal
-        customer={adjusting ? modalRow : undefined}
+        customer={adjusting !== null ? modalRow : undefined}
+        {...(adjusting !== null ? { direction: adjusting } : {})}
         onClose={() => {
-          setAdjusting(false);
+          setAdjusting(null);
           refreshCustomer();
         }}
       />

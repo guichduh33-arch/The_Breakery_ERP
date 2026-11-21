@@ -1,56 +1,32 @@
 // apps/backoffice/src/features/customers/hooks/useCustomerAnalytics.ts
 //
 // Per-customer purchase analytics — powers the Analytics tab of the customer
-// detail page. Aggregated client-side from the customer's own orders +
-// order_items (read-only PostgREST, no new RPC). Counts only realised-revenue
-// orders, including Outstanding from its recognition date.
+// detail page. Reads the customer's recognised sales (RPC family
+// `get_customer_recognized_orders`, Outstanding included from its recognition
+// date) and their live order lines; the shaping lives in the pure
+// `buildCustomerAnalytics` (../customerAnalytics.ts).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import {
+  buildCustomerAnalytics,
+  type CustomerAnalytics,
+  type OrderItemRow,
+} from '../customerAnalytics.js';
 
-export type AnalyticsOrderType = 'dine_in' | 'take_out' | 'delivery' | 'b2b';
+export type { CustomerAnalytics } from '../customerAnalytics.js';
 
-export interface MonthlySpendPoint {
-  month: string; // 'YYYY-MM'
-  label: string; // 'Jun'
-  total: number;
-  orders: number;
-}
-
-export interface OrderTypeSlice {
-  type: AnalyticsOrderType;
-  label: string;
-  orders: number;
-  total: number;
-}
-
-export interface TopProduct {
-  product_id: string;
-  name: string;
-  quantity: number;
-  spend: number;
-}
-
-export interface CustomerAnalytics {
-  ordersConsidered: number;
-  totalSpend: number;
-  avgBasket: number;
-  monthly: MonthlySpendPoint[];
-  byType: OrderTypeSlice[];
-  topProducts: TopProduct[];
-}
-
-const TYPE_LABELS: Record<AnalyticsOrderType, string> = {
-  dine_in: 'Dine-in',
-  take_out: 'Take-out',
-  delivery: 'Delivery',
-  b2b: 'B2B',
-};
-
-const MONTH_LABELS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
+/**
+ * Les lignes se lisent par paquets : un `in.(…)` de plusieurs centaines d'UUID
+ * dépassait la longueur d'URL acceptée par la passerelle pour un gros client.
+ */
+const ITEM_CHUNK = 100;
+/**
+ * Et chaque paquet se lit par pages : PostgREST plafonne une réponse (1000
+ * lignes par défaut), et cent commandes B2B de plus de dix lignes le
+ * dépassaient en silence — quantités et parts faussées sans erreur.
+ */
+const ITEM_PAGE = 1000;
 
 export const customerAnalyticsKey = (customerId: string | null | undefined) =>
   ['customer-analytics', customerId] as const;
@@ -61,97 +37,34 @@ export function useCustomerAnalytics(customerId: string | null | undefined) {
     enabled: !!customerId,
     staleTime: 60_000,
     queryFn: async (): Promise<CustomerAnalytics> => {
-      const empty: CustomerAnalytics = {
-        ordersConsidered: 0,
-        totalSpend: 0,
-        avgBasket: 0,
-        monthly: [],
-        byType: [],
-        topProducts: [],
-      };
-      if (!customerId) return empty;
+      if (!customerId) return buildCustomerAnalytics([], []);
 
       const { data: orders, error } = await supabase.rpc('get_customer_recognized_orders_v2', {
         p_customer_id: customerId,
       });
       if (error) throw error;
-
       const rows = orders ?? [];
-      if (rows.length === 0) return empty;
+      if (rows.length === 0) return buildCustomerAnalytics([], []);
 
-      // ---- Monthly trend over the last 12 months (always 12 buckets) --------
-      const now = new Date();
-      const buckets: MonthlySpendPoint[] = [];
-      const keyToIdx = new Map<string, number>();
-      for (let i = 11; i >= 0; i -= 1) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        keyToIdx.set(key, buckets.length);
-        buckets.push({ month: key, label: MONTH_LABELS[d.getMonth()] ?? '', total: 0, orders: 0 });
-      }
-
-      // ---- Order-type split + totals ---------------------------------------
-      const typeAgg = new Map<AnalyticsOrderType, { orders: number; total: number }>();
-      let totalSpend = 0;
-      for (const o of rows) {
-        const total = Number(o.total);
-        totalSpend += total;
-        const k = o.recognized_at.slice(0, 7);
-        const idx = keyToIdx.get(k);
-        if (idx !== undefined) {
-          const bucket = buckets[idx];
-          if (bucket) {
-            bucket.total += total;
-            bucket.orders += 1;
-          }
+      const ids = rows.map((o) => o.id);
+      const items: OrderItemRow[] = [];
+      for (let i = 0; i < ids.length; i += ITEM_CHUNK) {
+        for (let from = 0; ; from += ITEM_PAGE) {
+          const { data, error: itErr } = await supabase
+            .from('order_items')
+            .select('product_id, name_snapshot, quantity, line_total')
+            .in('order_id', ids.slice(i, i + ITEM_CHUNK))
+            .eq('is_cancelled', false)
+            .order('id', { ascending: true })
+            .range(from, from + ITEM_PAGE - 1);
+          if (itErr) throw itErr;
+          const page = data ?? [];
+          items.push(...page);
+          if (page.length < ITEM_PAGE) break;
         }
-        const t = o.order_type;
-        const prev = typeAgg.get(t) ?? { orders: 0, total: 0 };
-        typeAgg.set(t, { orders: prev.orders + 1, total: prev.total + total });
       }
 
-      const byType: OrderTypeSlice[] = (
-        ['dine_in', 'take_out', 'delivery', 'b2b'] as AnalyticsOrderType[]
-      )
-        .map((type) => ({
-          type,
-          label: TYPE_LABELS[type],
-          orders: typeAgg.get(type)?.orders ?? 0,
-          total: typeAgg.get(type)?.total ?? 0,
-        }))
-        .filter((s) => s.orders > 0);
-
-      // ---- Top products (across those orders) ------------------------------
-      const orderIds = rows.map((o) => o.id);
-      const { data: items, error: itErr } = await supabase
-        .from('order_items')
-        .select('product_id, name_snapshot, quantity, line_total')
-        .in('order_id', orderIds)
-        .eq('is_cancelled', false);
-      if (itErr) throw itErr;
-
-      const prodAgg = new Map<string, TopProduct>();
-      for (const it of items ?? []) {
-        const pid = it.product_id ?? it.name_snapshot;
-        const prev =
-          prodAgg.get(pid) ??
-          { product_id: pid, name: it.name_snapshot, quantity: 0, spend: 0 };
-        prev.quantity += Number(it.quantity);
-        prev.spend += Number(it.line_total);
-        prodAgg.set(pid, prev);
-      }
-      const topProducts = Array.from(prodAgg.values())
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 6);
-
-      return {
-        ordersConsidered: rows.length,
-        totalSpend,
-        avgBasket: rows.length > 0 ? Math.round(totalSpend / rows.length) : 0,
-        monthly: buckets,
-        byType,
-        topProducts,
-      };
+      return buildCustomerAnalytics(rows, items);
     },
   });
 }
