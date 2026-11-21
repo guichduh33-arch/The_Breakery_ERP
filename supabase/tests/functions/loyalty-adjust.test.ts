@@ -17,13 +17,27 @@ async function defaultCategoryId(admin: SupabaseClient): Promise<string> {
   return data.id as string;
 }
 
+/**
+ * Decision 2026-11-21 : un credit de points exige un nonce PIN manager. Le nonce
+ * est insere cote service-role (l'EF verify-manager-pin le mint en production),
+ * au nom du profil EMP000 qui porte loyalty.adjust.
+ */
+async function mintGrantNonce(admin: SupabaseClient, scope = 'loyalty_points_grant'): Promise<string> {
+  const { data: profile } = await admin.from('user_profiles')
+    .select('id').eq('employee_code', 'EMP000').single();
+  const { data, error } = await admin.from('discount_authorizations')
+    .insert({ manager_profile_id: profile!.id, scope }).select('id').single();
+  if (error !== null) throw new Error(`nonce mint failed: ${error.message}`);
+  return data.id as string;
+}
+
 /** Soft-delete plutot que DELETE : loyalty_transactions reference la fiche. */
 async function retireCustomer(admin: SupabaseClient, id: string | undefined): Promise<void> {
   if (id === undefined) return;
   await admin.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', id);
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v3 RPC', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v4 RPC', () => {
   let adminToken:   string;
   let managerToken: string;
   let customerId:   string;
@@ -60,9 +74,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: positive delta increases balance + lifetime, inserts ledger row', async () => {
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const nonce = await mintGrantNonce(createClient(SUPABASE_URL, SERVICE));
+    const { data, error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 250, p_reason: 'manual reward for VIP referral',
+      p_authorization_id: nonce,
     });
     expect(error).toBeNull();
     expect(data?.new_balance).toBe(1250);
@@ -78,9 +94,39 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
     });
   });
 
+  it('admin: positive delta without manager nonce -> P0003, nothing written', async () => {
+    const sb = jwtClient(adminToken);
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
+      p_idempotency_key: crypto.randomUUID(),
+      p_customer_id: customerId, p_delta: 10, p_reason: 'credit without manager pin',
+    });
+    expect(error?.code).toBe('P0003');
+  });
+
+  it('admin: nonce of another scope or already used -> P0003', async () => {
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const sb = jwtClient(adminToken);
+    const wrongScope = await mintGrantNonce(admin, 'store_credit_grant');
+    const r1 = await sb.rpc('adjust_loyalty_points_v4', {
+      p_idempotency_key: crypto.randomUUID(),
+      p_customer_id: customerId, p_delta: 10, p_reason: 'wrong scope nonce',
+      p_authorization_id: wrongScope,
+    });
+    expect(r1.error?.code).toBe('P0003');
+    const used = await mintGrantNonce(admin);
+    await admin.from('discount_authorizations')
+      .update({ consumed_at: new Date().toISOString() }).eq('id', used);
+    const r2 = await sb.rpc('adjust_loyalty_points_v4', {
+      p_idempotency_key: crypto.randomUUID(),
+      p_customer_id: customerId, p_delta: 10, p_reason: 'consumed nonce',
+      p_authorization_id: used,
+    });
+    expect(r2.error?.code).toBe('P0003');
+  });
+
   it('admin: negative delta within balance — balance shrinks, lifetime unchanged', async () => {
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { data, error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: -100, p_reason: 'corrective: duplicate earn',
     });
@@ -91,7 +137,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: negative delta exceeding balance raises insufficient_balance', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: -99999, p_reason: 'should fail because balance too low',
     });
@@ -100,7 +146,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('manager: forbidden (no loyalty.adjust)', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 50, p_reason: 'manager attempt',
     });
@@ -109,7 +155,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: zero delta -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 0, p_reason: 'zero delta should be rejected',
     });
@@ -118,7 +164,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: short reason -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 10, p_reason: 'hi',
     });
@@ -127,7 +173,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: NULL p_customer_id -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       // Runtime-NULL handling — generated types accept null on this param.
       p_customer_id: null as unknown as string, p_delta: 10, p_reason: 'null customer should be rejected',
@@ -143,19 +189,21 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
     await admin.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', c!.id);
 
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: c!.id, p_delta: 50, p_reason: 'should fail on tombstoned row',
+      p_authorization_id: await mintGrantNonce(admin),
     });
     expect(error?.message).toMatch(/customer_deleted/);
   });
 
   it('admin: nonexistent UUID -> customer_deleted', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: '00000000-0000-0000-0000-000000000000', p_delta: 10,
       p_reason: 'should fail on missing row',
+      p_authorization_id: await mintGrantNonce(createClient(SUPABASE_URL, SERVICE)),
     });
     expect(error?.message).toMatch(/customer_deleted/);
   });
@@ -163,7 +211,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
   it('admin: |delta| > 1_000_000 -> invalid_input (overflow guard)', async () => {
     const sb = jwtClient(adminToken);
     for (const delta of [1_000_001, -1_000_001, 2_000_000_000]) {
-      const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+      const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
         p_customer_id: customerId, p_delta: delta, p_reason: 'overflow attempt',
       });
@@ -173,7 +221,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: reason > 500 chars -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 10, p_reason: 'x'.repeat(501),
     });
@@ -182,7 +230,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
 
   it('admin: whitespace-only reason -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: customerId, p_delta: 10, p_reason: '          ',
     });
@@ -202,7 +250,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points_v
     await admin.from('customers').update({ loyalty_points: 500, lifetime_points: 500 }).eq('id', c!.id);
 
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_loyalty_points_v3', {
+    const { data, error } = await sb.rpc('adjust_loyalty_points_v4', {
       p_idempotency_key: crypto.randomUUID(),
       p_customer_id: c!.id, p_delta: -200, p_reason: 'redeem-like correction',
     });

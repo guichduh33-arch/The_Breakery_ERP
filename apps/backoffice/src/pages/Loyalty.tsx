@@ -1,32 +1,19 @@
 // apps/backoffice/src/pages/Loyalty.tsx
 //
-// Session 14 / Phase 5.B — Loyalty BO page rebuild on top of the new
-// design-system primitives (KpiTile / Card / DataTable). The visual
-// reference is `customer.jpg` (loyalty members are retail customers
-// with points) — same KPI / filter / table chrome as CustomersListPage.
+// Programme de fidélité — instance de l'archétype LIST. La bande de compteurs
+// `ListCounterStrip` remplace les tuiles à icônes (DESIGN.md § Tuile de KPI :
+// sans icône) ; les compteurs de palier SONT les filtres, et le palier actif
+// vit dans l'URL (`?tier=`) pour que le retour arrière rende la liste qu'on
+// regardait (audit Sales 2026-11-21).
 //
-// Behaviour stays the same as the previous list:
-//   - search by name / phone prefix
-//   - tier filter (bronze / silver / gold / platinum)
-//   - row actions: view history, adjust points, edit, delete (gated by
-//     the existing permission codes).
-//
-// All mutations still flow through the existing modals
+// Les mutations passent toujours par les modales existantes
 // (CustomerFormModal / LoyaltyAdjustModal / CustomerDeleteConfirm /
-// LoyaltyHistoryDrawer) — only the page chrome changed.
+// LoyaltyHistoryDrawer).
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Award,
-  ChevronDown,
-  Heart,
-  Plus,
-  Search,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
+import { ChevronDown, Plus, Search } from 'lucide-react';
 import { LoyaltyBadge, useDebouncedValue, type DataTableColumn } from '@breakery/ui';
-import { Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
+import { Card, DataTable } from '@/components/BackofficeUi.js';
 import { tierFromLifetime } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
@@ -45,6 +32,10 @@ import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 
 // Le cran du Command Palette et de la liste clients — le dépôt n'en a qu'un.
@@ -57,6 +48,10 @@ const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'gold',     label: 'Gold' },
   { value: 'platinum', label: 'Platinum' },
 ];
+
+function isTier(v: string | null): v is Exclude<TierFilter, 'all'> {
+  return v === 'bronze' || v === 'silver' || v === 'gold' || v === 'platinum';
+}
 
 function formatLastVisit(iso: string | null): string {
   if (iso === null) return '—';
@@ -76,7 +71,11 @@ export default function LoyaltyPage(): JSX.Element {
   const canDelete = hasPermission('customers.delete');
 
   const [search, setSearch] = useState<string>('');
-  const [tier,   setTier  ] = useState<TierFilter>('all');
+  const [params, patchParams] = useListParams();
+  const tierRaw = params.get('tier');
+  // Une valeur inconnue dans l'URL retombe sur « tous », jamais en filtre serveur.
+  const tier: TierFilter = isTier(tierRaw) ? tierRaw : 'all';
+  const pickTier = (next: TierFilter): void => { patchParams({ tier: next === 'all' ? null : next }); };
 
   // La saisie vit en local ; seule la valeur POSÉE atteint les filtres. Poussée
   // à la frappe, elle changeait la `queryKey` à chaque caractère et lançait donc
@@ -105,6 +104,20 @@ export default function LoyaltyPage(): JSX.Element {
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view loyalty.</div>;
   }
+
+  // Tirets, jamais 0, tant que les compteurs ne sont pas connus.
+  const s = stats.data;
+  const unknown = stats.isError || s === undefined;
+  const num = (n: number | undefined): string => (unknown || n === undefined ? '—' : n.toLocaleString('id-ID'));
+  const counters: ListCounter[] = [
+    { id: 'all', label: 'All members', value: num(s?.members), onSelect: () => { pickTier('all'); } },
+    { id: 'bronze', label: 'Bronze', value: num(s?.bronze), onSelect: () => { pickTier('bronze'); } },
+    { id: 'silver', label: 'Silver', value: num(s?.silver), onSelect: () => { pickTier('silver'); } },
+    { id: 'gold', label: 'Gold', value: num(s?.gold), onSelect: () => { pickTier('gold'); } },
+    { id: 'platinum', label: 'Platinum', value: num(s?.platinum), onSelect: () => { pickTier('platinum'); } },
+    { id: 'points', label: 'Points outstanding', value: num(s?.totalPoints), title: 'Sum of current balances — every member, not the filter.' },
+    { id: 'lifetime', label: 'Lifetime points earned', value: num(s?.lifetimePoints), title: 'Every member, not the filter.' },
+  ];
 
   const columns: readonly DataTableColumn<Row>[] = [
     {
@@ -186,9 +199,9 @@ export default function LoyaltyPage(): JSX.Element {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-[13px]">
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'Loyalty' }]} />
       <PageHeader
-        className="items-start"
         title="Loyalty"
         subtitle="Retail members, balances and ledger."
         actions={canCreate ? (
@@ -198,18 +211,21 @@ export default function LoyaltyPage(): JSX.Element {
         ) : undefined}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={Heart} label="Total members" value={stats.data?.members ?? 0} valueFormat="number" />
-        <KpiTile icon={Sparkles} label="Points outstanding" value={stats.data?.totalPoints ?? 0} valueFormat="number" footer="Sum of current balances" />
-        <KpiTile icon={TrendingUp} label="Lifetime points earned" value={stats.data?.lifetimePoints ?? 0} valueFormat="number" />
-        <KpiTile
-          icon={Award}
-          label="Premium tiers"
-          value={(stats.data?.gold ?? 0) + (stats.data?.platinum ?? 0)}
-          valueFormat="number"
-          footer={`${stats.data?.silver ?? 0} silver • ${stats.data?.gold ?? 0} gold • ${stats.data?.platinum ?? 0} platinum`}
-        />
-      </div>
+      {stats.isError && (
+        <QueryErrorBanner
+          detail={stats.error.message}
+          onRetry={() => { void stats.refetch(); }}
+          data-testid="loyalty-counters-error"
+        >
+          Member counts could not be loaded.
+        </QueryErrorBanner>
+      )}
+      <ListCounterStrip
+        counters={counters}
+        activeId={tier}
+        ariaLabel="Loyalty tier filters"
+        data-testid="loyalty-counters"
+      />
 
       <Card variant="default" padding="sm">
         <div className="flex flex-wrap items-center gap-4">
@@ -230,7 +246,7 @@ export default function LoyaltyPage(): JSX.Element {
             <select
               aria-label="Tier filter"
               value={tier}
-              onChange={(e) => setTier(e.target.value as TierFilter)}
+              onChange={(e) => { pickTier(isTier(e.target.value) ? e.target.value : 'all'); }}
               className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               {TIER_OPTIONS.map((o) => (
@@ -242,13 +258,17 @@ export default function LoyaltyPage(): JSX.Element {
         </div>
       </Card>
 
-      {list.error !== null && list.error !== undefined ? (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed: {list.error.message}
-        </div>
+      {list.isError ? (
+        <QueryErrorBanner
+          detail={list.error.message}
+          onRetry={() => { void list.refetch(); }}
+          data-testid="loyalty-error"
+        >
+          Loyalty members could not be loaded.
+        </QueryErrorBanner>
       ) : (
         // Le conteneur porte l'écart de la note à sa table : posé sur la note
-        // elle-même, `space-y-6` du conteneur de page l'emporterait.
+        // elle-même, la gouttière du conteneur de page l'emporterait.
         <div className="space-y-2">
           <DataTable
             caption="Member, tier, point balance, lifetime points and last visit per loyalty member"

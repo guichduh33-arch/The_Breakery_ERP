@@ -17,7 +17,14 @@ interface MintResponse {
   message?: string;
 }
 
-export async function mintStoreCreditAuthorization(managerPin: string): Promise<string> {
+export type ManagerMintScope = 'store_credit_grant' | 'loyalty_points_grant';
+
+export function mintStoreCreditAuthorization(managerPin: string): Promise<string> {
+  return mintManagerAuthorization('store_credit_grant', managerPin);
+}
+
+/** Même véhicule pour tout scope BO de verify-manager-pin (ex. points fidélité). */
+export async function mintManagerAuthorization(scope: ManagerMintScope, managerPin: string): Promise<string> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
   const accessToken = await getAccessToken();
   const res = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {
@@ -27,7 +34,7 @@ export async function mintStoreCreditAuthorization(managerPin: string): Promise<
       Authorization: `Bearer ${accessToken}`,
       'x-manager-pin': managerPin,
     },
-    body: JSON.stringify({ mint_scope: 'store_credit_grant' }),
+    body: JSON.stringify({ mint_scope: scope }),
   });
   const body = await res.json().catch(() => ({})) as MintResponse;
   if (!res.ok || !body.authorization_id) {

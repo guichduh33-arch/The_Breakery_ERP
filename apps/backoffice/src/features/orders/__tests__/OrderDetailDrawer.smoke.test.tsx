@@ -65,9 +65,12 @@ const BASE_ORDER = {
 };
 
 let orderOverrides: Record<string, unknown> = {};
+const detailState = vi.hoisted(() => ({ fails: false, refetch: vi.fn() }));
 
 vi.mock('@/features/orders/hooks/useOrderDetail.js', () => ({
-  useOrderDetail: () => ({ isLoading: false, data: { ...BASE_ORDER, ...orderOverrides } }),
+  useOrderDetail: () => (detailState.fails
+    ? { isLoading: false, isError: true, data: undefined, refetch: detailState.refetch }
+    : { isLoading: false, isError: false, data: { ...BASE_ORDER, ...orderOverrides }, refetch: detailState.refetch }),
 }));
 
 // Gates : accordées par défaut, restreintes cas par cas.
@@ -106,6 +109,8 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     installFinancialBrowser(); resetFinancialSession();
     financialTestAuth.setState({ hasPermission: (code) => grantedPerms.has(code) });
     orderOverrides = {};
+    detailState.fails = false;
+    detailState.refetch.mockReset();
     grantedPerms = new Set(['orders.edit_open', 'orders.void', 'payments.process']);
   });
 
@@ -155,9 +160,30 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     expect(screen.queryByText('Subtotal')).toBeNull();
     // 100 000 − 9 000 = 91 000
     expect(screen.getAllByText(/91\.000|91,000/).length).toBeGreaterThan(0);
-    // Cash received / Change conservés.
-    expect(screen.getByText('Cash Received')).toBeInTheDocument();
+    // Cash received / Change conservés pour un règlement cash.
+    expect(screen.getByText('Cash received')).toBeInTheDocument();
     expect(screen.getByText('Change')).toBeInTheDocument();
+    expect(screen.getByText('Cash')).toBeInTheDocument();
+  });
+
+  it('names a card or QRIS payment and drops the cash-only lines', async () => {
+    orderOverrides = {
+      payments: [{ ...BASE_ORDER.payments[0], method: 'qris', cash_received: null, change_given: null }],
+    };
+    renderDrawer();
+    await screen.findByTestId('order-detail-drawer');
+    expect(screen.getByText('QRIS')).toBeInTheDocument();
+    expect(screen.queryByText('Cash received')).toBeNull();
+    expect(screen.queryByText('Change')).toBeNull();
+  });
+
+  it('says when the order could not be loaded and offers a retry', async () => {
+    detailState.fails = true;
+    renderDrawer();
+    expect(await screen.findByRole('alert')).toHaveTextContent('This order could not be loaded.');
+    expect(screen.queryByText('Loading…')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(detailState.refetch).toHaveBeenCalled();
   });
 
   // ── 6 · le total est en encre, pas en or ─────────────────────────────────

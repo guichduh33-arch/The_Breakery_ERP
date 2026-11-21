@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { formatDateTimeWita } from '@breakery/utils';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { Button } from '@/components/BackofficeUi.js';
 import { buildOrderHistory } from '../orderHistory.js';
 import { useOrderHistory } from '../hooks/useOrderHistory.js';
@@ -25,7 +25,7 @@ export function OrderHistory({ order }: { order: OrderDetail }): JSX.Element {
             {!event.pending && (
               <>
                 <p className="font-data text-xs tabular-nums text-text-muted">
-                  {event.at ? <time dateTime={event.at}>{formatDateTimeWita(event.at)}</time> : 'Time not recorded'}
+                  {event.at ? <time dateTime={event.at}>{formatDateTimeShortWita(event.at)}</time> : 'Time not recorded'}
                 </p>
                 <p className="text-xs text-text-secondary">{event.person ?? 'Person not recorded'}</p>
                 {event.participants?.map((person) => <p key={person} className="text-xs text-text-secondary">{person}</p>)}

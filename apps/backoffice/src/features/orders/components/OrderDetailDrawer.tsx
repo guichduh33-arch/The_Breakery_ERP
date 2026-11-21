@@ -41,10 +41,14 @@ import { RefundOrderModalBo } from '@/features/orders/components/RefundOrderModa
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
 import {
   ORDER_STATUS_BADGE,
+  isEditableStatus,
   isOrderDetailPaid,
+  isOrderRefundable,
+  isVoidablePaidStatus,
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
+  paymentMethodLabel,
 } from '@/features/orders/statusMeta.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
@@ -64,12 +68,8 @@ export interface OrderDetailDrawerProps {
   onCancelUnpaid?: (orderId: string) => void;
 }
 
-/** Statuts éditables — même liste que la liste (ADR-009 : jamais `'open'`). */
-const EDITABLE_STATUSES = new Set(['draft', 'pending_payment']);
-/** Statuts annulables — le void est la seule sortie de `completed` (ADR-009). */
-const VOIDABLE_STATUSES = new Set(['paid', 'completed']);
-/** Statuts remboursables — une commande portant l'argent (lot 6c). */
-const REFUNDABLE_STATUSES = new Set(['paid', 'completed']);
+// Statuts éditables, annulables et remboursables : définitions PARTAGÉES avec
+// la page détail (`statusMeta`) — deux surfaces, une seule règle.
 
 // TEINTE seulement, jamais de géométrie — le pied du tiroir aligne cinq boutons
 // sur une rangée et ils prennent tous la hauteur du primitif partagé (`sm`,
@@ -125,7 +125,9 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         <InfoCell icon={Hash} label="Transaction ID">
           <span className="font-mono text-xs">{order.id.slice(0, 8)} …</span>
         </InfoCell>
-        <InfoCell icon={CalendarDays} label="Date & Time">{fmtDateTime(order.created_at)}</InfoCell>
+        <InfoCell icon={CalendarDays} label="Date & Time">
+          <span className="font-data tabular-nums">{fmtDateTime(order.created_at)}</span>
+        </InfoCell>
         <InfoCell icon={PackageOpen} label="Type">{orderTypeLabel(order.order_type)}</InfoCell>
         {/* Fiche 02 D2.5 — table visible au BO ; l'historique des transferts se
             consulte dans le journal d'audit (action order.table_transfer). */}
@@ -140,10 +142,12 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
           )}
         </InfoCell>
         <InfoCell icon={CreditCard} label="Payment Method">
-          {firstPayment ? <span className="capitalize">{firstPayment.method}</span> : '—'}
+          {/* Libellé partagé (`paymentMethodLabel`) : `capitalize` rendait
+              « Qris » et « Store_credit ». */}
+          {firstPayment ? paymentMethodLabel(firstPayment.method) : '—'}
         </InfoCell>
         <InfoCell icon={Clock} label="Payment Time">
-          {firstPayment ? fmtDateTime(firstPayment.paid_at) : '—'}
+          {firstPayment ? <span className="font-data tabular-nums">{fmtDateTime(firstPayment.paid_at)}</span> : '—'}
         </InfoCell>
       </div>
 
@@ -166,7 +170,8 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
                     Kitchen: {ks}
                   </span>
                 )}
-                <span className="w-24 text-right font-data text-sm tabular-nums text-text-primary">{formatCurrency(it.line_total)}</span>
+                {/* `min-w` et non `w-24` : « Rp 1.250.000 » débordait la colonne. */}
+                <span className="min-w-[7.5rem] whitespace-nowrap text-right font-data text-sm tabular-nums text-text-primary">{formatCurrency(it.line_total)}</span>
               </li>
             );
           })}
@@ -189,12 +194,14 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">
           <span className="text-base font-semibold text-text-primary">Total (incl. PB1)</span>
-          <span className="font-data text-lg font-semibold tabular-nums text-text-primary">{formatCurrency(order.total)}</span>
+          <span className="whitespace-nowrap font-data text-lg font-semibold tabular-nums text-text-primary">{formatCurrency(order.total)}</span>
         </div>
-        {firstPayment && (
+        {/* Montant remis et rendu : propres au CASH. Affichés pour une carte ou
+            un QRIS, ils rendaient « Rp 0 » qu'on lisait comme une anomalie. */}
+        {firstPayment?.method === 'cash' && firstPayment.cash_received !== null && (
           <>
-            <Row label="Cash Received" value={formatCurrency(firstPayment.cash_received)} muted />
-            <Row label="Change" value={formatCurrency(firstPayment.change_given)} muted />
+            <Row label="Cash received" value={formatCurrency(firstPayment.cash_received)} muted />
+            <Row label="Change" value={formatCurrency(firstPayment.change_given ?? 0)} muted />
           </>
         )}
       </div>
@@ -212,7 +219,7 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className={muted ? 'text-text-secondary' : 'text-text-primary'}>{label}</span>
-      <span className="font-mono text-text-secondary">{value}</span>
+      <span className="whitespace-nowrap font-data tabular-nums text-text-secondary">{value}</span>
     </div>
   );
 }
@@ -220,7 +227,7 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
 export function OrderDetailDrawer({
   orderId, onClose, onEditItems, onVoid, onCancelUnpaid,
 }: OrderDetailDrawerProps): JSX.Element {
-  const { data, isLoading } = useOrderDetail(orderId ?? undefined);
+  const { data, isLoading, isError, refetch } = useOrderDetail(orderId ?? undefined);
   // Mêmes gates que la liste — la permission se lit à la source, elle ne se
   // transporte pas en prop (une prop peut mentir, le store non).
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
@@ -236,12 +243,7 @@ export function OrderDetailDrawer({
   const pendingRefund = useHasPendingFinancial('refund', orderId ?? '');
   const reprint = useReprintReceipt();
 
-  // Un arrondi monétaire peut laisser des points sur des quantités encore à retourner.
-  const canRefund =
-    data !== undefined && hasRefund
-    && (pendingRefund || (REFUNDABLE_STATUSES.has(data.status)
-    && (data.total_refunded < data.total || ((data.loyalty_points_redeemed ?? 0) > 0
-      && data.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity)))));
+  const canRefund = data !== undefined && hasRefund && isOrderRefundable(data, pendingRefund);
   // Le reçu duplicata n'a de sens que sur une commande qui a porté l'argent.
   const canReprint = data !== undefined && hasReprint && isOrderDetailPaid(data);
 
@@ -249,17 +251,17 @@ export function OrderDetailDrawer({
   // partagent le même narrowing, personne ne réaffirme la condition en `!`.
   const editAction =
     data !== undefined && onEditItems !== undefined
-      && hasEditOpen && EDITABLE_STATUSES.has(data.status)
+      && hasEditOpen && isEditableStatus(data.status)
       ? (): void => { onEditItems(data.id, data.order_number); }
       : null;
   const voidAction =
     data !== undefined && onVoid !== undefined
-      && hasVoid && VOIDABLE_STATUSES.has(data.status)
+      && hasVoid && isVoidablePaidStatus(data.status)
       ? (): void => { onVoid(data.id, data.order_number); }
       : null;
   const cancelUnpaidAction =
     data !== undefined && onCancelUnpaid !== undefined && hasVoid && hasPaymentProcess
-      && EDITABLE_STATUSES.has(data.status) && !isOrderDetailPaid(data)
+      && isEditableStatus(data.status) && !isOrderDetailPaid(data)
       ? (): void => { onCancelUnpaid(data.id); }
       : null;
 
@@ -280,8 +282,17 @@ export function OrderDetailDrawer({
           <SheetDescription className="sr-only">Order details and activity</SheetDescription>
         </SheetHeader>
 
-        {isLoading || !data ? (
-          <div className="px-6 py-12 text-center text-text-secondary">Loading…</div>
+        {/* Un échec restait sur « Loading… » pour toujours : il se dit, avec
+            un nouvel essai. */}
+        {isError && !data ? (
+          <div role="alert" className="mx-6 my-12 flex flex-col items-center gap-3 text-center text-sm text-red-as-text">
+            This order could not be loaded.
+            <Button type="button" size="sm" variant="secondary" onClick={() => { void refetch(); }}>
+              Retry
+            </Button>
+          </div>
+        ) : isLoading || !data ? (
+          <div role="status" className="px-6 py-12 text-center text-text-secondary">Loading…</div>
         ) : (
           <Body order={data} />
         )}

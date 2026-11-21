@@ -6,12 +6,14 @@
 //
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §4.5
 
+import { useState } from 'react';
 import { Dialog, DialogDescription, PromotionForm, type PromotionFormValues } from '@breakery/ui';
 import { DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreatePromotion } from '../hooks/useCreatePromotion.js';
 import { usePromotionReferenceData } from '../hooks/usePromotionReferenceData.js';
 import { useUpdatePromotion } from '../hooks/useUpdatePromotion.js';
 import type { PromotionListRow } from '../hooks/usePromotionsList.js';
+import { PromotionActivateConfirm } from './PromotionActivateConfirm.js';
 
 export interface PromotionFormModalProps {
   open: boolean;
@@ -33,13 +35,38 @@ export function PromotionFormModal({ open, mode, initialRow, onClose }: Promotio
   const updateMut = useUpdatePromotion();
   const ref = usePromotionReferenceData();
 
-  async function handleSubmit(values: PromotionFormValues): Promise<void> {
+  // ADR-045 déc. 4 : ACTIVER se confirme aussi depuis le formulaire (création
+  // active, ou édition qui passe d'inactive à active), pas seulement depuis
+  // l'interrupteur de la liste. Le formulaire attend la promesse : Cancel la
+  // résout sans rien écrire et laisse le formulaire ouvert.
+  const [confirming, setConfirming] = useState<{
+    row: PromotionListRow;
+    resolve: (confirmed: boolean) => void;
+  } | null>(null);
+
+  async function persist(values: PromotionFormValues): Promise<void> {
     if (mode === 'create') {
       await createMut.mutateAsync(values);
     } else if (initialRow !== undefined) {
       await updateMut.mutateAsync({ id: initialRow.id, values });
     }
     onClose();
+  }
+
+  async function handleSubmit(values: PromotionFormValues): Promise<void> {
+    const activates = values.is_active && (mode === 'create' || initialRow?.is_active !== true);
+    if (!activates) {
+      await persist(values);
+      return;
+    }
+    const confirmed = await new Promise<boolean>((resolve) => {
+      setConfirming({
+        row: { ...values, id: initialRow?.id ?? 'new', created_at: initialRow?.created_at ?? '' },
+        resolve,
+      });
+    });
+    setConfirming(null);
+    if (confirmed) await persist(values);
   }
 
   return (
@@ -55,7 +82,7 @@ export function PromotionFormModal({ open, mode, initialRow, onClose }: Promotio
         {ref.isLoading ? (
           <div className="text-text-secondary py-12 text-center">Loading reference data…</div>
         ) : ref.error ? (
-          <div className="text-danger py-12 text-center">
+          <div role="alert" className="text-danger py-12 text-center">
             Failed to load reference data: {ref.error.message}
           </div>
         ) : ref.data ? (
@@ -73,6 +100,12 @@ export function PromotionFormModal({ open, mode, initialRow, onClose }: Promotio
           />
         ) : null}
       </DialogContent>
+      <PromotionActivateConfirm
+        row={confirming?.row}
+        pending={createMut.isPending || updateMut.isPending}
+        onConfirm={() => { confirming?.resolve(true); }}
+        onClose={() => { confirming?.resolve(false); }}
+      />
     </Dialog>
   );
 }

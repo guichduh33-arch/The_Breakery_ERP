@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPage } from '../OrderDetailPage.js';
@@ -212,6 +212,50 @@ describe('OrderDetailPage', () => {
     renderAt('/backoffice/orders/o-1');
     expect(await screen.findByText('Paid status without a recorded payment row.')).toBeInTheDocument();
     expect(screen.queryByText(/AR ledger/)).toBeNull();
+  });
+
+  // ── Audit Sales 2026-11-21 ────────────────────────────────────────────────
+
+  // La fiche pleine page n'offrait ni Refund ni Void payé, que le tiroir porte.
+  it('T16 a paid order offers Refund and Void on the full page, as in the drawer', () => {
+    orderOverrides = { status: 'paid', total_refunded: 0,
+      items: [{ ...BASE_ORDER.items[0], qty_already_refunded: 0 }] };
+    renderAt('/backoffice/orders/o-1');
+    expect(screen.getByTestId('detail-refund')).toHaveTextContent('Refund');
+    expect(screen.getByTestId('detail-void-paid')).toHaveTextContent('Void');
+    expect(screen.queryByRole('button', { name: 'Void unpaid order' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit items' })).toBeNull();
+    fireEvent.click(screen.getByTestId('detail-void-paid'));
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Void order ORD-001');
+    expect(screen.getByTestId('void-summary')).toHaveTextContent(/99\.000/);
+  });
+
+  it('T16b Refund opens the same refund dialog as the drawer', () => {
+    orderOverrides = { status: 'paid', total_refunded: 0,
+      items: [{ ...BASE_ORDER.items[0], qty_already_refunded: 0 }] };
+    renderAt('/backoffice/orders/o-1');
+    fireEvent.click(screen.getByTestId('detail-refund'));
+    expect(screen.getByTestId('refund-modal-bo')).toBeInTheDocument();
+  });
+
+  it('T17 a fully refunded order no longer offers Refund', () => {
+    orderOverrides = { status: 'completed', total_refunded: 99_000,
+      items: [{ ...BASE_ORDER.items[0], qty_already_refunded: 2 }] };
+    renderAt('/backoffice/orders/o-1');
+    expect(screen.queryByTestId('detail-refund')).toBeNull();
+    expect(screen.getByTestId('detail-void-paid')).toBeInTheDocument();
+  });
+
+  // La colonne Unit montrait `unit_price` (sans modificateurs) à côté du total
+  // de ligne : 2 × 25.000 affichés pour une ligne facturée 56.000.
+  it('T18 the Unit column shows the effective unit price, modifiers included', () => {
+    orderOverrides = { items: [{ ...BASE_ORDER.items[0], unit_price: 25_000, line_total: 56_000, quantity: 2 }] };
+    renderAt('/backoffice/orders/o-1');
+    const row = screen.getByRole('link', { name: /Croissant/ }).closest('tr');
+    expect(row).not.toBeNull();
+    const cells = within(row as HTMLElement).getAllByRole('cell');
+    expect(cells[2]).toHaveTextContent(/28\.000/);
+    expect(cells[3]).toHaveTextContent(/56\.000/);
   });
 
   // Sur le canal B2B, l'absence de ligne EST le fonctionnement normal.

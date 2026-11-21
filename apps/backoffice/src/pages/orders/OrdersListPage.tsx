@@ -41,6 +41,7 @@ import {
 } from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
 import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
+import { matchesQuickFind, useOrdersCsvExport } from '@/features/orders/hooks/useOrdersCsvExport.js';
 import {
   COLUMN_ID_TO_SORT,
   SORT_TO_COLUMN_ID,
@@ -163,6 +164,9 @@ export default function OrdersListPage(): JSX.Element {
   );
 
   const query = useOrdersList({ start, end, filters: listFilters, sort: sortCol, dir: sortDir });
+  // L'export charge toute la fenêtre serveur avant d'écrire (pas seulement le chargé).
+  const writeCsv = useCallback((rows: OrdersListLine[]) => { exportOrdersCsv(rows, start, end); }, [start, end]);
+  const csvExport = useOrdersCsvExport(query, writeCsv);
   // ADR-025 D2 — les compteurs suivent la fenêtre et les filtres, JAMAIS le
   // statut actif.
   const counters = useOrdersCounters({ start, end, filters: serverFilters });
@@ -178,15 +182,11 @@ export default function OrdersListPage(): JSX.Element {
     () => (query.data?.pages ?? []).flatMap((p) => p.lines),
     [query.data],
   );
-  const lines = useMemo(() => {
-    const q = deferredQuickFind.trim().toLowerCase();
-    if (!q) return loadedLines;
-    return loadedLines.filter(
-      (o) =>
-        o.order_number.toLowerCase().includes(q) ||
-        (o.customer_name ?? '').toLowerCase().includes(q),
-    );
-  }, [loadedLines, deferredQuickFind]);
+  // Prédicat partagé avec l'export : le fichier suit ce que l'écran montre.
+  const lines = useMemo(
+    () => (deferredQuickFind.trim() ? loadedLines.filter((o) => matchesQuickFind(o, deferredQuickFind)) : loadedLines),
+    [loadedLines, deferredQuickFind],
+  );
 
   /** Total du panier affiché — c'est lui que le pied compte (ADR-025 D1). */
   const activeTotal = status === '' ? (c?.total.count ?? 0) : statusCell(c, status);
@@ -296,10 +296,11 @@ export default function OrdersListPage(): JSX.Element {
               <button
                 type="button"
                 className={TOOLBAR_BTN_SECONDARY}
-                onClick={() => { exportOrdersCsv(lines, start, end); }}
-                disabled={lines.length === 0}
+                onClick={() => { void csvExport.run(deferredQuickFind); }}
+                disabled={loadedLines.length === 0 || csvExport.exporting} aria-busy={csvExport.exporting}
               >
-                <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Export
+                <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+                {csvExport.exporting ? 'Exporting…' : deferredQuickFind.trim() !== '' ? 'Export matches' : 'Export'}
               </button>
             )}
           </>

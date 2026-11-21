@@ -72,10 +72,15 @@ END $$;
 
 -- T1 — ajustement autorisé : ledger + ligne d'audit, actor = id de PROFIL
 -- (jamais auth.uid()), metadata/payload complets.
-DO $$ DECLARE v_row JSONB; v_audit RECORD; v_profile UUID; BEGIN
+DO $$ DECLARE v_row JSONB; v_audit RECORD; v_profile UUID; v_nonce UUID; BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.adj')::uuid);
-  v_row := adjust_loyalty_points_v3(
-    current_setting('l2e.cust')::uuid, 100, 'ADR020 lot e — test T1', gen_random_uuid());
+  -- Nonce PIN manager : un credit de points l'exige (decision 2026-11-21).
+  INSERT INTO discount_authorizations(manager_profile_id, scope)
+    SELECT id, 'loyalty_points_grant' FROM user_profiles
+     WHERE auth_user_id = current_setting('l2e.adj')::uuid AND deleted_at IS NULL
+    RETURNING id INTO v_nonce;
+  v_row := adjust_loyalty_points_v4(
+    current_setting('l2e.cust')::uuid, 100, 'ADR020 lot e — test T1', gen_random_uuid(), v_nonce);
   SELECT id INTO v_profile FROM user_profiles
    WHERE auth_user_id = current_setting('l2e.adj')::uuid AND deleted_at IS NULL;
   SELECT * INTO v_audit FROM audit_logs
@@ -95,7 +100,7 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('t01_adjust_audite', false); E
 -- T2 — customers.read sans loyalty.adjust : refusé (garde négative).
 DO $$ BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
-  PERFORM adjust_loyalty_points_v3(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T2', gen_random_uuid());
+  PERFORM adjust_loyalty_points_v4(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T2', gen_random_uuid());
   INSERT INTO _r VALUES ('t02_adjust_refuse_lecteur', false);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t02_adjust_refuse_lecteur', SQLERRM = 'forbidden');
@@ -104,7 +109,7 @@ END $$;
 -- T3 — sans aucun droit : refusé.
 DO $$ BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
-  PERFORM adjust_loyalty_points_v3(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T3', gen_random_uuid());
+  PERFORM adjust_loyalty_points_v4(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T3', gen_random_uuid());
   INSERT INTO _r VALUES ('t03_adjust_refuse_sans_droit', false);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t03_adjust_refuse_sans_droit', SQLERRM = 'forbidden');
@@ -192,7 +197,7 @@ END $$;
 -- et anon ne peuvent plus exécuter la fonction d'anniversaire (déc. 5).
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t11_acl',
-    NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v3(uuid,integer,text,uuid)', 'EXECUTE')
+    NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v4(uuid,integer,text,uuid,uuid)', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.export_customers_v1()', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.notify_birthday_customers_v2()', 'EXECUTE')
     AND NOT has_function_privilege('authenticated', 'public.notify_birthday_customers_v2()', 'EXECUTE')

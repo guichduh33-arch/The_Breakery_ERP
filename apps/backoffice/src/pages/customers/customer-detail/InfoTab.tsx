@@ -6,7 +6,8 @@
 import { useState, type JSX } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { Card } from '@/components/BackofficeUi.js';
-import { formatDate } from '@breakery/utils';
+import { formatDate, formatDateTimeShortWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CustomerDetailRow } from '@/features/customers/hooks/useCustomerDetail.js';
 import { useUpdateRetailCreditLimit } from '@/features/customers/hooks/useUpdateRetailCreditLimit.js';
 import { RetailCreditLimitSection } from '@/features/customers/components/RetailCreditLimitSection.js';
@@ -37,9 +38,13 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
         {!customer.email && !customer.phone && (
           <p className="text-sm text-text-muted">No contact on file.</p>
         )}
+        {/* `created_at` est un instant : format de table du BO, comme l'en-tête
+            de la fiche commande. L'anniversaire reste une date seule. */}
         <div className="pt-2 text-xs text-text-muted">
-          Customer since {formatDate(customer.created_at)}
-          {customer.birth_date && ` · Birthday ${formatDate(customer.birth_date)}`}
+          Customer since <span className="font-data tabular-nums">{formatDateTimeShortWita(customer.created_at)}</span>
+          {customer.birth_date && (
+            <> · Birthday <span className="font-data tabular-nums">{formatDate(customer.birth_date)}</span></>
+          )}
         </div>
       </Card>
 
@@ -52,14 +57,14 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
           {customer.b2b_tax_id && (
             <div className="text-sm text-text-primary">Tax ID (NPWP): {customer.b2b_tax_id}</div>
           )}
-          <div className="text-sm text-text-primary">Credit limit: <strong>{rp(customer.b2b_credit_limit)}</strong></div>
+          <div className="text-sm text-text-primary">Credit limit: <strong className="font-data tabular-nums">{rp(customer.b2b_credit_limit)}</strong></div>
           <div className="flex items-center justify-between text-sm text-text-primary">
-            <span>Current balance: <strong>{rp(customer.b2b_current_balance)}</strong></span>
+            <span>Current balance: <strong className="font-data tabular-nums">{rp(customer.b2b_current_balance)}</strong></span>
             {canAdjustBalance && (
               <button
                 type="button"
                 onClick={() => setAdjustOpen(true)}
-                className="text-xs uppercase tracking-wide text-gold hover:underline"
+                className={`rounded-sm text-xs uppercase tracking-wide text-gold hover:underline ${FOCUS_RING}`}
               >
                 Adjust…
               </button>

@@ -1,30 +1,17 @@
 // apps/backoffice/src/pages/Promotions.tsx
 //
-// Session 14 / Phase 5.B — Promotions BO list rebuild on top of the new
-// design-system primitives (KpiTile / Card / DataTable). The behaviour is
-// unchanged — only the chrome moves to the canonical pattern.
-//
-// Mirrors `combo 2.jpg` for the surface treatment (KPI tiles + filter card +
-// table). Promotions modals (PromotionFormModal + PromotionDeleteConfirm)
-// are reused as-is from Session 9.
-//
-// Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md
-//   §1 BO1–BO3, §4.5 + Session 14 spec D-W6-PROMO-01.
+// Liste des promotions — instance de l'archétype LIST, régime BORNÉ (chargée
+// en entier) : la bande de compteurs `ListCounterStrip` remplace les tuiles à
+// icônes (DESIGN.md § Tuile de KPI : sans icône), et l'état de liste — type,
+// statut, dates — vit dans l'URL (audit Sales 2026-11-21). Les modales
+// (PromotionFormModal, PromotionDeleteConfirm, PromotionActivateConfirm) sont
+// inchangées.
 
-import { useMemo, useState, type JSX } from 'react';
-import {
-  ChevronDown,
-  Pencil,
-  Percent,
-  Plus,
-  Sparkles,
-  Tag,
-  Trash2,
-  Zap,
-} from 'lucide-react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
+import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PromotionTypeBadge, type DataTableColumn } from '@breakery/ui';
-import { Button, Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
+import { Button, Card, DataTable } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PromotionDeleteConfirm } from '@/features/promotions/components/PromotionDeleteConfirm.js';
 import { PromotionFormModal } from '@/features/promotions/components/PromotionFormModal.js';
@@ -37,18 +24,51 @@ import {
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { PromotionActivateConfirm } from '@/features/promotions/components/PromotionActivateConfirm.js';
+import {
+  PROMOTION_TYPES,
+  PROMOTION_TYPE_LABEL,
+  PROMOTION_WINDOW_LABEL,
+  isPromotionType,
+  promotionValueText,
+  promotionWindowState,
+  promotionWindowText,
+  summarisePromotions,
+  type PromotionTypeEnum,
+  type PromotionWindowState,
+} from '@/features/promotions/promotionSummary.js';
 
-type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
+// Le filtre de type dérive de l'enum Postgres : `threshold` et `bundle`
+// manquaient à la liste recopiée à la main (audit Sales 2026-11-21).
+type TypeFilter = 'all' | PromotionTypeEnum;
 type ActiveFilter = 'all' | 'active' | 'inactive';
 
 const TYPE_OPTIONS: readonly { value: TypeFilter; label: string }[] = [
-  { value: 'all',           label: 'Type: All' },
-  { value: 'percentage',    label: 'Percentage' },
-  { value: 'fixed_amount',  label: 'Fixed amount' },
-  { value: 'bogo',          label: 'BOGO' },
-  { value: 'free_product',  label: 'Free product' },
+  { value: 'all', label: 'Type: All' },
+  ...PROMOTION_TYPES.map((t) => ({ value: t, label: PROMOTION_TYPE_LABEL[t] })),
 ];
+
+const WINDOW_TONE: Record<PromotionWindowState, string> = {
+  live:      'text-success',
+  always:    'text-success',
+  scheduled: 'text-warning',
+  expired:   'text-text-muted',
+};
+
+/** Horloge de la page, rafraîchie chaque minute : « Live » ne se fige pas. */
+function useMinuteClock(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => { setNow(Date.now()); }, 60_000);
+    return () => { clearInterval(id); };
+  }, []);
+  return now;
+}
 
 const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'all',      label: 'Status: All' },
@@ -56,24 +76,17 @@ const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'inactive', label: 'Inactive' },
 ];
 
-interface PromoStats {
-  total:    number;
-  active:   number;
-  bogo:     number;
-  discount: number;
+// L'état de liste vit dans l'URL (DESIGN.md § List) : `type`, `status`, `from`,
+// `to`. Une valeur inconnue — lien ancien, saisie à la main — retombe sur le
+// défaut au lieu de partir en filtre serveur.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+function readDay(raw: string | null): string {
+  if (raw === null || !ISO_DAY.test(raw)) return '';
+  // Le motif laisse passer `2026-99-99` : la date doit exister au calendrier.
+  const d = new Date(`${raw}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === raw ? raw : '';
 }
 
-function summarise(rows: readonly PromotionListRow[]): PromoStats {
-  let active = 0;
-  let bogo = 0;
-  let discount = 0;
-  for (const r of rows) {
-    if (r.is_active) active += 1;
-    if (r.type === 'bogo') bogo += 1;
-    if (r.type === 'percentage' || r.type === 'fixed_amount') discount += 1;
-  }
-  return { total: rows.length, active, bogo, discount };
-}
 
 export default function PromotionsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -82,13 +95,18 @@ export default function PromotionsPage(): JSX.Element {
   const canUpdate = hasPermission('promotions.update');
   const canDelete = hasPermission('promotions.delete');
 
-  const [typeFilter,   setTypeFilter  ] = useState<TypeFilter>('all');
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
-  const [startDate,    setStartDate   ] = useState<string>('');
-  const [endDate,      setEndDate     ] = useState<string>('');
+  const [params, patchParams] = useListParams();
+  const typeRaw = params.get('type') ?? '';
+  const typeFilter: TypeFilter = isPromotionType(typeRaw) ? typeRaw : 'all';
+  const statusRaw = params.get('status');
+  const activeFilter: ActiveFilter = statusRaw === 'active' || statusRaw === 'inactive' ? statusRaw : 'all';
+  const startDate = readDay(params.get('from'));
+  const endDate = readDay(params.get('to'));
   const [editing,      setEditing     ] = useState<PromotionListRow | undefined>(undefined);
   const [creating,     setCreating    ] = useState(false);
   const [deleting,     setDeleting    ] = useState<PromotionListRow | undefined>(undefined);
+  const [activating,   setActivating  ] = useState<PromotionListRow | undefined>(undefined);
+  const now = useMinuteClock();
 
   const filters = useMemo<PromotionsListFilters>(
     () => ({
@@ -101,9 +119,54 @@ export default function PromotionsPage(): JSX.Element {
   );
 
   const list = usePromotionsList(filters);
+  // Les compteurs portent sur TOUTES les promotions, jamais sur le filtre de table.
+  const all = usePromotionsList();
   const updateMut = useUpdatePromotion();
 
-  const stats = useMemo(() => summarise(list.data ?? []), [list.data]);
+  const stats = useMemo(() => summarisePromotions(all.data ?? [], now), [all.data, now]);
+  // Tirets, jamais 0, tant que le compte n'est pas connu : un « 0 live » pendant
+  // le chargement ou après un échec se lit comme un fait.
+  const countsUnknown = all.isError || all.data === undefined;
+  const shown = (n: number): number | string => (countsUnknown ? '—' : n);
+  const counters: ListCounter[] = [
+    {
+      id: 'all',
+      label: 'All promotions',
+      value: shown(stats.total),
+      onSelect: () => { patchParams({ type: null, status: null }); },
+    },
+    {
+      id: 'live',
+      label: 'Live now',
+      value: shown(stats.liveNow),
+      ...(!countsUnknown && stats.liveNow > 0 ? { tone: 'success' as const } : {}),
+      title: stats.scheduled > 0
+        ? `Active and within dates · ${stats.scheduled} scheduled`
+        : 'Active and within dates',
+    },
+    {
+      id: 'scheduled',
+      label: 'Scheduled',
+      value: shown(stats.scheduled),
+      ...(!countsUnknown && stats.scheduled > 0 ? { tone: 'warning' as const } : {}),
+      title: 'Active, but their start date is still ahead.',
+    },
+    {
+      id: 'bogo',
+      label: 'BOGO',
+      value: shown(stats.bogo),
+      onSelect: () => { patchParams({ type: 'bogo' }); },
+    },
+    {
+      id: 'discount',
+      label: 'Discount',
+      value: shown(stats.discount),
+      title: 'Percentage + fixed amount',
+    },
+  ];
+  const activeCounter = typeFilter === 'bogo'
+    ? 'bogo'
+    : typeFilter === 'all' && activeFilter === 'all' ? 'all' : null;
 
   if (!canRead) {
     return (
@@ -116,12 +179,19 @@ export default function PromotionsPage(): JSX.Element {
   // Activer une promotion change les prix à la caisse en plein service : le
   // résultat se dit, l'échec surtout. Avant, un refus (droits, réseau) laissait
   // la case revenir en silence et l'opérateur croyait la promotion active.
+  // L'ACTIVATION passe par une confirmation (décision 2026-11-21) ; la
+  // désactivation reste directe.
   function handleToggleActive(row: PromotionListRow): void {
-    const next = !row.is_active;
+    if (row.is_active) setActive(row, false);
+    else setActivating(row);
+  }
+
+  function setActive(row: PromotionListRow, next: boolean): void {
     updateMut.mutate(
       { id: row.id, values: { is_active: next } },
       {
         onSuccess: () => {
+          if (next) setActivating(undefined);
           toast.success(next ? `${row.name} is now active.` : `${row.name} is now inactive.`);
         },
         onError: (err) => {
@@ -135,7 +205,7 @@ export default function PromotionsPage(): JSX.Element {
     {
       id:     'name',
       header: 'Promotion',
-      width:  '32%',
+      width:  '24%',
       render: (row) => (
         <div className="leading-tight">
           <div className="font-semibold text-text-primary">{row.name}</div>
@@ -148,6 +218,32 @@ export default function PromotionsPage(): JSX.Element {
       header: 'Type',
       align:  'center',
       render: (row) => <PromotionTypeBadge type={row.type} />,
+    },
+    {
+      id:     'value',
+      header: 'Value',
+      align:  'right',
+      render: (row) => (
+        <span className="whitespace-nowrap font-data text-sm tabular-nums text-text-primary">{promotionValueText(row)}</span>
+      ),
+    },
+    {
+      id:     'window',
+      header: 'Window',
+      render: (row) => {
+        const state = promotionWindowState(row, now);
+        return (
+          <div className="leading-tight">
+            <div className={`font-data text-xs font-semibold uppercase tracking-widest ${WINDOW_TONE[state]}`}>
+              {PROMOTION_WINDOW_LABEL[state]}
+            </div>
+            <div className="font-data text-xs tabular-nums text-text-secondary">{promotionWindowText(row)}</div>
+            {typeof row.max_uses === 'number' && (
+              <div className="text-xs text-text-muted">Max {row.max_uses.toLocaleString('id-ID')} uses</div>
+            )}
+          </div>
+        );
+      },
     },
     {
       id:     'scope',
@@ -224,11 +320,11 @@ export default function PromotionsPage(): JSX.Element {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-[13px]">
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'Promotions' }]} />
       <PageHeader
-        className="items-start"
         title="Promotions"
-        subtitle="Manage automatic discounts (percentage / fixed amount / BOGO / free product)."
+        subtitle="Manage automatic discounts applied at the POS."
         actions={canCreate ? (
           <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
             <Plus className="h-3.5 w-3.5" aria-hidden /> New promotion
@@ -236,12 +332,21 @@ export default function PromotionsPage(): JSX.Element {
         ) : undefined}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={Tag} label="Total promotions" value={stats.total} valueFormat="number" />
-        <KpiTile icon={Sparkles} label="Active right now" value={stats.active} valueFormat="number" />
-        <KpiTile icon={Zap} label="BOGO" value={stats.bogo} valueFormat="number" />
-        <KpiTile icon={Percent} label="Discount" value={stats.discount} valueFormat="number" footer="Percentage + fixed amount" />
-      </div>
+      {all.isError && (
+        <QueryErrorBanner
+          detail={all.error.message}
+          onRetry={() => { void all.refetch(); }}
+          data-testid="promotions-counters-error"
+        >
+          Promotion counts could not be loaded.
+        </QueryErrorBanner>
+      )}
+      <ListCounterStrip
+        counters={counters}
+        activeId={activeCounter}
+        ariaLabel="Promotion filters"
+        data-testid="promotions-counters"
+      />
 
       <Card variant="default" padding="sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -250,37 +355,41 @@ export default function PromotionsPage(): JSX.Element {
             label="Type"
             value={typeFilter}
             options={TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            onChange={(v) => setTypeFilter(v as TypeFilter)}
+            onChange={(v) => { patchParams({ type: isPromotionType(v) ? v : null }); }}
           />
           <FilterField
             id="filter-active"
             label="Status"
             value={activeFilter}
             options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            onChange={(v) => setActiveFilter(v as ActiveFilter)}
+            onChange={(v) => { patchParams({ status: v === 'active' || v === 'inactive' ? v : null }); }}
           />
           <DateField
             id="filter-start"
             label="Created from"
             value={startDate}
-            onChange={setStartDate}
+            onChange={(v) => { patchParams({ from: readDay(v) }); }}
           />
           <DateField
             id="filter-end"
             label="Created to"
             value={endDate}
-            onChange={setEndDate}
+            onChange={(v) => { patchParams({ to: readDay(v) }); }}
           />
         </div>
       </Card>
 
-      {list.error !== null && list.error !== undefined ? (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed: {list.error.message}
-        </div>
+      {list.isError ? (
+        <QueryErrorBanner
+          detail={list.error.message}
+          onRetry={() => { void list.refetch(); }}
+          data-testid="promotions-error"
+        >
+          Promotions could not be loaded.
+        </QueryErrorBanner>
       ) : (
         <DataTable
-          caption="Promotion, type, scope, priority and status per promotion"
+          caption="Promotion, type, value, date window, scope, priority and status per promotion"
           columns={columns}
           rows={list.data ?? []}
           getRowKey={(r) => r.id}
@@ -297,6 +406,12 @@ export default function PromotionsPage(): JSX.Element {
         mode="edit"
         initialRow={editing}
         onClose={() => setEditing(undefined)}
+      />
+      <PromotionActivateConfirm
+        row={activating}
+        pending={updateMut.isPending}
+        onConfirm={(row) => { setActive(row, true); }}
+        onClose={() => setActivating(undefined)}
       />
       <PromotionDeleteConfirm
         open={deleting !== undefined}

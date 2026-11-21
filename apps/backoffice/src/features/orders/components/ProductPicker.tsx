@@ -43,7 +43,7 @@ export function ProductPicker({ onPick }: Props) {
       )}
 
       {isError && (
-        <p className="text-sm text-danger">Failed to load products.</p>
+        <p role="alert" className="text-sm text-danger">Failed to load products.</p>
       )}
 
       {!isLoading && !isError && filtered.length === 0 && (
@@ -51,7 +51,7 @@ export function ProductPicker({ onPick }: Props) {
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (
-        <ul className="overflow-auto flex-1 divide-y border rounded">
+        <ul className="flex-1 divide-y divide-border-row overflow-auto rounded border border-border-subtle">
           {filtered.map((p) => (
             <li key={p.id}>
               {/* `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair
@@ -64,7 +64,7 @@ export function ProductPicker({ onPick }: Props) {
               <button
                 type="button"
                 onClick={() => onPick(p)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-surface-4 flex items-center justify-between gap-2"
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-surface-4 ${FOCUS_RING}`}
                 data-testid={`picker-row-${p.id}`}
               >
                 <span className="flex-1 min-w-0 truncate">
@@ -81,7 +81,7 @@ export function ProductPicker({ onPick }: Props) {
                 {/* `font-data` : `tabular-nums` seul aligne les chiffres
                     d'Instrument Sans sans les rendre en mono, et aucun parent
                     ne pose la famille ici. */}
-                <span className="text-xs text-text-secondary shrink-0 font-data tabular-nums">
+                <span className="shrink-0 whitespace-nowrap font-data text-xs tabular-nums text-text-secondary">
                   {formatCurrency(p.retail_price)}
                 </span>
               </button>

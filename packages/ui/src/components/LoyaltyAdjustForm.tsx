@@ -11,6 +11,8 @@ import { Input } from '../primitives/Input.js';
 export interface LoyaltyAdjustFormValues {
   delta:  number;
   reason: string;
+  /** PIN manager saisi pour un crédit, présent seulement si `requirePinForCredit`. */
+  managerPin?: string;
 }
 
 export interface LoyaltyAdjustFormProps {
@@ -21,17 +23,30 @@ export interface LoyaltyAdjustFormProps {
   /** Sens pré-sélectionné. « Redeem » ouvre sur « − » : un rachat ne doit
    *  jamais partir crédité faute d'avoir basculé le bouton. Défaut « + ». */
   initialSign?: '+' | '-';
+  /** Un crédit (« + ») exige un PIN manager à 6 chiffres ; un débit n'en
+   *  demande pas. Le champ n'est rendu que pour un crédit. */
+  requirePinForCredit?: boolean;
+  /** Changer cette valeur vide le PIN (nonce brûlé après un refus) sans
+   *  perdre montant ni motif. */
+  pinResetToken?: number;
 }
 
 const MAX_DELTA  = 1_000_000;  // matches adjust_loyalty_points server-side guard
 const MAX_REASON = 500;
 
 export function LoyaltyAdjustForm({
-  currentBalance, onSubmit, onCancel, submitting, initialSign = '+',
+  currentBalance, onSubmit, onCancel, submitting, initialSign = '+', requirePinForCredit = false,
+  pinResetToken = 0,
 }: LoyaltyAdjustFormProps): JSX.Element {
   const [sign,   setSign  ] = useState<'+' | '-'>(initialSign);
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
+  const [pin,    setPin   ] = useState<string>('');
+  const [seenPinReset, setSeenPinReset] = useState(pinResetToken);
+  if (seenPinReset !== pinResetToken) {
+    setSeenPinReset(pinResetToken);
+    setPin('');
+  }
 
   const reactId    = useId();
   const signGroup  = `${reactId}-sign`;
@@ -39,6 +54,8 @@ export function LoyaltyAdjustForm({
   const amountErrId = `${reactId}-amount-error`;
   const reasonId   = `${reactId}-reason`;
   const reasonHintId = `${reactId}-reason-hint`;
+  const pinId      = `${reactId}-pin`;
+  const pinHintId  = `${reactId}-pin-hint`;
 
   const numericAmount = Number.parseInt(amount, 10);
   const isAmountInt    = Number.isInteger(numericAmount) && numericAmount > 0 && /^\d+$/.test(amount);
@@ -49,7 +66,10 @@ export function LoyaltyAdjustForm({
   const wouldGoNegative = sign === '-' && isAmountValid && numericAmount > currentBalance;
   const wouldOverflow   = isAmountInt && numericAmount > MAX_DELTA;
 
-  const canSubmit = isAmountValid && isReasonValid && !wouldGoNegative && !submitting;
+  const needsPin  = requirePinForCredit && sign === '+';
+  const isPinValid = !needsPin || /^\d{6}$/.test(pin);
+
+  const canSubmit = isAmountValid && isReasonValid && !wouldGoNegative && isPinValid && !submitting;
 
   const projectedBalance = useMemo(
     () => (isAmountValid ? currentBalance + signedDelta : currentBalance),
@@ -65,7 +85,9 @@ export function LoyaltyAdjustForm({
   function handleSubmit(e: FormEvent): void {
     e.preventDefault();
     if (!canSubmit) return;
-    void onSubmit({ delta: signedDelta, reason: reason.trim() });
+    void onSubmit(needsPin
+      ? { delta: signedDelta, reason: reason.trim(), managerPin: pin }
+      : { delta: signedDelta, reason: reason.trim() });
   }
 
   return (
@@ -123,6 +145,24 @@ export function LoyaltyAdjustForm({
           {reason.trim().length}/{MAX_REASON}
         </p>
       </div>
+
+      {needsPin && (
+        <div className="space-y-1">
+          <label htmlFor={pinId} className="text-xs uppercase tracking-widest text-text-secondary">Manager PIN</label>
+          <Input
+            id={pinId}
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={6}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+            aria-describedby={pinHintId}
+            className="tracking-widest"
+          />
+          <p id={pinHintId} className="text-text-secondary text-[10px]">6 digits — adding points requires a manager.</p>
+        </div>
+      )}
 
       {isAmountValid && !wouldGoNegative && (
         <div className="text-sm text-text-secondary">

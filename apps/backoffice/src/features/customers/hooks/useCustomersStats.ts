@@ -6,6 +6,7 @@
 // `customers` table; no RPC needed.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
 export interface CustomersStats {
@@ -20,7 +21,7 @@ export interface CustomersStats {
 export const CUSTOMERS_STATS_QUERY_KEY = ['customers-stats-bo'] as const;
 
 interface AggRow {
-  customer_type:       'retail' | 'b2b';
+  customer_type:       Database['public']['Enums']['customer_type'];
   loyalty_points:      number;
   lifetime_points:     number;
   last_visit_at:       string | null;

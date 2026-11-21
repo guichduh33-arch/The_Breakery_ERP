@@ -254,7 +254,8 @@ describe('B2BOrdersPage', () => {
   it('lot 3 — breadcrumb, badge de statut unifié et action de création dans le bandeau', async () => {
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Orders');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Sales');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B orders');
     // Le badge vient de statusMeta : libellé humain, plus la valeur brute.
     expect(screen.getByText('Delivered')).toBeInTheDocument();
     expect(screen.getByText('Awaiting pickup')).toBeInTheDocument();
@@ -286,7 +287,8 @@ describe('B2BOrdersPage', () => {
     // l'etat NORMAL aujourd'hui, pas une erreur. Il doit se lire comme tel.
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-    expect(screen.getByText('09 Aug')).toBeInTheDocument();
+    // Date seule au format de date du BO, en mono tabulaire (audit Sales 2026-11-21).
+    expect(screen.getByText('09/08/2026')).toHaveClass('font-data');
     expect(screen.getByText('not set')).toBeInTheDocument();
   });
 
@@ -387,7 +389,8 @@ describe('B2BOrdersPage', () => {
     // Le titre, le fil d'Ariane et la bande de compteurs SURVIVENT : la page
     // n'est pas remplacée par son message d'erreur.
     expect(screen.getByRole('heading', { level: 1, name: 'B2B orders' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Orders');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Sales');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B orders');
     expect(screen.getByTestId('b2b-orders-counters')).toBeInTheDocument();
     // Le message serveur est relégué, mais il est là — c'est du diagnostic.
     expect(screen.getByTestId('b2b-orders-error')).toHaveTextContent('view_b2b_invoices unreachable');

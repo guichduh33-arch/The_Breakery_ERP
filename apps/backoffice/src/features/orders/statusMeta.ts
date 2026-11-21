@@ -92,6 +92,56 @@ export function isOrderDetailPaid(order: OrderSettlementFacts): boolean {
   return order.payments.length > 0 || isSettledStatus(order.status) || order.paid_at != null;
 }
 
+/** Statuts éditables / annulables sans paiement — jamais `'open'` (ADR-009). */
+const EDITABLE_STATUSES: ReadonlySet<string> = new Set<OrderStatus>(['draft', 'pending_payment']);
+/** Statuts annulables par void payé — le void est la seule sortie de `completed` (ADR-009). */
+const VOIDABLE_PAID_STATUSES: ReadonlySet<string> = new Set<OrderStatus>(['paid', 'completed']);
+/** Statuts remboursables — une commande portant l'argent (lot 6c). */
+const REFUNDABLE_STATUSES: ReadonlySet<string> = new Set<OrderStatus>(['paid', 'completed']);
+
+export function isEditableStatus(status: string): boolean {
+  return EDITABLE_STATUSES.has(status);
+}
+
+/** Void d'une commande PAYÉE (EF void-order, PIN manager) — tiroir ET page. */
+export function isVoidablePaidStatus(status: string): boolean {
+  return VOIDABLE_PAID_STATUSES.has(status);
+}
+
+/** Faits structurels nécessaires à la décision de remboursement. */
+export interface OrderRefundFacts {
+  status: string;
+  total: number;
+  total_refunded: number;
+  loyalty_points_redeemed?: number | null;
+  items: readonly { is_cancelled: boolean; line_total: number; quantity: number; qty_already_refunded: number }[];
+}
+
+/**
+ * Remboursement proposable — définition UNIQUE du tiroir et de la page.
+ * Une tentative en attente reste toujours atteignable (il faut pouvoir la
+ * vérifier). Un arrondi monétaire peut laisser des points sur des quantités
+ * encore à retourner : le reste en argent nul ne ferme donc pas le geste.
+ * La permission `orders.refund` est composée par l'appelant.
+ */
+export function isOrderRefundable(order: OrderRefundFacts, pendingRefund: boolean): boolean {
+  if (pendingRefund) return true;
+  if (!REFUNDABLE_STATUSES.has(order.status)) return false;
+  return order.total_refunded < order.total
+    || ((order.loyalty_points_redeemed ?? 0) > 0
+      && order.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity));
+}
+
+/**
+ * Prix unitaire EFFECTIF d'une ligne servie : `line_total / quantity`, arrondi
+ * à la roupie. `unit_price` exclut les modificateurs : l'afficher à côté du
+ * total de ligne faisait mentir la colonne (audit Sales 2026-11-21). Même
+ * dérivation que l'aperçu d'édition des lignes.
+ */
+export function effectiveUnitPrice(item: { line_total: number; quantity: number; unit_price: number }): number {
+  return item.quantity > 0 ? Math.round(item.line_total / item.quantity) : item.unit_price;
+}
+
 /**
  * Le canal B2B, désigné par sa valeur d'ENUM — `satisfies` casse le build si
  * Postgres la renomme, là où un littéral recopié pourrirait en silence (la

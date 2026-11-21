@@ -100,6 +100,9 @@ describe('refund durable recovery with real hook and modal', () => {
       items: order.items.map((item) => ({ ...item, qty_already_refunded: 1 })) });
     expect(screen.getByTestId('refund-pin')).toHaveValue('');
     expect(screen.getByTestId('refund-submit')).toBeDisabled();
+    // La tentative en attente nomme ses lignes par produit, jamais par UUID.
+    expect(screen.getByText(/^Saved lines: Latte × 1$/)).toBeInTheDocument();
+    expect(screen.getByTestId('refund-blocker')).toHaveTextContent(/manager PIN to check the pending refund/);
     fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '654321' } });
     fireEvent.click(screen.getByRole('button', { name: 'Check pending refund' }));
     await waitFor(() => expect(next.close).toHaveBeenCalledTimes(1));

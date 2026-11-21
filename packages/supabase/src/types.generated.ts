@@ -9083,8 +9083,9 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_loyalty_points_v3: {
+      adjust_loyalty_points_v4: {
         Args: {
+          p_authorization_id?: string
           p_customer_id: string
           p_delta: number
           p_idempotency_key: string

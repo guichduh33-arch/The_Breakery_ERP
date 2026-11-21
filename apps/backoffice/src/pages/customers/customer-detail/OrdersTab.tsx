@@ -6,16 +6,14 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/BackofficeUi.js';
-import { formatDate } from '@breakery/utils';
+import { formatDateTimeShortWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
+import { orderTypeLabel } from '@/features/orders/statusMeta.js';
 import type { useCustomerDetail } from '@/features/customers/hooks/useCustomerDetail.js';
 import { rp, StatusPill } from './shared.js';
 
-const ORDER_TYPE_LABEL: Record<string, string> = {
-  dine_in: 'Dine In',
-  take_out: 'Take Out',
-  delivery: 'Delivery',
-  b2b: 'B2B',
-};
+// Le libellé du type vient de `statusMeta` (dérivé de l'enum Postgres) : la
+// table recopiée ici ne connaissait pas tous les types et rendait le reste brut.
 
 export function OrdersTab({
   data,
@@ -33,7 +31,7 @@ export function OrdersTab({
     <Card variant="default" padding="none" className="overflow-x-auto">
       <div className="flex items-center justify-between px-4 py-3 text-xs text-text-secondary">
         <span>Showing {recent_orders.length} of {orders_count} orders</span>
-        <span className="tabular-nums">{rp(totalShown)}</span>
+        <span className="font-data tabular-nums">{rp(totalShown)}</span>
       </div>
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Date, order number, type, status, item count and total per recent order</caption>
@@ -50,14 +48,14 @@ export function OrdersTab({
         <tbody>
           {recent_orders.map((o) => (
             <tr key={o.id} className="border-t border-border-subtle hover:bg-surface-4">
-              <td className="px-4 py-3 text-text-secondary">{formatDate(o.created_at)}</td>
+              <td className="whitespace-nowrap px-4 py-3 font-data tabular-nums text-text-secondary">{formatDateTimeShortWita(o.created_at)}</td>
               <td className="px-4 py-3 font-data text-text-primary">
-                <Link to={`/backoffice/orders/${o.id}`} className="hover:text-gold">{o.order_number}</Link>
+                <Link to={`/backoffice/orders/${o.id}`} className={`rounded-sm hover:text-gold ${FOCUS_RING}`}>{o.order_number}</Link>
               </td>
-              <td className="px-4 py-3 text-text-secondary">{ORDER_TYPE_LABEL[o.order_type] ?? o.order_type}</td>
+              <td className="px-4 py-3 text-text-secondary">{orderTypeLabel(o.order_type)}</td>
               <td className="px-4 py-3"><StatusPill status={o.status} /></td>
-              <td className="px-4 py-3 text-right tabular-nums">{o.items_count}</td>
-              <td className="px-4 py-3 text-right tabular-nums font-medium">{rp(o.total)}</td>
+              <td className="px-4 py-3 text-right font-data tabular-nums">{o.items_count}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-right font-data font-medium tabular-nums">{rp(o.total)}</td>
             </tr>
           ))}
         </tbody>

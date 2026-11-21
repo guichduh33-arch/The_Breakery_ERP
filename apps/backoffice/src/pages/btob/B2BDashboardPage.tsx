@@ -1,7 +1,9 @@
 // apps/backoffice/src/pages/btob/B2BDashboardPage.tsx
 //
-// Session 14 / Phase 5.B — B2B Wholesale dashboard.
-// La création ouvre le formulaire partagé et appelle la famille create_b2b_order.
+// Tableau de bord B2B wholesale. La création ouvre le formulaire partagé et
+// appelle la famille create_b2b_order. Le titre reprend le libellé du menu
+// (« B2B wholesale ») et le fil d'Ariane commence par « Sales », comme toutes
+// les pages du domaine (audit Sales 2026-11-21).
 
 import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';
@@ -16,8 +18,12 @@ import {
 } from 'lucide-react';
 import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
-import { formatCurrency, formatDate } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
+import { orderStatusLabel } from '@/features/orders/statusMeta.js';
 // La tuile du back-office, pas celle de `@breakery/ui` : celle-ci rend la
 // valeur à 23 px avec `valueTitle`, l'autre à 34 px sans échappatoire. Dans
 // cette grille `xl:grid-cols-5` la tuile mesure 231 px et son contenu 183 px,
@@ -74,17 +80,15 @@ export default function B2BDashboardPage(): JSX.Element {
   const drifted      = (driftQuery.data ?? []).filter((r) => r.has_drift);
 
   if (!canRead) {
-    return <div className="text-text-secondary">No access to B2B Wholesale.</div>;
+    return <div className="text-text-secondary">No access to B2B wholesale.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
-        <span className="text-text-secondary">B2B</span>
-      </nav>
+    <div className="flex flex-col gap-[13px]">
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'B2B wholesale' }]} />
 
       <PageHeader
-        title="B2B Dashboard"
+        title="B2B wholesale"
         subtitle="Manage your wholesale customers and B2B orders."
         actions={
           <>
@@ -101,7 +105,7 @@ export default function B2BDashboardPage(): JSX.Element {
               disabled={!canCreate}
               onClick={() => setCreateOpen(true)}
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden /> New B2B Order
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New B2B order
             </button>
           </>
         }
@@ -113,15 +117,26 @@ export default function B2BDashboardPage(): JSX.Element {
           role="alert"
           className="rounded-lg border border-warning bg-warning-soft p-4 space-y-1"
         >
+          {/* Phrase de gérant, pas de jargon : « cache ≠ ledger » ne disait rien
+              à celui qui doit agir. Le solde affiché sur la fiche client est
+              un cumul tenu à jour ; le grand livre B2B (commandes et
+              règlements) est la référence. */}
           <div className="flex items-center gap-2 font-medium text-warning">
             <AlertTriangle className="h-4 w-4" aria-hidden />
-            Balance drift detected (cache ≠ ledger) — {drifted.length} client{drifted.length > 1 ? 's' : ''}
+            {drifted.length === 1
+              ? '1 customer has a balance that does not match their orders and payments'
+              : `${drifted.length} customers have a balance that does not match their orders and payments`}
           </div>
+          <p className="text-sm text-text-secondary">
+            Check these accounts before relying on their balance or credit limit.
+          </p>
           <ul className="text-sm text-text-secondary">
             {drifted.map((r) => (
               <li key={r.customer_id}>
-                {r.customer_name} : cached {formatCurrency(r.cached_balance)} vs derived{' '}
-                {formatCurrency(r.derived_balance)} (drift {formatCurrency(r.drift)})
+                {r.customer_name}: balance shown{' '}
+                <span className="font-data tabular-nums">{formatCurrency(r.cached_balance)}</span>, orders and payments add up to{' '}
+                <span className="font-data tabular-nums">{formatCurrency(r.derived_balance)}</span> (difference{' '}
+                <span className="font-data tabular-nums">{formatCurrency(r.drift)}</span>)
               </li>
             ))}
           </ul>
@@ -129,13 +144,10 @@ export default function B2BDashboardPage(): JSX.Element {
       ) : null}
 
       {dash.error !== null && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+        <QueryErrorBanner onRetry={() => { void dash.refetch(); }} data-testid="b2b-dashboard-error">
           The B2B dashboard could not be loaded — the tiles below show dashes rather
-          than numbers that would be wrong.{' '}
-          <button type="button" className="underline" onClick={() => { void dash.refetch(); }}>
-            Try again
-          </button>
-        </p>
+          than numbers that would be wrong.
+        </QueryErrorBanner>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -207,7 +219,7 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
             <UsersIcon className="h-3.5 w-3.5" aria-hidden /> Top clients
           </span>
         </SectionLabel>
-        <Link to="/backoffice/customers" className="text-xs text-gold transition-colors duration-fast hover:text-gold-strong">
+        <Link to="/backoffice/customers" className={`rounded-sm text-xs text-gold transition-colors duration-fast hover:text-gold-strong ${FOCUS_RING}`}>
           View all clients
         </Link>
       </div>
@@ -249,7 +261,7 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
             <FileText className="h-3.5 w-3.5" aria-hidden /> Recent orders
           </span>
         </SectionLabel>
-        <Link to="/backoffice/customers" className="text-xs text-gold transition-colors duration-fast hover:text-gold-strong">
+        <Link to="/backoffice/b2b/orders" className={`rounded-sm text-xs text-gold transition-colors duration-fast hover:text-gold-strong ${FOCUS_RING}`}>
           Track all
         </Link>
       </div>
@@ -265,14 +277,21 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
       ) : (
         <ul className="divide-y divide-border-subtle">
           {rows.map((o) => (
-            <li key={o.id} className="flex items-center justify-between py-2 text-sm">
-              <div>
-                <div className="font-data tabular-nums text-text-primary">{o.order_number}</div>
-                <div className="text-xs text-text-secondary">
-                  {formatDate(o.created_at)} • {o.status}
+            <li key={o.id}>
+              {/* Toute la ligne est un lien vers la fiche : la commande récente
+                  se lisait sans pouvoir s'ouvrir. */}
+              <Link
+                to={`/backoffice/b2b/orders/${o.id}`}
+                className={`flex items-center justify-between gap-3 rounded-sm py-2 text-sm hover:bg-surface-4 ${FOCUS_RING}`}
+              >
+                <div>
+                  <div className="font-data tabular-nums text-text-primary">{o.order_number}</div>
+                  <div className="text-xs text-text-secondary">
+                    <span className="font-data tabular-nums">{formatDateTimeShortWita(o.created_at)}</span> • {orderStatusLabel(o.status)}
+                  </div>
                 </div>
-              </div>
-              <span className="font-data tabular-nums text-text-primary">{formatCurrency(o.total)}</span>
+                <span className="whitespace-nowrap font-data tabular-nums text-text-primary">{formatCurrency(o.total)}</span>
+              </Link>
             </li>
           ))}
         </ul>
