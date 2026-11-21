@@ -55,7 +55,7 @@ export function PromotionFormModal({ open, mode, initialRow, onClose }: Promotio
         {ref.isLoading ? (
           <div className="text-text-secondary py-12 text-center">Loading reference data…</div>
         ) : ref.error ? (
-          <div className="text-danger py-12 text-center">
+          <div role="alert" className="text-danger py-12 text-center">
             Failed to load reference data: {ref.error.message}
           </div>
         ) : ref.data ? (

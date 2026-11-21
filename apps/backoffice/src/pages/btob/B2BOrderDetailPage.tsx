@@ -1,12 +1,28 @@
-import { useMemo, useState, type JSX } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+// apps/backoffice/src/pages/btob/B2BOrderDetailPage.tsx
+//
+// Fiche commande B2B — instance de l'archétype DOCUMENT, comme la fiche
+// commande POS (`pages/orders/OrderDetailPage.tsx`) : le corps du document à
+// gauche (paires libellé/valeur, lignes, activité), l'argent dans le rail de
+// droite (Total / Paid / Outstanding). Les deux statuts INDÉPENDANTS — retrait
+// et règlement — cohabitent dans l'en-tête : une commande B2B peut être livrée
+// sans être payée.
+//
+// Le fil d'Ariane et le titre se rendent dans TOUS les états (chargement,
+// erreur, introuvable) : c'est dans l'erreur qu'on a le plus besoin du retour
+// vers la liste. Le lien de retour conserve la recherche de la liste
+// (`location.search`) — le retour rend la liste qu'on regardait.
+
+import { useMemo, useState, type JSX, type ReactNode } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
-import { formatCurrency, formatDateShortWita } from '@breakery/utils';
+import { formatCurrency, formatDate, formatDateTimeShortWita } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
-import { Button } from '@/components/BackofficeUi.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
+import { Button, Card } from '@/components/BackofficeUi.js';
+import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { B2bOrderActivity } from '@/features/btob/components/B2bOrderActivity.js';
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
@@ -19,7 +35,15 @@ import {
   B2B_INVOICES_QUERY_KEY,
   type B2bInvoiceRow,
 } from '@/features/btob/hooks/useB2bInvoices.js';
-import './b2b-orders.css';
+
+const SECTION_LABEL = 'font-body text-lg font-medium tracking-tight text-text-primary';
+
+// `invoice_date`, `paid_at` et `b2b_delivered_at` sont des instants : format de
+// table du BO. `pickup_date` est une date seule (colonne `date`).
+const instant = (value: string | null | undefined): string =>
+  value ? formatDateTimeShortWita(value) : '—';
+const day = (value: string | null | undefined): string =>
+  value ? formatDate(value) : '—';
 
 export default function B2BOrderDetailPage(): JSX.Element {
   const { orderId } = useParams<{ orderId: string }>();
@@ -53,21 +77,41 @@ export default function B2BOrderDetailPage(): JSX.Element {
   const pendingEdit = useHasPendingFinancial('b2bEdit', orderId ?? '');
   const editable = order?.order_status === 'b2b_pending' && !order.b2b_delivered_at
     && !order.paid_at && Number(order.amount_paid) === 0;
-  const date = (value: string | null | undefined): string =>
-    value ? formatDateShortWita(value) : '—';
-  return (
-    <div className="b2b-orders-page mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <Link
-        className={`text-sm text-text-secondary hover:underline ${FOCUS_RING}`}
-        to={`/backoffice/b2b/orders${location.search}`}
-      >
-        ← Back to B2B orders
-      </Link>
-      {query.isLoading && <p role="status">Loading order…</p>}
-      {query.isError && (
-        <div role="alert">
-          <p>Could not load this order: {query.error.message}</p>
+
+  const listUrl = `/backoffice/b2b/orders${location.search}`;
+  const crumbs = (
+    <Breadcrumb
+      items={[
+        { label: 'Sales' },
+        { label: 'B2B orders', to: listUrl },
+        ...(order ? [{ label: `#${order.order_number.replace(/^#+/, '')}`, mono: true }] : []),
+      ]}
+    />
+  );
+
+  if (query.isLoading) {
+    return (
+      <div className="flex flex-col gap-[13px]" aria-busy="true">
+        {crumbs}
+        <PageHeader title="B2B order" />
+        <p role="status" className="sr-only">Loading order…</p>
+        <div className="h-64 animate-pulse rounded-md bg-surface-4 motion-reduce:animate-none" />
+      </div>
+    );
+  }
+  if (query.isError) {
+    return (
+      <div className="flex flex-col gap-[13px]">
+        {crumbs}
+        <PageHeader title="B2B order" />
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-red bg-bg-elevated p-4 text-sm text-red-as-text">
+          <span>
+            Could not load this order.{' '}
+            <span className="font-data text-xs">{query.error.message}</span>
+          </span>
           <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               void query.refetch();
             }}
@@ -75,141 +119,209 @@ export default function B2BOrderDetailPage(): JSX.Element {
             Try again
           </Button>
         </div>
-      )}
-      {!query.isLoading && !query.isError && !order && (
-        <p>Order not found or no longer available.</p>
-      )}
-      {order && (
-        <>
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="mb-2 text-sm text-text-muted">B2B order</p>
-              <h1 className="text-2xl font-semibold">{order.order_number}</h1>
-              <p className="mt-2 text-lg">{order.b2b_company_name ?? order.customer_name}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <B2bOrderStatus order={order} />
-              <Button
-                variant="secondary"
-                disabled={!canPrint || invoicePdf.isPending || query.isError}
-                aria-busy={invoicePdf.isPending}
-                title={!canPrint ? 'You do not have permission to export B2B invoices.' : undefined}
+      </div>
+    );
+  }
+  if (!order) {
+    return (
+      <div className="flex flex-col gap-[13px]">
+        {crumbs}
+        <PageHeader title="B2B order" />
+        <p className="rounded-md border border-border-subtle bg-bg-elevated p-4 text-sm text-text-secondary">
+          Order not found or no longer available.
+        </p>
+      </div>
+    );
+  }
+
+  const showPayment = Number(order.outstanding) > 0 || (canPay && pendingPayment);
+
+  return (
+    <div className="flex flex-col gap-[13px]">
+      {crumbs}
+      <PageHeader
+        title={`B2B order ${order.order_number}`}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            {/* Statuts indépendants : retrait et règlement. */}
+            <B2bOrderStatus order={order} />
+            <span>{order.b2b_company_name ?? order.customer_name}</span>
+          </span>
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className={TOOLBAR_BTN_SECONDARY}
+              disabled={!canPrint || invoicePdf.isPending}
+              aria-busy={invoicePdf.isPending}
+              title={!canPrint ? 'You do not have permission to export B2B invoices.' : undefined}
+              onClick={() => {
+                setPdfError(null);
+                invoicePdf.download({
+                  orderId: order.invoice_id,
+                  invoiceNumber: order.invoice_number,
+                  orderNumber: order.order_number,
+                }, {
+                  onError: () => setPdfError('Could not generate the invoice PDF. Please try again.'),
+                });
+              }}
+            >
+              <Printer className={TOOLBAR_ICON} aria-hidden />
+              {invoicePdf.isPending ? 'Preparing PDF…' : 'Print PDF'}
+            </button>
+            {!order.b2b_delivered_at && (
+              <>
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
+                  disabled={!canPickup}
+                  onClick={() => {
+                    setPickup('schedule');
+                  }}
+                >
+                  Change pickup date
+                </button>
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
+                  disabled={!canPickup}
+                  onClick={() => {
+                    setPickup('deliver');
+                  }}
+                >
+                  Mark delivered
+                </button>
+              </>
+            )}
+            {showPayment && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_PRIMARY}
+                disabled={!canPay}
                 onClick={() => {
-                  setPdfError(null);
-                  invoicePdf.download({
-                    orderId: order.invoice_id,
-                    invoiceNumber: order.invoice_number,
-                    orderNumber: order.order_number,
-                  }, {
-                    onError: () => setPdfError('Could not generate the invoice PDF. Please try again.'),
-                  });
+                  setPaymentOpen(true);
                 }}
               >
-                <Printer className="mr-2 h-4 w-4" aria-hidden />
-                {invoicePdf.isPending ? 'Preparing PDF…' : 'Print PDF'}
-              </Button>
+                {pendingPayment ? 'Check pending payment' : 'Record payment'}
+              </button>
+            )}
+          </>
+        }
+      />
+      {pdfError && (
+        <p role="alert" className="rounded-md border border-red bg-bg-elevated p-3 text-sm text-red-as-text">
+          {pdfError}
+        </p>
+      )}
+
+      <div className="grid items-start gap-[13px] lg:grid-cols-[1.7fr_1fr]">
+        {/* ------------------------------------------------ corps du document */}
+        <div className="flex min-w-0 flex-col gap-[13px]">
+          <Card variant="default" padding="md" className="shadow-none">
+            <h2 className={SECTION_LABEL}>Order</h2>
+            <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+              <MetaPair label="Customer">{order.b2b_company_name ?? order.customer_name ?? '—'}</MetaPair>
+              <MetaPair label="Created" mono>{instant(order.invoice_date)}</MetaPair>
+              <MetaPair label="Pickup date" mono>{day(order.pickup_date)}</MetaPair>
+              <MetaPair label="Collected" mono>{instant(order.b2b_delivered_at)}</MetaPair>
+              <MetaPair label="Paid on" mono>{instant(order.paid_at)}</MetaPair>
+            </dl>
+          </Card>
+
+          <Card variant="default" padding="md" className="shadow-none">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <h2 className={SECTION_LABEL}>Order items</h2>
+              {(editable || pendingEdit) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!canPickup || pendingPayment}
+                  onClick={() => { setEditOpen(true); }}
+                >
+                  {pendingEdit ? 'Check pending edit' : 'Edit order'}
+                </Button>
+              )}
             </div>
-          </header>
-          {pdfError && <p role="alert">{pdfError}</p>}
-          <section
-            aria-label="Order dates and payment"
-            className="grid gap-6 rounded-md border border-border-subtle bg-bg-elevated p-6 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            {[
-              ['Created', date(order.invoice_date)],
-              ['Pickup date', date(order.pickup_date)],
-              ['Collected', date(order.b2b_delivered_at)],
-              ['Paid on', date(order.paid_at)],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <p className="mb-2 text-sm text-text-muted">{label}</p>
-                <p className="text-base font-medium">{value}</p>
-              </div>
-            ))}
-          </section>
-          <section className="rounded-md border border-border-subtle bg-bg-elevated p-6">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold">Order items</h2>
-              {(editable || pendingEdit) && <Button variant="secondary" disabled={!canPickup || pendingPayment}
-                onClick={() => { setEditOpen(true); }}>{pendingEdit ? 'Check pending edit' : 'Edit order'}</Button>}
-            </div>
-            {!editable && !pendingEdit && <p className="mb-4 text-sm text-text-muted">Order items can only be edited before collection and any payment.</p>}
+            {!editable && !pendingEdit && (
+              <p className="mb-3 text-sm text-text-muted">
+                Order items can only be edited before collection and any payment.
+              </p>
+            )}
             <B2bOrderItemsPanel
               orderId={order.invoice_id}
               orderTotal={Number(order.invoice_total)}
             />
-          </section>
-          <section className="flex flex-wrap justify-between gap-8 rounded-md border border-border-subtle bg-bg-elevated p-6">
-            <div>
-              <h2 className="mb-4 text-lg font-semibold">Pickup and payment</h2>
-              <div className="flex flex-wrap gap-3">
-                {!order.b2b_delivered_at && (
-                  <>
-                    <Button
-                      variant="secondary"
-                      disabled={!canPickup || query.isError}
-                      onClick={() => {
-                        setPickup('schedule');
-                      }}
-                    >
-                      Change pickup date
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={!canPickup || query.isError}
-                      onClick={() => {
-                        setPickup('deliver');
-                      }}
-                    >
-                      Mark delivered
-                    </Button>
-                  </>
-                )}
-                {(Number(order.outstanding) > 0 || (canPay && pendingPayment)) && (
-                  <Button
-                    disabled={!canPay || query.isError}
-                    onClick={() => {
-                      setPaymentOpen(true);
-                    }}
-                  >
-                    {pendingPayment ? 'Check pending payment' : 'Record payment'}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <dl className="grid min-w-64 grid-cols-2 gap-x-8 gap-y-3">
-              <dt>Total</dt>
-              <dd className="text-right">{formatCurrency(order.invoice_total)}</dd>
-              <dt>Paid</dt>
-              <dd className="text-right">{formatCurrency(order.amount_paid)}</dd>
-              <dt className="font-semibold">Outstanding</dt>
-              <dd className="text-right font-semibold">{formatCurrency(order.outstanding)}</dd>
-            </dl>
-          </section>
+          </Card>
+
           <B2bOrderActivity orderId={order.invoice_id} />
-          {pickup && (
-            <B2bPickupDialog
-              order={order}
-              delivered={pickup === 'deliver'}
-              onClose={() => {
-                setPickup(null);
-              }}
-            />
-          )}
-          {editOpen && <EditB2bOrderDialog orderId={order.invoice_id} orderNumber={order.order_number}
-            onClose={() => { setEditOpen(false); }} />}
-          {paymentOpen && (
-            <RecordB2bPaymentModal
-              open
-              initialCustomerId={order.customer_id}
-              initialInvoiceIds={invoiceIds}
-              onClose={() => {
-                setPaymentOpen(false);
-              }}
-            />
-          )}
-        </>
+        </div>
+
+        {/* ------------------------------------------------------ rail d'argent */}
+        <Card variant="default" padding="md" className="shadow-none">
+          <h2 className={SECTION_LABEL}>Totals</h2>
+          <dl className="mt-3 space-y-1.5 text-sm" data-testid="b2b-order-money">
+            <MoneyRow label="Total" value={formatCurrency(order.invoice_total)} />
+            <MoneyRow label="Paid" value={formatCurrency(order.amount_paid)} />
+            <div className="flex items-baseline justify-between gap-3 border-t border-border-subtle pt-2">
+              <dt className="text-sm font-semibold text-text-primary">Outstanding</dt>
+              <dd className="whitespace-nowrap font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
+                {formatCurrency(order.outstanding)}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+      </div>
+
+      {pickup && (
+        <B2bPickupDialog
+          order={order}
+          delivered={pickup === 'deliver'}
+          onClose={() => {
+            setPickup(null);
+          }}
+        />
       )}
+      {editOpen && (
+        <EditB2bOrderDialog
+          orderId={order.invoice_id}
+          orderNumber={order.order_number}
+          onClose={() => { setEditOpen(false); }}
+        />
+      )}
+      {paymentOpen && (
+        <RecordB2bPaymentModal
+          open
+          initialCustomerId={order.customer_id}
+          initialInvoiceIds={invoiceIds}
+          onClose={() => {
+            setPaymentOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- helpers */
+
+function MetaPair({ label, mono, children }: { label: string; mono?: boolean; children: ReactNode }): JSX.Element {
+  return (
+    <div>
+      <dt className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</dt>
+      <dd className={mono === true ? 'mt-0.5 font-data text-sm tabular-nums text-text-primary' : 'mt-0.5 text-sm text-text-primary'}>
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+// Le libellé plie, le montant jamais (même invariant que la fiche commande POS).
+function MoneyRow({ label, value }: { label: string; value: string }): JSX.Element {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="min-w-0 truncate text-sm text-text-secondary">{label}</dt>
+      <dd className="whitespace-nowrap font-data text-sm tabular-nums text-text-primary">{value}</dd>
     </div>
   );
 }

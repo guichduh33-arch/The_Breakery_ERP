@@ -17,30 +17,38 @@
 //     (« N of M ») ; les colonnes chiffrées rendent en mono tabulaire.
 //   · Les actions du bandeau rejoignent la famille des boutons de barre
 //     (32 px) — elles mélangeaient deux familles de hauteurs.
+//   · L'état de liste — recherche, catégorie, palier, tri, page, taille de
+//     page — vit dans l'URL : le retour depuis une fiche client rend la liste
+//     qu'on regardait (audit Sales 2026-11-21). Une valeur inconnue de l'URL
+//     retombe sur le défaut.
+//   · L'export est soumis à `reports.export`, comme celui des commandes.
 
 import { Link, useNavigate } from 'react-router-dom';
-import { useMemo, useState, type JSX } from 'react';
-import { ChevronRight, Download, FileText, Plus, Tag, Upload } from 'lucide-react';
-import { Input, LoyaltyBadge, Select, useDebouncedValue, type DataTableColumn } from '@breakery/ui';
+import { useEffect, useMemo, useState, type JSX } from 'react';
+import { Download, FileText, Plus, Tag, Upload } from 'lucide-react';
+import { Input, Select, useDebouncedValue } from '@breakery/ui';
 import { DataTable } from '@/components/BackofficeUi.js';
-import { tierFromLifetime } from '@breakery/domain';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
-import { ListPagination, pageSlice } from '@/components/ListPagination.js';
+import { LIST_PAGE_SIZES, ListPagination, pageSlice } from '@/components/ListPagination.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
-import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
-import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
 import {
   useCustomersList,
   CUSTOMERS_FETCH_CAP,
-  type CustomersListRow,
   type CustomersTier,
   type CustomersSort,
 } from '@/features/customers/hooks/useCustomersList.js';
+import {
+  COLUMN_SORT,
+  CUSTOMERS_LIST_COLUMNS as columns,
+  SORT_DIRECTION,
+} from '@/features/customers/customersListColumns.js';
 import { useCustomerCategories } from '@/features/customers/hooks/useCustomerCategories.js';
 import { useCustomersStats } from '@/features/customers/hooks/useCustomersStats.js';
 import { CustomerFormModal } from '@/features/loyalty/components/CustomerFormModal.js';
@@ -68,42 +76,22 @@ const SORT_OPTIONS: readonly { value: CustomersSort; label: string }[] = [
   { value: 'points',     label: 'Sort: points' },
 ];
 
-// Colonne de la table → clé de tri du hook. Les quatre clés serveur, pas une de
-// plus : `category`, `tier` et `credit` n'ont pas d'ordre côté requête, et une
-// entête cliquable qui ne trie rien est un état menteur.
-const COLUMN_SORT: Record<string, CustomersSort> = {
-  customer: 'name',
-  points:   'points',
-  spent:    'spend',
-  last:     'last_visit',
-};
-
-// Chaque clé porte une direction FIXE côté hook (`useCustomersList`) : le nom
-// monte, l'argent, les points et la dernière visite descendent. On affiche donc
-// la direction réelle du serveur plutôt qu'un chevron réversible que la requête
-// ignorerait.
-const SORT_DIRECTION: Record<CustomersSort, 'asc' | 'desc'> = {
-  name:       'asc',
-  spend:      'desc',
-  points:     'desc',
-  last_visit: 'desc',
-};
-
 const CUSTOMERS_PAGE_SIZE_DEFAULT = 50;
+
+const TIERS = new Set<string>(TIER_OPTIONS.map((o) => o.value));
+const SORTS = new Set<string>(SORT_OPTIONS.map((o) => o.value));
+// Un id de catégorie est un UUID : tout autre texte de l'URL est ignoré avant
+// d'atteindre la requête.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function readPositiveInt(raw: string | null, fallback: number): number {
+  const n = raw === null ? NaN : Number.parseInt(raw, 10);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
 
 // Le cran du Command Palette et des écritures comptables — le dépôt n'en a
 // qu'un.
 const SEARCH_DEBOUNCE_MS = 250;
-
-function formatLastVisit(iso: string | null): string {
-  if (iso === null) return '—';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days}d ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
 
 export default function CustomersListPage(): JSX.Element {
   const navigate      = useNavigate();
@@ -111,45 +99,69 @@ export default function CustomersListPage(): JSX.Element {
   const canRead       = hasPermission('customers.read');
   const canCreate     = hasPermission('customers.create');
   const canManageCats = hasPermission('customer_categories.read');
+  const canExport     = hasPermission('reports.export');
 
-  const [search,     setSearch    ] = useState<string>('');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [tier,       setTier      ] = useState<CustomersTier>('all');
-  const [sort,       setSort      ] = useState<CustomersSort>('last_visit');
-  const [creating,   setCreating  ] = useState<boolean>(false);
-  const [importing,  setImporting ] = useState<boolean>(false);
+  // ── État de liste, lu de l'URL et borné ────────────────────────────────────
+  const [params, patchParams] = useListParams();
+  const urlSearch   = params.get('q') ?? '';
+  const categoryRaw = params.get('category');
+  const categoryId  = categoryRaw !== null && UUID.test(categoryRaw) ? categoryRaw : null;
+  const tierRaw     = params.get('tier') ?? '';
+  const tier        = (TIERS.has(tierRaw) ? tierRaw : 'all') as CustomersTier;
+  const sortRaw     = params.get('sort') ?? '';
+  const sort        = (SORTS.has(sortRaw) ? sortRaw : 'last_visit') as CustomersSort;
   // Pagination CLIENT : le hook charge d'un coup la tête du classement, dans la
   // limite de `CUSTOMERS_FETCH_CAP` lignes ; le pied ne fait que découper — et
-  // dit quand la borne est touchée.
-  const [page,       setPage      ] = useState<number>(1);
-  const [pageSize,   setPageSize  ] = useState<number>(CUSTOMERS_PAGE_SIZE_DEFAULT);
+  // dit quand la borne est touchée. Une page hors bornes se ramène à la
+  // dernière page réelle (`pageSlice`).
+  const page        = readPositiveInt(params.get('page'), 1);
+  const sizeRaw     = readPositiveInt(params.get('size'), CUSTOMERS_PAGE_SIZE_DEFAULT);
+  const pageSize    = (LIST_PAGE_SIZES as readonly number[]).includes(sizeRaw) ? sizeRaw : CUSTOMERS_PAGE_SIZE_DEFAULT;
+
+  const [creating,   setCreating  ] = useState<boolean>(false);
+  const [importing,  setImporting ] = useState<boolean>(false);
   const exportMut = useCustomersExport();
 
-  // Tout changement de filtre ou de tri ramène en page 1 : rester en page 7
-  // d'un résultat qui n'en compte plus que 2 afficherait une table vide qu'on
-  // croirait cassée.
-  function applySearch(next: string): void      { setSearch(next);     setPage(1); }
-  function applyCategory(next: string | null): void { setCategoryId(next); setPage(1); }
-  function applyTier(next: CustomersTier): void { setTier(next);       setPage(1); }
-  function applySort(next: CustomersSort): void { setSort(next);       setPage(1); }
+  // Tout changement de filtre ou de tri ramène en page 1, dans UN patch (le
+  // filtre ET la page) : rester en page 7 d'un résultat qui n'en compte plus
+  // que 2 afficherait une table vide qu'on croirait cassée. Une valeur par
+  // défaut sort de l'URL, qui reste propre.
+  function applyCategory(next: string | null): void { patchParams({ category: next, page: null }); }
+  function applyTier(next: CustomersTier): void { patchParams({ tier: next === 'all' ? null : next, page: null }); }
+  function applySort(next: CustomersSort): void { patchParams({ sort: next === 'last_visit' ? null : next, page: null }); }
 
-  // La saisie vit en local ; seule la valeur POSÉE atteint les filtres. Poussée
-  // à la frappe, elle changeait la `queryKey` à chaque caractère et lançait donc
-  // une requête PostgREST par touche — « Bali Organic » en émettait treize.
+  // La saisie vit en local ; seule la valeur POSÉE atteint l'URL et les
+  // filtres. Poussée à la frappe, elle changeait la `queryKey` à chaque
+  // caractère et lançait donc une requête PostgREST par touche — « Bali
+  // Organic » en émettait treize.
+  const [search, setSearch] = useState<string>(urlSearch);
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+  useEffect(() => {
+    if (debouncedSearch !== urlSearch) patchParams({ q: debouncedSearch, page: null });
+    // `urlSearch` exclu à dessein : seul le geste de saisie écrit l'URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, patchParams]);
+  // Retour arrière, lien collé : l'URL a changé sans saisie, le champ suit.
+  useEffect(() => { setSearch(urlSearch); }, [urlSearch]);
 
+  const cats  = useCustomerCategories();
+  // Une catégorie de l'URL qui n'existe plus est ignorée dès que la liste des
+  // catégories est connue — sinon le filtre serveur rendrait une table vide.
+  const knownCategory = categoryId !== null && cats.data !== undefined
+    && !cats.data.some((c) => c.id === categoryId) ? null : categoryId;
+
+  // La requête lit l'URL, pas le brouillon : l'URL EST l'état de liste.
   const filters = useMemo(
     () => ({
-      ...(debouncedSearch !== '' ? { search: debouncedSearch } : {}),
-      categoryId,
+      ...(urlSearch !== '' ? { search: urlSearch } : {}),
+      categoryId: knownCategory,
       tier,
       sort,
     }),
-    [debouncedSearch, categoryId, tier, sort],
+    [urlSearch, knownCategory, tier, sort],
   );
 
   const list  = useCustomersList(filters);
-  const cats  = useCustomerCategories();
   const stats = useCustomersStats();
 
   async function handleTemplate(): Promise<void> {
@@ -229,105 +241,6 @@ export default function CustomersListPage(): JSX.Element {
     ];
   }, [stats.data, statsDown]);
 
-  const columns = useMemo<readonly DataTableColumn<CustomersListRow>[]>(() => [
-    {
-      id:     'customer',
-      header: 'Customer',
-      width: '26%',
-      minWidth: '15rem',
-      sortable: true,
-      // La navigation vers la fiche est portée par un vrai lien — le clic-ligne
-      // du `DataTable` ne se prend ni au Tab ni à Entrée, et la fiche client
-      // était donc inatteignable au clavier depuis cette liste (WCAG 2.1.1).
-      // Même motif que la colonne « PO Number » des bons de commande :
-      // `stopPropagation` empêche la ligne de naviguer une seconde fois.
-      render: (row) => (
-        <div className="flex min-w-0 items-center gap-3">
-          <CustomerAvatar name={row.name} className="shrink-0" />
-          <div className="min-w-0 break-words leading-tight">
-            <Link
-              to={`/backoffice/customers/${row.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className={`rounded-sm font-medium text-text-primary hover:text-gold hover:underline ${FOCUS_RING}`}
-            >
-              {row.name}
-            </Link>
-            {row.phone !== null && (
-              <div className="font-data text-xs tabular-nums text-text-muted">{row.phone}</div>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      id:     'category',
-      header: 'Category',
-      width:  '15%',
-      minWidth: '11rem',
-      render: (row) => (
-        <CustomerCategoryChip name={row.category_name} slug={row.category_slug} />
-      ),
-    },
-    {
-      id:     'tier',
-      header: 'Loyalty tier',
-      width:  '15%',
-      minWidth: '10rem',
-      render: (row) => {
-        const t = tierFromLifetime(row.lifetime_points);
-        return <LoyaltyBadge tier={t} points={row.loyalty_points} />;
-      },
-    },
-    {
-      id:     'credit',
-      header: 'B2B balance',
-      headerClassName: 'whitespace-nowrap',
-      align:  'right',
-      width:  '13%',
-      minWidth: '10rem',
-      render: (row) =>
-        row.customer_type === 'b2b' && row.b2b_current_balance > 0 ? (
-          <span className="whitespace-nowrap font-data tabular-nums text-warning">
-            {formatCurrency(row.b2b_current_balance)}
-          </span>
-        ) : (
-          <span className="text-text-subtle" aria-hidden>—</span>
-        ),
-    },
-    {
-      id:     'points',
-      header: 'Points',
-      align:  'right',
-      width:  '8%',
-      minWidth: '6rem',
-      sortable: true,
-      render: (row) => (
-        <span className="font-data tabular-nums">{row.loyalty_points.toLocaleString('id-ID')}</span>
-      ),
-    },
-    {
-      id:     'spent',
-      header: 'Total spent',
-      align:  'right',
-      width:  '13%',
-      minWidth: '10rem',
-      sortable: true,
-      render: (row) => (
-        <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(row.total_spent)}</span>
-      ),
-    },
-    {
-      id:     'last',
-      header: 'Last visit',
-      align:  'right',
-      width:  '10%',
-      minWidth: '8rem',
-      sortable: true,
-      render: (row) => (
-        <span className="text-xs text-text-secondary">{formatLastVisit(row.last_visit_at)}</span>
-      ),
-    },
-  ], []);
 
   if (!canRead) {
     return (
@@ -373,11 +286,7 @@ export default function CustomersListPage(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-[13px]">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
-        <span>Sales</span>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <span className="text-text-secondary">Customers</span>
-      </nav>
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'Customers' }]} />
 
       <PageHeader
         title="Customers"
@@ -397,18 +306,20 @@ export default function CustomersListPage(): JSX.Element {
                 <Upload className={TOOLBAR_ICON} aria-hidden /> Import
               </button>
             )}
-            <button
-              type="button"
-              className={TOOLBAR_BTN_SECONDARY}
-              onClick={() => void handleExport()}
-              disabled={exportMut.isPending}
-              aria-label="Export customers"
-            >
-              <Download className={TOOLBAR_ICON} aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
-            </button>
+            {canExport && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
+                onClick={() => void handleExport()}
+                disabled={exportMut.isPending}
+                aria-label="Export customers"
+              >
+                <Download className={TOOLBAR_ICON} aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
+              </button>
+            )}
             {canCreate && (
               <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
-                <Plus className="h-3.5 w-3.5" aria-hidden /> New Customer
+                <Plus className="h-3.5 w-3.5" aria-hidden /> New customer
               </button>
             )}
           </>
@@ -440,7 +351,7 @@ export default function CustomersListPage(): JSX.Element {
           id="cust-search"
           type="search"
           value={search}
-          onChange={(e) => applySearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name, email or phone"
           maxLength={64}
           className="w-full max-w-xs"
@@ -448,7 +359,7 @@ export default function CustomersListPage(): JSX.Element {
         <label htmlFor="cust-category" className="sr-only">Category</label>
         <Select
           id="cust-category"
-          value={categoryId ?? ''}
+          value={knownCategory ?? ''}
           onChange={(e) => applyCategory(e.target.value === '' ? null : e.target.value)}
           disabled={cats.isLoading}
           className="w-44"
@@ -462,7 +373,7 @@ export default function CustomersListPage(): JSX.Element {
         <Select
           id="cust-tier"
           value={tier}
-          onChange={(e) => applyTier(e.target.value as CustomersTier)}
+          onChange={(e) => applyTier((TIERS.has(e.target.value) ? e.target.value : 'all') as CustomersTier)}
           className="w-36"
         >
           {TIER_OPTIONS.map((o) => (
@@ -473,7 +384,7 @@ export default function CustomersListPage(): JSX.Element {
         <Select
           id="cust-sort"
           value={sort}
-          onChange={(e) => applySort(e.target.value as CustomersSort)}
+          onChange={(e) => applySort((SORTS.has(e.target.value) ? e.target.value : 'last_visit') as CustomersSort)}
           className="w-44"
         >
           {SORT_OPTIONS.map((o) => (
@@ -482,10 +393,10 @@ export default function CustomersListPage(): JSX.Element {
         </Select>
       </div>
 
-      {list.error !== null && list.error !== undefined ? (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+      {list.isError ? (
+        <p role="alert" className="rounded-md border border-red bg-bg-elevated p-4 text-sm text-red-as-text">
           Customers could not be loaded. The list may be out of date.{' '}
-          <button type="button" className="underline" onClick={() => { void list.refetch(); }}>
+          <button type="button" className={`rounded-sm underline ${FOCUS_RING}`} onClick={() => { void list.refetch(); }}>
             Try again
           </button>
         </p>
@@ -516,8 +427,10 @@ export default function CustomersListPage(): JSX.Element {
               total={rows.length}
               page={current}
               pageSize={pageSize}
-              onPage={setPage}
-              onPageSize={(next) => { setPageSize(next); setPage(1); }}
+              onPage={(next) => { patchParams({ page: next <= 1 ? null : String(next) }); }}
+              onPageSize={(next) => {
+                patchParams({ size: next === CUSTOMERS_PAGE_SIZE_DEFAULT ? null : String(next), page: null });
+              }}
               leading={
                 <span className="font-data text-xs tabular-nums text-text-muted">
                   {footerLabel}

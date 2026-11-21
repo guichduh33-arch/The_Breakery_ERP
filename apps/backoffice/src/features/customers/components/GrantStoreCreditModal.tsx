@@ -59,6 +59,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
     onClose();
   };
 
+  const amountInvalid = !amountOk && amountStr.length > 0;
+  const reasonInvalid = !reasonOk && reason.length > 0;
+
   const handleSubmit = async (): Promise<void> => {
     if (!canSubmit) return;
     setFormError(null);
@@ -100,12 +103,16 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
             step="any"
             value={amountStr}
             onChange={(e) => setAmountStr(e.target.value)}
+            // L'erreur de champ est RELIÉE au champ : sans elle, un lecteur
+            // d'écran entendait « Amount » sans savoir que la saisie était refusée.
+            aria-invalid={amountInvalid}
+            {...(amountInvalid ? { 'aria-describedby': 'grant-credit-amount-error' } : {})}
             className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="50000"
             data-testid="grant-amount"
           />
-          {!amountOk && amountStr.length > 0 && (
-            <p className="text-xs text-danger mt-1">Amount must be greater than 0</p>
+          {amountInvalid && (
+            <p id="grant-credit-amount-error" className="text-xs text-danger mt-1">Amount must be greater than 0</p>
           )}
         </div>
         <div>
@@ -114,14 +121,16 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
             id="grant-credit-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            aria-invalid={reasonInvalid}
+            {...(reasonInvalid ? { 'aria-describedby': 'grant-credit-reason-error' } : {})}
             rows={3}
             maxLength={500}
             className={`mt-1 w-full border border-border-strong rounded p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="3-500 characters…"
             data-testid="grant-reason"
           />
-          {!reasonOk && reason.length > 0 && (
-            <p className="text-xs text-danger mt-1">3-500 characters required</p>
+          {reasonInvalid && (
+            <p id="grant-credit-reason-error" className="text-xs text-danger mt-1">3-500 characters required</p>
           )}
         </div>
         <div>

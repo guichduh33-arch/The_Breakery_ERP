@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CustomerDetailPage } from '../CustomerDetailPage.js';
 
@@ -54,6 +54,7 @@ vi.mock('@/features/customers/hooks/useStoreCreditHistory.js', () => ({
 }));
 
 let mockDetailFails = false;
+let mockLoyaltyPoints = 100;
 
 // La modale réelle a ses propres tests ; ici on vérifie le SENS transmis.
 vi.mock('@/features/loyalty/components/LoyaltyAdjustModal.js', () => ({
@@ -74,6 +75,7 @@ vi.mock('@/features/customers/hooks/useCustomerDetail.js', () => ({
     data: {
       customer: {
         ...baseCustomer,
+        loyalty_points: mockLoyaltyPoints,
         id,
         customer_type: mockCustomerType,
         retail_credit_limit: mockRetailCreditLimit,
@@ -103,6 +105,18 @@ vi.mock('@/features/loyalty/hooks/useCustomerLoyaltyHistory.js', () => ({
   useCustomerLoyaltyHistory: () => ({ isLoading: false, data: [] }),
 }));
 
+function LocationProbe() {
+  const loc = useLocation();
+  return <output data-testid="location">{loc.search}</output>;
+}
+
+// Les onglets du kit (Radix) s'activent à l'appui du bouton, pas au clic.
+function openTab(name: RegExp): void {
+  const tab = screen.getByRole('tab', { name });
+  fireEvent.mouseDown(tab);
+  fireEvent.click(tab);
+}
+
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -111,6 +125,7 @@ function renderAt(path: string) {
         <Routes>
           <Route path="/backoffice/customers/:id" element={<CustomerDetailPage />} />
         </Routes>
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -122,6 +137,7 @@ describe('CustomerDetailPage', () => {
     mockRetailCreditLimit = null;
     mockPerms = [];
     mockDetailFails = false;
+    mockLoyaltyPoints = 100;
   });
 
   // Un échec de lecture affichait « Loading… » pour toujours.
@@ -131,7 +147,9 @@ describe('CustomerDetailPage', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/this customer could not be loaded/i);
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /back to customers/i })).toBeInTheDocument();
+    // Le retour vers la liste passe par le fil d'Ariane, rendu dans l'erreur aussi.
+    expect(screen.getByRole('link', { name: 'Customers' })).toHaveAttribute('href', '/backoffice/customers');
+    expect(screen.getByRole('heading', { level: 1, name: 'Customer' })).toBeInTheDocument();
     expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
   });
 
@@ -164,7 +182,8 @@ describe('CustomerDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole('tab', { name: /Orders/ }));
+    openTab(/Orders/);
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=orders');
     const orderLink = await screen.findByRole('link', { name: /ORD-001/ });
     expect(orderLink.getAttribute('href')).toBe('/backoffice/orders/o-1');
   });
@@ -201,8 +220,36 @@ describe('CustomerDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole('tab', { name: /Store credit/ }));
+    openTab(/Store credit/);
     expect(screen.getByText('No store-credit activity yet.')).toBeInTheDocument();
+  });
+
+  it('opens on the tab named in the URL, and ignores an unknown one', async () => {
+    renderAt('/backoffice/customers/c-1?tab=store-credit');
+    expect(await screen.findByRole('tab', { name: /Store credit/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No store-credit activity yet.')).toBeInTheDocument();
+  });
+
+  it('falls back to the Info tab for an unknown tab value', async () => {
+    renderAt('/backoffice/customers/c-1?tab=secret');
+    expect(await screen.findByRole('tab', { name: /Info/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('starts the breadcrumb with Sales and ends with the customer name', async () => {
+    renderAt('/backoffice/customers/c-1');
+    await screen.findByRole('heading', { name: 'Café Bali' });
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs).toHaveTextContent('Sales');
+    expect(crumbs).toHaveTextContent('Café Bali');
+  });
+
+  it('says why the conversion is disabled below the minimum', async () => {
+    mockPerms = ['customers.store_credit.convert'];
+    mockLoyaltyPoints = 40;
+    renderAt('/backoffice/customers/c-1');
+    const btn = await screen.findByTestId('convert-store-credit');
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAccessibleDescription(/needs at least 100 points to convert/i);
   });
 
   it('hides grant/convert buttons without the store_credit permissions', async () => {

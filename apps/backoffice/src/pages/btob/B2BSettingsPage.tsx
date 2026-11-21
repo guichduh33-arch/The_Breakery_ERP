@@ -210,7 +210,7 @@ export default function B2BSettingsPage(): JSX.Element {
                 type="button"
                 onClick={() => removeTerm(t)}
                 aria-label={`Remove ${t}`}
-                className="text-text-muted transition-colors duration-fast hover:text-danger"
+                className={`rounded-sm text-text-muted transition-colors duration-fast hover:text-danger ${FOCUS_RING}`}
               >
                 <Trash2 className="h-3 w-3" aria-hidden />
               </button>
@@ -293,7 +293,7 @@ export default function B2BSettingsPage(): JSX.Element {
                 type="button"
                 onClick={() => removeBucket(b.id)}
                 aria-label={`Remove ${b.label}`}
-                className="text-text-muted transition-colors duration-fast hover:text-danger"
+                className={`rounded-sm text-text-muted transition-colors duration-fast hover:text-danger ${FOCUS_RING}`}
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>

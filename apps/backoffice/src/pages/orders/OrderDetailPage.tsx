@@ -30,6 +30,7 @@ import {
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
+  paymentMethodLabel,
 } from '@/features/orders/statusMeta.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
@@ -302,7 +303,7 @@ export function OrderDetailPage(): JSX.Element {
                 {data.payments.map((p) => (
                   <li key={p.id} className="text-sm">
                     <div className="flex items-baseline justify-between">
-                      <span className="capitalize text-text-primary">{p.method.replace('_', ' ')}</span>
+                      <span className="text-text-primary">{paymentMethodLabel(p.method)}</span>
                       <span className="font-data tabular-nums">{rp(p.amount)}</span>
                     </div>
                     {/* Le rail d'argent fait ~326 px : « Rp 100.000 given ·

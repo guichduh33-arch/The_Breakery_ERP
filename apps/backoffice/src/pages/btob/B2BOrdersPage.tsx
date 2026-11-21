@@ -1,12 +1,12 @@
 import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import './b2b-orders.css';
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Input, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { Button, DataTable } from '@/components/BackofficeUi.js';
-import { formatCurrency, formatDateShortWita } from '@breakery/utils';
+import { formatCurrency, formatDate, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
@@ -48,8 +48,12 @@ const COLUMN_ID_TO_SORT: Record<string, B2bOrdersSortColumn> = {
 
 const PAYMENT_FILTERS: readonly B2bPaymentFilter[] = ['all', 'unpaid', 'paid'];
 
+// `invoice_date` est le `created_at` de la commande (un instant) : il se lit au
+// format de table du BO, dans le fuseau métier. La colonne rendait
+// `iso.slice(0, 10)` — le jour UTC, donc la VEILLE entre minuit et 08 h WITA
+// (audit Sales 2026-11-21). La date de retrait, elle, est une date seule.
 function orderDate(iso: string | null): string {
-  return iso === null || iso === '' ? '—' : iso.slice(0, 10);
+  return iso === null || iso === '' ? '—' : formatDateTimeShortWita(iso);
 }
 
 export default function B2BOrdersPage(): JSX.Element {
@@ -198,7 +202,7 @@ export default function B2BOrdersPage(): JSX.Element {
       header: 'Created',
       sortable: true,
       render: (r) => (
-        <span className="whitespace-nowrap text-text-secondary">{orderDate(r.invoice_date)}</span>
+        <span className="whitespace-nowrap font-data tabular-nums text-text-secondary">{orderDate(r.invoice_date)}</span>
       ),
     },
     {
@@ -214,7 +218,7 @@ export default function B2BOrdersPage(): JSX.Element {
       sortable: true,
       render: (r) =>
         r.pickup_date ? (
-          formatDateShortWita(r.pickup_date)
+          <span className="whitespace-nowrap font-data tabular-nums">{formatDate(r.pickup_date)}</span>
         ) : (
           <span className="text-text-muted">not set</span>
         ),
@@ -224,17 +228,15 @@ export default function B2BOrdersPage(): JSX.Element {
       header: 'Amount',
       align: 'right',
       sortable: true,
-      render: (r) => formatCurrency(r.invoice_total),
+      render: (r) => (
+        <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(r.invoice_total)}</span>
+      ),
     },
     { id: 'status', header: 'Status', render: (r) => <B2bOrderStatus order={r} /> },
   ];
   return (
-    <div className="b2b-orders-page flex flex-col gap-6">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-text-muted">
-        <span>B2B</span>
-        <ChevronRight className="h-3 w-3" aria-hidden />
-        <span>Orders</span>
-      </nav>
+    <div className="flex flex-col gap-[13px]">
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'B2B orders' }]} />
       <PageHeader
         title="B2B orders"
         subtitle="Track pickup and payment at a glance. Open an order to view its details and update its status."
@@ -251,7 +253,7 @@ export default function B2BOrdersPage(): JSX.Element {
                 setCreateOpen(true);
               }}
             >
-              <Plus className="h-4 w-4" aria-hidden /> New B2B Order
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New B2B order
             </button>
             {!canCreate && (
               <span id="b2b-create-reason" className="sr-only">
@@ -337,7 +339,7 @@ export default function B2BOrdersPage(): JSX.Element {
           data-testid="b2b-orders-table"
           footer={
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-text-muted" data-testid="b2b-orders-footer-count">
+              <span className="font-data text-sm tabular-nums text-text-muted" data-testid="b2b-orders-footer-count">
                 {rows.length.toLocaleString('id-ID')} of {matching.toLocaleString('id-ID')} loaded
               </span>
               {query.hasNextPage && (

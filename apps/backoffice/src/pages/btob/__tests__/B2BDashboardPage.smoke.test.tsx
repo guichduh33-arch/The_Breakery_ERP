@@ -142,8 +142,9 @@ describe('B2BDashboardPage', () => {
 
   it('renders title, breadcrumb and KPI tiles — the QuickLink menu is dead', async () => {
     renderPage();
-    expect(await screen.findByRole('heading', { name: /b2b dashboard/i })).toBeInTheDocument();
-    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B');
+    expect(await screen.findByRole('heading', { level: 1, name: 'B2B wholesale' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Sales');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B wholesale');
     expect(screen.getByText(/active clients/i)).toBeInTheDocument();
     expect(screen.getByText(/monthly b2b revenue/i)).toBeInTheDocument();
     expect(screen.getByText(/outstanding ar/i)).toBeInTheDocument();
@@ -161,6 +162,16 @@ describe('B2BDashboardPage', () => {
     expect(screen.getByText('CV Bali')).toBeInTheDocument();
   });
 
+  it('links recent orders to their detail page and to the B2B order list', async () => {
+    renderPage();
+    const recent = await screen.findByRole('link', { name: /B2B-0002/ });
+    expect(recent).toHaveAttribute('href', '/backoffice/b2b/orders/o2');
+    // Libellé du statut, jamais la valeur d'enum brute.
+    expect(recent).toHaveTextContent('B2B pending');
+    expect(recent).not.toHaveTextContent('b2b_pending');
+    expect(screen.getByRole('link', { name: 'Track all' })).toHaveAttribute('href', '/backoffice/b2b/orders');
+  });
+
   it('S24 — + New B2B Order is now enabled (RPC landed)', async () => {
     renderPage();
     const btn = await screen.findByRole('button', { name: /new b2b order/i });
@@ -171,6 +182,9 @@ describe('B2BDashboardPage', () => {
     renderPage();
     expect(await screen.findByTestId('b2b-drift-banner')).toBeInTheDocument();
     expect(screen.getByTestId('b2b-drift-banner')).toHaveTextContent('Hotel Kuta');
+    expect(screen.getByTestId('b2b-drift-banner'))
+      .toHaveTextContent('1 customer has a balance that does not match their orders and payments');
+    expect(screen.getByTestId('b2b-drift-banner')).not.toHaveTextContent('cache');
     // le client sans drift n'apparaît pas dans le bandeau
     expect(screen.getByTestId('b2b-drift-banner')).not.toHaveTextContent('Bali Organic');
   });

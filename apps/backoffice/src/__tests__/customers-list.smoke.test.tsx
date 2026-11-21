@@ -3,8 +3,8 @@
 // Session 14 / Phase 5.B — smoke for the rebuilt CustomersListPage.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CustomersListPage from '@/pages/customers/CustomersListPage.js';
 
@@ -64,27 +64,79 @@ vi.mock('@/lib/supabase.js', () => {
   };
 });
 
+const perms = vi.hoisted(() => ({
+  granted: ['customers.read', 'customers.create', 'customer_categories.read'] as string[],
+}));
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({
-      hasPermission: (p: string) =>
-        ['customers.read', 'customers.create', 'customer_categories.read'].includes(p),
-    }),
+    sel({ hasPermission: (p: string) => perms.granted.includes(p) }),
 }));
 
-function renderPage() {
+function LocationProbe() {
+  const loc = useLocation();
+  return <output data-testid="location">{loc.search}</output>;
+}
+
+function renderPage(url = '/backoffice/customers') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[url]}>
         <CustomersListPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
 describe('CustomersListPage', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    perms.granted = ['customers.read', 'customers.create', 'customer_categories.read'];
+  });
+
+  it('opens on the Sales breadcrumb', () => {
+    renderPage();
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs).toHaveTextContent('Sales');
+    expect(crumbs).toHaveTextContent('Customers');
+  });
+
+  it('restores tier, sort, page size and search from the URL', () => {
+    renderPage('/backoffice/customers?q=bali&tier=gold&sort=spend&size=100');
+    expect(screen.getByLabelText('Search customers')).toHaveValue('bali');
+    expect(screen.getByLabelText('Loyalty tier')).toHaveValue('gold');
+    expect(screen.getByLabelText('Sort')).toHaveValue('spend');
+    fireEvent.change(screen.getByLabelText('Loyalty tier'), { target: { value: 'silver' } });
+    const search = screen.getByTestId('location').textContent ?? '';
+    expect(search).toContain('tier=silver');
+    expect(search).toContain('sort=spend');
+    expect(search).toContain('q=bali');
+  });
+
+  it('ignores unknown URL values instead of filtering on them', () => {
+    renderPage('/backoffice/customers?tier=diamond&sort=oops&category=not-a-uuid&page=-3&size=7');
+    expect(screen.getByLabelText('Loyalty tier')).toHaveValue('all');
+    expect(screen.getByLabelText('Sort')).toHaveValue('last_visit');
+    expect(screen.getByLabelText('Category')).toHaveValue('');
+  });
+
+  it('commits the search to the URL after the debounce', async () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Search customers'), { target: { value: 'walk' } });
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('q=walk'));
+  });
+
+  it('offers the export only with reports.export, like Orders', () => {
+    renderPage();
+    expect(screen.queryByRole('button', { name: 'Export customers' })).not.toBeInTheDocument();
+  });
+
+  it('offers the export with reports.export', () => {
+    perms.granted = [...perms.granted, 'reports.export'];
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Export customers' })).toBeInTheDocument();
+  });
 
   it('renders header, search, counter strip and rows', async () => {
     renderPage();

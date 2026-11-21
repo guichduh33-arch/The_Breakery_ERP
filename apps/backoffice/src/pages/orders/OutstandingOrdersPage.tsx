@@ -1,13 +1,20 @@
-import { useState } from 'react';
+// Tickets POS impayés — la recherche et la page vivent dans l'URL (`q`,
+// `page` en base 1) : le retour depuis une fiche commande rend la liste qu'on
+// regardait (audit Sales 2026-11-21). Une page illisible retombe sur la première.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { OutstandingOrdersPanel, type OutstandingPaymentRequest } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 export default function OutstandingOrdersPage() {
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
+  const [params, patchParams] = useListParams();
+  const search = (params.get('q') ?? '').slice(0, 64);
+  const pageRaw = Number.parseInt(params.get('page') ?? '', 10);
+  const page = Number.isInteger(pageRaw) && pageRaw > 1 ? pageRaw - 1 : 0;
+  const setPage = (next: number): void => { patchParams({ page: next <= 0 ? null : String(next + 1) }); };
   const actor = useAuthStore((s) => s.user?.id);
   const token = useAuthStore((s) => s.sessionToken);
   const canPay = useAuthStore((s) => s.hasPermission('payments.process'));
@@ -36,11 +43,12 @@ export default function OutstandingOrdersPage() {
     await qc.invalidateQueries({ queryKey: ['outstanding-orders'] });
     void qc.invalidateQueries({ queryKey: ['orders'] });
   }
-  return <div className="space-y-6">
+  return <div className="flex flex-col gap-[13px]">
+    <Breadcrumb items={[{ label: 'Sales' }, { label: 'POS Outstanding' }]} />
     <PageHeader title="POS Outstanding" subtitle="Unpaid customer tickets. Back-office receipts are recorded separately from POS shifts." />
     <OutstandingOrdersPanel key={actor} rows={list.data ?? []} loading={list.isLoading}
       {...(list.error ? { loadError: list.error.message } : {})}
-      search={search} onSearch={(value) => { setSearch(value); setPage(0); }} page={page} onPage={setPage}
+      search={search} onSearch={(value) => { patchParams({ q: value, page: null }); }} page={page} onPage={setPage}
       canSettle={!!actor && canPay} sessionId={null} isCurrent={isCurrent} disabledReason="Payment permission is required."
       storageKey={`breakery.outstanding-backoffice.v1:${actor}`} onSettle={settle} />
   </div>;

@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useCustomerCategories,
   type CustomerCategoryRow,
@@ -241,9 +242,9 @@ export default function CustomerCategoriesPage(): JSX.Element {
       />
 
       {cats.error !== null && cats.error !== undefined ? (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+        <p role="alert" className="rounded-md border border-red bg-bg-elevated p-4 text-sm text-red-as-text">
           Categories could not be loaded.{' '}
-          <button type="button" className="underline" onClick={() => { void cats.refetch(); }}>
+          <button type="button" className={`rounded-sm underline ${FOCUS_RING}`} onClick={() => { void cats.refetch(); }}>
             Try again
           </button>
         </p>

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import B2BOrderDetailPage from '../B2BOrderDetailPage.js';
@@ -155,9 +155,12 @@ describe('B2B order detail', () => {
   });
   it('opens directly with items, actions and a return link preserving filters', async () => {
     setup();
-    expect(await screen.findByRole('heading', { name: 'BO-001' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'B2B order BO-001' })).toBeInTheDocument();
     expect(screen.getByText('Items for o1')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Back to B2B orders/ })).toHaveAttribute(
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs).toHaveTextContent('Sales');
+    expect(crumbs).toHaveTextContent('#BO-001');
+    expect(within(crumbs).getByRole('link', { name: 'B2B orders' })).toHaveAttribute(
       'href',
       '/backoffice/b2b/orders?payment=unpaid',
     );
@@ -193,13 +196,16 @@ describe('B2B order detail', () => {
   it.each(['paid', 'partial', 'delivered'] as const)('does not offer editing after %s', async (flag) => {
     state[flag] = true;
     setup();
-    await screen.findByRole('heading', { name: 'BO-001' });
+    await screen.findByRole('heading', { level: 1, name: 'B2B order BO-001' });
     expect(screen.queryByRole('button', { name: 'Edit order' })).not.toBeInTheDocument();
   });
   it('shows a missing order without offering actions', async () => {
     state.missing = true;
     setup();
     expect(await screen.findByText('Order not found or no longer available.')).toBeInTheDocument();
+    // Titre et retour vers la liste restent rendus quand la fiche est introuvable.
+    expect(screen.getByRole('heading', { level: 1, name: 'B2B order' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'B2B orders' })).toHaveAttribute('href', '/backoffice/b2b/orders?payment=unpaid');
     expect(screen.queryByRole('button', { name: 'Record payment' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Print PDF' })).not.toBeInTheDocument();
   });
@@ -208,6 +214,18 @@ describe('B2B order detail', () => {
     setup();
     expect(await screen.findByRole('alert')).toHaveTextContent('Connection failed');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'B2B order' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'B2B orders' })).toBeInTheDocument();
+  });
+  it('shows the money in the right rail in mono tabular figures', async () => {
+    state.partial = true;
+    setup();
+    await screen.findByRole('heading', { level: 1, name: 'B2B order BO-001' });
+    const money = screen.getByTestId('b2b-order-money');
+    expect(within(money).getByText('Total')).toBeInTheDocument();
+    expect(within(money).getByText('Paid')).toBeInTheDocument();
+    expect(within(money).getByText('Outstanding')).toBeInTheDocument();
+    for (const dd of money.querySelectorAll('dd')) expect(dd.className).toContain('font-data');
   });
   it('keeps Check pending payment available after the invoice becomes fully settled', async () => {
     state.paid = true;

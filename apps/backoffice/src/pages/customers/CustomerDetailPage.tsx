@@ -12,16 +12,20 @@
 // to keep this file under the 500-line budget. This module owns the header,
 // loyalty hero, KPI row, tab bar and the reused edit/loyalty modals.
 //
+// Onglets : primitif Tabs du kit (rôles ARIA, flèches, focus) au lieu de
+// boutons faits main ; l'onglet actif vit dans l'URL (`?tab=`), si bien que le
+// retour depuis une commande ouverte dans l'onglet Orders y ramène (audit
+// Sales 2026-11-21). Fil d'Ariane et titre se rendent dans tous les états.
+//
 // All data is read-only PostgREST (useCustomerDetail / useCustomerLoyaltyHistory
 // / useCustomerCategoryPrices / useCustomerAnalytics). Mutations reuse the
 // existing CustomerFormModal (edit) + LoyaltyAdjustModal (points).
 
 import { lazy, Suspense, useMemo, useState, type JSX } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
-  ChevronRight,
   Crown,
   DollarSign,
   Gift,
@@ -32,8 +36,8 @@ import {
   User as UserIcon,
   Wallet,
 } from 'lucide-react';
-import { LoyaltyBadge } from '@breakery/ui';
-import { Button, Card } from '@/components/BackofficeUi.js';
+import { LoyaltyBadge, Tabs, TabsContent } from '@breakery/ui';
+import { Button, Card, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
 import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -56,9 +60,18 @@ import { PricingTab } from './customer-detail/PricingTab.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { useListParams } from '@/hooks/useListParams.js';
 
-type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
+const TAB_IDS = ['info', 'orders', 'loyalty', 'store-credit', 'analytics', 'pricing'] as const;
+type TabId = (typeof TAB_IDS)[number];
+function isTabId(v: string | null): v is TabId {
+  return v !== null && (TAB_IDS as readonly string[]).includes(v);
+}
+
+// Plancher serveur de la conversion : multiples de 100 points
+// (ConvertLoyaltyModal, famille convert_loyalty_to_store_credit).
+const CONVERT_MIN_POINTS = 100;
 
 // Le seul consommateur de `recharts` de la fiche (443 Ko bruts / 117 Ko gzip),
 // pour un onglet sur six — et jamais celui qu'on ouvre en arrivant. En `lazy`,
@@ -94,7 +107,13 @@ export function CustomerDetailPage(): JSX.Element {
   const { data, isLoading, error, refetch } = useCustomerDetail(id);
   const history = useCustomerLoyaltyHistory(id ?? null);
 
-  const [tab, setTab] = useState<TabId>('info');
+  const [params, patchParams] = useListParams();
+  const tabParam = params.get('tab');
+  // Un onglet inconnu dans l'URL retombe sur Info.
+  const tab: TabId = isTabId(tabParam) ? tabParam : 'info';
+  const setTab = (next: string): void => {
+    patchParams({ tab: isTabId(next) && next !== 'info' ? next : null });
+  };
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState<'add' | 'redeem' | null>(null);
   const [granting, setGranting] = useState(false);
@@ -124,21 +143,38 @@ export function CustomerDetailPage(): JSX.Element {
 
   // Un échec (id invalide, droits, réseau) affichait « Loading… » pour
   // toujours : l'erreur se dit, avec un nouvel essai et un retour à la liste.
+  // Le fil d'Ariane porte le retour vers la liste dans TOUS les états — c'est
+  // lui, et non un « Back to customers » souligné, qui évite le cul-de-sac.
+  const crumbs = (
+    <Breadcrumb
+      items={[
+        { label: 'Sales' },
+        { label: 'Customers', to: '/backoffice/customers' },
+        ...(customer ? [{ label: customer.name }] : []),
+      ]}
+    />
+  );
+
   if (error !== null && !customer) {
     return (
-      <div className="space-y-3 p-8">
+      <div className="flex flex-col gap-[13px]">
+        {crumbs}
+        <PageHeader title="Customer" />
         <QueryErrorBanner detail={error.message} onRetry={() => { void refetch(); }} data-testid="customer-detail-error">
           This customer could not be loaded.
         </QueryErrorBanner>
-        <Link to="/backoffice/customers" className={`text-sm text-text-secondary underline ${FOCUS_RING}`}>
-          Back to customers
-        </Link>
       </div>
     );
   }
 
   if (isLoading || !customer) {
-    return <div role="status" className="p-8 text-text-secondary">Loading…</div>;
+    return (
+      <div className="flex flex-col gap-[13px]" aria-busy="true">
+        {crumbs}
+        <PageHeader title="Customer" />
+        <p role="status" className="text-sm text-text-secondary">Loading…</p>
+      </div>
+    );
   }
 
   // Object shaped for the reused loyalty/edit modals.
@@ -175,15 +211,8 @@ export function CustomerDetailPage(): JSX.Element {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
-        <span>Sales</span>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <Link to="/backoffice/customers" className="hover:text-text-primary">Customers</Link>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <span className="text-text-secondary">{customer.name}</span>
-      </nav>
+    <div className="flex flex-col gap-[13px]">
+      {crumbs}
 
       {/* Bandeau — `PageHeader` est la source UNIQUE du bandeau de page
           (DESIGN.md § Boutons : « un bandeau écrit à la main est un second
@@ -296,18 +325,31 @@ export function CustomerDetailPage(): JSX.Element {
                 <Wallet className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Grant store credit
               </Button>
             )}
-            {canConvert && (
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled={!pendingConversion && customer.loyalty_points < 100}
-                onClick={() => setConverting(true)}
-                data-testid="convert-store-credit"
-              >
-                <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> {pendingConversion ? 'Check pending conversion' : 'Convert points to credit'}
-              </Button>
-            )}
+            {canConvert && (() => {
+              // Un bouton désactivé dit pourquoi : la raison est rendue en
+              // clair à côté et reliée au bouton (aria-describedby).
+              const belowMin = !pendingConversion && customer.loyalty_points < CONVERT_MIN_POINTS;
+              return (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={belowMin}
+                    {...(belowMin ? { 'aria-describedby': 'convert-min-reason' } : {})}
+                    onClick={() => setConverting(true)}
+                    data-testid="convert-store-credit"
+                  >
+                    <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> {pendingConversion ? 'Check pending conversion' : 'Convert points to credit'}
+                  </Button>
+                  {belowMin && (
+                    <span id="convert-min-reason" className="text-xs text-text-muted">
+                      Needs at least {CONVERT_MIN_POINTS.toLocaleString('id-ID')} points to convert.
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </Card>
@@ -327,45 +369,36 @@ export function CustomerDetailPage(): JSX.Element {
         />
       </div>
 
-      {/* Tabs */}
-      <div role="tablist" aria-label="Customer detail" className="flex flex-wrap gap-1 border-b border-border-subtle">
-        {tabs.map((t) => {
-          const active = tab === t.id;
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTab(t.id)}
-              className={[
-                'flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                active
-                  ? 'border-gold text-text-primary'
-                  : 'border-transparent text-text-secondary hover:text-text-primary',
-              ].join(' ')}
-            >
-              <Icon className="h-4 w-4" aria-hidden />
-              {t.label}
-              {t.count !== undefined && (
-                <span className="text-xs text-text-muted">({t.count})</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* Tabs — primitif du kit ; seul l'onglet actif monte son panneau, ce
+          qui garde le chunk `recharts` de l'onglet Analytics hors du premier
+          chargement. */}
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList aria-label="Customer detail" className="border-b border-border-subtle">
+          {tabs.map((t) => {
+            const Icon = t.icon;
+            return (
+              <TabsTrigger key={t.id} value={t.id} className="gap-2">
+                <Icon className="h-4 w-4" aria-hidden />
+                {t.label}
+                {t.count !== undefined && (
+                  <span className="font-data text-xs tabular-nums text-text-muted">({t.count})</span>
+                )}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
 
-      {/* Tab panels */}
-      {tab === 'info' && <InfoTab customer={customer} canEdit={canUpdate} />}
-      {tab === 'orders' && <OrdersTab data={data} />}
-      {tab === 'loyalty' && <LoyaltyTab customerId={id ?? null} />}
-      {tab === 'store-credit' && <StoreCreditTab customerId={id ?? null} />}
-      {tab === 'analytics' && (
-        <Suspense fallback={<ChartSkeleton />}>
-          <AnalyticsTab customerId={id ?? null} />
-        </Suspense>
-      )}
-      {tab === 'pricing' && <PricingTab customer={customer} />}
+        <TabsContent value="info"><InfoTab customer={customer} canEdit={canUpdate} /></TabsContent>
+        <TabsContent value="orders"><OrdersTab data={data} /></TabsContent>
+        <TabsContent value="loyalty"><LoyaltyTab customerId={id ?? null} /></TabsContent>
+        <TabsContent value="store-credit"><StoreCreditTab customerId={id ?? null} /></TabsContent>
+        <TabsContent value="analytics">
+          <Suspense fallback={<ChartSkeleton />}>
+            <AnalyticsTab customerId={id ?? null} />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="pricing"><PricingTab customer={customer} /></TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <CustomerFormModal

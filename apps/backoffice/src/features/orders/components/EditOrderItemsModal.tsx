@@ -181,13 +181,16 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
           Edit order {orderNumber}{' '}
           <span className="ml-2 inline-block px-2 py-0.5 text-xs bg-info-soft text-info rounded">Open</span>
         </h2>
-        <div className="mt-4 flex-1 grid grid-cols-[60%_40%] gap-4 overflow-hidden">
-          <div className="overflow-auto border rounded p-3" data-testid="product-picker-pane">
+        {/* `3fr_2fr` et non `60%_40%` : des pourcentages qui somment à 100 %
+            PLUS la gouttière débordaient de la modale. Les bordures nues
+            (`border` = #e5e7eb, hors token) passent aux tokens du thème. */}
+        <div className="mt-4 flex-1 grid grid-cols-[3fr_2fr] gap-4 overflow-hidden">
+          <div className="min-w-0 overflow-auto rounded border border-border-subtle p-3" data-testid="product-picker-pane">
             <ProductPicker onPick={handlePick} />
           </div>
-          <div className="overflow-auto border rounded p-3" data-testid="cart-preview">
+          <div className="min-w-0 overflow-auto rounded border border-border-subtle p-3" data-testid="cart-preview">
             <h3 className="font-medium text-sm">Cart preview</h3>
-            <ul className="mt-2 divide-y">
+            <ul className="mt-2 divide-y divide-border-row">
               {previewLines.map((l) => (
                 <li key={l.id} className="py-2 text-sm flex items-center gap-2">
                   <span className="flex-1">
@@ -214,12 +217,13 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                   {/* `tabular-nums` seul ALIGNE les chiffres d'Instrument Sans,
                       il ne les rend pas en mono : la famille ne vient d'aucun
                       parent ici (The Mono-Carries-Data Rule). */}
-                  <span className="w-20 text-right font-data tabular-nums">{formatCurrency(l.line_total)}</span>
+                  {/* `min-w` + `nowrap` : « Rp 1.250.000 » ne tenait pas dans `w-20`. */}
+                  <span className="min-w-[7.5rem] whitespace-nowrap text-right font-data tabular-nums">{formatCurrency(l.line_total)}</span>
                   {l.isPending ? (
                     <button
                       type="button"
                       onClick={() => handleRemovePending(l.product_id)}
-                      className="text-danger text-xs"
+                      className={`rounded-sm px-1 text-danger text-xs ${FOCUS_RING}`}
                       data-testid={`remove-pending-${l.product_id}`}
                       aria-label={`Remove ${l.name_snapshot}`}
                     >
@@ -237,7 +241,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     <button
                       type="button"
                       onClick={() => handleRemove(l.id)}
-                      className="text-danger text-xs"
+                      className={`rounded-sm px-1 text-danger text-xs ${FOCUS_RING}`}
                       data-testid={`remove-${l.id}`}
                       aria-label={`Remove ${l.name_snapshot}`}
                     >
@@ -247,14 +251,14 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-sm border-t pt-2">
+            <p className="mt-3 border-t border-border-subtle pt-2 text-sm">
               Subtotal preview: <strong className="font-data tabular-nums">{formatCurrency(previewSubtotal)}</strong>
             </p>
             <p className="text-xs text-text-muted">Tax + total recalculated server-side at apply.</p>
           </div>
         </div>
         {hasLockedUpdate && (
-          <div className="mt-3 border rounded p-3 space-y-2" data-testid="locked-auth-section">
+          <div className="mt-3 space-y-2 rounded border border-border-subtle p-3" data-testid="locked-auth-section">
             <p className="text-sm font-medium">
               🔒 Locked line decrease — manager authorization &amp; mandatory waste (ADR-010)
             </p>
@@ -310,8 +314,8 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             </p>
           </div>
         )}
-        {m.error && <p className="mt-3 text-sm text-danger">{m.error.message}</p>}
-        <div className="mt-4 flex items-center justify-between border-t pt-3">
+        {m.error && <p role="alert" className="mt-3 text-sm text-danger">{m.error.message}</p>}
+        <div className="mt-4 flex items-center justify-between border-t border-border-subtle pt-3">
           <span className="text-sm text-text-muted">{pendingCount} changes pending</span>
           <div className="flex gap-2">
             {/* Alignées sur les deux modales clients : `secondary` / `ink` en

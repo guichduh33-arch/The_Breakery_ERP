@@ -225,7 +225,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="max-w-2xl">
-        <DialogTitle>New B2B Order</DialogTitle>
+        <DialogTitle>New B2B order</DialogTitle>
         <DialogDescription className="sr-only">
           Create a B2B order on credit. The customer balance will be increased by the total
           and the order will sit in b2b_pending state until a payment is recorded.

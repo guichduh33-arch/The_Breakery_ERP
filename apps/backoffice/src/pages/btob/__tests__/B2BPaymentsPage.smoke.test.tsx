@@ -5,8 +5,8 @@
 // zéros, ADR-025), alertes visibles sur échec des lectures.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import B2BPaymentsPage from '../B2BPaymentsPage.js';
 
@@ -83,12 +83,18 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: () => true }),
 }));
 
+function LocationProbe() {
+  const loc = useLocation();
+  return <output data-testid="location">{loc.search}</output>;
+}
+
 function renderPage(initialEntry = '/backoffice/b2b/payments') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <B2BPaymentsPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -128,7 +134,9 @@ describe('B2BPaymentsPage', () => {
   it('renders the archetype header and the four tabs, Outstanding first', async () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /b2b payments/i })).toBeInTheDocument();
-    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Sales');
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B payments');
+    expect(screen.getAllByRole('button', { name: 'Record payment' })[0]).toHaveClass('bg-ink');
     const tabs = screen.getAllByRole('tab');
     expect(tabs.map((t) => t.textContent)).toEqual([
       expect.stringMatching(/outstanding/i),
@@ -153,6 +161,26 @@ describe('B2BPaymentsPage', () => {
     expect(await screen.findByLabelText(/payment method/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/period/i)).toBeInTheDocument();
     expect(screen.getByText('PAY-0001')).toBeInTheDocument();
+  });
+
+  it('keeps tab, search, method and period in the URL', async () => {
+    renderPage('/backoffice/b2b/payments?tab=received&q=PAY&method=cash&period=30d');
+    expect(await screen.findByRole('tab', { name: /received/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText(/search payments/i)).toHaveValue('PAY');
+    expect(screen.getByLabelText(/payment method/i)).toHaveValue('cash');
+    expect(screen.getByLabelText(/period/i)).toHaveValue('30d');
+    fireEvent.change(screen.getByLabelText(/payment method/i), { target: { value: 'transfer' } });
+    expect(screen.getByTestId('location').textContent).toContain('method=transfer');
+    expect(screen.getByTestId('location').textContent).toContain('tab=received');
+  });
+
+  it('ignores unknown tab, method and period values', async () => {
+    renderPage('/backoffice/b2b/payments?tab=nope&method=bitcoin&period=forever');
+    expect(await screen.findByRole('tab', { name: /outstanding/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /received/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /received/i }));
+    expect(await screen.findByLabelText(/payment method/i)).toHaveValue('all');
+    expect(screen.getByLabelText(/period/i)).toHaveValue('all');
   });
 
   it('renders no filter row on the Aging tab', async () => {

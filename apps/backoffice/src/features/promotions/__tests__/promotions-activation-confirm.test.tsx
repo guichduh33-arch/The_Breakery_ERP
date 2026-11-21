@@ -3,6 +3,7 @@
 // dates et ne dépend pas du filtre de table.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { emptyPromotionValues } from '@breakery/ui';
 import type { PromotionListRow, PromotionsListFilters } from '../hooks/usePromotionsList.js';
 
@@ -31,6 +32,11 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import PromotionsPage from '@/pages/Promotions.js';
 
+// L'état de liste vit dans l'URL (audit Sales 2026-11-21) : la page exige un routeur.
+function renderPage(): void {
+  render(<MemoryRouter><PromotionsPage /></MemoryRouter>);
+}
+
 const row = (over: Partial<PromotionListRow>): PromotionListRow => ({
   ...emptyPromotionValues(), id: 'p', created_at: '2026-11-01T00:00:00Z', name: 'Promo', ...over,
 });
@@ -47,7 +53,7 @@ beforeEach(() => {
 
 describe('Promotions list', () => {
   it('confirms before activating, and activates only on confirm', () => {
-    render(<PromotionsPage />);
+    renderPage();
     fireEvent.click(screen.getByLabelText('Toggle Happy Hour active'));
     expect(mocks.mutate).not.toHaveBeenCalled();
     const dialog = screen.getByTestId('promotion-activate-confirm');
@@ -58,21 +64,21 @@ describe('Promotions list', () => {
   });
 
   it('cancelling the confirmation changes nothing', () => {
-    render(<PromotionsPage />);
+    renderPage();
     fireEvent.click(screen.getByLabelText('Toggle Happy Hour active'));
     fireEvent.click(within(screen.getByTestId('promotion-activate-confirm')).getByRole('button', { name: 'Cancel' }));
     expect(mocks.mutate).not.toHaveBeenCalled();
   });
 
   it('deactivates directly, without a confirmation', () => {
-    render(<PromotionsPage />);
+    renderPage();
     fireEvent.click(screen.getByLabelText('Toggle Morning BOGO active'));
     expect(screen.queryByTestId('promotion-activate-confirm')).toBeNull();
     expect(mocks.mutate).toHaveBeenCalledWith({ id: 'b', values: { is_active: false } }, expect.anything());
   });
 
   it('shows value and window columns', () => {
-    render(<PromotionsPage />);
+    renderPage();
     expect(screen.getByText('15%')).toBeInTheDocument();
     expect(screen.getByText('Buy 2 get 1')).toBeInTheDocument();
     expect(screen.getByText('Expired')).toBeInTheDocument();
@@ -80,17 +86,17 @@ describe('Promotions list', () => {
   });
 
   it('counts live promotions on dates, independent of the table filter', () => {
-    render(<PromotionsPage />);
+    renderPage();
     // Seule « Morning BOGO » est active ET dans sa fenêtre ; « Old Sale » a expiré.
-    const tile = screen.getByText('Live now').closest('div')?.parentElement;
-    expect(tile).toHaveTextContent('1');
+    // La tuile est devenue un compteur de la bande `ListCounterStrip`.
+    expect(screen.getByTestId('counter-live')).toHaveTextContent('1');
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'inactive' } });
-    expect(screen.getByText('Live now').closest('div')?.parentElement).toHaveTextContent('1');
+    expect(screen.getByTestId('counter-live')).toHaveTextContent('1');
     expect(mocks.calls).toContain(undefined);
   });
 
   it('offers threshold and bundle in the type filter', () => {
-    render(<PromotionsPage />);
+    renderPage();
     const select = screen.getByLabelText('Type');
     expect(within(select).getByRole('option', { name: 'Spend threshold' })).toBeInTheDocument();
     expect(within(select).getByRole('option', { name: 'Bundle' })).toBeInTheDocument();

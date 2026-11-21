@@ -1,16 +1,17 @@
 // apps/backoffice/src/pages/btob/B2BPaymentsPage.tsx
 //
-// Session 14 / Phase 5.B — B2B Payments page.
-// Session 24 / Phase 2.A.4 — Received tab now consumes the `b2b_payments`
-// ledger (S24 migration _010) and the page header gets a "+ Record Payment"
-// button wired to RecordB2bPaymentModal. Closes deviation D-W6-B2BPAY-01.
+// Règlements B2B : recouvrement (Outstanding, Aging), règlements reçus et
+// factures. L'onglet du bandeau ouvre la modale RecordB2bPaymentModal.
+//
+// L'état de liste vit dans l'URL — onglet (`tab`, deep-link des écritures
+// comptables vers Invoices), recherche (`q`), méthode (`method`) et période
+// (`period`) : le retour arrière rend la vue qu'on regardait (audit Sales
+// 2026-11-21). Une valeur inconnue retombe sur le défaut.
 
-import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronRight,
   Clock,
   CreditCard,
   FileText,
@@ -21,13 +22,16 @@ import { Select, Tabs, TabsContent } from '@breakery/ui';
 import { Button, Card, EmptyState, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDateTime } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+import { Breadcrumb } from '@/components/Breadcrumb.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { useListParams } from '@/hooks/useListParams.js';
 // Voir B2BDashboardPage : la tuile du back-office (23 px + `valueTitle`) et non
 // celle de `@breakery/ui` (34 px), qui coupe tout montant au-delà de huit
 // caractères. Un encours d'AR en fait neuf.
 import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
 import { formatCount, formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
-import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
+import { FOCUS_RING, FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
 import { useB2bDashboard } from '@/features/btob/hooks/useB2bDashboard.js';
@@ -66,18 +70,23 @@ export default function B2BPaymentsPage(): JSX.Element {
   const pendingPaymentTargets = usePendingPaymentTargets();
   const dash = useB2bDashboard();
   const debtors = useB2bDebtors();
-  // Session 59 / Task 6a — seed the initial tab from `?tab=` so a JE-source
-  // drilldown link (reference_type b2b_*) can land straight on Invoices.
-  // No 2-way sync — same pattern as GeneralLedgerPage's URL-seeded selectors.
-  const [searchParams] = useSearchParams();
-  const initialTabParam = searchParams.get('tab');
-  const initialTab: TabKey = TAB_KEYS.includes(initialTabParam as TabKey)
-    ? (initialTabParam as TabKey)
-    : 'outstanding';
-  const [tab,    setTab   ] = useState<TabKey>(initialTab);
-  const [search, setSearch] = useState<string>('');
-  const [method, setMethod] = useState<string>('all');
-  const [period, setPeriod] = useState<B2bPaymentsPeriod>('all');
+  // L'onglet, la recherche, la méthode et la période vivent dans l'URL. Le
+  // lien d'une écriture comptable (reference_type b2b_*) arrive par `?tab=invoices`.
+  const [params, patchParams] = useListParams();
+  const tabParam = params.get('tab');
+  const tab: TabKey = TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'outstanding';
+  const search = (params.get('q') ?? '').slice(0, 64);
+  const methodParam = params.get('method') ?? 'all';
+  const periodParam = params.get('period') ?? '';
+  const period: B2bPaymentsPeriod = Object.hasOwn(PERIOD_LABEL, periodParam)
+    ? (periodParam as B2bPaymentsPeriod)
+    : 'all';
+  const setTab = (next: TabKey): void => { patchParams({ tab: next === 'outstanding' ? null : next }); };
+  const setSearch = (next: string): void => { patchParams({ q: next }); };
+  const setMethod = (next: string): void => { patchParams({ method: next === 'all' ? null : next }); };
+  const setPeriod = (next: string): void => {
+    patchParams({ period: Object.hasOwn(PERIOD_LABEL, next) && next !== 'all' ? next : null });
+  };
   const [recordOpen, setRecordOpen] = useState<boolean>(false);
   const [recordCustomerId, setRecordCustomerId] = useState<string | undefined>(undefined);
   const [recordInvoiceIds, setRecordInvoiceIds] = useState<string[] | undefined>(undefined);
@@ -90,6 +99,17 @@ export default function B2BPaymentsPage(): JSX.Element {
   }
 
   const payments = useB2bPaymentsReceived(period);
+
+  // Options du filtre : toutes les méthodes que la modale enregistre, plus
+  // toute valeur d'enum déjà présente en base hors de ce sous-ensemble
+  // (import historique) — aucune ligne ne doit échapper au filtre.
+  const methodOptions = useMemo<readonly string[]>(() => {
+    const seen = new Set<string>(B2B_PAYMENT_METHODS);
+    const extra = (payments.data?.rows ?? []).map((r) => r.method).filter((m) => !seen.has(m));
+    return [...B2B_PAYMENT_METHODS, ...new Set(extra)];
+  }, [payments.data]);
+  // Une méthode inconnue de l'URL est ignorée : elle ne filtre rien en silence.
+  const method = methodOptions.includes(methodParam) ? methodParam : 'all';
 
   const filteredPayments = useMemo<B2bPaymentReceivedRow[]>(() => {
     const rows = payments.data?.rows ?? [];
@@ -106,22 +126,13 @@ export default function B2BPaymentsPage(): JSX.Element {
     });
   }, [payments.data, method, search]);
 
-  // Options du filtre : toutes les méthodes que la modale enregistre, plus
-  // toute valeur d'enum déjà présente en base hors de ce sous-ensemble
-  // (import historique) — aucune ligne ne doit échapper au filtre.
-  const methodOptions = useMemo<readonly string[]>(() => {
-    const seen = new Set<string>(B2B_PAYMENT_METHODS);
-    const extra = (payments.data?.rows ?? []).map((r) => r.method).filter((m) => !seen.has(m));
-    return [...B2B_PAYMENT_METHODS, ...new Set(extra)];
-  }, [payments.data]);
-
   const totalReceived = useMemo(
     () => filteredPayments.reduce((acc, r) => acc + r.amount, 0),
     [filteredPayments],
   );
 
   if (!canRead) {
-    return <div className="text-text-secondary">No access to B2B Payments.</div>;
+    return <div className="text-text-secondary">No access to B2B payments.</div>;
   }
 
   const totalOutstanding = dash.data?.outstandingAr ?? 0;
@@ -138,15 +149,11 @@ export default function B2BPaymentsPage(): JSX.Element {
       || (c.b2b_company_name ?? '').toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="space-y-6">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
-        <span>B2B</span>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <span className="text-text-secondary">Payments</span>
-      </nav>
+    <div className="flex flex-col gap-[13px]">
+      <Breadcrumb items={[{ label: 'Sales' }, { label: 'B2B payments' }]} />
 
       <PageHeader
-        title="B2B Payments"
+        title="B2B payments"
         subtitle="Manage payments and receivables tracking"
         actions={
           <button
@@ -155,20 +162,17 @@ export default function B2BPaymentsPage(): JSX.Element {
             disabled={!canRecord}
             onClick={() => openRecord()}
           >
-            <Plus className="h-3.5 w-3.5" aria-hidden /> {pendingPaymentTargets.length > 0 ? 'Check pending payments' : 'Record Payment'}
+            <Plus className="h-3.5 w-3.5" aria-hidden /> {pendingPaymentTargets.length > 0 ? 'Check pending payments' : 'Record payment'}
           </button>
         }
       />
 
       {/* Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025). */}
       {dash.error !== null && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+        <QueryErrorBanner onRetry={() => { void dash.refetch(); }} data-testid="b2b-payments-dash-error">
           Receivables could not be loaded — Outstanding and Aging show dashes rather
-          than numbers that would be wrong.{' '}
-          <button type="button" className="underline" onClick={() => { void dash.refetch(); }}>
-            Try again
-          </button>
-        </p>
+          than numbers that would be wrong.
+        </QueryErrorBanner>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -210,7 +214,7 @@ export default function B2BPaymentsPage(): JSX.Element {
       </div>
 
       <Card variant="default" padding="none">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(TAB_KEYS.includes(v as TabKey) ? (v as TabKey) : 'outstanding'); }}>
           <TabsList className="border-b border-border-subtle px-3">
             <TabsTrigger value="outstanding">
               <Clock className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Outstanding ({debtors.data === undefined ? '—' : filteredOutstanding.length})
@@ -259,7 +263,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                   <Select
                     id="b2b-payments-period"
                     value={period}
-                    onChange={(e) => { setPeriod(e.target.value as B2bPaymentsPeriod); }}
+                    onChange={(e) => { setPeriod(e.target.value); }}
                     className="w-44"
                   >
                     {Object.entries(PERIOD_LABEL).map(([value, label]) => (
@@ -276,7 +280,7 @@ export default function B2BPaymentsPage(): JSX.Element {
               {payments.error !== null ? (
                 <p role="alert" className="m-4 rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
                   Payments could not be loaded.{' '}
-                  <button type="button" className="underline" onClick={() => { void payments.refetch(); }}>
+                  <button type="button" className={`rounded-sm underline ${FOCUS_RING}`} onClick={() => { void payments.refetch(); }}>
                     Try again
                   </button>
                 </p>
@@ -298,7 +302,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                         <div className="text-xs text-text-secondary">
                           {p.company_name ?? p.customer_name ?? 'Unknown'}
                           {' • '}
-                          {formatDateTime(p.paid_at)}
+                          <span className="font-data tabular-nums">{formatDateTime(p.paid_at)}</span>
                           {' • '}
                           {b2bPaymentMethodLabel(p.method)}
                           {p.reference !== null && p.reference !== '' && (
@@ -323,7 +327,7 @@ export default function B2BPaymentsPage(): JSX.Element {
               ) : debtors.error !== null ? (
                 <p role="alert" className="m-4 rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
                   Outstanding balances could not be loaded.{' '}
-                  <button type="button" className="underline" onClick={() => { void debtors.refetch(); }}>
+                  <button type="button" className={`rounded-sm underline ${FOCUS_RING}`} onClick={() => { void debtors.refetch(); }}>
                     Try again
                   </button>
                 </p>

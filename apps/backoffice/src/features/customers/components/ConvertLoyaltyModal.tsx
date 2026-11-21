@@ -50,6 +50,7 @@ export function ConvertLoyaltyModal({
   const points = snapshot?.points ?? Number(pointsStr || '0');
   const pointsOk =
     Number.isInteger(points) && points > 0 && points % 100 === 0 && points <= loyaltyPoints;
+  const pointsInvalid = !snapshot && !pointsOk && pointsStr.length > 0;
   const canSubmit = attempt.allowed && (Boolean(snapshot) || pointsOk) && !attempt.busy && !attempt.storageError;
 
   const handleClose = (): void => {
@@ -101,12 +102,15 @@ export function ConvertLoyaltyModal({
             value={snapshot ? String(snapshot.points) : pointsStr}
             disabled={Boolean(snapshot) || attempt.busy}
             onChange={(e) => setPointsStr(e.target.value)}
+            // L'erreur de champ est reliée au champ (aria-invalid + describedby).
+            aria-invalid={pointsInvalid}
+            {...(pointsInvalid ? { 'aria-describedby': 'convert-points-error' } : {})}
             className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="100"
             data-testid="convert-points"
           />
-          {!snapshot && !pointsOk && pointsStr.length > 0 && (
-            <p className="text-xs text-danger mt-1">
+          {pointsInvalid && (
+            <p id="convert-points-error" className="text-xs text-danger mt-1">
               Positive multiple of 100, up to {loyaltyPoints.toLocaleString('id-ID')} points
             </p>
           )}

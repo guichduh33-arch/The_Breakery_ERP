@@ -257,7 +257,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                       <button
                         type="button"
                         aria-label={`Decrease ${full?.name_snapshot ?? ''}`}
-                        className="flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40"
+                        className={`flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40 ${FOCUS_RING}`}
                         disabled={frozen || qty <= 0}
                         onClick={() => handleQty(it.order_item_id, qty - 1)}
                       >
@@ -267,7 +267,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                       <button
                         type="button"
                         aria-label={`Increase ${full?.name_snapshot ?? ''}`}
-                        className="flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40"
+                        className={`flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40 ${FOCUS_RING}`}
                         disabled={frozen || qty >= remaining}
                         onClick={() => handleQty(it.order_item_id, Math.min(remaining, qty + 1))}
                       >
@@ -275,7 +275,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                       </button>
                     </div>
                   )}
-                  <span className="w-24 text-right font-data tabular-nums text-text-primary">
+                  <span className="min-w-[7.5rem] whitespace-nowrap text-right font-data tabular-nums text-text-primary">
                     {qty > 0 ? formatCurrency(amount) : '—'}
                   </span>
                 </li>

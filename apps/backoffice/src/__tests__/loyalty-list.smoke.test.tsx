@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import LoyaltyPage from '@/pages/Loyalty.js';
 
 vi.mock('@/lib/supabase.js', () => {
@@ -33,17 +34,48 @@ vi.mock('@/stores/authStore.js', () => ({
     ].includes(p) }),
 }));
 
-function renderPage() {
+function LocationProbe() {
+  const loc = useLocation();
+  return <output data-testid="location">{loc.search}</output>;
+}
+
+function renderPage(url = '/backoffice/loyalty') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <LoyaltyPage />
+      <MemoryRouter initialEntries={[url]}>
+        <LoyaltyPage />
+        <LocationProbe />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
 describe('Loyalty BO page', () => {
   beforeEach(() => { vi.clearAllMocks(); });
+
+  it('opens on the Sales breadcrumb and a counter strip without icon tiles', () => {
+    renderPage();
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs).toHaveTextContent('Sales');
+    expect(crumbs).toHaveTextContent('Loyalty');
+    expect(screen.getByRole('group', { name: 'Loyalty tier filters' })).toBeInTheDocument();
+  });
+
+  it('keeps the tier in the URL and ignores an unknown value', () => {
+    renderPage('/backoffice/loyalty?tier=gold');
+    expect(screen.getByLabelText('Tier filter')).toHaveValue('gold');
+    fireEvent.click(screen.getByTestId('counter-silver'));
+    expect(screen.getByTestId('location')).toHaveTextContent('?tier=silver');
+    fireEvent.click(screen.getByTestId('counter-all'));
+    expect(screen.getByTestId('location')).toHaveTextContent(/^$/);
+  });
+
+  it('falls back to all tiers for an unknown URL value', () => {
+    renderPage('/backoffice/loyalty?tier=diamond');
+    expect(screen.getByLabelText('Tier filter')).toHaveValue('all');
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'true');
+  });
 
   it('renders three rows with the right tier badges', async () => {
     renderPage();
