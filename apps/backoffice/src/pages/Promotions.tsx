@@ -81,7 +81,10 @@ const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
 // défaut au lieu de partir en filtre serveur.
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 function readDay(raw: string | null): string {
-  return raw !== null && ISO_DAY.test(raw) ? raw : '';
+  if (raw === null || !ISO_DAY.test(raw)) return '';
+  // Le motif laisse passer `2026-99-99` : la date doit exister au calendrier.
+  const d = new Date(`${raw}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === raw ? raw : '';
 }
 
 

@@ -38,6 +38,9 @@ est immédiat sur les prix de la caisse, pendant le service.
 - La conversion des points en avoir garde son propre contrôle de permission ;
   elle ne demande pas de PIN, car les points convertis ont déjà été accordés
   sous contrôle.
+- L'autorisation n'est liée ni au client ni au montant : elle vaut pour un seul
+  crédit, pendant sa courte durée de vie. C'est le même modèle que l'autorisation
+  d'avoir.
 - Toute nouvelle surface qui crédite des points (caisse comprise) doit passer
   par la même autorisation, ou faire l'objet d'un nouvel ADR.
 

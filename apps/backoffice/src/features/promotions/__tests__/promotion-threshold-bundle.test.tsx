@@ -97,6 +97,8 @@ describe('PromotionFormModal — threshold & bundle (S3-11)', () => {
     fireEvent.change(screen.getByLabelText(/Minimum subtotal/i), { target: { value: '300000' } });
     fireEvent.change(screen.getByLabelText(/^Discount \(IDR\)/i), { target: { value: '30000' } });
     fireEvent.click(screen.getByRole('button', { name: /Create promotion/i }));
+    // ADR-045 : une promotion créée active se confirme avant l'écriture.
+    fireEvent.click(await screen.findByRole('button', { name: 'Activate' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const row = sent.inserts[0] as PromotionUpdate;
@@ -118,6 +120,8 @@ describe('PromotionFormModal — threshold & bundle (S3-11)', () => {
     fireEvent.change(screen.getByLabelText(/^Discount \(%\)/i), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText(/Max discount amount/i), { target: { value: '50000' } });
     fireEvent.click(screen.getByRole('button', { name: /Create promotion/i }));
+    // ADR-045 : une promotion créée active se confirme avant l'écriture.
+    fireEvent.click(await screen.findByRole('button', { name: 'Activate' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const row = sent.inserts[0] as PromotionUpdate;
@@ -137,6 +141,8 @@ describe('PromotionFormModal — threshold & bundle (S3-11)', () => {
     fireEvent.change(picker);
     fireEvent.change(screen.getByLabelText(/Bundle price/i), { target: { value: '40000' } });
     fireEvent.click(screen.getByRole('button', { name: /Create promotion/i }));
+    // ADR-045 : une promotion créée active se confirme avant l'écriture.
+    fireEvent.click(await screen.findByRole('button', { name: 'Activate' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const row = sent.inserts[0] as PromotionUpdate;

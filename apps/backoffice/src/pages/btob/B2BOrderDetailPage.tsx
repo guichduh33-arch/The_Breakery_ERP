@@ -99,7 +99,9 @@ export default function B2BOrderDetailPage(): JSX.Element {
       </div>
     );
   }
-  if (query.isError) {
+  // Une erreur de refetch en arrière-plan ne démonte pas la fiche (ni une
+  // modale ouverte) : la page d'erreur ne remplace que l'absence de données.
+  if (query.isError && !query.data) {
     return (
       <div className="flex flex-col gap-[13px]">
         {crumbs}

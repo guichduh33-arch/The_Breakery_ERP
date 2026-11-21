@@ -17,6 +17,16 @@ import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 // aplat rouge ici — même surcharge du variant `secondary` que le tiroir.
 const BTN_DANGER = 'border-red text-red-as-text hover:bg-red-soft';
 
+// Même convention que `payment_method_primary` de la liste : un seul moyen le
+// nomme, plusieurs moyens donnent « mixed ». Le premier paiement ne représente
+// pas une commande réglée en plusieurs fois.
+function primaryPaymentMethod(payments: OrderDetail['payments']): string | null {
+  const methods = new Set(payments.map((p) => p.method));
+  if (methods.size === 0) return null;
+  if (methods.size > 1) return 'mixed';
+  return [...methods][0] ?? null;
+}
+
 /**
  * Les mêmes RPC et contrôles que la liste ET le tiroir, accessibles depuis la
  * fiche : Edit, Refund, Void payé et Void impayé. Les conditions de statut
@@ -139,7 +149,7 @@ export function OrderDetailActions({ order }: { order: OrderDetail }): JSX.Eleme
           orderId={order.id}
           orderNumber={order.order_number}
           total={order.total}
-          paymentMethod={order.payments[0]?.method ?? null}
+          paymentMethod={primaryPaymentMethod(order.payments)}
           onClose={() => { setPaidVoidOpen(false); }}
         />
       )}
