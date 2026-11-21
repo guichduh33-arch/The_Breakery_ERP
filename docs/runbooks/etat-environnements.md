@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 21 novembre 2026, 21 h 02 — APK 1.24 sur le bundle de la caisse `e7c43cfd`, installée sur le CS30
+
+Relevé du 21 novembre 2026 entre 20 h 50 et 21 h 02, UTC+8. Observé directement.
+Boutique fermée : aucune session de caisse ouverte en production à 21 h 01,
+dernière commande à 18 h 04. La caisse sert toujours `e7c43cfd` (complément du
+20 novembre, 1 h 30) ; aucun paquet caisse plus récent n'est consigné.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Paquet source | Artefact `shop-release-e7c43cfd814b535a8bcc35e5e441f585da052e2f-1` du run `44568270215`, retéléchargé ; SHA-256 de l'archive `851250f1…` égal au fichier `.sha256` ; `release.json` : SHA `e7c43cfd`, projet de production | — |
+| Tablettes, APK 1.24 | Fabriquée sur le poste de développement par `assembleDebug` après copie du `dist` du paquet et `cap sync android`, sans reconstruction du bundle : `com.thebreakery.pos`, version 1.24 (code 25), SHA-256 `b5fa9e13946a1782af0beb9eeb69cd37ad4fdbdc6ab976a23b48192c158b61ed`. Les 89 fichiers de `assets/public/assets` sont identiques à ceux du paquet. Bundle : référence de production seule, ni dev ni V2 ; appelle `open_shift_v1` et `close_shift_v15`, jamais `close_shift_v14`. Certificat `100d48b8…`, égal à celui de l'APK 1.23 ; `network_security_config` compilé identique à celui de la 1.23. Conservée hors Git sous `.release-manifests/tablet-apk-1.24-20261121/` | — |
+| CS30, APK 1.24 | `adb install -r` à 21 h 01 sur `A59T11BGT3A01119`, qui portait la 1.23 (code 24). Après : 1.24 (code 25), fichier installé de même SHA-256, date de première installation inchangée (2026-10-08). L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Aucune connexion par PIN, aucune commande, aucune impression essayées. File hors ligne de l'appareil non relue |
+| Galaxy Tab A8 | Non branchée : reste en 1.23 (bundle `6854931a`) | Tout autre appareil Android reste non mis à jour |
+
+Les retraits `20261119000003_s3_01_revoke_direct_session_insert` et
+`20261119000006_s3_02_retire_close_shift_v14` restent non appliqués : la Galaxy
+Tab A8 porte encore la 1.23, qui en dépend.
+
+Retour : le retour du CS30 à la 1.23 exigerait une désinstallation, donc la
+perte de ses données. La 1.23 reste compatible avec la production tant que les
+deux retraits ci-dessus ne sont pas appliqués.
+
 ## Complément du 21 novembre 2026, 20 h 30 — lot 2 du domaine Sales, PIN pour créditer des points (`f7fd1fe0`)
 
 Relevé du 21 novembre 2026, vers 20 h 30 UTC+8. Lot de la PR #761 :
