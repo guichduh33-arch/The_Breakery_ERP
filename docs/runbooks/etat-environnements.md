@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 21 novembre 2026 — port et escomptes des bons de commande en production (`S3-06`)
+
+Relevé du 21 novembre 2026, en lecture seule. Observé directement, sauf la
+ligne « Preuves du SHA », rapportée par GitHub. La publication date du
+20 novembre ; elle n'avait pas été consignée. Aucune action n'a été faite lors
+de ce relevé. Les horodatages de version de migration sont en UTC+8, comme
+ceux des compléments `S1-15` et `S3-22` ci-dessous.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `536d0e7c` | Fusion de #752. `ci.yml` run `44689894681` (push) réussi ; `pgtap-pr.yml` run `44690958668` (`workflow_dispatch`) réussi | pgTAP tourne sur la base de dev |
+| Backend production, étapes additives | Cible `yjhhhmjgsmyzyymvixot`. Versions `20261120145414` à `20261120145611` : `s3_06_po_delivery_fee_discounts_additive_part1`, puis les étapes additives de `create_purchase_order_v3`, `update_purchase_order_v2` et `receive_purchase_order_v8` | Opérateur de ces gestes non relevé |
+| Back-office | `production-backoffice.yml`, run `44693948304` sur `536d0e7c`, réussi ; job `publish` du 20 novembre, 08 h 55 à 08 h 57 UTC | Les publications suivantes (`c51737cf`, `e79f91b7`) contiennent ce code |
+| Backend production, retrait | Version `20261120165958`, `s3_06_drop_previous_versions` : plus aucune ancienne version de ces trois fonctions | — |
+| Égalité avec le dev | `_split_pro_rata_v1`, `_po_cost_allocation_v1`, `create_purchase_order_v3`, `update_purchase_order_v2`, `receive_purchase_order_v8` : même `md5` du corps (sans CR) et mêmes droits qu'en dev ; les deux aides internes ne sont exécutables que par `service_role` | — |
+| BO servi | `backoffice.the-breakery.com`, 301 fichiers JS relus : seuls `create_purchase_order_v3`, `update_purchase_order_v2` et `receive_purchase_order_v8` sont appelés ; référence de production présente, référence de dev absente | — |
+| Données | Bons par statut : 151 reçus, 2 en attente, 2 annulés ; aucun reçu en partie ; aucun ne porte de port ni d'escompte | Parcours non vu en production avec un compte connecté |
+
+Retour : le back-office antérieur à `536d0e7c` appelle des versions supprimées
+et n'est plus un recours pour la création, la modification et la réception de
+bon.
+
 ## Complément du 21 novembre 2026, 00 h 17 — analyse de panier en production (`S3-22`)
 
 Relevés du 21 novembre 2026, 00 h 13 à 00 h 17 UTC+8. Observés directement.
