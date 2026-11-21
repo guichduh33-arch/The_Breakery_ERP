@@ -26,6 +26,28 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 21 novembre 2026, 20 h 30 — lot 2 du domaine Sales, PIN pour créditer des points (`f7fd1fe0`)
+
+Relevé du 21 novembre 2026, vers 20 h 30 UTC+8. Lot de la PR #761 :
+une migration, une Edge Function et le back-office (ADR-045). Publication dans
+l'ordre migration additive → EF → BO → retrait de l'ancienne version. Observé
+directement, sauf la ligne « Preuves du SHA », rapportée par GitHub. Les
+versions de migration sont en UTC+8.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, étape additive | Cible `yjhhhmjgsmyzyymvixot`. Version `20261121184448`, `loyalty_points_grant_manager_pin_additive` : scope `loyalty_points_grant` ajouté à `discount_authorizations_scope_check`, création de `adjust_loyalty_points_v4`. Avant le geste, le corps de v3 en production était la base exacte de v4 | — |
+| Égalité avec le dev | `adjust_loyalty_points_v4` : même `md5` du corps (sans CR), mêmes droits (`authenticated`, `service_role`), même `search_path`, `SECURITY DEFINER` | — |
+| Edge Function production | `verify-manager-pin` version 4, `verify_jwt = false`, source relue : `MINT_SCOPES` contient `loyalty_points_grant` → `loyalty.adjust` | Aucun PIN saisi en production |
+| Preuves du SHA `f7fd1fe0` | Fusion de #761. `ci.yml` run `44895917435` (push) réussi ; `pgtap-pr.yml` run `44895930394` (`workflow_dispatch`) réussi | pgTAP tourne sur la base de dev |
+| Back-office | `production-backoffice.yml`, run `44898173930` sur `f7fd1fe0`, réussi après approbation Production de Mamat ; alias `backoffice.the-breakery.com` posé le 21 novembre vers 12 h 20 UTC ; empreinte de l'artefact manifeste `b3386db4…` | — |
+| BO servi | Code servi relu (326 fichiers) : appelle `adjust_loyalty_points_v4` et le scope `loyalty_points_grant`, jamais `adjust_loyalty_points_v3` ; référence de production seule, jamais le dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Backend production, retrait | Aucune fonction de la base n'appelait v3. Version `20261121202443`, `loyalty_points_grant_manager_pin_drop_v3` : seule `adjust_loyalty_points_v4` reste | — |
+
+Retour : le BO précédent appelait v3, qui n'existe plus. Un retour du BO exige
+donc de recréer v3 avant de republier l'ancien SHA. Son dernier corps relevé
+en production avait le `md5` (sans CR) `94b2317c…`. L'EF reste compatible avec l'ancien BO : le nouveau scope est additif.
+
 ## Complément du 21 novembre 2026, 14 h 30 — défauts du domaine Sales, back-office `7cb1bd91`
 
 Relevé du 21 novembre 2026, vers 14 h 30 UTC+8. Lot front-only (PR #759) :
