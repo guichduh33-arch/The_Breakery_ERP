@@ -1759,8 +1759,8 @@ Vitest ciblé sur les deux cas. **Aucune** clôture automatique n'existe.
 
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 9.
 
-**État — développé et prouvé en dev le 2026-11-20**, branche
-`feat/s3-05-annulation-reception`. Migration
+**État — développé et prouvé en dev le 2026-11-20, puis publié en production le
+même jour (voir plus bas)**, branche `feat/s3-05-annulation-reception`. Migration
 `20261120000001_s3_05_cancel_goods_receipt.sql` appliquée en dev : fonction
 neuve `cancel_goods_receipt_v1` (permission `purchasing.po.cancel`, raison
 obligatoire, idempotente). Elle écrit un mouvement `purchase_return` par ligne
@@ -1775,7 +1775,12 @@ bon dit la vérité. pgTAP `s3_05_cancel_goods_receipt.test.sql` 41/41 en dev (r
 appliquée : coût moyen laissé inchangé quand l'article a bougé depuis la
 réception, verrous par article dans un ordre fixe, erreur explicite pour une
 ligne sans quantité) ;
-Vitest 16/16 sur trois fichiers ; suite back-office complète verte. Non publié.
+Vitest 16/16 sur trois fichiers ; suite back-office complète verte.
+Publié en production le 2026-11-20 (PR #750, back-office `b0ed05d6`, run
+`44675245835`) : preuves dans le
+[runbook des environnements](../runbooks/etat-environnements.md). Relevé de
+production en lecture seule du 2026-11-21, hors runbook : aucune des 151
+réceptions n'est annulée.
 **Limites relevées** :
 - une réception payée au comptant est toujours refusée, faute de chemin pour
   annuler un paiement fournisseur ;
@@ -1917,8 +1922,8 @@ comptable équilibrée.
 **Risque prod** 🟢 · **Source** — Arbitrage §2bis lot 9. La couverture reste à
 **3 jours** ; seul l'arrondi change.
 
-**État — développé et prouvé en dev le 2026-11-20**, branche
-`feat/s3-09-arrondi-suggestions`. Migration
+**État — développé et prouvé en dev le 2026-11-20, puis publié en production le
+même jour (voir plus bas)**, branche `feat/s3-09-arrondi-suggestions`. Migration
 `20261120000010_s3_09_production_rounding_step.sql` appliquée en dev : colonne
 facultative `products.production_rounding_step`, fonction de réglage
 `set_production_rounding_step_v1` (permission `products.update`, trace dans
@@ -1927,7 +1932,12 @@ live, v4 retirée (seul appelant : le crochet du back-office, basculé). L'ongle
 des suggestions montre et règle le pas (« Batch step »). pgTAP
 `s3_09_production_rounding_step.test.sql` 14/14 en dev (relecture indépendante
 appliquée : pas validé et tracé après arrondi à 3 décimales) : 17 → 24 avec un pas
-de 12, 20 avec un pas de 5, 17 sans pas. Vitest ciblé 7/7. Non publié.
+de 12, 20 avec un pas de 5, 17 sans pas. Vitest ciblé 7/7. Publié en production
+le 2026-11-20 (PR #749, back-office `b0ed05d6`, run `44675245835`, puis retrait
+de la v4) : preuves dans le
+[runbook des environnements](../runbooks/etat-environnements.md). Relevé de
+production en lecture seule du 2026-11-21, hors runbook : aucun produit ne porte
+encore de pas.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — un pas d'arrondi par produit
@@ -2292,8 +2302,8 @@ sous-titre annonce des bons « reçus » alors que la fonction prend tout sauf
 brouillon et annulé ; la tuile d'unités commandées additionne des unités
 différentes ; les fournisseurs sont dédoublonnés par nom et non par identifiant.
 
-**État — développé et prouvé en dev le 2026-11-20**, branche
-`feat/s3-20-achats-par-article`. Migration
+**État — développé et prouvé en dev le 2026-11-20, puis publié en production le
+même jour (voir plus bas)**, branche `feat/s3-20-achats-par-article`. Migration
 `20261120000020_s3_20_purchase_items_by_article.sql` appliquée en dev : famille
 `get_purchase_items` bumpée en v2 depuis le corps live (agrégat par article
 serveur, totaux non tronqués, période précédente, dépense par jour, filtres
@@ -2308,7 +2318,9 @@ temps et classement des articles, descente paginée. Date de réception affiché
 celle du bon entièrement reçu. pgTAP `s3_20_purchase_items_by_article.test.sql`
 26/26 en dev, dont 1 005 lignes au-delà de l'ancien plafond, unités
 mélangées, statuts et borne de 366 jours. Relecture indépendante appliquée. Vitest de la page
-8/8. Non publié.
+8/8. Publié en production le 2026-11-20 (PR #749, back-office `b0ed05d6`, run
+`44675245835`, puis retrait de la v1) : preuves dans le
+[runbook des environnements](../runbooks/etat-environnements.md).
 
 **Fichiers**
 - `supabase/migrations/20260624000012_create_get_purchase_items_v1_rpc.sql` —
