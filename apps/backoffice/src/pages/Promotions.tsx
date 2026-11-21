@@ -22,6 +22,7 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PromotionTypeBadge, type DataTableColumn } from '@breakery/ui';
 import { Button, Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -112,8 +113,22 @@ export default function PromotionsPage(): JSX.Element {
     );
   }
 
+  // Activer une promotion change les prix à la caisse en plein service : le
+  // résultat se dit, l'échec surtout. Avant, un refus (droits, réseau) laissait
+  // la case revenir en silence et l'opérateur croyait la promotion active.
   function handleToggleActive(row: PromotionListRow): void {
-    updateMut.mutate({ id: row.id, values: { is_active: !row.is_active } });
+    const next = !row.is_active;
+    updateMut.mutate(
+      { id: row.id, values: { is_active: next } },
+      {
+        onSuccess: () => {
+          toast.success(next ? `${row.name} is now active.` : `${row.name} is now inactive.`);
+        },
+        onError: (err) => {
+          toast.error(`${row.name} could not be ${next ? 'activated' : 'deactivated'}: ${err.message}`);
+        },
+      },
+    );
   }
 
   const columns: readonly DataTableColumn<PromotionListRow>[] = [
@@ -159,7 +174,7 @@ export default function PromotionsPage(): JSX.Element {
           <input
             type="checkbox"
             checked={row.is_active}
-            disabled={!canUpdate}
+            disabled={!canUpdate || (updateMut.isPending && updateMut.variables?.id === row.id)}
             onChange={() => handleToggleActive(row)}
             aria-label={`Toggle ${row.name} active`}
             className={`accent-gold ${FOCUS_RING}`}

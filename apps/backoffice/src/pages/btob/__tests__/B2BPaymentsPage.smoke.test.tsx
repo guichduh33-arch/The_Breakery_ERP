@@ -33,6 +33,14 @@ const DASH_DATA = {
   ],
 };
 
+// Débiteurs : « Mama Pizza » n'est PAS dans topClients. L'onglet Outstanding
+// doit le lister quand même (défaut constaté en production le 2026-11-21).
+const debtorsState = vi.hoisted((): { total: number | null; paymentsCapped: boolean } => ({ total: null, paymentsCapped: false }));
+const DEBTOR_ROWS = [
+  { id: 'b9', name: 'Mama Pizza', b2b_company_name: null, b2b_current_balance: 6_860_000, b2b_credit_limit: null },
+  { id: 'b1', name: 'Hotel Kuta', b2b_company_name: 'PT Kuta', b2b_current_balance: 250_000, b2b_credit_limit: 1_000_000 },
+];
+
 const PAYMENTS_DATA = [
   {
     id: 'p1', payment_number: 'PAY-0001', customer_id: 'b1',
@@ -55,8 +63,12 @@ function queryResult(data: unknown) {
 vi.mock('@/features/btob/hooks/useB2bDashboard.js', () => ({
   useB2bDashboard: () => queryResult(DASH_DATA),
 }));
+vi.mock('@/features/btob/hooks/useB2bDebtors.js', () => ({
+  useB2bDebtors: () => queryResult({ rows: DEBTOR_ROWS, total: debtorsState.total ?? DEBTOR_ROWS.length }),
+}));
 vi.mock('@/features/btob/hooks/useB2bPaymentsReceived.js', () => ({
-  useB2bPaymentsReceived: () => queryResult(PAYMENTS_DATA),
+  B2B_PAYMENTS_RECEIVED_CAP: 500,
+  useB2bPaymentsReceived: () => queryResult({ rows: PAYMENTS_DATA, capped: debtorsState.paymentsCapped }),
 }));
 // Sous-arbres à hooks propres — hors du périmètre de ce smoke.
 vi.mock('@/features/btob/components/B2bInvoicesTab.js', () => ({
@@ -83,7 +95,35 @@ function renderPage(initialEntry = '/backoffice/b2b/payments') {
 }
 
 describe('B2BPaymentsPage', () => {
-  beforeEach(() => { mockState.mode = 'ok'; });
+  beforeEach(() => { mockState.mode = 'ok'; debtorsState.total = null; debtorsState.paymentsCapped = false; });
+
+  // Le total reçu est une somme côté client sur 500 lignes au plus.
+  it('says when Total received only covers the latest 500 payments', async () => {
+    debtorsState.paymentsCapped = true;
+    renderPage();
+    expect(await screen.findByText(/latest 500 payments only/i)).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-b2b-payments-count')).toHaveTextContent('1+');
+  });
+
+  it('says nothing about a cap when every payment was read', async () => {
+    renderPage();
+    await screen.findByText(/total received/i);
+    expect(screen.queryByText(/latest 500 payments only/i)).not.toBeInTheDocument();
+  });
+
+  it('lists every debtor, not only the dashboard top clients', async () => {
+    renderPage();
+    expect(await screen.findByText('Mama Pizza')).toBeInTheDocument();
+    expect(screen.getByText('PT Kuta')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /outstanding/i })).toHaveTextContent('Outstanding (2)');
+    expect(screen.queryByText(/largest balances of/i)).not.toBeInTheDocument();
+  });
+
+  it('says so when the debtor list is capped', async () => {
+    debtorsState.total = 3;
+    renderPage();
+    expect(await screen.findByText(/showing the 2 largest balances of 3 clients in debt/i)).toBeInTheDocument();
+  });
 
   it('renders the archetype header and the four tabs, Outstanding first', async () => {
     renderPage();

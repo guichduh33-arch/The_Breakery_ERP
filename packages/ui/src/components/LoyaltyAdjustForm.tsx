@@ -18,15 +18,18 @@ export interface LoyaltyAdjustFormProps {
   onSubmit: (values: LoyaltyAdjustFormValues) => Promise<void> | void;
   onCancel: () => void;
   submitting?: boolean;
+  /** Sens pré-sélectionné. « Redeem » ouvre sur « − » : un rachat ne doit
+   *  jamais partir crédité faute d'avoir basculé le bouton. Défaut « + ». */
+  initialSign?: '+' | '-';
 }
 
 const MAX_DELTA  = 1_000_000;  // matches adjust_loyalty_points server-side guard
 const MAX_REASON = 500;
 
 export function LoyaltyAdjustForm({
-  currentBalance, onSubmit, onCancel, submitting,
+  currentBalance, onSubmit, onCancel, submitting, initialSign = '+',
 }: LoyaltyAdjustFormProps): JSX.Element {
-  const [sign,   setSign  ] = useState<'+' | '-'>('+');
+  const [sign,   setSign  ] = useState<'+' | '-'>(initialSign);
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
 

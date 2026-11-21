@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
+import { B2bOrderActivity } from '@/features/btob/components/B2bOrderActivity.js';
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
 import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { B2bPickupDialog } from '@/features/btob/components/B2bPickupDialog.js';
@@ -185,6 +186,7 @@ export default function B2BOrderDetailPage(): JSX.Element {
               <dd className="text-right font-semibold">{formatCurrency(order.outstanding)}</dd>
             </dl>
           </section>
+          <B2bOrderActivity orderId={order.invoice_id} />
           {pickup && (
             <B2bPickupDialog
               order={order}

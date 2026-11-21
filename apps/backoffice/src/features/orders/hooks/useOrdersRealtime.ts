@@ -11,7 +11,7 @@
 // onglet ouvert. Le premier événement invalide immédiatement ; les suivants
 // dans la fenêtre de 2 s sont fusionnés en une seule invalidation traînante.
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
@@ -19,7 +19,6 @@ const COALESCE_MS = 2_000;
 
 export function useOrdersRealtime() {
   const queryClient = useQueryClient();
-  const id = useId();
   const [isConnected, setConnected] = useState(false);
   const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef(false);
@@ -45,7 +44,10 @@ export function useOrdersRealtime() {
       }
     };
 
-    const channelName = `orders-list-${id}`;
+    // Nom tiré DANS l'effet : `useId` rend la même valeur aux deux montages
+    // de StrictMode, et deux canaux homonymes se télescopent en silence
+    // (même piège que `useKdsRealtime`).
+    const channelName = `orders-list-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -71,7 +73,7 @@ export function useOrdersRealtime() {
       pendingRef.current = false;
       void supabase.removeChannel(channel);
     };
-  }, [id, queryClient]);
+  }, [queryClient]);
 
   return { isConnected };
 }

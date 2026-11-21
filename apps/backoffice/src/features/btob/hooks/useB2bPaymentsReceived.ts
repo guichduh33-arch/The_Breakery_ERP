@@ -24,6 +24,15 @@ export interface B2bPaymentReceivedRow {
 
 export const B2B_PAYMENTS_RECEIVED_QUERY_KEY = ['b2b-payments-received'] as const;
 
+/** Lignes lues au plus. La page additionne côté client : au-delà, elle le DIT. */
+export const B2B_PAYMENTS_RECEIVED_CAP = 500;
+
+export interface B2bPaymentsReceived {
+  rows:   B2bPaymentReceivedRow[];
+  /** Vrai quand des paiements plus anciens existent au-delà du plafond. */
+  capped: boolean;
+}
+
 function periodLowerBound(period: B2bPaymentsPeriod): string | null {
   const now = new Date();
   switch (period) {
@@ -41,15 +50,16 @@ function periodLowerBound(period: B2bPaymentsPeriod): string | null {
 }
 
 export function useB2bPaymentsReceived(period: B2bPaymentsPeriod = 'all') {
-  return useQuery<B2bPaymentReceivedRow[]>({
+  return useQuery<B2bPaymentsReceived>({
     queryKey: [...B2B_PAYMENTS_RECEIVED_QUERY_KEY, period],
     staleTime: 60_000,
     queryFn: async () => {
+      // CAP + 1 : la ligne de trop prouve la troncature, sans compter `exact`.
       let q = supabase
         .from('b2b_payments')
         .select('id, payment_number, customer_id, amount, method, reference, paid_at, notes, customers!inner(name, b2b_company_name)')
         .order('paid_at', { ascending: false })
-        .limit(500);
+        .limit(B2B_PAYMENTS_RECEIVED_CAP + 1);
 
       const lb = periodLowerBound(period);
       if (lb !== null) q = q.gte('paid_at', lb);
@@ -57,13 +67,14 @@ export function useB2bPaymentsReceived(period: B2bPaymentsPeriod = 'all') {
       const { data, error } = await q;
       if (error) throw error;
 
-      const rows = (data ?? []) as unknown as Array<{
+      const rows = (data ?? []) as unknown as {
         id: string; payment_number: string; customer_id: string;
         amount: number; method: string; reference: string | null;
         paid_at: string; notes: string | null;
         customers: { name: string | null; b2b_company_name: string | null } | null;
-      }>;
-      return rows.map((r) => ({
+      }[];
+      const capped = rows.length > B2B_PAYMENTS_RECEIVED_CAP;
+      return { capped, rows: rows.slice(0, B2B_PAYMENTS_RECEIVED_CAP).map((r) => ({
         id:             r.id,
         payment_number: r.payment_number,
         customer_id:    r.customer_id,
@@ -74,7 +85,7 @@ export function useB2bPaymentsReceived(period: B2bPaymentsPeriod = 'all') {
         reference:      r.reference,
         paid_at:        r.paid_at,
         notes:          r.notes,
-      }));
+      })) };
     },
   });
 }

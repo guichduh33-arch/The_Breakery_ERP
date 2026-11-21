@@ -53,9 +53,24 @@ vi.mock('@/features/customers/hooks/useStoreCreditHistory.js', () => ({
   useStoreCreditHistory: () => ({ isLoading: false, data: [] }),
 }));
 
+let mockDetailFails = false;
+
+// La modale réelle a ses propres tests ; ici on vérifie le SENS transmis.
+vi.mock('@/features/loyalty/components/LoyaltyAdjustModal.js', () => ({
+  LoyaltyAdjustModal: ({ customer, direction }: { customer?: unknown; direction?: string }) =>
+    customer === undefined ? null : <div data-testid="adjust-modal">{direction ?? 'none'}</div>,
+}));
+
 vi.mock('@/features/customers/hooks/useCustomerDetail.js', () => ({
-  useCustomerDetail: (id: string) => ({
+  useCustomerDetail: (id: string) => mockDetailFails ? {
     isLoading: false,
+    data: undefined,
+    error: new Error('permission denied for table customers'),
+    refetch: vi.fn(),
+  } : {
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
     data: {
       customer: {
         ...baseCustomer,
@@ -76,7 +91,7 @@ vi.mock('@/features/customers/hooks/useCustomerDetail.js', () => ({
         },
       ],
     },
-  }),
+  },
 }));
 
 vi.mock('@/features/customers/hooks/useUpdateRetailCreditLimit.js', () => ({
@@ -106,6 +121,25 @@ describe('CustomerDetailPage', () => {
     mockCustomerType = 'b2b';
     mockRetailCreditLimit = null;
     mockPerms = [];
+    mockDetailFails = false;
+  });
+
+  // Un échec de lecture affichait « Loading… » pour toujours.
+  it('says the customer could not be loaded, with a retry, instead of loading forever', async () => {
+    mockDetailFails = true;
+    renderAt('/backoffice/customers/c-1');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/this customer could not be loaded/i);
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /back to customers/i })).toBeInTheDocument();
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+  });
+
+  it('opens the points form in the direction of the button', async () => {
+    mockPerms = ['loyalty.adjust'];
+    renderAt('/backoffice/customers/c-1');
+    fireEvent.click(await screen.findByRole('button', { name: /redeem points/i }));
+    expect(screen.getByTestId('adjust-modal')).toHaveTextContent('redeem');
   });
 
   it('renders header with name, category chip and active badge', async () => {

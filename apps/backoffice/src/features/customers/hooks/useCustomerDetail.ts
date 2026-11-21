@@ -98,17 +98,21 @@ export function useCustomerDetail(id: string | undefined) {
         .single();
       if (error) throw error;
 
-      const { count } = await supabase
+      // Un échec de ces deux lectures rendait « 0 commande » comme un fait :
+      // il remonte désormais comme une erreur de la fiche.
+      const { count, error: countError } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('customer_id', id);
+      if (countError) throw countError;
 
-      const { data: recent } = await supabase
+      const { data: recent, error: recentError } = await supabase
         .from('orders')
         .select('id, order_number, created_at, total, status, order_type, order_items(count)')
         .eq('customer_id', id)
         .order('created_at', { ascending: false })
         .limit(25);
+      if (recentError) throw recentError;
 
       const recentOrders: RecentOrder[] = (recent ?? []).map((o) => {
         const rawItems = (o as Record<string, unknown>).order_items;

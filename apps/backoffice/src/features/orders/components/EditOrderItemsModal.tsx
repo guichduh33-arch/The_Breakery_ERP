@@ -67,14 +67,19 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
       .map((it) => {
         const u = diff.updates.find((x) => x.order_item_id === it.id);
         const qty = u ? u.qty : it.qty;
+        // Le prix d'une ligne vient du `line_total` SERVEUR (modificateurs
+        // compris), jamais de `unit_price × qty` : une ligne à modificateurs
+        // payants s'affichait moins chère qu'elle n'est facturée, et le
+        // sous-total d'aperçu divergeait du total réel (audit Sales 2026-11-21).
+        const unitEach = it.qty > 0 ? it.line_total / it.qty : it.unit_price;
         return {
           id:            it.id,
           product_id:    it.product_id,
           name_snapshot: it.name_snapshot,
           qty,
           originalQty:   it.qty,
-          unit_price:    it.unit_price,
-          line_total:    it.unit_price * qty,
+          unit_price:    unitEach,
+          line_total:    qty === it.qty ? it.line_total : Math.round(unitEach * qty),
           isLocked:      it.is_locked,
         };
       });

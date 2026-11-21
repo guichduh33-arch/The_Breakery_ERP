@@ -3,7 +3,7 @@
 // Session 14 / Phase 5.B — smoke for the rebuilt PromotionsPage.
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PromotionsPage from '@/pages/Promotions.js';
 
@@ -49,6 +49,23 @@ vi.mock('@/stores/authStore.js', () => ({
     }),
 }));
 
+// Interrupteur : le résultat se dit (audit Sales 2026-11-21). Le hook est
+// remplacé pour piloter le succès ou l'échec sans base.
+const toggle = vi.hoisted(() => ({ fail: false, calls: [] as unknown[] }));
+const toastSpy = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', () => ({ toast: toastSpy }));
+vi.mock('@/features/promotions/hooks/useUpdatePromotion.js', () => ({
+  useUpdatePromotion: () => ({
+    isPending: false,
+    variables: undefined,
+    mutate: (input: unknown, opts?: { onSuccess?: () => void; onError?: (e: Error) => void }) => {
+      toggle.calls.push(input);
+      if (toggle.fail) opts?.onError?.(new Error('permission denied'));
+      else opts?.onSuccess?.();
+    },
+  }),
+}));
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -71,5 +88,19 @@ describe('PromotionsPage', () => {
   it('shows + New promotion button when permitted', async () => {
     renderPage();
     expect(await screen.findByRole('button', { name: /new promotion/i })).toBeInTheDocument();
+  });
+  it('says when a promotion toggle fails, instead of failing silently', async () => {
+    toggle.fail = true;
+    renderPage();
+    fireEvent.click(await screen.findByRole('checkbox', { name: /toggle bogo croissant active/i }));
+    expect(toastSpy.error).toHaveBeenCalledWith('BOGO Croissant could not be activated: permission denied');
+  });
+
+  it('confirms the activation', async () => {
+    toggle.fail = false;
+    renderPage();
+    fireEvent.click(await screen.findByRole('checkbox', { name: /toggle bogo croissant active/i }));
+    expect(toggle.calls.at(-1)).toEqual({ id: 'p2', values: { is_active: true } });
+    expect(toastSpy.success).toHaveBeenCalledWith('BOGO Croissant is now active.');
   });
 });

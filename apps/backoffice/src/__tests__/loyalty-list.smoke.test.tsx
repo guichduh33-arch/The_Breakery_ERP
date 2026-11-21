@@ -81,34 +81,28 @@ describe('Loyalty BO page', () => {
     expect(screen.getByRole('button', { name: /new member/i })).toBeInTheDocument();
   });
 
-  it('annonce le menu de ligne comme un DISCLOSURE, pas comme un menu APG', async () => {
-    // Le menu d'actions n'offre que Tab : `aria-haspopup="menu"` / `role="menu"`
-    // / `role="menuitem"` promettaient le patron menu de l'APG (tabindex
-    // tournant, ↑/↓, Début/Fin) que rien n'implémente. Il est abaissé en
-    // disclosure — et c'est CE menu-là qui est vivant, celui de la page, pas la
-    // ligne de la feature. Le test le prouve en l'ouvrant.
+  it('ouvre le menu partagé : vrai menu clavier, hors du tableau, fermé par Échap', async () => {
+    // Audit Sales 2026-11-21 : le panneau local, rendu DANS la cellule, était
+    // rogné par le conteneur du tableau sur les dernières lignes et ne se
+    // fermait ni par Échap ni au clic extérieur. La page prend désormais le
+    // menu partagé (RowActionsMenu), qui implémente le patron APG complet.
     renderPage();
     await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());
 
     const trigger = screen.getByRole('button', { name: 'Actions for Bronze Bob' });
-    expect(trigger).not.toHaveAttribute('aria-haspopup');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(trigger).not.toHaveAttribute('aria-controls');
 
     fireEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const menu = screen.getByRole('menu', { name: 'Actions for Bronze Bob' });
+    // Le panneau vit hors du tableau : aucun conteneur ne peut le rogner.
+    expect(menu.closest('table')).toBeNull();
+    expect(within(menu).getByRole('menuitem', { name: 'View history' })).toHaveFocus();
+    expect(within(menu).getByRole('menuitem', { name: 'Adjust points' })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
 
-    const panelId = trigger.getAttribute('aria-controls');
-    expect(panelId).not.toBeNull();
-    const panel = document.getElementById(panelId!)!;
-    expect(panel).toHaveAttribute('role', 'group');
-    expect(panel).toHaveAttribute('aria-label', 'Actions for Bronze Bob');
-
-    // Aucun rôle menu ne subsiste, et les entrées restent des boutons natifs.
-    expect(screen.queryAllByRole('menu')).toHaveLength(0);
-    expect(screen.queryAllByRole('menuitem')).toHaveLength(0);
-    expect(within(panel).getByRole('button', { name: 'View history' })).toBeInTheDocument();
-    expect(within(panel).getByRole('button', { name: 'Adjust points' })).toBeInTheDocument();
-    expect(within(panel).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 });

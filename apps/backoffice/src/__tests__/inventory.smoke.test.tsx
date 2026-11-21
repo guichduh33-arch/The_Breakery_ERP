@@ -197,8 +197,10 @@ describe('Inventory smoke E2E', () => {
     // Row action menu : plus d'entrée « Receive stock » (receive_stock_v1 droppée).
     const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    expect(w.queryByRole('menuitem', { name: /Receive stock/i })).not.toBeInTheDocument();
-    expect(w.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
+    // Le menu de ligne vit dans un portail sur `body` (audit Sales
+    // 2026-11-21) : ses entrées se cherchent sur `screen`, comme les modales.
+    expect(screen.queryByRole('menuitem', { name: /Receive stock/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
   });
 
   it('MANAGER flow: open Waste from row → submit → waste declaration RPC fired', { timeout: 20_000 }, async () => {
@@ -208,7 +210,7 @@ describe('Inventory smoke E2E', () => {
 
     const croissantRow = w.getByText('Croissant').closest('tr')!;
     fireEvent.click(within(croissantRow).getByRole('button', { name: /Actions for Croissant/i }));
-    fireEvent.click(w.getByRole('menuitem', { name: /Record waste/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Record waste/i }));
 
     // Modal content is rendered via Radix Portal — query the global screen.
     await waitFor(() => screen.getByText(/Record waste — Croissant/i));
@@ -238,7 +240,7 @@ describe('Inventory smoke E2E', () => {
 
     const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    fireEvent.click(w.getByRole('menuitem', { name: /Adjust stock/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Adjust stock/i }));
 
     // Modal content is rendered via Radix Portal — query the global screen.
     await waitFor(() => screen.getByText(/Declare stock count — Americano/i));
@@ -271,7 +273,7 @@ describe('Inventory smoke E2E', () => {
 
     const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    fireEvent.click(w.getByRole('menuitem', { name: /View movements/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /View movements/i }));
 
     // Le tiroir est porté par un portail : on interroge le document entier.
     const drawer = await screen.findByTestId('movement-history-drawer');

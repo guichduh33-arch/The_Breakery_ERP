@@ -23,7 +23,8 @@
 // `useListboxKeyboard` ne convient pas : il implémente `aria-activedescendant`,
 // où le focus RESTE sur le champ. Un menu fait l'inverse.
 
-import { Fragment, useCallback, useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/BackofficeUi.js';
 
@@ -55,8 +56,35 @@ export interface RowActionsMenuProps {
   testId?: string;
 }
 
+/** Hauteur d'une entrée (py-2 + text-sm) — sert à décider d'ouvrir vers le haut. */
+const ITEM_HEIGHT_PX = 36;
+const MENU_GAP_PX = 4;
+
+/**
+ * Le panneau sort du tableau par un portail, en position fixe calée sur le
+ * déclencheur. Rendu DANS la cellule, il était rogné par le conteneur du
+ * DataTable (`overflow-y-hidden`, posé pour les coins arrondis) : sur les
+ * dernières lignes, Edit et Delete disparaissaient (audit Sales du
+ * 2026-11-21). Le portail vise `document.body`, hors de tout ancêtre à
+ * `transform` qui capturerait un `position: fixed`.
+ *
+ * Conséquence : ce menu se pose sur une PAGE, jamais dans une fenêtre modale
+ * ou un tiroir Radix. Leur piège de focus et le `pointer-events: none` posé
+ * sur `body` rendraient un panneau sorti dans `body` incliquable.
+ */
+function placeMenu(trigger: HTMLElement, entryCount: number): CSSProperties {
+  const rect = trigger.getBoundingClientRect();
+  const right = Math.max(0, window.innerWidth - rect.right);
+  const estimated = entryCount * ITEM_HEIGHT_PX + 16;
+  const fitsBelow = rect.bottom + MENU_GAP_PX + estimated <= window.innerHeight;
+  return fitsBelow || rect.top < estimated
+    ? { position: 'fixed', top: rect.bottom + MENU_GAP_PX, right }
+    : { position: 'fixed', bottom: window.innerHeight - rect.top + MENU_GAP_PX, right };
+}
+
 export function RowActionsMenu({ subject, entries, testId }: RowActionsMenuProps): JSX.Element | null {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   /** Index à focaliser à la prochaine ouverture — dernier si ouverture par Flèche haut. */
   const [pendingFocus, setPendingFocus] = useState<'first' | 'last'>('first');
   const menuRef    = useRef<HTMLDivElement | null>(null);
@@ -79,9 +107,29 @@ export function RowActionsMenu({ subject, entries, testId }: RowActionsMenuProps
       // vient de viser.
       setMenuOpen(false);
     }
+    // Le panneau est fixé à l'écran : un défilement ou un redimensionnement le
+    // décollerait de sa ligne. On le referme plutôt que de le laisser flotter.
+    function onViewportChange(e: Event): void {
+      // Un défilement DANS le panneau le garde ouvert. La cible peut être
+      // `window` ou `document`, qui ne sont pas des nœuds : `contains` lèverait.
+      if (e.type === 'scroll' && e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      setMenuOpen(false);
+    }
     document.addEventListener('pointerdown', onPointerDown);
-    return () => { document.removeEventListener('pointerdown', onPointerDown); };
+    window.addEventListener('scroll', onViewportChange, true);
+    window.addEventListener('resize', onViewportChange);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('scroll', onViewportChange, true);
+      window.removeEventListener('resize', onViewportChange);
+    };
   }, [menuOpen]);
+
+  // Position calculée AVANT la peinture, à chaque ouverture.
+  useLayoutEffect(() => {
+    if (!menuOpen || triggerRef.current === null) return;
+    setMenuStyle(placeMenu(triggerRef.current, entries.length));
+  }, [menuOpen, entries.length]);
 
   // Le focus entre dans le menu à l'ouverture — c'est la moitié du contrat que
   // `role="menu"` promet et que peu d'implémentations tiennent.
@@ -147,13 +195,14 @@ export function RowActionsMenu({ subject, entries, testId }: RowActionsMenuProps
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />
       </Button>
-      {menuOpen && (
+      {menuOpen && createPortal(
         <div
           ref={menuRef}
           role="menu"
           aria-label={`Actions for ${subject}`}
           onKeyDown={onMenuKeyDown}
-          className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
+          style={menuStyle}
+          className="z-50 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
         >
           {entries.map((entry, i) => {
             // Le menu supprime l'ADJACENCE entre destructeur et bénin — c'est
@@ -186,7 +235,8 @@ export function RowActionsMenu({ subject, entries, testId }: RowActionsMenuProps
               </Fragment>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
