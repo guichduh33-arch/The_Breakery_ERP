@@ -1810,8 +1810,8 @@ chemin. C'est assumé (§10 des specs).
 **Risque prod** 🔴 · **Source** — Arbitrage §2bis lot 9. Une facture avec port ne
 peut pas être saisie à son montant réel.
 
-**État — développé et prouvé en dev le 2026-11-20**, branche
-`feat/s3-06-po-frais-escomptes`. Migrations `20261120000030` à
+**État — développé et prouvé en dev le 2026-11-20, puis publié en production
+le même jour** (voir plus bas), branche `feat/s3-06-po-frais-escomptes`. Migrations `20261120000030` à
 `20261120000033` appliquées en dev : colonnes d'escompte (bon et ligne) et de
 port, répartition au centime par le plus fort reste, nouvelles versions de la
 création, de la modification et de la réception de bon. Le port se saisit tel
@@ -1823,7 +1823,19 @@ pgTAP `s3_06_po_delivery_fee_discounts.test.sql` 36/36 en dev (bon de 3 lignes,
 port 30 000 réparti à 30 000,00 exactement, là où un arrondi ligne à ligne
 donnerait 30 000,01). Le back-office saisit escompte de ligne, escompte global
 et port, affiche le coût par unité et la part de port à la réception ; parcours
-création, modification et réception vus au navigateur sur dev. Non publié.
+création, modification et réception vus au navigateur sur dev.
+
+**Publié en production le 2026-11-20** (PR #752, SHA `536d0e7c`), relevé du
+2026-11-21. CI push `44689894681` et pgTAP manuel `44690958668` réussis sur ce
+SHA. Étapes additives sans `DROP` appliquées d'abord, back-office publié par le
+run `44693948304`, puis retrait des trois anciennes versions
+(`s3_06_drop_previous_versions`). Les cinq fonctions du lot ont le même corps et
+les mêmes droits qu'en dev. Le back-office servi appelle les nouvelles versions,
+aucune ancienne. Le relevé demandé ci-dessous est fait : aucun bon reçu en
+partie en production (151 reçus, 2 en attente, 2 annulés). Aucun bon avec port
+ou escompte n'a encore été saisi en production : le parcours n'y est pas vu.
+Preuves dans le [runbook des environnements](../runbooks/etat-environnements.md).
+
 **Limites relevées** :
 - le module `landedCostAllocation.ts` n'est pas utilisé : il répartit en
   flottants sans garantir la somme ; un module voisin exact le remplace ;
@@ -1833,8 +1845,8 @@ création, modification et réception vus au navigateur sur dev. Non publié.
   centime la valeur des suivantes ;
 - un bon déjà reçu en partie avant la publication voit ses réceptions suivantes
   calculées par la nouvelle règle : quelques centimes d'écart possibles avec
-  son total. Aucun bon dans ce cas en dev le 2026-11-20 ; à relever en
-  production avant publication.
+  son total. Aucun bon dans ce cas en dev le 2026-11-20, ni en production au
+  relevé du 2026-11-21.
 
 **Fichiers**
 - `supabase/migrations/<nouveau>` — port au niveau du bon, réparti **au prorata**
