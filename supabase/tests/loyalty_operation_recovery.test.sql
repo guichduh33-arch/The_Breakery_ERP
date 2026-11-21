@@ -4,7 +4,7 @@ BEGIN;
 SELECT plan(31);
 
 DO $$
-DECLARE v_actor uuid; v_customer uuid; v_category uuid;
+DECLARE v_actor uuid; v_customer uuid; v_category uuid; v_nonce uuid;
 BEGIN
   SELECT auth_user_id INTO STRICT v_actor FROM public.user_profiles
   WHERE deleted_at IS NULL AND is_active
@@ -17,6 +17,11 @@ BEGIN
   INSERT INTO public.customers(name, customer_type, category_id, loyalty_points, lifetime_points)
     VALUES ('Loyalty recovery fixture', 'retail', v_category, 2000, 2000) RETURNING id INTO v_customer;
   PERFORM set_config('lr.customer', v_customer::text, true);
+  -- Nonce PIN manager (credit de points) pour le test de collision tardive.
+  INSERT INTO public.discount_authorizations(manager_profile_id, scope)
+    SELECT id, 'loyalty_points_grant' FROM public.user_profiles WHERE auth_user_id = v_actor
+    RETURNING id INTO v_nonce;
+  PERFORM set_config('lr.nonce', v_nonce::text, true);
   PERFORM set_config('lr.convert_key', gen_random_uuid()::text, true);
   PERFORM set_config('lr.adjust_key', gen_random_uuid()::text, true);
 END $$;
@@ -40,7 +45,7 @@ SELECT ok(NOT has_function_privilege('authenticated', 'public._read_loyalty_oper
   AND NOT has_function_privilege('anon', 'public._read_loyalty_operation_v1(text,uuid,uuid,uuid,jsonb)', 'EXECUTE'),
   'replay helper cannot be called by clients');
 SELECT ok(NOT has_function_privilege('anon', 'public.convert_loyalty_to_store_credit_v2(uuid,integer,uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v3(uuid,integer,text,uuid)', 'EXECUTE'),
+  AND NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v4(uuid,integer,text,uuid,uuid)', 'EXECUTE'),
   'anon cannot execute either mutation');
 
 SELECT set_config('lr.conversion', public.convert_loyalty_to_store_credit_v2(
@@ -60,25 +65,25 @@ SELECT is((SELECT count(*)::integer FROM public.loyalty_transactions WHERE custo
   'conversion replay adds no loyalty transaction');
 SELECT throws_ok($q$ SELECT public.convert_loyalty_to_store_credit_v2(current_setting('lr.customer')::uuid,
   100, current_setting('lr.convert_key')::uuid) $q$, 'P0012', 'idempotency_conflict', 'changed points cannot reuse the key');
-SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid,
+SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid,
   10, 'another operation', current_setting('lr.convert_key')::uuid) $q$, 'P0012', 'idempotency_conflict',
   'conversion key cannot become an adjustment');
 SELECT throws_ok($q$ SELECT public.convert_loyalty_to_store_credit_v2(current_setting('lr.customer')::uuid,
   100, NULL) $q$, '23514', 'idempotency_key_required', 'conversion requires a durable key');
-SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid,
+SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid,
   10, 'valid reason', NULL) $q$, '23514', 'idempotency_key_required', 'adjustment requires a durable key');
 
-SELECT set_config('lr.adjustment', public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid,
+SELECT set_config('lr.adjustment', public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid,
   -1000, 'Correction with lost response', current_setting('lr.adjust_key')::uuid)::text, true);
 SELECT is((SELECT loyalty_points FROM public.customers WHERE id = current_setting('lr.customer')::uuid), 0,
   'negative adjustment debits once');
-SELECT is(public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid, -1000,
+SELECT is(public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid, -1000,
   'Correction with lost response', current_setting('lr.adjust_key')::uuid),
   current_setting('lr.adjustment')::jsonb || '{"idempotent_replay":true}'::jsonb,
   'adjustment replays even after the balance became insufficient');
 SELECT is((SELECT lifetime_points FROM public.customers WHERE id = current_setting('lr.customer')::uuid), 2000,
   'negative adjustment and replay preserve lifetime points');
-SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid,
+SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid,
   -1000, 'A different reason', current_setting('lr.adjust_key')::uuid) $q$, 'P0012', 'idempotency_conflict',
   'changed reason cannot reuse the key');
 
@@ -96,8 +101,8 @@ CREATE FUNCTION pg_temp.fail_loyalty_result() RETURNS trigger LANGUAGE plpgsql A
 BEGIN RAISE unique_violation USING MESSAGE = 'forced late result collision'; END $$;
 CREATE TRIGGER test_late_result_collision AFTER INSERT ON public.loyalty_operation_results
   FOR EACH ROW EXECUTE FUNCTION pg_temp.fail_loyalty_result();
-SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v3(current_setting('lr.customer')::uuid,
-  100, 'Must be rolled back', gen_random_uuid()) $q$, '23505', 'forced late result collision',
+SELECT throws_ok($q$ SELECT public.adjust_loyalty_points_v4(current_setting('lr.customer')::uuid,
+  100, 'Must be rolled back', gen_random_uuid(), current_setting('lr.nonce')::uuid) $q$, '23505', 'forced late result collision',
   'late unique violation propagates instead of confirming unrelated data');
 SELECT is((SELECT loyalty_points FROM public.customers WHERE id = current_setting('lr.customer')::uuid), 0,
   'late failure rolls back the adjustment balance');

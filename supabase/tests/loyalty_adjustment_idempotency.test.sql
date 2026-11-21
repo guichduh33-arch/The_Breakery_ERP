@@ -19,6 +19,9 @@ BEGIN
  VALUES(f.actor_id,'loyalty.adjust',true,'Transactional adjustment regression');
  INSERT INTO public.customers(id,name,loyalty_points,lifetime_points)
  VALUES(f.customer_id,'Loyalty adjustment fixture',100,100);
+ -- Nonce PIN manager pour le credit de points (decision 2026-11-21).
+ INSERT INTO public.discount_authorizations(manager_profile_id,scope) VALUES(f.actor_id,'loyalty_points_grant');
+ PERFORM set_config('laf.nonce',(SELECT id::text FROM public.discount_authorizations WHERE manager_profile_id=f.actor_id),true);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',f.auth_id,'role','authenticated')::text,true);
  PERFORM no_plan();
 END $$;
@@ -28,7 +31,7 @@ DO $$
 DECLARE f record; original jsonb; replay jsonb; debit jsonb;
 BEGIN
  SELECT * INTO f FROM loyalty_fix_fixture;
- original:=public.adjust_loyalty_points_v3(f.customer_id,25,'  Correct missed points  ',f.adjustment_key);
+ original:=public.adjust_loyalty_points_v4(f.customer_id,25,'  Correct missed points  ',f.adjustment_key,current_setting('laf.nonce')::uuid);
  INSERT INTO loyalty_fix_results(tap) VALUES
   (ok(jsonb_typeof(original)='object','Adjustment returns a JSON object')),
   (ok(original->>'txn_id' IS NOT NULL,'Adjustment identifies its ledger transaction')),
@@ -37,20 +40,20 @@ BEGIN
   (ok(original->>'actor_id'=f.actor_id::text AND original->>'customer_id'=f.customer_id::text
       AND original->>'idempotency_key'=f.adjustment_key::text AND original->>'reason'='Correct missed points',
       'Result binds actor, customer, operation key and trimmed reason'));
- replay:=public.adjust_loyalty_points_v3(f.customer_id,25,'Correct missed points',f.adjustment_key);
+ replay:=public.adjust_loyalty_points_v4(f.customer_id,25,'Correct missed points',f.adjustment_key);
  INSERT INTO loyalty_fix_results(tap) VALUES
   (ok((replay->>'idempotent_replay')::boolean,'Retry identifies its replay')),
   (is(replay->>'txn_id',original->>'txn_id','Retry returns the original ledger transaction')),
-  (throws_ok(format('SELECT public.adjust_loyalty_points_v3(%L::uuid,26,%L,%L::uuid)',
+  (throws_ok(format('SELECT public.adjust_loyalty_points_v4(%L::uuid,26,%L,%L::uuid)',
       f.customer_id,'Correct missed points',f.adjustment_key),
       'P0012','idempotency_conflict','A key cannot be reused with a different delta')),
-  (throws_ok(format('SELECT public.adjust_loyalty_points_v3(%L::uuid,25,%L,NULL)',
+  (throws_ok(format('SELECT public.adjust_loyalty_points_v4(%L::uuid,25,%L,NULL)',
       f.customer_id,'Correct missed points'),
       '23514','idempotency_key_required','A missing key is rejected')),
-  (throws_ok(format('SELECT public.adjust_loyalty_points_v3(%L::uuid,-1000,%L,%L::uuid)',
+  (throws_ok(format('SELECT public.adjust_loyalty_points_v4(%L::uuid,-1000,%L,%L::uuid)',
       f.customer_id,'Correct missed points',gen_random_uuid()),
       'P0001','insufficient_balance','Debit cannot make the points balance negative'));
- debit:=public.adjust_loyalty_points_v3(f.customer_id,-5,'Correct excess points',gen_random_uuid());
+ debit:=public.adjust_loyalty_points_v4(f.customer_id,-5,'Correct excess points',gen_random_uuid());
  INSERT INTO loyalty_fix_results(tap) VALUES
   (ok((debit->>'new_balance')::int=120 AND (debit->>'new_lifetime')::int=125,
       'A separate debit reduces balance without reducing lifetime points'));
@@ -71,14 +74,14 @@ BEGIN
       'Each distinct adjustment has one audit under the profile actor')),
   (is((SELECT count(*) FROM public.loyalty_operation_results WHERE customer_id=f.customer_id),2::bigint,
       'Distinct adjustment results are stored exactly once')),
-  (ok(NOT has_function_privilege('anon','public.adjust_loyalty_points_v3(uuid,integer,text,uuid)','EXECUTE'),
+  (ok(NOT has_function_privilege('anon','public.adjust_loyalty_points_v4(uuid,integer,text,uuid,uuid)','EXECUTE'),
       'Anonymous execution remains denied')),
   (ok(to_regprocedure('public.adjust_loyalty_points_v2(uuid,integer,text)') IS NULL,
       'The removed contract remains absent'));
  UPDATE public.user_permission_overrides SET is_granted=false
  WHERE user_profile_id=f.actor_id AND permission_code='loyalty.adjust';
  INSERT INTO loyalty_fix_results(tap) VALUES
-  (throws_ok(format('SELECT public.adjust_loyalty_points_v3(%L::uuid,25,%L,%L::uuid)',
+  (throws_ok(format('SELECT public.adjust_loyalty_points_v4(%L::uuid,25,%L,%L::uuid)',
       f.customer_id,'Correct missed points',gen_random_uuid()),
       'P0001','forbidden','The dedicated adjustment permission is required'));
 END $$;

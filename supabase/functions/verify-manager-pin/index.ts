@@ -31,7 +31,7 @@
 // Headers:
 //   x-manager-pin: string (6 digits) — REQUIRED
 //   Authorization: Bearer <cashier JWT> — REQUIRED
-// Body: { required_permission?: string, mint_scope?: 'order_item_edit' | 'discount' }
+// Body: { required_permission?: string, mint_scope?: keyof MINT_SCOPES }
 //       (e.g. 'sales.discount'; empty body OK)
 // 200 → { verified_user_id, authorization_id? }
 
@@ -62,6 +62,9 @@ const MINT_SCOPES: Record<string, string> = {
   // ADR-013 Lot 4 (D6) — nonce du grant manuel d'avoir client (BO),
   // consommé par grant_store_credit_v1.
   store_credit_grant: 'customers.store_credit.grant',
+  // Décision 2026-11-21 — nonce du crédit de points fidélité (BO), consommé par
+  // adjust_loyalty_points_v4 quand p_delta > 0.
+  loyalty_points_grant: 'loyalty.adjust',
 };
 
 serve(withPermissionErrors(async (req) => {
