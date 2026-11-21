@@ -878,6 +878,8 @@ d'**un** client alors qu'il s'applique à **toute** sa catégorie.
 multiples de 100 points, soit un taux de retour de **1 %**. Les points sont
 gagnés **après** toutes les remises, après le rachat et après extraction de la
 taxe. 9 clients ont des points. Conversion des points en avoir disponible.
+**RÈGLE** — Créditer des points depuis le back-office exige un PIN manager ;
+débiter des points n'en exige pas (ADR-045).
 
 **ABANDONNÉ** — La remise automatique par palier de fidélité, le bonus
 anniversaire configurable et la livraison offerte. Les paliers ne servent qu'au
