@@ -26,6 +26,23 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 21 novembre 2026, 14 h 30 — défauts du domaine Sales, back-office `7cb1bd91`
+
+Relevé du 21 novembre 2026, vers 14 h 30 UTC+8. Lot front-only (PR #759) :
+aucune migration, aucune Edge Function, aucune installation POS nécessaire.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `7cb1bd91` | Fusion de #759. `ci.yml` run `44862631827` (push) réussi ; `pgtap-pr.yml` run `44862653757` (`workflow_dispatch`) réussi, jobs `pgtap` et `db-gate` en succès | pgTAP tourne sur la base de dev |
+| Back-office | `production-backoffice.yml`, run `44865057511` sur `7cb1bd91`, réussi après approbation Production de Mamat ; alias `backoffice.the-breakery.com` posé le 21 novembre à 06 h 24 UTC ; empreinte de l'artefact manifeste `03a8188e…` | — |
+| BO servi, B2B Payments | Onglet « Outstanding (17) », 17 lignes de débiteurs ; avant publication, 4 lignes pour 17 débiteurs en base | Lu avec la session de Mamat, sans geste d'écriture |
+| BO servi, B2B orders | Tri par défaut sur la création, plus récentes d'abord | — |
+| BO servi, fiche client | Onglet Analytics refait, rendu sur un client réel ; ses chiffres (ventes reconnues) diffèrent des tuiles d'en-tête de la fiche, qui lisent les compteurs stockés du client | Écart des tuiles d'en-tête non traité |
+
+Retour : le lot ne change ni schéma ni appel de RPC ; le déploiement précédent
+reste compatible avec la base courante.
+
 ## Complément du 21 novembre 2026 — port et escomptes des bons de commande en production (`S3-06`)
 
 Relevé du 21 novembre 2026, en lecture seule. Observé directement, sauf la
