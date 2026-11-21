@@ -253,11 +253,21 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
   // ── lot 6c · refund + reprint, gates propres au tiroir ────────────────────
   it('T12 Refund shows on a refundable paid order with the permission and opens the modal', async () => {
     grantedPerms = new Set(['orders.refund']);
+    // Payée en QRIS : le back-office a une destination (le tender d'origine).
+    orderOverrides = { payments: [{ ...BASE_ORDER.payments[0], method: 'qris', cash_received: null }] };
     renderDrawer();
     const btn = await screen.findByTestId('drawer-refund');
     fireEvent.click(btn);
     // La modale de refund BO est possédée par le tiroir (état local), pas hissée.
     expect(await screen.findByTestId('refund-modal-bo')).toBeInTheDocument();
+  });
+
+  it('T12b Refund is absent on a cash sale without customer (the back-office cannot pay cash back)', async () => {
+    grantedPerms = new Set(['orders.refund']);
+    renderDrawer(); // fixture : cash, customer_id null
+    await screen.findByTestId('order-detail-drawer');
+    await waitFor(() => expect(screen.getByTestId('drawer-open-full-page')).toBeInTheDocument());
+    expect(screen.queryByTestId('drawer-refund')).toBeNull();
   });
 
   it('T13 Refund is absent once the order is fully refunded (nothing left)', async () => {
@@ -279,6 +289,8 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
 
   it('T14 Refund is absent without the orders.refund permission', async () => {
     grantedPerms = new Set(['orders.void']);
+    // Tender non-cash : seule la permission manque, pas la destination.
+    orderOverrides = { payments: [{ ...BASE_ORDER.payments[0], method: 'qris', cash_received: null }] };
     renderDrawer({ onVoid: vi.fn() });
     await screen.findByTestId('order-detail-drawer');
     expect(screen.queryByTestId('drawer-refund')).toBeNull();

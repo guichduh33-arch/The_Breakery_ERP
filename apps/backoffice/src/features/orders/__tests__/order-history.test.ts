@@ -84,6 +84,31 @@ describe('Order history from recorded facts', () => {
     expect(buildOrderHistory({ ...order, status: 'completed' }, []).at(-1)).toMatchObject({ label: 'Completed', at: null });
   });
 
+  it('names the POS completion recorded as order.complete', () => {
+    const result = buildOrderHistory(order, [event({ action: 'order.complete', metadata: {}, actor: { full_name: 'Dan Cashier' } })]);
+    expect(result.find((entry) => entry.id === 'audit-1')).toMatchObject({ label: 'Checkout completed', person: 'Dan Cashier' });
+  });
+
+  it('puts the refund authorizer on the refund line and does not repeat the refund trace', () => {
+    const refund = { id: 'refund-1', refund_number: 'R-261103-0001', created_at: '2026-11-03T02:00:00Z' };
+    const result = buildOrderHistory({ ...order, refunds: [refund] } as unknown as OrderDetail, [event({
+      action: 'order.refund', created_at: '2026-11-03T02:00:01Z', metadata: { refund_id: 'refund-1' }, actor: { full_name: 'Manager' },
+    })]);
+    expect(result.filter((entry) => entry.label === 'Refund recorded')).toEqual([
+      expect.objectContaining({ id: 'refund-refund-1', person: 'Manager', detail: 'R-261103-0001' }),
+    ]);
+    expect(result.some((entry) => entry.id === 'audit-1')).toBe(false);
+  });
+
+  it('uses the kitchen activity trace instead of the column-derived served line', () => {
+    const result = buildOrderHistory({ ...order, items: [item] }, [event({
+      action: 'kds.item_served', entity_id: item.id, metadata: { order_id: order.id }, actor: { full_name: 'Bob Waiter' },
+    })]);
+    expect(result.filter((entry) => entry.label === 'Item served')).toEqual([
+      expect.objectContaining({ id: 'audit-1', person: 'Bob Waiter' }),
+    ]);
+  });
+
   it('sorts timestamps by instant even when their timezone offsets differ', () => {
     const result = buildOrderHistory(order, [
       event({ id: 1, created_at: '2026-11-03T09:05:00+08:00' }),

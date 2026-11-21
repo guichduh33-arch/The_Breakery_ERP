@@ -19,6 +19,7 @@ import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE } from '../paymentStatusMeta.js';
 import { B2B_PAYMENT_METHODS, B2B_PAYMENT_METHOD_LABEL } from '../b2bPaymentMethods.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useFinancialAttempt, usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
 import { PENDING_MESSAGE } from '@/lib/pendingFinancialAttempts.js';
@@ -248,6 +249,16 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               {snapshot && <p className="text-xs text-text-secondary">Saved invoice selection: {snapshot.invoiceIds?.length ? snapshot.invoiceIds.join(', ') : 'FIFO'}</p>}
               {invoices.isLoading ? (
                 <p className="text-xs text-text-muted">Loading invoices…</p>
+              ) : invoices.isError && invoices.data === undefined ? (
+                // Sans cette branche, une requête tombée affichait « No open
+                // invoices » et poussait l'opérateur vers l'allocation FIFO.
+                <QueryErrorBanner
+                  detail={invoices.error.message}
+                  onRetry={() => { void invoices.refetch(); }}
+                  data-testid="pay-invoices-error"
+                >
+                  Open invoices could not be loaded — this does not mean the customer owes nothing.
+                </QueryErrorBanner>
               ) : (invoices.data ?? []).length === 0 ? (
                 <p className="text-xs text-text-muted">No open invoices for this customer.</p>
               ) : (

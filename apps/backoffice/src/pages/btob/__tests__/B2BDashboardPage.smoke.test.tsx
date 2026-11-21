@@ -203,5 +203,10 @@ describe('B2BDashboardPage', () => {
     renderPage();
     expect(await screen.findByText(/could not be loaded/i)).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(5);
+    // Les trois cartes ne prétendent pas « aucun client / aucune créance ».
+    expect(await screen.findAllByText('Unavailable — see the error above.')).toHaveLength(3);
+    expect(screen.queryByText('No B2B clients yet')).not.toBeInTheDocument();
+    expect(screen.queryByText('No recent orders')).not.toBeInTheDocument();
+    expect(screen.queryByText('No outstanding receivables')).not.toBeInTheDocument();
   });
 });

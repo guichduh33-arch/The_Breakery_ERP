@@ -14,6 +14,7 @@ import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
 import { CancelB2bOrderModal } from './CancelB2bOrderModal.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import {
   B2B_SETTLEMENT_BADGE,
   B2B_SETTLEMENT_LABEL,
@@ -145,9 +146,23 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
         </label>
       </div>
 
+      {/* « No invoices » sur une requête tombée faisait lire « rien à
+          encaisser ». Le bandeau surplombe les lignes déjà chargées ; il ne
+          les remplace que s'il n'y en a aucune. */}
+      {invoices.isError && (
+        <div className="px-4 pb-4">
+          <QueryErrorBanner
+            detail={invoices.error.message}
+            onRetry={() => { void invoices.refetch(); }}
+            data-testid="inv-error"
+          >
+            Invoices could not be loaded — this does not mean nothing is due.
+          </QueryErrorBanner>
+        </div>
+      )}
       {invoices.isLoading ? (
         <div className="p-6 text-sm text-text-secondary">Loading…</div>
-      ) : rows.length === 0 ? (
+      ) : invoices.data === undefined ? null : rows.length === 0 ? (
         <EmptyState icon={FileText} title="No invoices" description="B2B invoices will appear here." size="md" />
       ) : (
         <ul className="divide-y divide-border-subtle" data-testid="inv-list">

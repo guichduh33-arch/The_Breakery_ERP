@@ -4,6 +4,7 @@
 
 import type { JSX } from 'react';
 import { Card } from '@/components/BackofficeUi.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { formatDate } from '@breakery/utils';
 import {
   useStoreCreditHistory, type StoreCreditSource,
@@ -27,14 +28,24 @@ const SOURCE_LABEL: Record<StoreCreditSource, string> = {
 };
 
 export function StoreCreditTab({ customerId }: { customerId: string | null }): JSX.Element {
-  const { data, isLoading } = useStoreCreditHistory(customerId);
+  const { data, isLoading, isError, error, refetch } = useStoreCreditHistory(customerId);
 
   if (isLoading) return <Card variant="default" padding="lg"><p className="text-sm text-text-muted">Loading…</p></Card>;
+  // Même règle que LoyaltyTab : un ledger illisible n'est pas un ledger vide,
+  // et un rafraîchissement raté ne cache pas les lignes déjà chargées.
+  const banner = isError ? (
+    <QueryErrorBanner detail={error.message} onRetry={() => { void refetch(); }} data-testid="customer-store-credit-error">
+      Store-credit history could not be loaded — this does not mean the customer has no credit movement.
+    </QueryErrorBanner>
+  ) : null;
+  if (data === undefined && banner) return banner;
   if (!data || data.length === 0) {
-    return <Card variant="default" padding="lg"><p className="text-sm text-text-muted">No store-credit activity yet.</p></Card>;
+    return <div className="space-y-3">{banner}<Card variant="default" padding="lg"><p className="text-sm text-text-muted">No store-credit activity yet.</p></Card></div>;
   }
 
   return (
+    <div className="space-y-3">
+    {banner}
     <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Date, source, author, amount, balance and expiry per store-credit movement</caption>
@@ -68,5 +79,6 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
         </tbody>
       </table>
     </Card>
+    </div>
   );
 }
