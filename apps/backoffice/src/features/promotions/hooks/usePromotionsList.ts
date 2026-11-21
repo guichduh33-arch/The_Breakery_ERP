@@ -8,6 +8,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { PromotionFormValues } from '@breakery/ui';
+import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
 export interface PromotionListRow extends PromotionFormValues {
@@ -16,8 +17,8 @@ export interface PromotionListRow extends PromotionFormValues {
 }
 
 export interface PromotionsListFilters {
-  // Session 13 / Phase 2.C — added 'threshold' + 'bundle'.
-  type?: 'percentage' | 'fixed_amount' | 'bogo' | 'free_product' | 'threshold' | 'bundle' | 'all';
+  /** Enum Postgres `promotion_type`, ou `all` — jamais recopié (AGENTS.md). */
+  type?: Database['public']['Enums']['promotion_type'] | 'all';
   active?: 'all' | 'active' | 'inactive';
   startDate?: string | null;
   endDate?: string | null;

@@ -80,7 +80,8 @@ describe('PromotionsPage', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /promotions/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByText(/total promotions/i)).toBeInTheDocument();
-    expect(screen.getByText(/active right now/i)).toBeInTheDocument();
+    // Audit Sales 2026-11-21 : la tuile compte sur la fenêtre de dates.
+    expect(screen.getByText(/live now/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('Spring 10%')).toBeInTheDocument());
     expect(screen.getByText('BOGO Croissant')).toBeInTheDocument();
   });
@@ -93,6 +94,8 @@ describe('PromotionsPage', () => {
     toggle.fail = true;
     renderPage();
     fireEvent.click(await screen.findByRole('checkbox', { name: /toggle bogo croissant active/i }));
+    // L'activation passe par la confirmation (décision 2026-11-21).
+    fireEvent.click(screen.getByRole('button', { name: 'Activate' }));
     expect(toastSpy.error).toHaveBeenCalledWith('BOGO Croissant could not be activated: permission denied');
   });
 
@@ -100,6 +103,7 @@ describe('PromotionsPage', () => {
     toggle.fail = false;
     renderPage();
     fireEvent.click(await screen.findByRole('checkbox', { name: /toggle bogo croissant active/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Activate' }));
     expect(toggle.calls.at(-1)).toEqual({ id: 'p2', values: { is_active: true } });
     expect(toastSpy.success).toHaveBeenCalledWith('BOGO Croissant is now active.');
   });

@@ -11,7 +11,7 @@
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md
 //   §1 BO1–BO3, §4.5 + Session 14 spec D-W6-PROMO-01.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import {
   ChevronDown,
   Pencil,
@@ -38,17 +38,46 @@ import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { PromotionActivateConfirm } from '@/features/promotions/components/PromotionActivateConfirm.js';
+import {
+  PROMOTION_TYPES,
+  PROMOTION_TYPE_LABEL,
+  PROMOTION_WINDOW_LABEL,
+  isPromotionType,
+  promotionValueText,
+  promotionWindowState,
+  promotionWindowText,
+  summarisePromotions,
+  type PromotionTypeEnum,
+  type PromotionWindowState,
+} from '@/features/promotions/promotionSummary.js';
 
-type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
+// Le filtre de type dérive de l'enum Postgres : `threshold` et `bundle`
+// manquaient à la liste recopiée à la main (audit Sales 2026-11-21).
+type TypeFilter = 'all' | PromotionTypeEnum;
 type ActiveFilter = 'all' | 'active' | 'inactive';
 
 const TYPE_OPTIONS: readonly { value: TypeFilter; label: string }[] = [
-  { value: 'all',           label: 'Type: All' },
-  { value: 'percentage',    label: 'Percentage' },
-  { value: 'fixed_amount',  label: 'Fixed amount' },
-  { value: 'bogo',          label: 'BOGO' },
-  { value: 'free_product',  label: 'Free product' },
+  { value: 'all', label: 'Type: All' },
+  ...PROMOTION_TYPES.map((t) => ({ value: t, label: PROMOTION_TYPE_LABEL[t] })),
 ];
+
+const WINDOW_TONE: Record<PromotionWindowState, string> = {
+  live:      'text-success',
+  always:    'text-success',
+  scheduled: 'text-warning',
+  expired:   'text-text-muted',
+};
+
+/** Horloge de la page, rafraîchie chaque minute : « Live » ne se fige pas. */
+function useMinuteClock(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => { setNow(Date.now()); }, 60_000);
+    return () => { clearInterval(id); };
+  }, []);
+  return now;
+}
 
 const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'all',      label: 'Status: All' },
@@ -56,24 +85,6 @@ const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'inactive', label: 'Inactive' },
 ];
 
-interface PromoStats {
-  total:    number;
-  active:   number;
-  bogo:     number;
-  discount: number;
-}
-
-function summarise(rows: readonly PromotionListRow[]): PromoStats {
-  let active = 0;
-  let bogo = 0;
-  let discount = 0;
-  for (const r of rows) {
-    if (r.is_active) active += 1;
-    if (r.type === 'bogo') bogo += 1;
-    if (r.type === 'percentage' || r.type === 'fixed_amount') discount += 1;
-  }
-  return { total: rows.length, active, bogo, discount };
-}
 
 export default function PromotionsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -89,6 +100,8 @@ export default function PromotionsPage(): JSX.Element {
   const [editing,      setEditing     ] = useState<PromotionListRow | undefined>(undefined);
   const [creating,     setCreating    ] = useState(false);
   const [deleting,     setDeleting    ] = useState<PromotionListRow | undefined>(undefined);
+  const [activating,   setActivating  ] = useState<PromotionListRow | undefined>(undefined);
+  const now = useMinuteClock();
 
   const filters = useMemo<PromotionsListFilters>(
     () => ({
@@ -101,9 +114,11 @@ export default function PromotionsPage(): JSX.Element {
   );
 
   const list = usePromotionsList(filters);
+  // Les compteurs portent sur TOUTES les promotions, jamais sur le filtre de table.
+  const all = usePromotionsList();
   const updateMut = useUpdatePromotion();
 
-  const stats = useMemo(() => summarise(list.data ?? []), [list.data]);
+  const stats = useMemo(() => summarisePromotions(all.data ?? [], now), [all.data, now]);
 
   if (!canRead) {
     return (
@@ -116,12 +131,19 @@ export default function PromotionsPage(): JSX.Element {
   // Activer une promotion change les prix à la caisse en plein service : le
   // résultat se dit, l'échec surtout. Avant, un refus (droits, réseau) laissait
   // la case revenir en silence et l'opérateur croyait la promotion active.
+  // L'ACTIVATION passe par une confirmation (décision 2026-11-21) ; la
+  // désactivation reste directe.
   function handleToggleActive(row: PromotionListRow): void {
-    const next = !row.is_active;
+    if (row.is_active) setActive(row, false);
+    else setActivating(row);
+  }
+
+  function setActive(row: PromotionListRow, next: boolean): void {
     updateMut.mutate(
       { id: row.id, values: { is_active: next } },
       {
         onSuccess: () => {
+          if (next) setActivating(undefined);
           toast.success(next ? `${row.name} is now active.` : `${row.name} is now inactive.`);
         },
         onError: (err) => {
@@ -135,7 +157,7 @@ export default function PromotionsPage(): JSX.Element {
     {
       id:     'name',
       header: 'Promotion',
-      width:  '32%',
+      width:  '24%',
       render: (row) => (
         <div className="leading-tight">
           <div className="font-semibold text-text-primary">{row.name}</div>
@@ -148,6 +170,32 @@ export default function PromotionsPage(): JSX.Element {
       header: 'Type',
       align:  'center',
       render: (row) => <PromotionTypeBadge type={row.type} />,
+    },
+    {
+      id:     'value',
+      header: 'Value',
+      align:  'right',
+      render: (row) => (
+        <span className="whitespace-nowrap font-data text-sm tabular-nums text-text-primary">{promotionValueText(row)}</span>
+      ),
+    },
+    {
+      id:     'window',
+      header: 'Window',
+      render: (row) => {
+        const state = promotionWindowState(row, now);
+        return (
+          <div className="leading-tight">
+            <div className={`font-data text-xs font-semibold uppercase tracking-widest ${WINDOW_TONE[state]}`}>
+              {PROMOTION_WINDOW_LABEL[state]}
+            </div>
+            <div className="font-data text-xs tabular-nums text-text-secondary">{promotionWindowText(row)}</div>
+            {typeof row.max_uses === 'number' && (
+              <div className="text-xs text-text-muted">Max {row.max_uses.toLocaleString('id-ID')} uses</div>
+            )}
+          </div>
+        );
+      },
     },
     {
       id:     'scope',
@@ -228,7 +276,7 @@ export default function PromotionsPage(): JSX.Element {
       <PageHeader
         className="items-start"
         title="Promotions"
-        subtitle="Manage automatic discounts (percentage / fixed amount / BOGO / free product)."
+        subtitle="Manage automatic discounts applied at the POS."
         actions={canCreate ? (
           <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
             <Plus className="h-3.5 w-3.5" aria-hidden /> New promotion
@@ -238,7 +286,13 @@ export default function PromotionsPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile icon={Tag} label="Total promotions" value={stats.total} valueFormat="number" />
-        <KpiTile icon={Sparkles} label="Active right now" value={stats.active} valueFormat="number" />
+        <KpiTile
+          icon={Sparkles}
+          label="Live now"
+          value={stats.liveNow}
+          valueFormat="number"
+          footer={stats.scheduled > 0 ? `Active and within dates · ${stats.scheduled} scheduled` : 'Active and within dates'}
+        />
         <KpiTile icon={Zap} label="BOGO" value={stats.bogo} valueFormat="number" />
         <KpiTile icon={Percent} label="Discount" value={stats.discount} valueFormat="number" footer="Percentage + fixed amount" />
       </div>
@@ -250,14 +304,14 @@ export default function PromotionsPage(): JSX.Element {
             label="Type"
             value={typeFilter}
             options={TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            onChange={(v) => setTypeFilter(v as TypeFilter)}
+            onChange={(v) => { setTypeFilter(v === 'all' || isPromotionType(v) ? v : 'all'); }}
           />
           <FilterField
             id="filter-active"
             label="Status"
             value={activeFilter}
             options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            onChange={(v) => setActiveFilter(v as ActiveFilter)}
+            onChange={(v) => { setActiveFilter(v === 'active' || v === 'inactive' ? v : 'all'); }}
           />
           <DateField
             id="filter-start"
@@ -280,7 +334,7 @@ export default function PromotionsPage(): JSX.Element {
         </div>
       ) : (
         <DataTable
-          caption="Promotion, type, scope, priority and status per promotion"
+          caption="Promotion, type, value, date window, scope, priority and status per promotion"
           columns={columns}
           rows={list.data ?? []}
           getRowKey={(r) => r.id}
@@ -297,6 +351,12 @@ export default function PromotionsPage(): JSX.Element {
         mode="edit"
         initialRow={editing}
         onClose={() => setEditing(undefined)}
+      />
+      <PromotionActivateConfirm
+        row={activating}
+        pending={updateMut.isPending}
+        onConfirm={(row) => { setActive(row, true); }}
+        onClose={() => setActivating(undefined)}
       />
       <PromotionDeleteConfirm
         open={deleting !== undefined}

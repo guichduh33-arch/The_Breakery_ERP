@@ -4,13 +4,15 @@
 // row that authored each entry so the drawer can show "Adjusted by Alice".
 
 import { useQuery } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
 export interface LoyaltyTxnRow {
   id:                   string;
   customer_id:          string;
   order_id:             string | null;
-  transaction_type:     'earn' | 'redeem' | 'adjust' | 'refund';
+  /** Enum Postgres `loyalty_txn_type` — jamais recopié (AGENTS.md). */
+  transaction_type:     Database['public']['Enums']['loyalty_txn_type'];
   points:               number;
   points_balance_after: number;
   order_amount:         number | null;

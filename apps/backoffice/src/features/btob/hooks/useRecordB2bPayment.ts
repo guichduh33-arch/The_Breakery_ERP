@@ -18,6 +18,7 @@
 // ledger d'allocation et donc possiblement > 0 pour un paiement historique).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { B2bPaymentMethod } from '../b2bPaymentMethods.js';
 import { supabase } from '@/lib/supabase.js';
 import { B2B_DASHBOARD_QUERY_KEY } from './useB2bDashboard.js';
 import { B2B_PAYMENTS_RECEIVED_QUERY_KEY } from './useB2bPaymentsReceived.js';
@@ -46,7 +47,8 @@ export class RecordB2bPaymentError extends FinancialAttemptError {
   }
 }
 
-export type B2bPaymentMethod = 'cash' | 'card' | 'qris' | 'transfer' | 'edc' | 'store_credit';
+// Sous-ensemble métier de l'enum `payment_method`, défini une seule fois.
+export type { B2bPaymentMethod };
 
 export interface RecordB2bPaymentArgs {
   customerId:      string;

@@ -127,4 +127,36 @@ describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
       tenders: [{ method: 'store_credit', amount: 50_000 }],
     }));
   });
+
+  // ── Audit Sales 2026-11-21 ────────────────────────────────────────────────
+
+  it('says what is missing while the refund button is disabled', () => {
+    renderModal(makeOrder());
+    expect(screen.getByTestId('refund-submit')).toBeDisabled();
+    expect(screen.getByTestId('refund-blocker')).toHaveTextContent('Select at least one line to refund.');
+    fireEvent.click(screen.getByLabelText('Increase Latte'));
+    expect(screen.getByTestId('refund-blocker')).toHaveTextContent('Enter a reason (at least 3 characters).');
+    fireEvent.change(screen.getByTestId('refund-reason'), { target: { value: 'customer return' } });
+    expect(screen.getByTestId('refund-blocker')).toHaveTextContent('Enter the 6-digit manager PIN.');
+    fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '123456' } });
+    expect(screen.queryByTestId('refund-blocker')).toBeNull();
+  });
+
+  it('the PIN field announces its 6-digit rule and flags a partial entry', () => {
+    renderModal(makeOrder());
+    const pin = screen.getByTestId('refund-pin');
+    expect(pin).toHaveAttribute('aria-describedby', 'refund-pin-hint');
+    expect(document.getElementById('refund-pin-hint')).toHaveTextContent('6 digits');
+    fireEvent.change(pin, { target: { value: '12' } });
+    expect(pin).toHaveAttribute('aria-invalid', 'true');
+    expect(document.getElementById('refund-pin-hint')).toHaveTextContent('Exactly 6 digits');
+  });
+
+  it('a method overflow reads as a sentence, never as a machine token', () => {
+    renderModal(makeOrder({ refunded_by_method: { card: 90_000 } }));
+    fireEvent.click(screen.getByLabelText('Increase Latte'));
+    const msg = screen.getByTestId('refund-validation');
+    expect(msg).toHaveTextContent(/Card has only Rp\s?10\.000 left to refund\./);
+    expect(msg.textContent).not.toMatch(/tender_method_overflow|avail=/);
+  });
 });

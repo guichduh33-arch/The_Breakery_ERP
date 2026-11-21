@@ -7,8 +7,8 @@
 // les sépare — une commande peut être payée sans être complétée, remboursée
 // sans être annulée. La frise montre les étapes à venir en creux.
 //
-// Le détail propose les mêmes flux d'édition et de void que la liste,
-// sous leurs permissions et contrôles serveur respectifs.
+// Le détail propose les mêmes flux d'édition, de remboursement et de void que
+// la liste et le tiroir, sous leurs permissions et contrôles serveur respectifs.
 
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
+  effectiveUnitPrice,
   isB2BOrder,
   isOrderDetailPaid,
   isSettledStatus,
@@ -232,7 +233,9 @@ export function OrderDetailPage(): JSX.Element {
                       )}
                     </td>
                     <td className="px-3.5 py-2.5 text-right font-data tabular-nums">{it.quantity}</td>
-                    <td className="px-3.5 py-2.5 text-right font-data tabular-nums">{rp(it.unit_price)}</td>
+                    {/* Prix unitaire EFFECTIF (modificateurs compris) : `unit_price`
+                        seul contredisait le total de ligne voisin. */}
+                    <td className="px-3.5 py-2.5 text-right font-data tabular-nums">{rp(effectiveUnitPrice(it))}</td>
                     <td className="px-3.5 py-2.5 text-right font-data tabular-nums">{rp(it.line_total)}</td>
                   </tr>
                 ))}

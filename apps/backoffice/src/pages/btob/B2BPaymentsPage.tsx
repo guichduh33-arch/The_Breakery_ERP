@@ -41,6 +41,10 @@ import {
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import { B2bInvoicesTab } from '@/features/btob/components/B2bInvoicesTab.js';
 import { AgingBucketsGrid } from '@/features/btob/components/AgingBucketsGrid.js';
+import {
+  B2B_PAYMENT_METHODS,
+  b2bPaymentMethodLabel,
+} from '@/features/btob/b2bPaymentMethods.js';
 
 type TabKey = 'received' | 'outstanding' | 'invoices' | 'aging';
 
@@ -101,6 +105,15 @@ export default function B2BPaymentsPage(): JSX.Element {
       );
     });
   }, [payments.data, method, search]);
+
+  // Options du filtre : toutes les méthodes que la modale enregistre, plus
+  // toute valeur d'enum déjà présente en base hors de ce sous-ensemble
+  // (import historique) — aucune ligne ne doit échapper au filtre.
+  const methodOptions = useMemo<readonly string[]>(() => {
+    const seen = new Set<string>(B2B_PAYMENT_METHODS);
+    const extra = (payments.data?.rows ?? []).map((r) => r.method).filter((m) => !seen.has(m));
+    return [...B2B_PAYMENT_METHODS, ...new Set(extra)];
+  }, [payments.data]);
 
   const totalReceived = useMemo(
     () => filteredPayments.reduce((acc, r) => acc + r.amount, 0),
@@ -238,10 +251,9 @@ export default function B2BPaymentsPage(): JSX.Element {
                     className="w-44"
                   >
                     <option value="all">All methods</option>
-                    <option value="cash">Cash</option>
-                    <option value="transfer">Bank transfer</option>
-                    <option value="qris">QRIS</option>
-                    <option value="card">Card</option>
+                    {methodOptions.map((m) => (
+                      <option key={m} value={m}>{b2bPaymentMethodLabel(m)}</option>
+                    ))}
                   </Select>
                   <label htmlFor="b2b-payments-period" className="sr-only">Period</label>
                   <Select
@@ -288,7 +300,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                           {' • '}
                           {formatDateTime(p.paid_at)}
                           {' • '}
-                          {p.method}
+                          {b2bPaymentMethodLabel(p.method)}
                           {p.reference !== null && p.reference !== '' && (
                             <> • <span className="text-text-muted">{p.reference}</span></>
                           )}

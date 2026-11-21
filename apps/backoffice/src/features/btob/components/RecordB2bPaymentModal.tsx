@@ -17,6 +17,7 @@ import {
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE } from '../paymentStatusMeta.js';
+import { B2B_PAYMENT_METHODS, B2B_PAYMENT_METHOD_LABEL } from '../b2bPaymentMethods.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useFinancialAttempt, usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
@@ -31,14 +32,6 @@ export interface RecordB2bPaymentModalProps {
   onClose: () => void;
 }
 
-const METHODS: readonly { value: B2bPaymentMethod; label: string }[] = [
-  { value: 'cash',         label: 'Cash' },
-  { value: 'transfer',     label: 'Bank transfer' },
-  { value: 'qris',         label: 'QRIS' },
-  { value: 'card',         label: 'Card' },
-  { value: 'edc',          label: 'EDC' },
-  { value: 'store_credit', label: 'Store credit' },
-];
 
 export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceIds, onClose }: RecordB2bPaymentModalProps): JSX.Element {
   const recordMut = useRecordB2bPayment();
@@ -320,10 +313,13 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                 id={methodId}
                 value={snapshot?.method ?? method}
                 disabled={frozen}
-                onChange={(e) => { setMethod(e.target.value as B2bPaymentMethod); }}
+                onChange={(e) => {
+                  const next = B2B_PAYMENT_METHODS.find((m) => m === e.target.value);
+                  if (next !== undefined) setMethod(next);
+                }}
               >
-                {METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                {B2B_PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{B2B_PAYMENT_METHOD_LABEL[m]}</option>
                 ))}
               </Select>
             </div>

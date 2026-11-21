@@ -41,7 +41,10 @@ import { RefundOrderModalBo } from '@/features/orders/components/RefundOrderModa
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
 import {
   ORDER_STATUS_BADGE,
+  isEditableStatus,
   isOrderDetailPaid,
+  isOrderRefundable,
+  isVoidablePaidStatus,
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
@@ -64,12 +67,8 @@ export interface OrderDetailDrawerProps {
   onCancelUnpaid?: (orderId: string) => void;
 }
 
-/** Statuts éditables — même liste que la liste (ADR-009 : jamais `'open'`). */
-const EDITABLE_STATUSES = new Set(['draft', 'pending_payment']);
-/** Statuts annulables — le void est la seule sortie de `completed` (ADR-009). */
-const VOIDABLE_STATUSES = new Set(['paid', 'completed']);
-/** Statuts remboursables — une commande portant l'argent (lot 6c). */
-const REFUNDABLE_STATUSES = new Set(['paid', 'completed']);
+// Statuts éditables, annulables et remboursables : définitions PARTAGÉES avec
+// la page détail (`statusMeta`) — deux surfaces, une seule règle.
 
 // TEINTE seulement, jamais de géométrie — le pied du tiroir aligne cinq boutons
 // sur une rangée et ils prennent tous la hauteur du primitif partagé (`sm`,
@@ -236,12 +235,7 @@ export function OrderDetailDrawer({
   const pendingRefund = useHasPendingFinancial('refund', orderId ?? '');
   const reprint = useReprintReceipt();
 
-  // Un arrondi monétaire peut laisser des points sur des quantités encore à retourner.
-  const canRefund =
-    data !== undefined && hasRefund
-    && (pendingRefund || (REFUNDABLE_STATUSES.has(data.status)
-    && (data.total_refunded < data.total || ((data.loyalty_points_redeemed ?? 0) > 0
-      && data.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity)))));
+  const canRefund = data !== undefined && hasRefund && isOrderRefundable(data, pendingRefund);
   // Le reçu duplicata n'a de sens que sur une commande qui a porté l'argent.
   const canReprint = data !== undefined && hasReprint && isOrderDetailPaid(data);
 
@@ -249,17 +243,17 @@ export function OrderDetailDrawer({
   // partagent le même narrowing, personne ne réaffirme la condition en `!`.
   const editAction =
     data !== undefined && onEditItems !== undefined
-      && hasEditOpen && EDITABLE_STATUSES.has(data.status)
+      && hasEditOpen && isEditableStatus(data.status)
       ? (): void => { onEditItems(data.id, data.order_number); }
       : null;
   const voidAction =
     data !== undefined && onVoid !== undefined
-      && hasVoid && VOIDABLE_STATUSES.has(data.status)
+      && hasVoid && isVoidablePaidStatus(data.status)
       ? (): void => { onVoid(data.id, data.order_number); }
       : null;
   const cancelUnpaidAction =
     data !== undefined && onCancelUnpaid !== undefined && hasVoid && hasPaymentProcess
-      && EDITABLE_STATUSES.has(data.status) && !isOrderDetailPaid(data)
+      && isEditableStatus(data.status) && !isOrderDetailPaid(data)
       ? (): void => { onCancelUnpaid(data.id); }
       : null;
 

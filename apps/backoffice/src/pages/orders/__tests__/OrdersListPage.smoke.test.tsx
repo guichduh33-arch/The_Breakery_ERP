@@ -20,7 +20,18 @@ import OrdersListPage from '../OrdersListPage.js';
 
 // ── sonner mock ────────────────────────────────────────────────────────────
 const toastErrorSpy = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]): void => { toastErrorSpy(...a); } } }));
+const toastSuccessSpy = vi.fn();
+vi.mock('sonner', () => ({ toast: {
+  error: (...a: unknown[]): void => { toastErrorSpy(...a); },
+  success: (...a: unknown[]): void => { toastSuccessSpy(...a); },
+  info: vi.fn(),
+} }));
+
+// ── export CSV : on capte les lignes écrites, sans téléchargement JSDOM ─────
+const exportSpy = vi.fn();
+vi.mock('@/features/orders/exportOrdersCsv.js', () => ({
+  exportOrdersCsv: (...a: unknown[]): void => { exportSpy(...a); },
+}));
 
 // ── supabase mock ──────────────────────────────────────────────────────────
 const rpcMock = vi.fn();
@@ -342,5 +353,25 @@ describe('OrdersListPage smoke', () => {
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.blur(input);
     await waitFor(() => expect(screen.getByTestId('location')).not.toHaveTextContent('table_number'));
+  });
+
+  // Audit Sales 2026-11-21 — l'export ne couvrait que les pages chargées.
+  it('T13 Export loads every remaining page of the window before writing the file', async () => {
+    exportSpy.mockReset(); toastSuccessSpy.mockReset();
+    rpcMock.mockImplementation((name: string, args: Record<string, unknown>) => {
+      if (name !== 'get_orders_list_v8') return Promise.resolve({ data: SAMPLE_COUNTERS, error: null });
+      return Promise.resolve(args.p_cursor_val === undefined
+        ? { data: { lines: [SAMPLE_ROW], next_cursor_val: 'c1', next_cursor_id: 'o-1' }, error: null }
+        : { data: { lines: [{ ...SAMPLE_ROW, id: 'o-2', order_number: 'ORD-002' }], next_cursor_val: null, next_cursor_id: null }, error: null });
+    });
+    renderRoute('/backoffice/orders?start=2026-05-01&end=2026-05-26');
+    await screen.findByText(/ORD-001/);
+    expect(screen.queryByText(/ORD-002/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Export/ }));
+    await waitFor(() => expect(exportSpy).toHaveBeenCalledOnce());
+    const [rows, start, end] = exportSpy.mock.calls[0]! as [{ id: string }[], string, string];
+    expect(rows.map((r) => r.id)).toEqual(['o-1', 'o-2']);
+    expect([start, end]).toEqual(['2026-05-01', '2026-05-26']);
+    expect(toastSuccessSpy).toHaveBeenCalledWith('Exported 2 orders');
   });
 });

@@ -32,6 +32,7 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useFinancialAttempt } from '@/lib/useFinancialAttempt.js';
 import { PENDING_MESSAGE } from '@/lib/pendingFinancialAttempts.js';
+import { refundBlocker, refundValidationText } from '@/features/orders/refundValidationCopy.js';
 
 interface Props {
   open: boolean;
@@ -167,6 +168,16 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
     pinOk &&
     validation?.ok === true));
 
+  // Noms de produits, jamais d'UUID de ligne (tentative en attente, refus).
+  const nameOf = (orderItemId: string): string | undefined =>
+    order.items.find((it) => it.id === orderItemId)?.name_snapshot;
+  const validationShown = !snapshot && validation !== null && !validation.ok && draftLines.length > 0;
+  const blocker = canSubmit ? null : refundBlocker({
+    allowed: attempt.allowed, busy: attempt.busy, pending: Boolean(snapshot),
+    hasLines: draftLines.length > 0, pointsOnly, hasDestination: effectiveMethod !== '',
+    reasonOk, pinOk, validationShown,
+  });
+
   function handleQty(oiId: string, next: number): void {
     setSelectedQty((prev) => {
       const map = new Map(prev);
@@ -216,7 +227,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           Refund selected lines back to a non-cash tender or as store credit.
         </DialogDescription>
         {snapshot && <p role="status" className="text-sm text-warning">{PENDING_MESSAGE}</p>}
-        {snapshot && <p className="text-xs text-text-secondary">Saved lines: {snapshot.lines.map((line) => `${line.order_item_id} × ${line.qty}`).join(', ')}</p>}
+        {snapshot && <p className="text-xs text-text-secondary">Saved lines: {snapshot.lines.map((line) => `${nameOf(line.order_item_id) ?? 'Removed item'} × ${line.qty}`).join(', ')}</p>}
 
         {!snapshot && refundQuote.points_restored > 0 && <p role="status">Points to restore: {refundQuote.points_restored}</p>}
         {/* Lignes à rembourser */}
@@ -339,16 +350,29 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
             className={`mt-1 w-full rounded border border-border-strong p-2 text-sm tracking-widest ${FOCUS_RING}`}
+            aria-invalid={pin.length > 0 && !pinOk}
+            aria-describedby={formError ? 'refund-pin-hint refund-error-bo' : 'refund-pin-hint'}
             data-testid="refund-pin"
           />
+          {/* Même patron que VoidOrderModal : indice permanent, message d'erreur
+              sous le même id quand la saisie est entamée et fausse. */}
+          {!pinOk && pin.length > 0 ? (
+            <p id="refund-pin-hint" className="mt-1 text-xs text-danger">Exactly 6 digits</p>
+          ) : (
+            <p id="refund-pin-hint" className="mt-1 text-xs text-text-muted">6 digits</p>
+          )}
         </div>
 
-        {!snapshot && validation && !validation.ok && draftLines.length > 0 && (
+        {validationShown && validation !== null && !validation.ok && (
           <p className="text-xs text-danger" data-testid="refund-validation">
-            {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}
+            {refundValidationText(validation, nameOf)}
           </p>
         )}
-        {(formError ?? attempt.storageError) && <p role="alert" className="text-sm text-danger" data-testid="refund-error">{formError ?? attempt.storageError}</p>}
+        {(formError ?? attempt.storageError) && <p id="refund-error-bo" role="alert" className="text-sm text-danger" data-testid="refund-error">{formError ?? attempt.storageError}</p>}
+
+        {blocker !== null && (
+          <p className="text-xs text-text-secondary" data-testid="refund-blocker">{blocker}</p>
+        )}
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-text-secondary">

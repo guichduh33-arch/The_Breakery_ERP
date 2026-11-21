@@ -61,4 +61,37 @@ describe('LoyaltyAdjustForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /apply/i }));
     expect(onSubmit).toHaveBeenCalledWith({ delta: -50, reason: 'returned item' });
   });
+
+  // Décision 2026-11-21 : un crédit exige un PIN manager, un débit non.
+  it('requirePinForCredit gates a credit on a 6-digit PIN and submits it', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<LoyaltyAdjustForm currentBalance={500} onSubmit={onSubmit} onCancel={noop} requirePinForCredit />);
+    fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'goodwill bonus' } });
+    expect(screen.getByRole('button', { name: /apply/i })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Manager PIN'), { target: { value: '12345' } });
+    expect(screen.getByRole('button', { name: /apply/i })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Manager PIN'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /apply/i }));
+    expect(onSubmit).toHaveBeenCalledWith({ delta: 120, reason: 'goodwill bonus', managerPin: '123456' });
+  });
+
+  it('requirePinForCredit leaves a debit without a PIN field', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<LoyaltyAdjustForm currentBalance={500} onSubmit={onSubmit} onCancel={noop} requirePinForCredit initialSign="-" />);
+    expect(screen.queryByLabelText('Manager PIN')).toBeNull();
+    fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '50' } });
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'returned item' } });
+    fireEvent.click(screen.getByRole('button', { name: /apply/i }));
+    expect(onSubmit).toHaveBeenCalledWith({ delta: -50, reason: 'returned item' });
+  });
+
+  it('a new pinResetToken clears the PIN and keeps amount and reason', () => {
+    const view = render(<LoyaltyAdjustForm currentBalance={500} onSubmit={noop} onCancel={noop} requirePinForCredit pinResetToken={0} />);
+    fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText('Manager PIN'), { target: { value: '123456' } });
+    view.rerender(<LoyaltyAdjustForm currentBalance={500} onSubmit={noop} onCancel={noop} requirePinForCredit pinResetToken={1} />);
+    expect(screen.getByLabelText('Manager PIN')).toHaveValue('');
+    expect(screen.getByLabelText(/amount/i)).toHaveValue(120);
+  });
 });
