@@ -13,9 +13,9 @@
 // (`location.search`) — le retour rend la liste qu'on regardait.
 
 import { useMemo, useState, type JSX, type ReactNode } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
+import { Printer, XCircle } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateTimeShortWita } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -28,6 +28,7 @@ import { B2bOrderActivity } from '@/features/btob/components/B2bOrderActivity.js
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
 import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { B2bPickupDialog } from '@/features/btob/components/B2bPickupDialog.js';
+import { CancelB2bOrderModal } from '@/features/btob/components/CancelB2bOrderModal.js';
 import { EditB2bOrderDialog } from '@/features/btob/components/EditB2bOrderDialog.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import { useDownloadB2bInvoice } from '@/features/btob/hooks/useDownloadB2bInvoice.js';
@@ -48,6 +49,9 @@ const day = (value: string | null | undefined): string =>
 export default function B2BOrderDetailPage(): JSX.Element {
   const { orderId } = useParams<{ orderId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
+  const canCancel = useAuthStore((s) => s.hasPermission('b2b.order.cancel'));
+  const [cancelOpen, setCancelOpen] = useState(false);
   const canPickup = useAuthStore(
     (s) => s.hasPermission('b2b.read') && s.hasPermission('b2b.order.create'),
   );
@@ -137,6 +141,9 @@ export default function B2BOrderDetailPage(): JSX.Element {
   }
 
   const showPayment = Number(order.outstanding) > 0 || (canPay && pendingPayment);
+  // Même règle que la ligne de la liste des factures : en attente et rien
+  // d'alloué. Le serveur reste juge (`order_has_payments`, période close…).
+  const cancellable = order.order_status === 'b2b_pending' && Number(order.amount_paid) === 0;
 
   return (
     <div className="flex flex-col gap-[13px]">
@@ -195,6 +202,20 @@ export default function B2BOrderDetailPage(): JSX.Element {
                   Mark delivered
                 </button>
               </>
+            )}
+            {cancellable && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
+                disabled={!canCancel || pendingPayment}
+                title={!canCancel ? 'You do not have permission to cancel B2B orders.' : undefined}
+                onClick={() => {
+                  setCancelOpen(true);
+                }}
+              >
+                <XCircle className={TOOLBAR_ICON} aria-hidden />
+                Cancel order
+              </button>
             )}
             {showPayment && (
               <button
@@ -289,6 +310,16 @@ export default function B2BOrderDetailPage(): JSX.Element {
           orderId={order.invoice_id}
           orderNumber={order.order_number}
           onClose={() => { setEditOpen(false); }}
+        />
+      )}
+      {cancelOpen && (
+        <CancelB2bOrderModal
+          open
+          orderId={order.invoice_id}
+          orderNumber={order.order_number}
+          onClose={() => { setCancelOpen(false); }}
+          // Annulée = voided : la vue des factures ne la rend plus, on revient à la liste.
+          onCancelled={() => { void navigate(listUrl); }}
         />
       )}
       {paymentOpen && (

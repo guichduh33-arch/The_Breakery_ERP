@@ -26,9 +26,11 @@ export interface CancelB2bOrderModalProps {
   orderId:     string;
   orderNumber: string;
   onClose:     () => void;
+  /** Appelé après une annulation réussie, avant la fermeture. */
+  onCancelled?: () => void;
 }
 
-export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: CancelB2bOrderModalProps): JSX.Element {
+export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose, onCancelled }: CancelB2bOrderModalProps): JSX.Element {
   const cancelMut = useCancelB2bOrder();
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
   const [reason, setReason] = useState('');
@@ -53,6 +55,7 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
         reason: reason.trim(),
         idempotencyKey: idempotencyKeyRef.current,
       });
+      onCancelled?.();
       handleClose();
     } catch (err) {
       const code = err instanceof CancelB2bOrderError ? err.code : 'unknown';

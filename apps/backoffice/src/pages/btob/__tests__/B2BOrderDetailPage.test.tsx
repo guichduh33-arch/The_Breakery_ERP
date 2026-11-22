@@ -72,6 +72,7 @@ function setup() {
       <MemoryRouter initialEntries={['/backoffice/b2b/orders/o1?payment=unpaid']}>
         <Routes>
           <Route path="/backoffice/b2b/orders/:orderId" element={<B2BOrderDetailPage />} />
+          <Route path="/backoffice/b2b/orders" element={<p>B2B orders list</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -198,6 +199,40 @@ describe('B2B order detail', () => {
     setup();
     await screen.findByRole('heading', { level: 1, name: 'B2B order BO-001' });
     expect(screen.queryByRole('button', { name: 'Edit order' })).not.toBeInTheDocument();
+  });
+  it('cancels an unpaid order with a reason, then returns to the list', async () => {
+    rpc.mockResolvedValue({ data: { order_id: 'o1' }, error: null });
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Cancel invoice' })).toBeDisabled();
+    fireEvent.change(within(dialog).getByTestId('cb2b-reason'), { target: { value: 'Wrong quantity' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel invoice' }));
+    expect(await screen.findByText('B2B orders list')).toBeInTheDocument();
+    expect(rpc).toHaveBeenCalledWith('cancel_b2b_order_v5', expect.objectContaining({
+      p_order_id: 'o1', p_reason: 'Wrong quantity' }));
+  });
+  it('keeps the order open and shows the server refusal', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'order_has_payments' } });
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    fireEvent.change(screen.getByTestId('cb2b-reason'), { target: { value: 'Wrong quantity' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel invoice' }));
+    expect(await screen.findByTestId('cb2b-error')).toHaveTextContent('already has a payment allocated');
+    expect(screen.queryByText('B2B orders list')).not.toBeInTheDocument();
+  });
+  it.each(['paid', 'partial'] as const)('does not offer cancelling after %s', async (flag) => {
+    state[flag] = true;
+    setup();
+    await screen.findByRole('heading', { level: 1, name: 'B2B order BO-001' });
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+  });
+  it('disables cancelling without the cancel permission', async () => {
+    financialTestAuth.setState({ hasPermission: (permission) => permission !== 'b2b.order.cancel' });
+    setup();
+    const cancel = await screen.findByRole('button', { name: 'Cancel order' });
+    expect(cancel).toBeDisabled();
+    expect(cancel).toHaveAttribute('title', 'You do not have permission to cancel B2B orders.');
   });
   it('shows a missing order without offering actions', async () => {
     state.missing = true;
