@@ -52,3 +52,11 @@ tout crédit), scope ajouté à l'Edge Function `verify-manager-pin`, champ PIN
 dans la fenêtre d'ajustement de points, fenêtre de confirmation d'activation
 dans la page Promotions. Migration appliquée sur la base de développement
 uniquement à cette date.
+
+Publié en production le 2026-11-21 : PR #761 fusionnée en `f7fd1fe0`,
+migration additive, Edge Function `verify-manager-pin` redéployée, back-office
+publié sur ce SHA, puis ancienne version de la famille `adjust_loyalty_points`
+retirée. Preuves dans
+[l'état des environnements](../runbooks/etat-environnements.md#complément-du-21-novembre-2026-20-h-30--lot-2-du-domaine-sales-pin-pour-créditer-des-points-f7fd1fe0).
+Aucun crédit de points sous PIN n'avait encore été fait en production à cette
+date.

@@ -1991,6 +1991,8 @@ liste des promotions ignore encore ces deux types.
 **Fusionnée le 2026-11-18 (PR #739), publiée en production le 2026-11-19 vers
 0 h 10** (back-office `47ac4756`). Aucune promotion de ces types créée en
 production.
+Le 2026-11-21 (PR #761, back-office `f7fd1fe0` publié le même jour), le filtre
+par type de la liste dérive de l'enum Postgres et couvre ces deux types.
 
 **Fichiers**
 - `apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx`

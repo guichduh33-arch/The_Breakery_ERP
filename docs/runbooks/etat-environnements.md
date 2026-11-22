@@ -26,6 +26,22 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 22 novembre 2026, 01 h 15 — lot 3 du domaine Sales, back-office `6c886700`
+
+Relevé du 22 novembre 2026, vers 01 h 15 UTC+8. Lot front-only (PR #765) :
+aucune migration, aucune Edge Function, aucune installation POS nécessaire.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Backend production, prérequis | Cible `yjhhhmjgsmyzyymvixot`. `get_pos_product_price_v1`, `_resolve_b2b_line_price_v1` et `get_customer_product_price` : même `md5` du corps (sans CR) et mêmes droits `authenticated` qu'en dev | Lecture seule, aucun appel sous identité utilisateur en production |
+| Preuves du SHA `6c886700` | Fusion de #765. `ci.yml` run `44925369757` (push) réussi ; `pgtap-pr.yml` run `44925560176` (`workflow_dispatch`) réussi | pgTAP tourne sur la base de dev |
+| Back-office | `production-backoffice.yml`, run `44928181043` sur `6c886700`, réussi après approbation Production de Mamat ; alias `backoffice.the-breakery.com` posé le 21 novembre à 17 h 08 UTC ; empreinte de l'artefact manifeste `c4e74b04…` | — |
+| BO servi | Code servi relu (326 fichiers) : appelle `get_pos_product_price_v1` ; contient « Net after refunds », « Checkout completed » et « Unavailable — see the error above. » ; ne contient plus la clé `order.completed` ; référence de production seule, jamais le dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+
+Retour : le lot ne change ni schéma ni droit ; le back-office précédent
+(`f7fd1fe0`) reste compatible avec la base courante.
+
 ## Complément du 21 novembre 2026, 21 h 07 — APK 1.24 sur le bundle de la caisse `e7c43cfd`, installée sur le CS30 et la Galaxy Tab A8
 
 Relevé du 21 novembre 2026 entre 20 h 50 et 21 h 07, UTC+8. Observé directement.

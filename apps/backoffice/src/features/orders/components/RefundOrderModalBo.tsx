@@ -230,8 +230,11 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
         {snapshot && <p className="text-xs text-text-secondary">Saved lines: {snapshot.lines.map((line) => `${nameOf(line.order_item_id) ?? 'Removed item'} × ${line.qty}`).join(', ')}</p>}
 
         {!snapshot && refundQuote.points_restored > 0 && <p role="status">Points to restore: {refundQuote.points_restored}</p>}
-        {/* Lignes à rembourser */}
-        <div>
+        {/* Lignes à rembourser. `min-w-0` : enfant direct de la grille du
+            dialogue, ce bloc gardait `min-width: auto` et s'élargissait au nom
+            le plus long, poussant Cancel/Refund hors champ (mesuré le
+            2026-11-21 : 1 049 px de contenu pour 495). */}
+        <div className="min-w-0">
           <div className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
             Lines to refund
           </div>
@@ -244,7 +247,9 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
               const exhausted = remaining <= 0;
               return (
                 <li key={it.order_item_id} className="flex items-center gap-3 px-3 py-2.5 text-sm">
-                  <span className="flex-1 truncate text-text-primary">{full?.name_snapshot ?? it.order_item_id}</span>
+                  {/* `min-w-0` : un élément flex ne rétrécit pas sous son
+                      contenu sans lui, et `truncate` ne couperait rien. */}
+                  <span className="min-w-0 flex-1 truncate text-text-primary" title={full?.name_snapshot ?? undefined}>{full?.name_snapshot ?? it.order_item_id}</span>
                   {it.qty_already_refunded > 0 && (
                     <span className="font-data text-xs text-text-muted">
                       {it.qty_already_refunded}/{it.quantity} refunded

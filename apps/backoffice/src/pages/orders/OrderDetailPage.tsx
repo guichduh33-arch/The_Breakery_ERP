@@ -281,7 +281,12 @@ export function OrderDetailPage(): JSX.Element {
                 </dd>
               </div>
               {refundTotal > 0 && (
-                <MoneyRow label="Refunded" value={`− ${rp(refundTotal)}`} tone="danger" />
+                <>
+                  <MoneyRow label="Refunded" value={`− ${rp(refundTotal)}`} tone="danger" />
+                  {/* Le comptable lisait « Total » puis « Refunded » et devait
+                      faire la soustraction : ce que la vente garde est affiché. */}
+                  <MoneyRow label="Net after refunds" value={rp(data.total - refundTotal)} />
+                </>
               )}
             </dl>
           </Card>

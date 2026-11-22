@@ -9,13 +9,11 @@
 // Surfaces credit_limit_exceeded errors with a payload alert showing
 // would_exceed_by so the operator can either adjust the basket or escalate.
 //
-// S69 Volet B (Task 8) — the line unit_price field is a display convenience
-// only: create_b2b_order resolves the authoritative price server-side
-// (negotiated customer price > category price > retail), ignoring whatever
-// is sent here. To avoid showing a stale retail price for customers with a
-// negotiated deal, prefill from useCustomerNegotiatedPrices(customerId) when
-// a negotiated row exists for the selected product, else fall back to the
-// catalog price as before.
+// Prix de ligne : create_b2b_order résout le prix serveur (négocié > catégorie
+// > retail) et ignore celui qu'on envoie. Le prix n'est donc plus saisi : il
+// est lu au même résolveur par useB2bLinePrices et affiché en lecture seule (audit
+// Sales 2026-11-21 — le champ éditable faisait mentir le total, et son
+// préremplissage sautait le prix de catégorie).
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { Trash2, Plus } from 'lucide-react';
@@ -29,16 +27,18 @@ import {
   type CreditLimitExceededPayload,
 } from '../hooks/useCreateB2bOrder.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
-import { useProductsForB2bOrder, type B2bOrderProductOption } from '../hooks/useProductsForB2bOrder.js';
+import { useProductsForB2bOrder } from '../hooks/useProductsForB2bOrder.js';
 import { checkB2bStockAvailability, useB2bStockAvailability } from '../hooks/useB2bStockAvailability.js';
-import { useCustomerNegotiatedPrices } from '@/features/customers/hooks/useCustomerNegotiatedPrices.js';
+import { useB2bLinePrices } from '../hooks/useB2bLinePrices.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
+// Pas de prix dans la ligne : il n'est plus saisi, il est lu au serveur
+// (`useB2bLinePrices`). Un champ éditable que la RPC ignorait faisait mentir
+// le total affiché.
 interface ItemRow {
   rowKey:     string;
   productId:  string;
   quantity:   string;       // string for input control
-  unitPrice:  string;
 }
 
 function newRow(): ItemRow {
@@ -46,7 +46,6 @@ function newRow(): ItemRow {
     rowKey:     crypto.randomUUID(),
     productId:  '',
     quantity:   '',
-    unitPrice:  '',
   };
 }
 
@@ -91,22 +90,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     [customers.data, customerId],
   );
 
-  // Display-only prefill: create_b2b_order re-resolves the authoritative
-  // price server-side (negotiated > category > retail) regardless of what's
-  // sent, but showing a stale retail default when this customer has a
-  // negotiated deal would be confusing for the operator.
-  const negotiatedPrices = useCustomerNegotiatedPrices(customerId || null);
-  const negotiatedByProduct = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const n of negotiatedPrices.data ?? []) m.set(n.product_id, n.negotiated_price);
-    return m;
-  }, [negotiatedPrices.data]);
-
-  const productById = useMemo(() => {
-    const m = new Map<string, B2bOrderProductOption>();
-    for (const p of products.data ?? []) m.set(p.id, p);
-    return m;
-  }, [products.data]);
+  const prices = useB2bLinePrices(customerId, items.map((r) => r.productId));
 
   function updateRow(rowKey: string, patch: Partial<ItemRow>): void {
     setItems((prev) => prev.map((r) => (r.rowKey === rowKey ? { ...r, ...patch } : r)));
@@ -121,39 +105,33 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
   }
 
   function handleProductChange(rowKey: string, productId: string): void {
-    const product = productById.get(productId);
-    const negotiated = negotiatedByProduct.get(productId);
-    const prefill = negotiated ?? product?.price;
-    updateRow(rowKey, {
-      productId,
-      unitPrice: prefill !== undefined ? String(prefill) : '',
-    });
+    updateRow(rowKey, { productId });
   }
+
+  const priceOf = (productId: string): number | undefined => prices.data?.get(productId);
+  const pricesReady = items.every((r) => r.productId === '' || priceOf(r.productId) !== undefined);
 
   const itemsTotal = useMemo(() => {
     let sum = 0;
     for (const r of items) {
       const q = Number.parseFloat(r.quantity);
-      const p = Number.parseFloat(r.unitPrice);
-      if (Number.isFinite(q) && Number.isFinite(p) && q > 0 && p >= 0) sum += q * p;
+      const p = prices.data?.get(r.productId);
+      if (Number.isFinite(q) && q > 0 && p !== undefined) sum += q * p;
     }
     return sum;
-  }, [items]);
+  }, [items, prices.data]);
 
   const itemsValid = items.every((r) => {
     if (r.productId === '') return false;
     const q = Number.parseFloat(r.quantity);
-    const p = Number.parseFloat(r.unitPrice);
-    if (!Number.isFinite(q) || q <= 0) return false;
-    if (!Number.isFinite(p) || p < 0)  return false;
-    return true;
+    return Number.isFinite(q) && q > 0;
   });
 
   const availability = useB2bStockAvailability(items.map((item) => ({
     product_id: item.productId, quantity: Number.parseFloat(item.quantity),
   })), open && itemsValid);
 
-  const canSubmit = customerId !== '' && items.length > 0 && itemsValid && !createMut.isPending;
+  const canSubmit = customerId !== '' && items.length > 0 && itemsValid && pricesReady && !createMut.isPending;
 
   function handleClose(): void {
     setFormError(null);
@@ -173,7 +151,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
       items: items.map((r) => ({
         product_id: r.productId,
         quantity:   Number.parseFloat(r.quantity),
-        unit_price: Number.parseFloat(r.unitPrice),
+        // Ignoré par la RPC, qui re-résout ; envoyé pour le contrat du payload.
+        unit_price: priceOf(r.productId) ?? 0,
       })),
       ...(notes.trim()        !== '' ? { notes:        notes.trim() }        : {}),
       ...(deliveryDate.trim() !== '' ? { deliveryDate: deliveryDate.trim() } : {}),
@@ -286,8 +265,16 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               </Button>
             </div>
             <p className="text-xs text-text-muted">
-              Final price is set by the server from negotiated/category pricing.
+              Prices come from the server: negotiated price, then customer category, then retail. They cannot be edited here.
             </p>
+            {prices.isError && (
+              <p role="alert" className="text-xs text-red-as-text">
+                Prices could not be loaded — the order cannot be created until they are.{' '}
+                <button type="button" className={`rounded-sm underline ${FOCUS_RING}`} onClick={() => { void prices.refetch(); }}>
+                  Try again
+                </button>
+              </p>
+            )}
             <div className="space-y-2">
               {items.map((row, idx) => {
                 return (
@@ -317,17 +304,17 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                       onChange={(e) => updateRow(row.rowKey, { quantity: e.target.value })}
                       className="col-span-2"
                     />
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="0.01"
-                      placeholder="Unit price"
+                    {/* Lecture seule : le prix est celui que le serveur fixera. */}
+                    <output
                       aria-label={`Unit price for line ${idx + 1}`}
-                      value={row.unitPrice}
-                      onChange={(e) => updateRow(row.rowKey, { unitPrice: e.target.value })}
-                      className="col-span-3"
-                    />
+                      className="col-span-3 flex h-full items-center justify-end whitespace-nowrap pr-2 font-data text-sm tabular-nums text-text-primary"
+                    >
+                      {row.productId === '' || customerId === ''
+                        ? '—'
+                        : priceOf(row.productId) !== undefined
+                          ? formatCurrency(priceOf(row.productId) ?? 0)
+                          : prices.isError ? '—' : '…'}
+                    </output>
                     <Button
                       type="button"
                       variant="ghost"
@@ -370,7 +357,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             <div className="space-y-1 col-span-1">
               <label className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Total</label>
               <div className="h-9 flex items-center justify-end pr-2 font-mono text-base text-text-primary">
-                {formatCurrency(itemsTotal)}
+                {pricesReady && customerId !== '' ? formatCurrency(itemsTotal) : '—'}
               </div>
             </div>
           </div>

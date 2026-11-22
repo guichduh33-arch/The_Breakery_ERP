@@ -880,6 +880,8 @@ gagnés **après** toutes les remises, après le rachat et après extraction de 
 taxe. 9 clients ont des points. Conversion des points en avoir disponible.
 **RÈGLE** — Créditer des points depuis le back-office exige un PIN manager ;
 débiter des points n'en exige pas (ADR-045).
+**FAIT** — Depuis le 2026-11-21, en production, le serveur refuse tout crédit
+de points sans autorisation de PIN manager à usage unique.
 
 **ABANDONNÉ** — La remise automatique par palier de fidélité, le bonus
 anniversaire configurable et la livraison offerte. Les paliers ne servent qu'au
@@ -938,6 +940,11 @@ pourcentage, montant fixe, un acheté un offert, produit offert, palier, formule
 pourcentage exige un plafond : le serveur lit la présence du plafond comme le
 mode pourcentage. La suppression physique d'une promotion est tracée dans le
 journal d'audit, comme sa suppression logique.
+
+**RÈGLE** — Activer une promotion demande une confirmation qui dit quand elle
+s'appliquera à la caisse ; la désactiver reste direct (ADR-045).
+**FAIT** — Depuis le 2026-11-21, en production, le back-office demande cette
+confirmation depuis la liste et depuis le formulaire de création ou d'édition.
 
 **FAIT** — Le **cumul** de promotions existe, piloté par un drapeau par
 promotion. **Il n'y a aucune sélection de la « meilleure » promo** : l'ordre est
