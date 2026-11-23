@@ -200,8 +200,25 @@ BEGIN
   v_old_acc := resolve_mapping_account(_sale_payment_mapping_key_v1(v_pay.method::text));
   v_new_acc := resolve_mapping_account(_sale_payment_mapping_key_v1(p_new_method::text));
 
-  IF v_old_acc <> v_new_acc THEN
-    -- L'écriture de vente doit porter ce règlement au compte de l'ancien moyen.
+  -- L'écriture de vente doit porter ce règlement au compte de l'ancien moyen.
+  SELECT COALESCE(SUM(l.debit - l.credit), 0) INTO v_old_bal
+    FROM journal_entry_lines l JOIN journal_entries j ON j.id = l.journal_entry_id
+   WHERE j.reference_type = 'sale' AND j.reference_id = v_order.id
+     AND j.status IN ('posted', 'locked') AND l.account_id = v_old_acc;
+  IF v_old_bal < v_pay.amount THEN
+    -- Le mapping a pu changer depuis la vente (espèces repointées de 1110 vers
+    -- 1119 le 2026-10-30 sur dev) : on reprend alors le compte RÉELLEMENT débité
+    -- par la ligne de règlement de l'écriture d'origine.
+    SELECT l.account_id INTO v_old_acc
+      FROM journal_entry_lines l
+     WHERE l.journal_entry_id = v_sale.id
+       AND l.description = format('Payment receipt (%s)', v_pay.method)
+       AND l.debit >= v_pay.amount
+     ORDER BY l.debit, l.id
+     LIMIT 1;
+    IF v_old_acc IS NULL THEN
+      RAISE EXCEPTION 'sale_entry_mismatch' USING ERRCODE = 'P0001';
+    END IF;
     SELECT COALESCE(SUM(l.debit - l.credit), 0) INTO v_old_bal
       FROM journal_entry_lines l JOIN journal_entries j ON j.id = l.journal_entry_id
      WHERE j.reference_type = 'sale' AND j.reference_id = v_order.id
@@ -209,7 +226,9 @@ BEGIN
     IF v_old_bal < v_pay.amount THEN
       RAISE EXCEPTION 'sale_entry_mismatch' USING ERRCODE = 'P0001';
     END IF;
+  END IF;
 
+  IF v_old_acc <> v_new_acc THEN
     -- ADR-046 §8 : un règlement déjà rapproché ne se corrige pas.
     IF EXISTS (
       SELECT 1 FROM journal_entry_lines l JOIN journal_entries j ON j.id = l.journal_entry_id

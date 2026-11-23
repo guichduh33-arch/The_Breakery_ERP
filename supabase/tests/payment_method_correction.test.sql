@@ -14,9 +14,12 @@ DECLARE
   s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid();
   o1 uuid := gen_random_uuid(); o2 uuid := gen_random_uuid(); o4 uuid := gen_random_uuid();
   o5 uuid := gen_random_uuid(); o6 uuid := gen_random_uuid(); o7 uuid := gen_random_uuid();
-  o8 uuid := gen_random_uuid(); o9 uuid := gen_random_uuid();
+  o8 uuid := gen_random_uuid(); o9 uuid := gen_random_uuid(); o3 uuid := gen_random_uuid();
   r uuid := gen_random_uuid();
   v_line uuid;
+  -- Compte espèces « d'avant » : tout compte autre que le mapping courant.
+  v_legacy uuid := (SELECT id FROM accounts WHERE code = CASE
+    WHEN (SELECT code FROM accounts WHERE id = resolve_mapping_account('SALE_PAYMENT_CASH')) = '1110' THEN '1119' ELSE '1110' END);
 BEGIN
   INSERT INTO auth.users(id) VALUES (oa), (ca), (c2a);
   INSERT INTO user_profiles(id, auth_user_id, role_code, full_name, employee_code, is_active, pin_hash) VALUES
@@ -39,13 +42,21 @@ BEGIN
     (o2, 'PMC2-'||left(o2::text,6), s1, 'pending_payment', 'pos', 'take_out', 30000, 0, 30000),
     (o8, 'PMC8-'||left(o8::text,6), s1, 'pending_payment', 'pos', 'take_out', 10000, 0, 10000),
     (o6, 'PMC6-'||left(o6::text,6), s1, 'pending_payment', 'pos', 'take_out', 15000, 0, 15000),
+    (o3, 'PMC3-'||left(o3::text,6), s1, 'pending_payment', 'pos', 'take_out', 12000, 0, 12000),
     (o4, 'PMC4-'||left(o4::text,6), s2, 'pending_payment', 'pos', 'take_out', 20000, 0, 20000),
     (o5, 'PMC5-'||left(o5::text,6), s2, 'pending_payment', 'pos', 'take_out', 25000, 0, 25000);
   INSERT INTO order_payments(order_id, session_id, method, amount, cash_received, change_given) VALUES
     (o1, s1, 'cash', 50000, 60000, 10000), (o2, s1, 'qris', 30000, NULL, NULL),
     (o8, s1, 'card', 10000, NULL, NULL), (o6, s1, 'card', 15000, NULL, NULL),
+    (o3, s1, 'cash', 12000, 12000, 0),
     (o4, s2, 'cash', 20000, 20000, 0), (o5, s2, 'qris', 25000, NULL, NULL);
-  UPDATE orders SET status = 'paid', paid_at = now() WHERE id IN (o1, o2, o8, o6, o4, o5);
+  UPDATE orders SET status = 'paid', paid_at = now() WHERE id IN (o1, o2, o8, o6, o4, o5, o3);
+  -- o3 : vente passée quand les espèces allaient sur un autre compte (mapping
+  -- repointé depuis). Sa ligne de règlement porte l'ancien compte.
+  UPDATE journal_entry_lines SET account_id = v_legacy
+   WHERE description = 'Payment receipt (cash)'
+     AND journal_entry_id = (SELECT id FROM journal_entries WHERE reference_type = 'sale' AND reference_id = o3);
+  PERFORM set_config('pmc.legacy', v_legacy::text, true);
 
   -- Commande annulée (hors shift, pour ne pas fausser les attendus des
   -- clôtures) et commande importée.
@@ -85,6 +96,7 @@ BEGIN
   PERFORM set_config('pmc.p7', (SELECT id::text FROM order_payments WHERE order_id = o7), true);
   PERFORM set_config('pmc.p8', (SELECT id::text FROM order_payments WHERE order_id = o8), true);
   PERFORM set_config('pmc.p9', (SELECT id::text FROM order_payments WHERE order_id = o9), true);
+  PERFORM set_config('pmc.p3', (SELECT id::text FROM order_payments WHERE order_id = o3), true);
   PERFORM set_config('pmc.k1', gen_random_uuid()::text, true);
   PERFORM set_config('pmc.owner', jsonb_build_object('sub', oa, 'role', 'authenticated')::text, true);
   PERFORM set_config('pmc.cashier', jsonb_build_object('sub', ca, 'role', 'authenticated')::text, true);
@@ -170,6 +182,15 @@ CREATE TEMP TABLE pmc_c2 AS SELECT public.correct_order_payment_method_v1(curren
 INSERT INTO pmc_results(tap) SELECT ok((SELECT r->>'ok' = 'true' AND r->>'journal_entry_id' IS NULL FROM pmc_c2)
   AND (SELECT method = 'gopay' FROM order_payments WHERE id = current_setting('pmc.p2')::uuid),
   'Same clearing account: the method changes without an entry');
+
+-- Mapping repointé depuis la vente : la correction crédite le compte réellement débité.
+CREATE TEMP TABLE pmc_c3 AS SELECT public.correct_order_payment_method_v1(current_setting('pmc.p3')::uuid, 'card',
+  'Legacy cash account', '246810', gen_random_uuid()) AS r;
+INSERT INTO pmc_results(tap) SELECT ok((SELECT
+    bool_and(CASE WHEN l.debit > 0 THEN l.account_id = resolve_mapping_account('SALE_PAYMENT_DEBIT')
+                  ELSE l.account_id = current_setting('pmc.legacy')::uuid END) AND count(*) = 2
+  FROM journal_entry_lines l WHERE l.journal_entry_id = (SELECT (r->>'journal_entry_id')::uuid FROM pmc_c3)),
+  'Remapped cash account: the correction credits the account the sale really debited');
 
 -- La clôture du shift 1 lit le moyen corrigé : l'attendu espèces ne compte plus o1.
 SELECT set_config('request.jwt.claims', current_setting('pmc.cashier'), true);
