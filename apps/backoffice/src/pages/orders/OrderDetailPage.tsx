@@ -10,7 +10,7 @@
 // Le détail propose les mêmes flux d'édition, de remboursement et de void que
 // la liste et le tiroir, sous leurs permissions et contrôles serveur respectifs.
 
-import type { JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronRight, Download } from 'lucide-react';
@@ -39,6 +39,7 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { OrderHistory } from '@/features/orders/components/OrderHistory.js';
 import { OrderDetailActions } from '@/features/orders/components/OrderDetailActions.js';
+import { CorrectPaymentMethodDialog } from '@/features/orders/components/CorrectPaymentMethodDialog.js';
 
 const fmtDateTime = formatDateTimeShortWita;
 
@@ -75,7 +76,10 @@ export function OrderDetailPage(): JSX.Element {
   const { data, isLoading, error } = useOrderDetail(id);
   // Hooks inconditionnels : appelés AVANT les retours anticipés (erreur/chargement).
   const hasReprint = useAuthStore((s) => s.hasPermission('orders.reprint_receipt'));
+  // ADR-046 : seul le super admin corrige un moyen de paiement (le serveur le revérifie).
+  const isSuperAdmin = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN');
   const reprint = useReprintReceipt();
+  const [correcting, setCorrecting] = useState<{ id: string; method: string; amount: number } | null>(null);
 
   if (error) {
     return (
@@ -115,6 +119,10 @@ export function OrderDetailPage(): JSX.Element {
   // anomalie qu'on CONSTATE — on ne lui invente pas une cause.
   const isB2B = isB2BOrder(data);
   const orderNo = data.order_number.replace(/^#+/, '');
+  // Mêmes refus que le serveur, pour ne pas proposer un geste voué à l'échec :
+  // vente réglée, sans remboursement, ni B2B ni importée de l'ancienne caisse.
+  const canCorrectMethod = isSuperAdmin && isSettledStatus(data.status) && data.refunds.length === 0
+    && !isB2B && data.history?.createdVia !== 'import';
 
   return (
     <div className="flex flex-col gap-[13px]">
@@ -325,6 +333,16 @@ export function OrderDetailPage(): JSX.Element {
                         </span>
                       )}
                     </div>
+                    {canCorrectMethod && p.method !== 'store_credit' && (
+                      <button
+                        type="button"
+                        className={cn('mt-1 rounded-sm text-xs text-text-secondary underline underline-offset-2 hover:text-text-primary', FOCUS_RING)}
+                        data-testid={`correct-method-${p.id}`}
+                        onClick={() => { setCorrecting({ id: p.id, method: p.method, amount: Number(p.amount) }); }}
+                      >
+                        Correct method
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -357,6 +375,16 @@ export function OrderDetailPage(): JSX.Element {
           </Card>
         </div>
       </div>
+      {correcting !== null && (
+        <CorrectPaymentMethodDialog
+          key={correcting.id}
+          open
+          onClose={() => { setCorrecting(null); }}
+          orderId={data.id}
+          orderNumber={`#${orderNo}`}
+          payment={correcting}
+        />
+      )}
     </div>
   );
 }

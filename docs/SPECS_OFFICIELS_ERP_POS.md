@@ -799,6 +799,7 @@ le rapprochement lui-même.
 | Événement | Débit | Crédit |
 |---|---|---|
 | Vente payée | compte du moyen de paiement, une ligne par règlement | Ventes + PB1 |
+| Correction du moyen d'un règlement (ADR-046) | compte du nouveau moyen ; gain d'écart (réduit) si le shift est clos et le nouveau moyen est espèces | compte de l'ancien moyen ; perte d'écart (réduite) si le shift est clos et l'ancien moyen est espèces |
 | Annulation | Ventes + PB1 (+ fidélité si rachat) | comptes des règlements |
 | Remboursement | Ventes + PB1 | compte du règlement |
 | Remise | Remises | contre-produit |
@@ -813,6 +814,12 @@ le rapprochement lui-même.
 | Écart de caisse | Perte d'écart | Gain d'écart |
 | Avoir client | selon le geste | Avoirs client |
 | Vente B2B | Clients B2B | Ventes B2B, **taxe à zéro** |
+
+**RÈGLE** — Seul le super admin corrige le moyen d'un règlement de vente de la
+caisse actuelle, sous son PIN et avec un motif. L'écriture d'origine reste
+intacte, le rapport Z et les totaux figés du shift aussi ; un règlement déjà
+rapproché avec la banque ne se corrige pas (décision de Mamat du 2026-11-23,
+ADR-046).
 
 **RÈGLE** — Toute dépense payée en espèces, charge ou paiement fournisseur,
 sort de la **petite caisse** (`1111`), jamais du compte d'encaissements non

@@ -35,6 +35,8 @@ export const ORDER_HISTORY_LABELS: Readonly<Record<string, string>> = {
   'order.item.update_qty': 'Item quantity changed',
   'order.item.remove': 'Item removed',
   'order.pay_existing': 'Payment recorded',
+  // ADR-046 : le super admin corrige le moyen d'un règlement.
+  'order.payment_method_corrected': 'Payment method corrected',
   // Fin d'encaissement en caisse (`complete_order`) : distincte des lignes
   // « Payment completed » tirées de chaque paiement, d'où un autre libellé.
   'order.complete': 'Checkout completed',
@@ -129,7 +131,10 @@ export function buildOrderHistory(order: OrderDetail, audit: OrderAuditEvent[]):
     const item = order.items.find((line) => line.id === itemId);
     const count = metadata.items_added ?? metadata.items_count;
     const detail = item ? `${item.name_snapshot}${typeof metadata.qty === 'number' ? ` × ${metadata.qty}` : ''}`
-      : typeof count === 'number' ? `${count} item lines` : undefined;
+      : typeof count === 'number' ? `${count} item lines`
+        // Une correction de moyen se lit par son motif ; le moyen courant est sur le règlement.
+        : event.action === 'order.payment_method_corrected' && typeof metadata.reason === 'string' ? metadata.reason
+          : undefined;
     // Repli : le code brut plutôt qu'un générique qui cache le geste.
     add(`audit-${event.id}`, ORDER_HISTORY_LABELS[event.action] ?? `Recorded action: ${event.action}`, event.created_at, event.actor?.full_name ?? null, detail, event.participants);
   }
