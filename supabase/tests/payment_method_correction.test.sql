@@ -215,14 +215,14 @@ INSERT INTO pmc_results(tap) SELECT ok((SELECT r->>'session_closed' = 'true' FRO
   AND (SELECT r->>'session_closed' = 'true' FROM pmc_c5), 'Closed shift: both corrections succeed');
 INSERT INTO pmc_results(tap) SELECT ok((SELECT
     bool_and(CASE WHEN l.debit > 0 THEN l.account_id = resolve_mapping_account('SALE_PAYMENT_QRIS')
-                  ELSE l.account_id = resolve_mapping_account('SHIFT_CASH_VARIANCE_INCOME') END)
+                  ELSE l.account_id = resolve_mapping_account('SHIFT_CASH_VARIANCE_EXPENSE') END)
   FROM journal_entry_lines l WHERE l.journal_entry_id = (SELECT (r->>'journal_entry_id')::uuid FROM pmc_c4)),
-  'Closed shift, cash -> QRIS: debit QRIS clearing, credit cash variance income (drawer untouched)');
+  'Closed shift, cash -> QRIS: debit QRIS clearing, credit (reduce) the cash shortage expense; drawer untouched');
 INSERT INTO pmc_results(tap) SELECT ok((SELECT
-    bool_and(CASE WHEN l.debit > 0 THEN l.account_id = resolve_mapping_account('SHIFT_CASH_VARIANCE_EXPENSE')
+    bool_and(CASE WHEN l.debit > 0 THEN l.account_id = resolve_mapping_account('SHIFT_CASH_VARIANCE_INCOME')
                   ELSE l.account_id = resolve_mapping_account('SALE_PAYMENT_QRIS') END)
   FROM journal_entry_lines l WHERE l.journal_entry_id = (SELECT (r->>'journal_entry_id')::uuid FROM pmc_c5)),
-  'Closed shift, QRIS -> cash: debit cash variance expense, credit QRIS clearing');
+  'Closed shift, QRIS -> cash: debit (reduce) the cash overage income, credit QRIS clearing');
 INSERT INTO pmc_results(tap) SELECT ok((SELECT cash_received = 25000 AND change_given = 0
   FROM order_payments WHERE id = current_setting('pmc.p5')::uuid), 'A payment corrected to cash carries its amount as received');
 -- Écart net : la clôture avait constaté +5 000 ; les deux corrections le ramènent à zéro.

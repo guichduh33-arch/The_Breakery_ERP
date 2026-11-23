@@ -799,7 +799,7 @@ le rapprochement lui-même.
 | Événement | Débit | Crédit |
 |---|---|---|
 | Vente payée | compte du moyen de paiement, une ligne par règlement | Ventes + PB1 |
-| Correction du moyen d'un règlement (ADR-046) | compte du nouveau moyen ; perte d'écart si le shift est clos et le nouveau moyen est espèces | compte de l'ancien moyen ; gain d'écart si le shift est clos et l'ancien moyen est espèces |
+| Correction du moyen d'un règlement (ADR-046) | compte du nouveau moyen ; gain d'écart (réduit) si le shift est clos et le nouveau moyen est espèces | compte de l'ancien moyen ; perte d'écart (réduite) si le shift est clos et l'ancien moyen est espèces |
 | Annulation | Ventes + PB1 (+ fidélité si rachat) | comptes des règlements |
 | Remboursement | Ventes + PB1 | compte du règlement |
 | Remise | Remises | contre-produit |

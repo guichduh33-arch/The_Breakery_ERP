@@ -15,8 +15,8 @@
 --   existantes du type 'sale' ne testent que l'existence d'une écriture.
 -- * Date de l'écriture = date de l'écriture de vente d'origine.
 -- * Shift clos et espèces concernées : l'écart de caisse constaté à la clôture
---   était faux du même montant. On le corrige au compte d'écart, sans toucher
---   le tiroir, déjà soldé par la clôture. Les totaux figés et le rapport Z ne
+--   était faux du même montant. On le réduit sur le compte d'écart où la
+--   clôture l'a passé (perte ou gain), sans toucher le tiroir, déjà soldé. Les totaux figés et le rapport Z ne
 --   bougent pas (ADR-046 §7).
 -- * La table payment_method_corrections sert d'historique ET de clé
 --   d'idempotence métier (réservation de la clé avant tout effet, rejeu = le
@@ -136,6 +136,17 @@ BEGIN
     RAISE EXCEPTION 'payment_not_found' USING ERRCODE = 'P0002';
   END IF;
 
+  -- Une demande concurrente de même clé a pu aboutir pendant l'attente du verrou :
+  -- on rejoue son résultat AVANT les contrôles d'état (sinon same_method).
+  SELECT * INTO v_prior FROM payment_method_corrections WHERE idempotency_key = p_idempotency_key;
+  IF FOUND THEN
+    IF v_prior.corrected_by <> v_profile OR v_prior.payment_id <> p_payment_id
+       OR v_prior.new_method <> p_new_method OR v_prior.result IS NULL THEN
+      RAISE EXCEPTION 'idempotency_key_reused' USING ERRCODE = '22023';
+    END IF;
+    RETURN v_prior.result || jsonb_build_object('replayed', true);
+  END IF;
+
   IF v_order.financial_import_document_id IS NOT NULL OR COALESCE(v_order.is_historical_import, false) THEN
     RAISE EXCEPTION 'imported_sale_not_correctable' USING ERRCODE = 'P0001';
   END IF;
@@ -242,18 +253,24 @@ BEGIN
       RAISE EXCEPTION 'payment_already_reconciled' USING ERRCODE = 'P0001';
     END IF;
 
+    -- Shift clos : l'erreur a faussé l'écart sur le compte même où la clôture
+    -- l'a passé. Espèces saisies à tort = manque fictif (perte d'écart) : on le
+    -- réduit au crédit. Espèces oubliées = excédent fictif (gain d'écart) : on le
+    -- réduit au débit. Dans le cas d'une erreur seule, chaque compte revient à zéro.
     IF v_closed AND v_pay.method = 'cash' THEN
       v_debit_acc  := v_new_acc;
-      v_credit_acc := resolve_mapping_account('SHIFT_CASH_VARIANCE_INCOME');
+      v_credit_acc := resolve_mapping_account('SHIFT_CASH_VARIANCE_EXPENSE');
     ELSIF v_closed AND p_new_method = 'cash' THEN
-      v_debit_acc  := resolve_mapping_account('SHIFT_CASH_VARIANCE_EXPENSE');
+      v_debit_acc  := resolve_mapping_account('SHIFT_CASH_VARIANCE_INCOME');
       v_credit_acc := v_old_acc;
     ELSE
       v_debit_acc  := v_new_acc;
       v_credit_acc := v_old_acc;
     END IF;
 
-    -- Une ligne neuve dans une période bancaire finalisée casserait son empreinte.
+    -- Une ligne neuve sur un compte BANCAIRE (virement : 1112) dans une période
+    -- finalisée casserait l'empreinte de ce rapprochement. Les comptes d'attente
+    -- carte/QRIS ne portent pas de rapprochement : ils ne sont pas concernés.
     IF EXISTS (SELECT 1 FROM bank_reconciliations r
                 WHERE r.status = 'finalized' AND r.account_id IN (v_debit_acc, v_credit_acc)
                   AND v_date BETWEEN r.period_start AND r.period_end) THEN
