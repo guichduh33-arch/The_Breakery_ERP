@@ -53,6 +53,10 @@ GRANT SELECT ON public.payment_method_corrections TO authenticated;
 CREATE POLICY payment_method_corrections_read ON public.payment_method_corrections
   FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.order_payments p WHERE p.id = payment_id));
+-- Garde commune à toute table publique sous RLS : une session PIN active.
+CREATE POLICY pin_session_required ON public.payment_method_corrections AS RESTRICTIVE
+  FOR ALL TO authenticated USING (public.request_has_active_pin_session_v1())
+  WITH CHECK (public.request_has_active_pin_session_v1());
 
 CREATE FUNCTION public.correct_order_payment_method_v1(
   p_payment_id      uuid,
