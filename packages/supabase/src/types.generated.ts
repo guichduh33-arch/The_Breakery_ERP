@@ -4644,6 +4644,100 @@ export type Database = {
           },
         ]
       }
+      payment_method_corrections: {
+        Row: {
+          amount: number
+          corrected_by: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          journal_entry_id: string | null
+          new_method: Database["public"]["Enums"]["payment_method"]
+          old_method: Database["public"]["Enums"]["payment_method"]
+          order_id: string
+          payment_id: string
+          reason: string
+          result: Json | null
+          session_closed: boolean
+          session_id: string | null
+        }
+        Insert: {
+          amount: number
+          corrected_by: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          journal_entry_id?: string | null
+          new_method: Database["public"]["Enums"]["payment_method"]
+          old_method: Database["public"]["Enums"]["payment_method"]
+          order_id: string
+          payment_id: string
+          reason: string
+          result?: Json | null
+          session_closed: boolean
+          session_id?: string | null
+        }
+        Update: {
+          amount?: number
+          corrected_by?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          journal_entry_id?: string | null
+          new_method?: Database["public"]["Enums"]["payment_method"]
+          old_method?: Database["public"]["Enums"]["payment_method"]
+          order_id?: string
+          payment_id?: string
+          reason?: string
+          result?: Json | null
+          session_closed?: boolean
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_method_corrections_corrected_by_fkey"
+            columns: ["corrected_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_corrections_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_corrections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_corrections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "payment_method_corrections_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "order_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_corrections_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           action: string
@@ -7909,6 +8003,16 @@ export type Database = {
           p_closing_id: string
           p_counts: Json
           p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      correct_order_payment_method_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_manager_pin: string
+          p_new_method: Database["public"]["Enums"]["payment_method"]
+          p_payment_id: string
           p_reason: string
         }
         Returns: Json
