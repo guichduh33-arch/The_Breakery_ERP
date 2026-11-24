@@ -57,7 +57,9 @@ dédiée — jamais d'INSERT direct dans `journal_entries`.
 | Famille RPC | Événement métier | Mappings résolus (relevé 2026-08-17) |
 |---|---|---|
 | `complete_order_with_payment`, `pay_existing_order` | remise POS, points loyalty | `SALE_DISCOUNT` → 4900, `LOYALTY_LIABILITY` → 2210 |
-| `_emit_expense_je` (appelée par le workflow expenses) | dépense approuvée | charge TTC (PPN foldé) ; `EXPENSE_AP` 2141 / `EXPENSE_CASH_OUT` 1111 |
+| `_emit_expense_je` (appelée par le workflow expenses) | dépense approuvée | débit TTC (PPN foldé) au compte de la catégorie, ou, pour une dépense marquée équipement (ADR-047), au compte du type : `FIXED_ASSET_EQUIPMENT` → 1600 / `FIXED_ASSET_PRODUCTION_MACHINE` → 1610, et les fiches du registre naissent dans le même geste ; crédit `EXPENSE_AP` 2141 si crédit, sinon le compte du moyen (`_expense_settlement_mapping_key`) (relevé 2026-11-25) |
+| `run_fixed_asset_depreciation_v1` (pg_cron quotidien) | dotation des mois terminés, un mois par équipement au plus | `FIXED_ASSET_DEPRECIATION_EXPENSE` → 6950 / `FIXED_ASSET_ACCUMULATED_DEPRECIATION` → 1690, datée du dernier jour du mois ; période fermée = mois refusé et signalé, jamais reporté (ADR-047, relevé 2026-11-25) |
+| `dispose_fixed_asset_v1` | sortie d'équipement (vente, casse, rebut), PIN manager | solde 1690 et compte d'équipement ; gain `FIXED_ASSET_DISPOSAL_GAIN` → 4950, perte `FIXED_ASSET_DISPOSAL_LOSS` → 6970 (ADR-047, relevé 2026-11-25) |
 | `create_b2b_order`, `cancel_b2b_order` | vente / annulation B2B | `SALE_B2B_REVENUE` → 4131, `B2B_AR` → 1132 |
 | `record_b2b_payment` | règlement B2B | table moyen-vers-compte de la vente (`_sale_payment_mapping_key`, ADR-013 D3) ; espèces → `CASH_WALLET_UNDEPOSITED` 1110 |
 | `adjust_b2b_balance` | write-off créance B2B | `B2B_AR_ADJUSTMENT` → 6520 |
