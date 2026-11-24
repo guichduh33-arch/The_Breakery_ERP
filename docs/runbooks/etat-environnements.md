@@ -26,6 +26,24 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 24 novembre 2026, 13 h 50 — correction du moyen de paiement (ADR-046), back-office `553da7f0`
+
+Relevé du 24 novembre 2026, vers 13 h 50 UTC+8. PR #769 : une migration, le
+back-office ; aucune Edge Function, aucune installation POS nécessaire.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Base de production | Cible `yjhhhmjgsmyzyymvixot`. Migration `20261123000001_payment_method_correction.sql` appliquée sous la version `20261124110126`. `correct_order_payment_method_v1` : même `md5` du corps (sans CR) qu'en dev et que le fichier, `62c3df4c…` ; non exécutable par `anon`. Table `payment_method_corrections` vide au relevé | Lecture seule, aucun appel sous identité utilisateur en production |
+| Preuves du SHA `553da7f0` | Fusion de #769. `ci.yml` run `45217068719` (push) réussi ; `pgtap-pr.yml` run `45316662230` (`workflow_dispatch`) réussi, avec `pgtap` et `db-gate` | pgTAP tourne sur la base de dev |
+| Back-office | `production-backoffice.yml`, run `45319869650` sur `553da7f0`, réussi après approbation Production de Mamat ; alias `backoffice.the-breakery.com` posé le 24 novembre à 05 h 46 UTC ; empreinte de l'artefact manifeste `0af6c264…`. Embarque aussi #767 (annulation d'une commande B2B depuis sa fiche) | — |
+| BO servi | Les 380 fichiers publics correspondent au manifeste. Appelle `correct_order_payment_method_v1` et `cancel_b2b_order_v5` ; contient « Correct method » et « Payment method corrected » ; référence de production seule, ni dev ni V2 | Lecture des fichiers servis, pas d'un parcours à l'écran. Aucune correction réelle passée en production |
+
+Retour, déduit du contenu de la migration et non essayé : elle ajoute une table
+et une fonction, sans modifier d'objet existant ; le back-office précédent
+(`6c886700`) ne les appelle pas et reste donc utilisable sur la base courante.
+Ce retour retirerait aussi #767, fusionnée après `6c886700`.
+
 ## Complément du 22 novembre 2026, 01 h 15 — lot 3 du domaine Sales, back-office `6c886700`
 
 Relevé du 22 novembre 2026, vers 01 h 15 UTC+8. Lot front-only (PR #765) :

@@ -65,4 +65,38 @@ rapports par moyen de paiement restaient faux.
 
 ## Bilan factuel
 
-À compléter après livraison.
+Relevé du 2026-11-24. Livré par la PR #769, fusionnée le 2026-11-24 à
+00 h 29 UTC+8 (master `553da7f0`).
+
+- **Base** : migration `20261123000001_payment_method_correction.sql`. Elle crée
+  la RPC `correct_order_payment_method_v1` et la table
+  `payment_method_corrections` (historique et idempotence, lecture seule sous
+  la visibilité des règlements). Appliquée en production sous la version
+  `20261124110126` ; corps de la fonction identique au dépôt et à la base de
+  dev ; non exécutable par `anon`.
+- **Back-office** : bouton « Correct method » par règlement sur la fiche
+  commande, visible du super admin seul ; fenêtre moyen, motif et PIN ; libellé
+  « Payment method corrected » dans l'historique de la commande. Publié en
+  production le 2026-11-24 (détail dans
+  [l'état des environnements](../runbooks/etat-environnements.md)).
+- **Écriture de correction** : neuve, à la date de la vente, rattachée à la
+  vente. Shift ouvert : compte du nouveau moyen contre compte de l'ancien.
+  Shift clos avec espèces : l'écart de caisse est réduit sur le compte où la
+  clôture l'a passé. Deux moyens qui partagent le même compte (par exemple
+  carte et EDC, ou QRIS et portefeuilles) ne donnent aucune écriture. Si le mapping a changé depuis la
+  vente, la correction crédite le compte réellement débité par la vente.
+- **Refus côté serveur**, en plus des décisions : commande B2B, période
+  bancaire finalisée sur le compte concerné.
+
+Écarts et limites constatés :
+
+- Décision 8 : le refus « déjà rapproché » porte sur les lignes des écritures
+  de la vente au compte de l'ancien moyen, pas sur le règlement seul. Une
+  commande payée en deux règlements du même moyen est refusée dès que l'un des
+  deux est rapproché.
+- Décision 9 : l'ardoise est refusée par le serveur, mais le bouton reste
+  visible sur une vente en ardoise ; le refus s'affiche alors en message.
+- La course de deux corrections concurrentes de même clé est traitée dans la
+  fonction, sans test automatisé (pgTAP ne tient qu'une session).
+- Au relevé, aucune correction n'a encore été passée en production : l'usage
+  réel n'est pas observé.
