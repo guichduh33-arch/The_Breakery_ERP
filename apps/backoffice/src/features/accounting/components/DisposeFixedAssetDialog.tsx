@@ -173,7 +173,7 @@ export function DisposeFixedAssetDialog({ open, onClose, asset }: Props): JSX.El
               aria-describedby="fa-dispose-pin-hint"
               data-testid="fa-dispose-pin"
             />
-            <p id="fa-dispose-pin-hint" className={`mt-1 text-xs ${pin.length > 0 && !pinOk ? 'text-danger' : 'text-text-muted'}`}>
+            <p id="fa-dispose-pin-hint" className={`mt-1 text-xs ${pin.length > 0 && !pinOk ? 'text-danger-as-text' : 'text-text-muted'}`}>
               {pin.length > 0 && !pinOk ? 'Exactly 6 digits' : '6 digits'}
             </p>
           </div>

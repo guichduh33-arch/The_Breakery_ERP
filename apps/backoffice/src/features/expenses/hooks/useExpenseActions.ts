@@ -13,6 +13,15 @@ import { supabase } from '@/lib/supabase.js';
 import { EXPENSES_QUERY_KEY } from './useExpensesList.js';
 import { invoiceErrorMessage } from '@/lib/invoiceFiles.js';
 
+// ADR-047 : l'approbation revérifie le seuil d'un équipement (2 000 000 IDR
+// TTC par article) ; le refus arrive en code brut, on le dit en clair.
+function expenseErrorMessage(message: string): string {
+  if (message.includes('fixed_asset_below_threshold')) {
+    return 'This expense is marked as equipment but is below 2,000,000 IDR per item. Remove or fix the equipment mark.';
+  }
+  return invoiceErrorMessage(message);
+}
+
 export interface SubmitResult {
   expense_id: string;
   status: string;
@@ -32,7 +41,7 @@ export function useSubmitExpense() {
         p_expense_id: id,
         p_idempotency_key: idempotencyKey.current,
       });
-      if (error) throw new Error(invoiceErrorMessage(error.message));
+      if (error) throw new Error(expenseErrorMessage(error.message));
       return data as unknown as SubmitResult;
     },
     onSuccess: async (_data, { id }) => {
@@ -73,7 +82,7 @@ export function useApproveExpense() {
       if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
         throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
       }
-      if (error) throw new Error(invoiceErrorMessage(error.message));
+      if (error) throw new Error(expenseErrorMessage(error.message));
       return data as unknown as ApproveResult;
     },
     onSuccess: async (_data, { id }) => {
@@ -114,7 +123,7 @@ export function usePayExpense() {
       const args: Record<string, unknown> = { p_expense_id: id };
       if (paymentMethod !== undefined) args.p_payment_method = paymentMethod;
       const { data, error } = await supabase.rpc('pay_expense_v6', args as never);
-      if (error) throw new Error(invoiceErrorMessage(error.message));
+      if (error) throw new Error(expenseErrorMessage(error.message));
       return data as unknown as PayResult;
     },
     onSuccess: async (_data, { id }) => {

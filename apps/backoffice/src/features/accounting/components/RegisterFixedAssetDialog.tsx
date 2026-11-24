@@ -40,7 +40,11 @@ export function RegisterFixedAssetDialog({ open, onClose }: Props): JSX.Element 
   const [accumulated, setAccumulated] = useState('');
   const [asOf, setAsOf] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
-  const idem = useRef(crypto.randomUUID());
+  // La clé d'idempotence est liée au contenu envoyé : un nouvel essai du même
+  // contenu (réponse perdue) rejoue la même demande ; un contenu différent,
+  // même après une annulation, part sous une clé neuve et ne rejoue jamais
+  // une fiche précédente.
+  const idem = useRef<{ key: string; payload: string } | null>(null);
   const m = useRegisterExistingFixedAsset();
 
   const reset = (): void => {
@@ -67,13 +71,16 @@ export function RegisterFixedAssetDialog({ open, onClose }: Props): JSX.Element 
     if (!isMonthEnd(asOf)) { setLocalError('The accumulated depreciation date must be the last day of a month.'); return; }
     if (inService > asOf) { setLocalError('The in-service date must be on or before the accumulated depreciation date.'); return; }
     if (asOf > todayIsoDate()) { setLocalError('The accumulated depreciation date cannot be in the future.'); return; }
+    const request = {
+      name: trimmed, assetType, taxGroup, inServiceDate: inService, cost: costValue,
+      accumulated: accumulatedValue, accumulatedAsOf: asOf,
+    };
+    const payload = JSON.stringify(request);
+    if (idem.current?.payload !== payload) idem.current = { key: crypto.randomUUID(), payload };
     try {
-      await m.mutateAsync({
-        name: trimmed, assetType, taxGroup, inServiceDate: inService, cost: costValue,
-        accumulated: accumulatedValue, accumulatedAsOf: asOf, idempotencyKey: idem.current,
-      });
+      await m.mutateAsync({ ...request, idempotencyKey: idem.current.key });
       // Succès seulement : la prochaine inscription est une demande neuve.
-      idem.current = crypto.randomUUID();
+      idem.current = null;
       handleClose();
     } catch {
       // Le refus est affiché depuis m.error ; la clé reste celle de la demande.

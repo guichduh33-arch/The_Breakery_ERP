@@ -61,7 +61,8 @@ const KNOWN = [
   'invalid_pin', 'pin_required', 'account_locked',
   'period_locked', 'period_undefined',
   'fixed_asset_not_found', 'fixed_asset_already_disposed', 'fixed_asset_disposal_date_invalid',
-  'fixed_asset_disposal_before_posted_depreciation', 'fixed_asset_sale_price_invalid',
+  'fixed_asset_disposal_before_posted_depreciation', 'fixed_asset_disposal_before_opening_balance',
+  'fixed_asset_sale_price_invalid',
   'fixed_asset_proceeds_account_invalid', 'fixed_asset_sale_fields_only_for_sale',
   'fixed_asset_disposal_reason_required', 'fixed_asset_disposal_notes_too_long',
   'fixed_asset_name_invalid', 'fixed_asset_type_and_group_required', 'fixed_asset_cost_invalid',
@@ -106,6 +107,8 @@ export function fixedAssetErrorMessage(err: unknown): string {
       return 'The disposal date must be between the in-service date and today.';
     case 'fixed_asset_disposal_before_posted_depreciation':
       return 'Depreciation is already posted for this month or later. Pick a later disposal date.';
+    case 'fixed_asset_disposal_before_opening_balance':
+      return 'The disposal date must be after the date of the opening accumulated depreciation.';
     case 'fixed_asset_sale_price_invalid':
       return 'Enter a sale price above zero, with at most two decimals.';
     case 'fixed_asset_proceeds_account_invalid':
