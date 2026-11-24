@@ -126,8 +126,8 @@ nouvel ADR, comme une décision.
 
 ## Bilan factuel
 
-Relevé du 2026-11-25. Livré sur la branche `feat/adr-047-equipements` et sur
-la base de dev V3. Rien n'est publié en production à ce relevé.
+Relevé du 2026-11-25. Livré par la PR #772 (branche `feat/adr-047-equipements`)
+et sur la base de dev V3. Rien n'est publié en production à ce relevé.
 
 - **Base** : migrations `20261125000001` à `20261125000005`. Elles créent le
   registre (`fixed_assets`) et une ligne de dotation par équipement et par mois
