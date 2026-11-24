@@ -2,7 +2,8 @@
 
 Date : 2026-11-25
 
-Statut : décisions de Mamat du 2026-11-25. Rien n'est encore livré. La section
+Statut : décisions de Mamat du 2026-11-25. Livré dans le code et sur la base de
+dev le 2026-11-25, pas encore publié en production (voir le bilan factuel). La section
 « Choix de méthode » porte des choix comptables et techniques de l'agent, pris
 dans le mandat : ils ne sont pas des décisions de Mamat.
 
@@ -122,3 +123,70 @@ nouvel ADR, comme une décision.
   pas le registre, tant que le propriétaire ne leur délègue pas la permission.
 - En régime PPh final UMKM, impôt sur le chiffre d'affaires, la dotation ne
   change pas l'impôt. Elle rend le bilan et le résultat justes.
+
+## Bilan factuel
+
+Relevé du 2026-11-25. Livré sur la branche `feat/adr-047-equipements` et sur
+la base de dev V3. Rien n'est publié en production à ce relevé.
+
+- **Base** : migrations `20261125000001` à `20261125000005`. Elles créent le
+  registre (`fixed_assets`) et une ligne de dotation par équipement et par mois
+  (`fixed_asset_depreciations`), toutes deux sous RLS, sans accès direct du
+  client. Elles ajoutent la marque « équipement » à la dépense (type, groupe
+  fiscal, nom, nombre d'articles), le compte `6970` de perte de sortie, six
+  clés de mapping et la permission `accounting.fixed_assets.manage`, donnée au
+  propriétaire seul.
+- **Approbation** : l'émetteur de l'écriture d'une dépense approuvée débite le
+  `1600` ou le `1610` pour une dépense marquée, puis crée une fiche par
+  article dans le même geste. Le seuil se vérifie au marquage et à
+  l'approbation. La garde de la catégorie (classe 6) n'a pas changé.
+- **Dotation** : une tâche pg_cron passe chaque jour à 00 h 30 (Asia/Makassar)
+  et poste les mois terminés. Un mois refusé pour période fermée reste signalé
+  dans le registre ; il est retenté à sa propre date à chaque passage.
+- **Sortie** : vente, casse ou rebut, sous PIN manager vérifié par le serveur
+  avec verrouillage. Les mois terminés avant le mois de sortie reçoivent
+  d'abord leur dotation. Un mois encore refusé à ce moment reste non posté pour
+  toujours : la sortie solde le cumul tel qu'il est et sa trace compte ces
+  mois. Un équipement inscrit avec un cumul ne sort qu'après la date de ce
+  cumul.
+- **Reprise de la machine** : la migration `20261125000005` inscrit la machine
+  seulement si les soldes valent 28 791 300 IDR au `1610` et 7 197 825 IDR au
+  `1690` au 2026-09-30, comme au relevé de production, et si aucun
+  amortissement n'est passé au `1690` après cette date. Sinon elle ne fait
+  rien, sans erreur : après la publication, il faut vérifier que le registre
+  porte la machine. Sur la base de dev, ces soldes diffèrent : la migration n'y
+  a rien fait.
+- **Back-office** : page Finance › Accounting › Fixed assets (liste, fiche,
+  inscription d'un équipement déjà au bilan, sortie) et panneau « Equipment »
+  sur la fiche d'une dépense.
+- **Preuves** : pgTAP `fixed_assets.test.sql`, joué sur la base de dev en deux
+  passes : 71 assertions, puis les 7 ajoutées après la revue indépendante.
+  Suite BO complète verte, avec un test ignoré préexistant.
+
+Écarts et limites constatés :
+
+- Une dépense marquée peut porter plusieurs articles identiques. Le coût par
+  article est tronqué au centime ; le dernier article prend le reste.
+- La date de mise en service d'un achat est la date de la dépense : la
+  dépense n'a pas de champ distinct.
+- La fiche figée est tenue par la base. Aucun geste du registre ne corrige une
+  fiche : la correction passe par une écriture manuelle, tracée comme toute
+  écriture manuelle.
+- La dotation automatique n'a pas d'utilisateur : ses écritures et ses traces
+  d'audit n'ont pas d'acteur.
+- Le rapport des dépenses par catégorie lit la table des dépenses : un achat
+  d'équipement y figure encore dans sa catégorie, alors que le compte de
+  résultat ne le porte plus.
+- Les huit fonctions internes du module sont absentes de
+  `packages/supabase/src/types.generated.ts` : les y laisser faisait échouer
+  le typage du back-office (limite d'instanciation de TypeScript). Une
+  régénération complète des types les réintroduirait.
+- Rien n'empêche un import bancaire de porter encore une ligne de dotation pour
+  la machine : la consigne des conséquences reste une règle de saisie.
+- La dotation d'un mois part le premier jour du mois suivant. Ensuite, une
+  sortie ne peut plus être datée dans ce mois : une casse constatée en retard
+  se date au mois en cours.
+- Un passage de la dotation et une sortie simultanés peuvent rarement se
+  bloquer l'un l'autre ; la base abandonne alors l'un des deux, qui se rejoue.
+- Le parcours n'a pas été essayé dans un navigateur : les preuves du
+  back-office sont des tests jsdom.
