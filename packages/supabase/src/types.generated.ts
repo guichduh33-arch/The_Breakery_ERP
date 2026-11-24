@@ -9072,10 +9072,6 @@ export type Database = {
         Args: { p_entry: Json; p_je: string; p_profile: string }
         Returns: string
       }
-      _create_fixed_assets_from_expense_v1: {
-        Args: { p_actor: string; p_expense_id: string }
-        Returns: number
-      }
       _current_profile_id: { Args: never; Returns: string }
       _currtest: { Args: never; Returns: number }
       _db_privs: { Args: never; Returns: unknown[] }
@@ -9104,22 +9100,6 @@ export type Database = {
         Returns: string
       }
       _extensions: { Args: never; Returns: unknown[] }
-      _fixed_asset_account_key_v1: {
-        Args: { p_type: Database["public"]["Enums"]["fixed_asset_type"] }
-        Returns: string
-      }
-      _fixed_asset_life_months_v1: {
-        Args: { p_group: Database["public"]["Enums"]["fixed_asset_tax_group"] }
-        Returns: number
-      }
-      _fixed_asset_month_amount_v1: {
-        Args: { p_cost: number; p_index: number; p_life: number }
-        Returns: number
-      }
-      _fixed_asset_month_index_v1: {
-        Args: { p_in_service: string; p_month: string }
-        Returns: number
-      }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
       _get_note: { Args: { "": string }; Returns: string }
@@ -9181,23 +9161,6 @@ export type Database = {
         Args: { p_value: Json }
         Returns: number
       }
-      _insert_fixed_asset_v1: {
-        Args: {
-          p_actor: string
-          p_cost: number
-          p_expense_id: string
-          p_group: Database["public"]["Enums"]["fixed_asset_tax_group"]
-          p_idempotency_key: string
-          p_in_service_date: string
-          p_name: string
-          p_opening_accumulated: number
-          p_opening_as_of: string
-          p_origin: Database["public"]["Enums"]["fixed_asset_origin"]
-          p_type: Database["public"]["Enums"]["fixed_asset_type"]
-          p_unit_index: number
-        }
-        Returns: string
-      }
       _is_verbose: { Args: never; Returns: boolean }
       _kitchen_assert_section_v1: {
         Args: { p_section_id: string }
@@ -9231,10 +9194,6 @@ export type Database = {
       }
       _pos_order_snapshot_data_v1: {
         Args: { p_order_id: string }
-        Returns: Json
-      }
-      _post_fixed_asset_depreciation_v1: {
-        Args: { p_actor: string; p_asset_id: string; p_through_month: string }
         Returns: Json
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
@@ -11102,10 +11061,6 @@ export type Database = {
         Returns: Json
       }
       round_idr: { Args: { amount: number }; Returns: number }
-      run_fixed_asset_depreciation_v1: {
-        Args: { p_as_of?: string }
-        Returns: Json
-      }
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
