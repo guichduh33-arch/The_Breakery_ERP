@@ -154,6 +154,8 @@ export type PermissionCode =
   | 'accounting.period.close'
   // Session 54 — Annual close (seeded by 20260710000079)
   | 'accounting.year.close'
+  // ADR-047 — registre des équipements : inscription et sortie (20261125000001)
+  | 'accounting.fixed_assets.manage'
   // Session 29 / Wave 1.D — Z-Reports
   | 'zreports.read'
   | 'zreports.sign'

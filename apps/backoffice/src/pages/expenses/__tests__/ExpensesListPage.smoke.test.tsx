@@ -47,6 +47,7 @@ const ROWS: ExpenseRow[] = [
     auto_approved:                    false,
     current_approval_step:            0,
     required_approval_steps_snapshot: null,
+    asset_type: null, asset_tax_group: null, asset_name: null, asset_quantity: null,
   },
   {
     id:               'e-2',
@@ -82,6 +83,7 @@ const ROWS: ExpenseRow[] = [
     auto_approved:                    false,
     current_approval_step:            0,
     required_approval_steps_snapshot: null,
+    asset_type: null, asset_tax_group: null, asset_name: null, asset_quantity: null,
   },
 ];
 
