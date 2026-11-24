@@ -118,16 +118,19 @@ BEGIN
     RAISE EXCEPTION 'fixed_asset_not_found' USING ERRCODE = 'P0002';
   END IF;
 
-  -- Dernier mois du plan, borné par le mois demandé et par la sortie (le mois
-  -- de sortie ne reçoit pas de dotation).
+  -- Un équipement sorti ne reçoit plus rien : la sortie a soldé son cumul. Un
+  -- mois resté refusé à la sortie le reste pour toujours (signalé, jamais
+  -- posté), sinon le 1690 serait crédité sur un actif déjà décomptabilisé.
+  -- La sortie appelle cette fonction AVANT de passer la fiche à « disposed ».
+  IF v_asset.status = 'disposed' THEN
+    RETURN jsonb_build_object('asset_id', v_asset.id, 'posted', 0, 'refused', 0);
+  END IF;
+
+  -- Dernier mois du plan, borné par le mois demandé.
   v_last_month := LEAST(
     date_trunc('month', p_through_month)::date,
     (date_trunc('month', v_asset.in_service_date)
        + make_interval(months => v_asset.useful_life_months - 1))::date);
-  IF v_asset.status = 'disposed' THEN
-    v_last_month := LEAST(v_last_month,
-      (date_trunc('month', v_asset.disposed_at) - interval '1 month')::date);
-  END IF;
 
   v_dep_acc := resolve_mapping_account('FIXED_ASSET_DEPRECIATION_EXPENSE');
   v_acc_acc := resolve_mapping_account('FIXED_ASSET_ACCUMULATED_DEPRECIATION');
@@ -232,7 +235,7 @@ BEGIN
   IF NOT pg_try_advisory_xact_lock(hashtext('fixed_asset_depreciation_run')) THEN
     RETURN jsonb_build_object('skipped', true);
   END IF;
-  FOR v_asset IN SELECT id FROM fixed_assets ORDER BY asset_number LOOP
+  FOR v_asset IN SELECT id FROM fixed_assets WHERE status = 'active' ORDER BY asset_number LOOP
     v_result  := _post_fixed_asset_depreciation_v1(v_asset.id, v_through, NULL);
     v_posted  := v_posted + (v_result->>'posted')::int;
     v_refused := v_refused + (v_result->>'refused')::int;

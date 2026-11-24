@@ -33,7 +33,7 @@ BEGIN
     (mp, 'expenses.create', true, 'FA coverage')
     ON CONFLICT (user_profile_id, permission_code) DO UPDATE SET is_granted = EXCLUDED.is_granted, expires_at = NULL;
   UPDATE fiscal_periods SET status = 'open'
-   WHERE period_start IN ('2026-10-01','2026-11-01','2027-01-01','2027-02-01','2027-03-01');
+   WHERE period_start IN ('2026-09-01','2026-10-01','2026-11-01','2027-01-01','2027-02-01','2027-03-01');
 
   SELECT c.id INTO v_cat FROM expense_categories c JOIN accounts a ON a.id = c.account_id
    WHERE c.is_active AND a.account_class = 6 ORDER BY c.code LIMIT 1;
@@ -199,6 +199,16 @@ INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
   format($$SELECT dispose_fixed_asset_v1(%L, '2026-01-15', 'scrap', NULL, NULL, NULL, '246810')$$, current_setting('fa.m')),
   'P0004'), 'Disposal in a closed period is refused');
 
+INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
+  format($$SELECT dispose_fixed_asset_v1(%L, '2026-09-15', 'scrap', NULL, NULL, NULL, '246810')$$, current_setting('fa.m')),
+  '22023', 'fixed_asset_disposal_before_opening_balance'), 'An opening asset cannot leave inside its opening balance months');
+INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
+  format($$SELECT dispose_fixed_asset_v1(%L, '2026-11-20', 'scrap', 100, NULL, NULL, '246810')$$, current_setting('fa.m')),
+  '22023', 'fixed_asset_sale_fields_only_for_sale'), 'Price and proceeds account belong to a sale only');
+INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
+  format($$SELECT dispose_fixed_asset_v1(%L, '2026-11-20', 'sale', 100, %L, NULL, '246810')$$,
+    current_setting('fa.m'), resolve_mapping_account('FIXED_ASSET_DEPRECIATION_EXPENSE')),
+  '22023', 'fixed_asset_proceeds_account_invalid'), 'Sale proceeds go to a cash or bank account only');
 SELECT set_config('fa.sale', dispose_fixed_asset_v1(current_setting('fa.a2')::uuid, '2026-11-20', 'sale', 2500000,
   resolve_mapping_account('EXPENSE_BANK_OUT'), 'Sold to a neighbour', '246810')::text, true);
 INSERT INTO fa_results(tap) SELECT is((current_setting('fa.sale')::jsonb->>'accumulated_depreciation')::numeric, 52083.33::numeric,
@@ -298,6 +308,39 @@ INSERT INTO fa_results(tap) SELECT is((SELECT d.status || '|' || j.entry_date ||
 INSERT INTO fa_results(tap) SELECT is((SELECT sum(amount) FROM fixed_asset_depreciations
   WHERE asset_id = current_setting('fa.a3')::uuid AND status = 'posted'), 300000.00::numeric,
   'No month absorbed another month');
+
+-- =========================================================================
+-- Démarquage d'un brouillon
+-- =========================================================================
+SELECT set_config('fa.e5', pg_temp.fa_draft(3000000, '2026-11-05', 'FA unmark')::text, true);
+SELECT set_expense_equipment_v1(current_setting('fa.e5')::uuid, 'equipment', 'group_1', 'Mixer', 1);
+SELECT set_expense_equipment_v1(current_setting('fa.e5')::uuid, NULL);
+INSERT INTO fa_results(tap) SELECT ok((SELECT asset_type IS NULL AND asset_quantity IS NULL FROM expenses
+  WHERE id = current_setting('fa.e5')::uuid) AND EXISTS(SELECT 1 FROM audit_logs WHERE action = 'expense.equipment_unmarked'
+  AND entity_id = current_setting('fa.e5')::uuid), 'A draft can be unmarked, and the unmark is audited');
+
+-- =========================================================================
+-- Mois refusé, puis sortie, puis réouverture : rien ne se poste après la sortie
+-- =========================================================================
+SELECT set_config('fa.e4', pg_temp.fa_draft(2400000, '2026-09-10', 'FA scale')::text, true);
+SELECT set_expense_equipment_v1(current_setting('fa.e4')::uuid, 'equipment', 'group_1', 'Scale', 1);
+SELECT pg_temp.fa_approve(current_setting('fa.e4')::uuid);
+SELECT set_config('fa.a4', (SELECT id::text FROM fixed_assets WHERE expense_id = current_setting('fa.e4')::uuid), true);
+UPDATE fiscal_periods SET status = 'closed' WHERE period_start = '2026-10-01';
+SELECT run_fixed_asset_depreciation_v1('2026-11-02');
+SELECT set_config('fa.scale', dispose_fixed_asset_v1(current_setting('fa.a4')::uuid, '2026-11-20', 'scrap', NULL, NULL,
+  NULL, '246810')::text, true);
+INSERT INTO fa_results(tap) SELECT is((current_setting('fa.scale')::jsonb->>'accumulated_depreciation') || '|'
+  || (current_setting('fa.scale')::jsonb->>'refused_months_unposted'), '50000.00|1',
+  'Disposal settles the accumulated depreciation as it is and reports the refused month');
+UPDATE fiscal_periods SET status = 'open' WHERE period_start = '2026-10-01';
+SELECT run_fixed_asset_depreciation_v1('2026-12-07');
+INSERT INTO fa_results(tap) SELECT is((SELECT string_agg(period_month || '|' || status, ',' ORDER BY period_month)
+  FROM fixed_asset_depreciations WHERE asset_id = current_setting('fa.a4')::uuid),
+  '2026-09-01|posted,2026-10-01|refused', 'A refused month is never posted after the disposal');
+INSERT INTO fa_results(tap) SELECT is((SELECT count(*)::int FROM journal_entries
+  WHERE reference_type = 'fixed_asset_depreciation' AND reference_id = current_setting('fa.a4')::uuid), 1,
+  'Only the September depreciation entry exists for the disposed asset');
 
 -- =========================================================================
 -- Fiche figée, dotation passée immuable

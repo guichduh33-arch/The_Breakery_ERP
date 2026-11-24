@@ -33,6 +33,7 @@ DECLARE
   v_entry_no   text;
   v_total      numeric(15,2);
   v_notes      text := NULLIF(btrim(p_notes), '');
+  v_unposted   integer;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'dispose_fixed_asset_v1: caller not authenticated' USING ERRCODE = '28000';
@@ -67,6 +68,11 @@ BEGIN
      OR p_disposal_date > current_date THEN
     RAISE EXCEPTION 'fixed_asset_disposal_date_invalid' USING ERRCODE = '22023';
   END IF;
+  -- Le cumul d'ouverture couvre les mois jusqu'à sa date : une sortie datée
+  -- avant ou pendant ces mois fausserait le résultat de sortie.
+  IF v_asset.origin = 'opening' AND p_disposal_date <= v_asset.opening_accumulated_as_of THEN
+    RAISE EXCEPTION 'fixed_asset_disposal_before_opening_balance' USING ERRCODE = '22023';
+  END IF;
   IF length(v_notes) > 500 THEN
     RAISE EXCEPTION 'fixed_asset_disposal_notes_too_long' USING ERRCODE = '22023';
   END IF;
@@ -100,6 +106,10 @@ BEGIN
     FROM fixed_asset_depreciations WHERE asset_id = v_asset.id AND status = 'posted';
   v_nbv    := v_asset.cost - v_accum;
   v_result := v_price - v_nbv;   -- > 0 gain, < 0 perte
+  -- Mois refusés (période fermée) à la sortie : ils restent non postés pour
+  -- toujours, la sortie solde le cumul tel qu'il est. On le dit dans la trace.
+  SELECT count(*) INTO v_unposted
+    FROM fixed_asset_depreciations WHERE asset_id = v_asset.id AND status = 'refused';
 
   v_acc_acc  := resolve_mapping_account('FIXED_ASSET_ACCUMULATED_DEPRECIATION');
   v_gain_acc := resolve_mapping_account('FIXED_ASSET_DISPOSAL_GAIN');
@@ -118,7 +128,8 @@ BEGIN
     jsonb_build_object('movement_type', 'disposal', 'kind', 'fixed_asset_disposal',
                        'reason', p_reason, 'cost', v_asset.cost,
                        'accumulated_depreciation', v_accum, 'net_book_value', v_nbv,
-                       'sale_price', v_price, 'result', v_result)
+                       'sale_price', v_price, 'result', v_result,
+                       'refused_months_unposted', v_unposted)
   ) RETURNING id INTO v_je_id;
 
   IF v_accum > 0 THEN
@@ -152,11 +163,12 @@ BEGIN
     'asset_number', v_asset.asset_number, 'reason', p_reason, 'disposal_date', p_disposal_date,
     'cost', v_asset.cost, 'accumulated_depreciation', v_accum, 'net_book_value', v_nbv,
     'sale_price', v_price, 'result', v_result, 'journal_entry_id', v_je_id,
-    'entry_number', v_entry_no, 'notes', v_notes));
+    'entry_number', v_entry_no, 'notes', v_notes, 'refused_months_unposted', v_unposted));
 
   RETURN jsonb_build_object('ok', true, 'asset_id', v_asset.id, 'journal_entry_id', v_je_id,
     'entry_number', v_entry_no, 'accumulated_depreciation', v_accum,
-    'net_book_value', v_nbv, 'sale_price', v_price, 'result', v_result);
+    'net_book_value', v_nbv, 'sale_price', v_price, 'result', v_result,
+    'refused_months_unposted', v_unposted);
 END $function$;
 
 -- ---------------------------------------------------------------------------
@@ -266,5 +278,12 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FU
 -- Le passage poste les mois TERMINÉS : la dotation de novembre part le
 -- 1er décembre à 00:30, datée du 30 novembre. Les jours suivants ne trouvent
 -- rien à faire, sauf un mois refusé dont la période a rouvert.
-SELECT cron.schedule('fixed-asset-depreciation', '30 16 * * *',
-                     'SELECT public.run_fixed_asset_depreciation_v1()');
+DO $cron$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule('fixed-asset-depreciation')
+      FROM cron.job WHERE jobname = 'fixed-asset-depreciation';
+    PERFORM cron.schedule('fixed-asset-depreciation', '30 16 * * *',
+      'SELECT public.run_fixed_asset_depreciation_v1()');
+  END IF;
+END $cron$;

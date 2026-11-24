@@ -8,10 +8,11 @@
 --
 -- Choix techniques :
 -- * Gardée par les faits : la fiche n'est créée que si les soldes 1610 et 1690
---   valent exactement ces montants et que le registre ne connaît encore aucune
---   fiche d'ouverture. Sur une base où ces soldes diffèrent (dev, staging),
---   la migration ne fait rien et le dit. Aucun identifiant généré n'est écrit
---   en dur.
+--   valent exactement ces montants, qu'aucun amortissement n'est passé au 1690
+--   après le 2026-09-30 et que le registre ne connaît encore aucune fiche
+--   d'ouverture. Sinon la migration ne fait rien et le dit (NOTICE) : après
+--   publication, vérifier que le registre porte la machine. Aucun identifiant
+--   généré n'est écrit en dur.
 -- * Aucune écriture comptable : l'achat et les dotations passées sont déjà
 --   dans les comptes. La fiche porte le cumul à sa date (origin 'opening').
 -- * Pas d'acteur : la migration n'a pas d'utilisateur. Une trace d'audit
@@ -21,23 +22,29 @@ DO $reprise$
 DECLARE
   v_machine numeric;
   v_accum   numeric;
+  v_later   numeric;
   v_id      uuid;
 BEGIN
+  -- Mêmes statuts que les états financiers : posted et locked.
   SELECT COALESCE(sum(l.debit - l.credit), 0) INTO v_machine
     FROM journal_entry_lines l
     JOIN journal_entries j ON j.id = l.journal_entry_id
     JOIN accounts a ON a.id = l.account_id
-   WHERE a.code = '1610' AND j.status = 'posted';
-  SELECT COALESCE(sum(l.credit - l.debit), 0) INTO v_accum
+   WHERE a.code = '1610' AND j.status IN ('posted', 'locked');
+  SELECT COALESCE(sum(l.credit - l.debit) FILTER (WHERE j.entry_date <= DATE '2026-09-30'), 0),
+         COALESCE(sum(l.credit - l.debit) FILTER (WHERE j.entry_date >  DATE '2026-09-30'), 0)
+    INTO v_accum, v_later
     FROM journal_entry_lines l
     JOIN journal_entries j ON j.id = l.journal_entry_id
     JOIN accounts a ON a.id = l.account_id
-   WHERE a.code = '1690' AND j.status = 'posted' AND j.entry_date <= DATE '2026-09-30';
+   WHERE a.code = '1690' AND j.status IN ('posted', 'locked');
 
-  IF v_machine <> 28791300 OR v_accum <> 7197825
+  -- Une dotation déjà passée après septembre (par exemple un import bancaire
+  -- d'octobre) serait doublée par le passage automatique : pas de reprise.
+  IF v_machine <> 28791300 OR v_accum <> 7197825 OR v_later <> 0
      OR EXISTS (SELECT 1 FROM fixed_assets WHERE origin = 'opening') THEN
-    RAISE NOTICE 'ADR-047 reprise skipped: 1610 = %, 1690 at 2026-09-30 = %, opening assets = %',
-      v_machine, v_accum, (SELECT count(*) FROM fixed_assets WHERE origin = 'opening');
+    RAISE NOTICE 'ADR-047 reprise skipped: 1610 = %, 1690 at 2026-09-30 = %, 1690 after = %, opening assets = %',
+      v_machine, v_accum, v_later, (SELECT count(*) FROM fixed_assets WHERE origin = 'opening');
     RETURN;
   END IF;
 
