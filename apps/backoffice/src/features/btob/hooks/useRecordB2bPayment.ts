@@ -125,7 +125,7 @@ export function useRecordB2bPayment() {
       if (args.invoiceIds !== undefined && args.invoiceIds.length > 0)  rpcArgs.p_invoice_ids = args.invoiceIds;
 
       assertSession();
-      const { data, error } = await supabase.rpc('record_b2b_payment_v6', rpcArgs);
+      const { data, error } = await supabase.rpc('record_b2b_payment_v7', rpcArgs);
       assertSession();
       if (error) throw new RecordB2bPaymentError(classify(error.message), error.message,
         paymentDefinitiveFailure(error.code, error.message));
