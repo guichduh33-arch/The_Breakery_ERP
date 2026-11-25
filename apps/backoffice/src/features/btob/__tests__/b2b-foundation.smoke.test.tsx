@@ -259,6 +259,7 @@ describe('B2B foundation (S24)', () => {
 
     fireEvent.change(screen.getByLabelText(/^customer$/i),   { target: { value: 'b1' } });
     fireEvent.change(screen.getByLabelText(/^amount$/i),     { target: { value: '100000' } });
+    fireEvent.change(screen.getByLabelText(/^paid at/i),     { target: { value: '2026-11-20T10:30' } });
 
     const submit = screen.getByRole('button', { name: /record payment/i });
     await waitFor(() => expect(submit).toBeEnabled());
@@ -268,6 +269,7 @@ describe('B2B foundation (S24)', () => {
       expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v7', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
+        p_paid_at:     '2026-11-20T10:30',
       }));
     });
   });

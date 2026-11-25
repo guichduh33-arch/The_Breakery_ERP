@@ -120,6 +120,14 @@ async function selectCustomer(): Promise<void> {
     expect(screen.queryByRole('option', { name: 'PT Kuta' })).not.toBeNull();
   });
   fireEvent.change(screen.getByLabelText(/^customer$/i), { target: { value: 'b1' } });
+  fillPaidAt();
+}
+
+const PAID_AT = '2026-11-20T10:30';
+
+/** La date de paiement est obligatoire : chaque saisie la renseigne. */
+function fillPaidAt(value: string = PAID_AT): void {
+  fireEvent.change(screen.getByLabelText(/^paid at/i), { target: { value } });
 }
 
 describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
@@ -175,6 +183,24 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     });
     const [, callArgs] = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
     expect(callArgs).not.toHaveProperty('p_invoice_ids');
+    expect(callArgs.p_paid_at).toBe(PAID_AT);
+  });
+
+  it('blocks the payment until a paid-at date is entered', async () => {
+    renderModal();
+    await selectCustomer();
+    fillPaidAt('');
+    fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '100000' } });
+
+    const submit = screen.getByRole('button', { name: /record payment/i });
+    expect(screen.getByLabelText(/^paid at/i)).toBeRequired();
+    expect(screen.getByText('Required: the date the customer paid.')).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(mockRpc).not.toHaveBeenCalled();
+
+    fillPaidAt();
+    await waitFor(() => expect(submit).toBeEnabled());
   });
 
   it('sends a store-credit settlement through the current RPC', async () => {
@@ -298,6 +324,7 @@ describe('durable B2B recovery with real payment hook and modal', () => {
       expect(screen.getByLabelText(/^amount$/i)).toHaveValue(null);
       expect(screen.getByLabelText(/^customer$/i)).toBeEnabled();
       fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '50000' } });
+      fillPaidAt();
       fireEvent.click(screen.getByRole('button', { name: 'Record payment' }));
       await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
       expect(mockRpc.mock.calls[1]?.[1]).toMatchObject({ p_customer_id: 'b2', p_amount: 50000 });
