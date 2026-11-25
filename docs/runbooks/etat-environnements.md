@@ -26,6 +26,34 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 25 novembre 2026, 14 h 45 — équipements et amortissement (ADR-047) et numéro de règlement B2B, back-office `4f250a34`
+
+Relevé du 25 novembre 2026, vers 14 h 45 UTC+8. PR #772 (ADR-047) et PR #773
+(numéro de règlement B2B sans troncature au-delà de 9999) : six migrations et le
+back-office ; aucune Edge Function, aucune installation POS nécessaire.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Base de production, avant | Cible `yjhhhmjgsmyzyymvixot`. Corps de `_emit_expense_je` égal au corps de départ de `20261125000002` (seuls les blocs ADR-047 diffèrent) ; `md5` du corps de `record_b2b_payment_v6` égal à celui du fichier `20261111000011`, `c8113f23…`. Liste `journal_entries_reference_type_check` égale à l'ancienne. Comptes `1600`, `1610`, `1690`, `4950`, `6950` actifs ; `pg_cron` 1.6.4 ; périodes d'octobre et de novembre 2026 ouvertes. Soldes : `1610` = 28 791 300, `1690` au 2026-09-30 = 7 197 825, `1690` après = 0. Séquence `b2b_payment_seq` à 29 | Lecture seule |
+| Preuves du SHA `4f250a34` | Fusion de #773 sur la fusion de #772. `ci.yml` run `45547331467` (push) réussi ; `pgtap-pr.yml` run `45557115534` (`workflow_dispatch`) réussi | pgTAP tourne sur la base de dev |
+| Base de production, après | Migrations `20261125000001` à `20261125000005` appliquées telles quelles ; `20261125000006` en deux temps : création de `record_b2b_payment_v7` (`_additive`), puis retrait de la v6 après la publication du BO (`_drop_v6`). Les 17 fonctions du lot ont le même `md5` du corps et les mêmes droits qu'en dev ; `anon` n'exécute ni `record_b2b_payment_v7`, ni `dispose_fixed_asset_v1`, ni `get_fixed_assets_v1`. Machine inscrite : `FA-0001`, coût 28 791 300, cumul 7 197 825 au 2026-09-30, 48 mois, 599 818,75 par mois à partir d'octobre 2026. Tâche `fixed-asset-depreciation` planifiée à `30 16 * * *` UTC | Aucun appel sous identité utilisateur en production ; aucune dotation passée au relevé |
+| Back-office | `production-backoffice.yml`, run `45561707271` sur `4f250a34`, réussi après approbation Production de Mamat ; manifeste vérifié sur 389 fichiers ; empreinte de l'artefact manifeste `e05b3ee7…` | — |
+| BO servi | Les 304 chunks nommés par l'entrée `index-Ia-WDSLJ.js` sont lus. Ils appellent `record_b2b_payment_v7`, `get_fixed_assets_v1`, `dispose_fixed_asset_v1` et `set_expense_equipment_v1` ; aucun n'appelle `record_b2b_payment_v6`. Référence de production seule, pas celle du dev | Lecture des fichiers servis, pas d'un parcours à l'écran |
+
+Attendu, non observé au relevé : la première dotation d'octobre 2026 (datée du
+31 octobre) au premier passage de la tâche planifiée, le 26 novembre à 00 h 30
+UTC+8. À contrôler ensuite : une écriture de 599 818,75 au débit du `6950` et
+au crédit du `1690`, et une ligne `posted` pour octobre dans le registre. Les
+imports bancaires d'octobre 2026 et suivants ne doivent plus porter de ligne de
+dotation pour cette machine (ADR-047, conséquences).
+
+Retour, déduit du contenu des migrations et non essayé : le back-office
+précédent (`553da7f0`) appelle `record_b2b_payment_v6`, retirée ; il ne peut donc
+plus enregistrer de règlement B2B sur la base courante. Un retour du BO
+exigerait de recréer la v6 depuis le fichier `20261111000011`. Les tables du
+registre se conservent : les retirer effacerait des écritures déjà liées.
+
 ## Complément du 24 novembre 2026, 13 h 50 — correction du moyen de paiement (ADR-046), back-office `553da7f0`
 
 Relevé du 24 novembre 2026, vers 13 h 50 UTC+8. PR #769 : une migration, le
