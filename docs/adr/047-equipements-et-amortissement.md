@@ -2,8 +2,8 @@
 
 Date : 2026-11-25
 
-Statut : décisions de Mamat du 2026-11-25. Livré dans le code et sur la base de
-dev le 2026-11-25, pas encore publié en production (voir le bilan factuel). La section
+Statut : décisions de Mamat du 2026-11-25. Livré dans le code et publié en
+production le 2026-11-25 (voir le bilan factuel). La section
 « Choix de méthode » porte des choix comptables et techniques de l'agent, pris
 dans le mandat : ils ne sont pas des décisions de Mamat.
 
@@ -127,7 +127,10 @@ nouvel ADR, comme une décision.
 ## Bilan factuel
 
 Relevé du 2026-11-25. Livré par la PR #772 (branche `feat/adr-047-equipements`)
-et sur la base de dev V3. Rien n'est publié en production à ce relevé.
+et sur la base de dev V3, puis publié en production le même jour sur `master`
+`4f250a34` : les cinq migrations, le back-office, et la machine inscrite au
+registre par la migration `20261125000005`. Détail et preuves dans
+`docs/runbooks/etat-environnements.md`, complément du 25 novembre 2026.
 
 - **Base** : migrations `20261125000001` à `20261125000005`. Elles créent le
   registre (`fixed_assets`) et une ligne de dotation par équipement et par mois
@@ -155,7 +158,8 @@ et sur la base de dev V3. Rien n'est publié en production à ce relevé.
   amortissement n'est passé au `1690` après cette date. Sinon elle ne fait
   rien, sans erreur : après la publication, il faut vérifier que le registre
   porte la machine. Sur la base de dev, ces soldes diffèrent : la migration n'y
-  a rien fait.
+  a rien fait. En production, les soldes valaient ces montants : la machine est
+  inscrite sous `FA-0001`, 599 818,75 IDR par mois à partir d'octobre 2026.
 - **Back-office** : page Finance › Accounting › Fixed assets (liste, fiche,
   inscription d'un équipement déjà au bilan, sortie) et panneau « Equipment »
   sur la fiche d'une dépense.

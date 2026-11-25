@@ -872,9 +872,10 @@ bancaires, bureau) et réaffecter les catégories.
 production, `1690` amortissements cumulés et `6950` dotation existent. Le code
 livre le registre des équipements, la marque « équipement » des dépenses, la
 dotation automatique, la sortie et le compte `6970` de perte de sortie
-(bilan factuel de l'ADR-047). Au relevé du 2026-11-25, ce code tourne sur la
-base de dev seulement. En production, une seule machine est au bilan, amortie
-par les écritures importées jusqu'en septembre 2026.
+(bilan factuel de l'ADR-047). Le module est publié en production le
+2026-11-25 : base, page du registre au back-office, et machine de production
+inscrite au registre avec son cumul au 2026-09-30. La dotation automatique la
+reprend à octobre 2026.
 
 **RÈGLE** — Un achat d'au moins 2 000 000 IDR TTC par article est un
 équipement. Il se saisit dans le circuit des dépenses ; à l'approbation, le
@@ -884,8 +885,6 @@ s'amortit en linéaire selon son groupe fiscal (4 ou 8 ans). Le serveur passe la
 dotation à chaque fin de mois ; la sortie d'un équipement se fait dans le
 registre. Le registre se lit avec la permission des états financiers (décisions
 de Mamat du 2026-11-25, ADR-047).
-**À LIVRER** — La publication en production : le module, la reprise de la
-machine au registre et la page du registre.
 
 ---
 
