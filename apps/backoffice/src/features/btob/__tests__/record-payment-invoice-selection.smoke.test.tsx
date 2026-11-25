@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import { classify } from '@/features/btob/hooks/useRecordB2bPayment.js';
 import { deferred, financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
-import { readFinancialSlot } from '@/lib/pendingFinancialAttempts.js';
+import { readFinancialSlot, runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 
 const mockRpc = vi.fn();
@@ -276,6 +276,24 @@ describe('durable B2B recovery with real payment hook and modal', () => {
       expect(ledger.size).toBe(1);
       expect(readFinancialSlot(scope)?.status).toBe('resolved');
     } finally { INVOICES.push(...savedInvoices); CLIENTS[0]!.b2b_current_balance = 800000; }
+  });
+
+  it('replays an older pending payment saved without a paid-at date', async () => {
+    // Une tentative enregistrée avant l'obligation de date n'a pas de paidAt :
+    // elle doit rester vérifiable, avec sa charge figée à l'identique.
+    await expect(runFinancialAttempt({
+      scope, expectedRevision: null, current: () => true,
+      payload: { customerId: 'b1', amount: 100000, method: 'cash' },
+      send: () => Promise.reject(new Error('Response lost')),
+    })).rejects.toThrow('Response lost');
+    renderModal();
+    fireEvent.click(await screen.findByRole('button', { name: /Check pending payment for PT Kuta/ }));
+    expect(screen.queryByText('Required: the date the customer paid.')).not.toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: 'Check pending payment' });
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+    expect(await screen.findByTestId('rp-success')).toBeInTheDocument();
+    expect(mockRpc.mock.calls[0]?.[1]).not.toHaveProperty('p_paid_at');
   });
 
   it('keeps UNKNOWN after a proven overpayment refusal and rejects malformed 2xx responses', async () => {
