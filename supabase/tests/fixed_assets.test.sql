@@ -194,10 +194,12 @@ INSERT INTO fa_results(tap) SELECT is((dispose_fixed_asset_v1(current_setting('f
   resolve_mapping_account('EXPENSE_BANK_OUT'), 'sold', '000000')->>'error'), 'invalid_pin', 'Wrong PIN returns invalid_pin');
 INSERT INTO fa_results(tap) SELECT ok((SELECT failed_login_attempts > 0 FROM user_profiles WHERE id = current_setting('fa.op')::uuid),
   'Wrong PIN counts toward the lockout');
-UPDATE fiscal_periods SET status = 'closed' WHERE period_start = '2026-01-01' AND status = 'open';
+-- a1 : mis en service le 2026-10-15, aucune dotation postée ; octobre est rouvert aussitôt.
+UPDATE fiscal_periods SET status = 'closed' WHERE period_start = '2026-10-01';
 INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
-  format($$SELECT dispose_fixed_asset_v1(%L, '2026-01-15', 'scrap', NULL, NULL, NULL, '246810')$$, current_setting('fa.m')),
+  format($$SELECT dispose_fixed_asset_v1(%L, '2026-10-20', 'scrap', NULL, NULL, NULL, '246810')$$, current_setting('fa.a1')),
   'P0004'), 'Disposal in a closed period is refused');
+UPDATE fiscal_periods SET status = 'open' WHERE period_start = '2026-10-01';
 
 INSERT INTO fa_results(tap) SELECT ok(pg_temp.fa_raises(
   format($$SELECT dispose_fixed_asset_v1(%L, '2026-09-15', 'scrap', NULL, NULL, NULL, '246810')$$, current_setting('fa.m')),
