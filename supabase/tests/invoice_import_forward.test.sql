@@ -48,9 +48,10 @@ SELECT throws_ok($q$DELETE FROM purchase_orders WHERE id=(SELECT id FROM inf_sta
  'P0003','financial_import_requires_dedicated_workflow','imported order cannot be deleted outside workflow');
 SELECT throws_ok($q$UPDATE purchase_orders SET invoice_exempt=true WHERE id=(SELECT id FROM inf_state WHERE tag='imported')$q$,
  'P0003','financial_import_requires_dedicated_workflow','invoice-only exception excludes exemption mutation');
-SELECT ok(NOT has_function_privilege('authenticated','public._historical_import_entity_guard_v3()','EXECUTE')
- AND NOT has_function_privilege('anon','public._historical_import_entity_guard_v3()','EXECUTE'),'import trigger helper is internal');
+SELECT ok(NOT has_function_privilege('authenticated','public._historical_import_entity_guard_v4()','EXECUTE')
+ AND NOT has_function_privilege('anon','public._historical_import_entity_guard_v4()','EXECUTE'),'import trigger helper is internal');
 SELECT ok(to_regprocedure('public._historical_import_entity_guard_v1()') IS NULL
- AND to_regprocedure('public._historical_import_entity_guard_v2()') IS NULL,'both previous guard signatures are removed');
+ AND to_regprocedure('public._historical_import_entity_guard_v2()') IS NULL
+ AND to_regprocedure('public._historical_import_entity_guard_v3()') IS NULL,'all previous guard signatures are removed');
 SELECT * FROM finish();
 ROLLBACK;
