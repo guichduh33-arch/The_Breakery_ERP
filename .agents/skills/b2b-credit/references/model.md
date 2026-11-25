@@ -96,7 +96,9 @@ ci-dessus décrit le contrat cible, pas une preuve de production.
   et `PUBLIC`. Seules les RPCs SECURITY DEFINER l'écrivent.
 
 ### `b2b_payments` ledger (append-only, `20260601000010_create_b2b_payments_table.sql`)
-- `payment_number` TEXT UNIQUE — séquence `BP-YYYY-NNNN` (sequence `b2b_payment_seq`).
+- `payment_number` TEXT UNIQUE — `BP-YYYY-NNNN` (séquence `b2b_payment_seq`) : quatre
+  chiffres au minimum, sans troncature au-delà de 9999 (`BP-YYYY-10000`). La séquence
+  avance aussi dans les transactions annulées, donc dans les tests de la base dev.
 - `amount` NUMERIC(14,2) CHECK > 0.
 - `method` ENUM `payment_method` (réutilise enum POS).
 - `idempotency_key` UUID UNIQUE — replay safety.
