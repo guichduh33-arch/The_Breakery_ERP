@@ -26,6 +26,25 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 25 novembre 2026, 17 h 10 — règlement des dettes importées, base `9c51bd40`
+
+Relevé du 25 novembre 2026, vers 17 h 10 UTC+8. PR #775 : une migration de
+base ; aucun back-office, aucune Edge Function, aucune installation POS.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Base de production, avant | Cible `yjhhhmjgsmyzyymvixot`. `md5` du corps de `_historical_import_entity_guard_v3` égal au contrôle de la migration, `284149b2…`, sur 10 triggers. Dettes importées ouvertes : 45 bons fournisseurs (22 fournisseurs) et 90 factures B2B `b2b_pending` (14 clients) ; aucun paiement fournisseur sur un bon importé en novembre | Lecture seule |
+| Preuves du SHA `8b38fc8a` | Tête de #775, fusionnée en `9c51bd40`. `ci.yml` run `45575253605` réussi ; `pgtap-pr.yml` run `45575253506` réussi, avec `pgtap` et `db-gate` | pgTAP tourne sur la base de dev |
+| Base de production, après | Migration `20261125000007_imported_debt_settlement_guard.sql` appliquée sous la version `20261125170902`. `_historical_import_entity_guard_v4` : même `md5` du corps qu'en dev, `58a7e96f…`, sur les 10 triggers ; v3 supprimée ; ni `anon` ni `authenticated` ne l'exécutent. Nombre de lignes de `purchase_payments` et de `b2b_payment_allocations` inchangé par l'application | Aucun règlement passé en production au relevé |
+
+Hors périmètre : les 81 ventes de caisse importées `pending_payment`, sans
+`outstanding_at`, restent sans geste de règlement.
+
+Retour, déduit du contenu de la migration et non essayé : recréer la v3 depuis
+le fichier `20261116000013` et y repointer les 10 triggers rétablit le refus.
+Les règlements enregistrés entre-temps restent valides et ne se suppriment pas.
+
 ## Complément du 25 novembre 2026, 14 h 45 — équipements et amortissement (ADR-047) et numéro de règlement B2B, back-office `4f250a34`
 
 Relevé du 25 novembre 2026, vers 14 h 45 UTC+8. PR #772 (ADR-047) et PR #773
