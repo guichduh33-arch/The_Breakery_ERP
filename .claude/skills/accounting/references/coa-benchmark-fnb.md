@@ -34,7 +34,7 @@ Mamat.
 | Stocks | matières premières, semi-finis, produits finis, marchandises | ✅ 1141–1143 (pas de compte semi-finis distinct — foldé, choix assumé) |
 | Charges constatées d'avance | loyer payé d'avance, assurances | ❌ **absent** — le loyer annuel payé en une fois s'impute en charge au décaissement. Manque (a) si des paiements d'avance significatifs existent |
 | Prêt actionnaire | piutang pemegang saham | ❌ absent — voir « Prêt actionnaire soldé en dividende » ci-dessous |
-| **Immobilisations** | four, laminoir, vitrines, mobilier, agencements, matériel IT + **amortissements cumulés** (15xx) | ❌ **absent en totalité** — aucun compte de classe 1 non-courant. Tout équipement acheté part en charge. Écart n°1 vs une entreprise de même taille : fausse le bilan, concentre la charge l'année d'achat et prive du levier fiscal de l'amortissement étalé. **Bloc proposé détaillé ci-dessous** |
+| **Immobilisations** | four, laminoir, vitrines, mobilier, agencements, matériel IT + **amortissements cumulés** (15xx) | ❌ **absent en totalité** — aucun compte de classe 1 non-courant. Tout équipement acheté part en charge. Écart n°1 vs une entreprise de même taille : fausse le bilan, concentre la charge l'année d'achat et prive du levier fiscal de l'amortissement étalé. **Bloc proposé détaillé ci-dessous**. Depuis la charte du 2026-11-17, les comptes existent en 16xx ; leur parcours relève de l'ADR-047 |
 
 ### 2xxx Passifs
 

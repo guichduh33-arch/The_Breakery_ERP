@@ -122,6 +122,8 @@ const JournalEntriesPage = lazy(() => import('@/features/accounting/pages/Journa
 const GeneralLedgerPage = lazy(() => import('@/features/accounting/pages/GeneralLedgerPage.js'));
 const TrialBalancePage = lazy(() => import('@/features/accounting/pages/TrialBalancePage.js'));
 const CashTreasuryPage = lazy(() => import('@/features/accounting/pages/CashTreasuryPage.js'));
+const FixedAssetsPage = lazy(() => import('@/features/accounting/pages/FixedAssetsPage.js'));
+const FixedAssetDetailPage = lazy(() => import('@/features/accounting/pages/FixedAssetDetailPage.js'));
 const SettingsAccountingPage = lazy(() => import('@/features/accounting/pages/SettingsAccountingPage.js'));
 const ExpenseThresholdsPage = lazy(() => import('@/features/settings/expense-thresholds/ExpenseThresholdsPage.js'));
 const ZReportsListPage = lazy(() => import('@/pages/cash-register/ZReportsListPage.js'));
@@ -670,6 +672,23 @@ export function AppRoutes() {
           element={
             <PermissionGate required="accounting.cash.read">
               <CashTreasuryPage />
+            </PermissionGate>
+          }
+        />
+        {/* ADR-047 décision 9 : le registre se lit sous la permission des états financiers. */}
+        <Route
+          path="accounting/fixed-assets"
+          element={
+            <PermissionGate required="reports.statements.read">
+              <FixedAssetsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/fixed-assets/:id"
+          element={
+            <PermissionGate required="reports.statements.read">
+              <FixedAssetDetailPage />
             </PermissionGate>
           }
         />

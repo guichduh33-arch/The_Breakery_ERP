@@ -33,17 +33,19 @@ Le module expenses + les JE automatiques sont l'outil d'optimisation principal :
 - Test périodique : `6190 Other Operating Expense` > ~20 % des opex = des catégories
   manquent, et des déductions se perdent en lisibilité de contrôle.
 
-## Levier n°2 — immobiliser et amortir (dépend du chantier COA 15xx)
+## Levier n°2 — immobiliser et amortir (ADR-047)
 
-Tant que le COA n'a pas de comptes d'immobilisations (écart n°1 du benchmark), tout
-équipement part en charge l'année d'achat : déduction concentrée, bilan sous-évalué.
-Immobiliser + amortir lisse la déduction, colle au réel économique et **ne modifie pas
-la valeur de l'entreprise — il la révèle**. Le système complet (comptes 15xx/6120,
-barème UU PPh art. 11 : Kelompok 1 = 4 ans 25 % linéaire, Kelompok 2 = 8 ans 12,5 %,
-bâtiment permanent 20 ans 5 % ; groupes d'actifs PMK 72/2023) est spécifié dans
-`coa-benchmark-fnb.md`. Points fiscaux clés : linéaire commercial = fiscal (zéro écart
-à suivre), prorata au mois de mise en service, la PPN fournisseur foldée (NON-PKP)
-**entre dans la base amortissable**. En régime UMKM final (impôt sur CA),
+Les comptes existent depuis la charte du 2026-11-17 (`1600`, `1610`, `1690`, `6950`),
+mais tant que le parcours de l'ADR-047 n'est pas livré, un équipement acheté par le
+circuit des dépenses part en charge l'année d'achat : déduction concentrée, bilan
+sous-évalué. Immobiliser + amortir lisse la déduction, colle au réel économique et
+**ne modifie pas la valeur de l'entreprise — il la révèle**. La méthode (barème
+UU PPh art. 11 : Kelompok 1 = 4 ans 25 % linéaire, Kelompok 2 = 8 ans 12,5 %,
+bâtiment permanent 20 ans 5 % ; groupes d'actifs PMK 72/2023) est spécifiée dans
+`coa-benchmark-fnb.md` ; les règles retenues (seuil, groupes ouverts, dotation
+automatique, sortie) sont celles de l'ADR-047. Points fiscaux clés : linéaire
+commercial = fiscal (zéro écart à suivre), mois de mise en service compté entier,
+la PPN fournisseur foldée (NON-PKP) **entre dans la base amortissable**. En régime UMKM final (impôt sur CA),
 l'amortissement n'a aucun effet fiscal : ce levier ne compte qu'en régime réel —
 l'inclure dans le comparatif de régimes.
 

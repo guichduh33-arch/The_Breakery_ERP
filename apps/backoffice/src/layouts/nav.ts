@@ -168,6 +168,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/accounting/bank-reconciliation', label: 'Bank reconciliation', permission: 'accounting.bank.read' },
           { to: '/backoffice/accounting/cash', label: 'Cash treasury', permission: 'accounting.cash.read' },
           { to: '/backoffice/accounting/trial-balance', label: 'Trial balance', permission: 'accounting.tb.read' },
+          { to: '/backoffice/accounting/fixed-assets', label: 'Fixed assets', permission: 'reports.statements.read' },
           { to: '/backoffice/accounting/mappings', label: 'Account mappings', permission: 'accounting.read' },
         ],
       },

@@ -1,10 +1,12 @@
 // apps/backoffice/src/features/accounting/utils/journalSources.ts
 //
 // Les familles d'émetteurs d'écritures (`journal_entries.reference_type`) et
-// leur libellé. La colonne est du texte libre côté schéma ; la liste ci-dessous
-// est le relevé EXHAUSTIF des valeurs vivantes au 2026-08-26 — les douze
-// présentes en base, plus les quatre que les fonctions émettrices écrivent
-// (`sale_void`, `cash_movement`, `manual`, `year_close`) sans occurrence encore.
+// leur libellé. Le schéma borne la colonne par la contrainte
+// `journal_entries_reference_type_check`, qui admet d'autres valeurs encore ;
+// la liste ci-dessous ne retient que les familles relevées comme émises. Relevé initial du 2026-08-26 (valeurs présentes en base et valeurs
+// écrites par les fonctions émettrices), complété le 2026-11-25 par les deux
+// familles de l'ADR-047 : `fixed_asset_depreciation` (dotation mensuelle) et
+// `fixed_asset_disposal` (sortie d'un équipement).
 // Un émetteur neuf devra s'ajouter ici pour être filtrable par son nom ; en
 // attendant, la page garde la valeur inconnue sélectionnable telle quelle —
 // un filtre posé par l'URL ne doit jamais devenir irreprésentable.
@@ -31,4 +33,6 @@ export const JOURNAL_SOURCE_OPTIONS: readonly JournalSourceOption[] = [
   { value: 'cash_movement',    label: 'Cash movement' },
   { value: 'manual',           label: 'Manual entry' },
   { value: 'year_close',       label: 'Year close' },
+  { value: 'fixed_asset_depreciation', label: 'Depreciation' },
+  { value: 'fixed_asset_disposal',     label: 'Asset disposal' },
 ];

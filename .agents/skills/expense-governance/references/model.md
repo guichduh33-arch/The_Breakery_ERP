@@ -89,6 +89,15 @@ Versions live **relevées le 2026-08-31** — les revérifier avant de s'y appuy
 Familles adjacentes appelées par le même écran : `reject_expense` et `pay_expense`
 (`(UUID, TEXT)`), toutes deux du socle dépenses initial.
 
+**Marque « équipement » (ADR-047, relevé 2026-11-25)** — la famille
+`set_expense_equipment` pose ou retire sur un BROUILLON le type (1600 / 1610),
+le groupe fiscal, le nom et la quantité d'articles ; créateur ou
+`expenses.manage`. Seuil vérifié au marquage puis à l'approbation : montant TTC
+≥ 2 000 000 IDR × quantité (le seuil se juge par article). À l'approbation,
+`_emit_expense_je` débite le compte d'équipement et crée une fiche du registre
+par article. Le circuit de soumission, d'approbation et de paiement ne change
+pas ; la garde `guard_expense_category_definition` (classe 6) reste intacte.
+
 **Permissions seedées** (au 2026-05-24 ; `role_permissions` est devenue de la DONNÉE
 éditable depuis l'éditeur RBAC — le seed est un défaut initial, pas l'état courant) :
 - `expenses.thresholds.read` — CASHIER / MANAGER / ADMIN / SUPER_ADMIN

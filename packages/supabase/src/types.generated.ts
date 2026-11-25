@@ -2591,6 +2591,12 @@ export type Database = {
           approval_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          asset_name: string | null
+          asset_quantity: number | null
+          asset_tax_group:
+            | Database["public"]["Enums"]["fixed_asset_tax_group"]
+            | null
+          asset_type: Database["public"]["Enums"]["fixed_asset_type"] | null
           auto_approved: boolean
           category_id: string
           created_at: string
@@ -2602,8 +2608,8 @@ export type Database = {
           expense_number: string
           expense_term_id: string | null
           id: string
-          invoice_exempt: boolean
           idempotency_key: string | null
+          invoice_exempt: boolean
           is_historical_import: boolean
           je_id: string | null
           paid_at: string | null
@@ -2627,6 +2633,12 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_name?: string | null
+          asset_quantity?: number | null
+          asset_tax_group?:
+            | Database["public"]["Enums"]["fixed_asset_tax_group"]
+            | null
+          asset_type?: Database["public"]["Enums"]["fixed_asset_type"] | null
           auto_approved?: boolean
           category_id: string
           created_at?: string
@@ -2638,8 +2650,8 @@ export type Database = {
           expense_number: string
           expense_term_id?: string | null
           id?: string
-          invoice_exempt?: boolean
           idempotency_key?: string | null
+          invoice_exempt?: boolean
           is_historical_import?: boolean
           je_id?: string | null
           paid_at?: string | null
@@ -2663,6 +2675,12 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_name?: string | null
+          asset_quantity?: number | null
+          asset_tax_group?:
+            | Database["public"]["Enums"]["fixed_asset_tax_group"]
+            | null
+          asset_type?: Database["public"]["Enums"]["fixed_asset_type"] | null
           auto_approved?: boolean
           category_id?: string
           created_at?: string
@@ -2674,8 +2692,8 @@ export type Database = {
           expense_number?: string
           expense_term_id?: string | null
           id?: string
-          invoice_exempt?: boolean
           idempotency_key?: string | null
+          invoice_exempt?: boolean
           is_historical_import?: boolean
           je_id?: string | null
           paid_at?: string | null
@@ -2806,6 +2824,208 @@ export type Database = {
             columns: ["locked_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_asset_depreciations: {
+        Row: {
+          amount: number
+          asset_id: string
+          attempts: number
+          created_at: string
+          entry_date: string
+          id: string
+          journal_entry_id: string | null
+          month_index: number
+          period_month: string
+          refused_reason: string | null
+          status: Database["public"]["Enums"]["fixed_asset_depreciation_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          attempts?: number
+          created_at?: string
+          entry_date: string
+          id?: string
+          journal_entry_id?: string | null
+          month_index: number
+          period_month: string
+          refused_reason?: string | null
+          status: Database["public"]["Enums"]["fixed_asset_depreciation_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          attempts?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          journal_entry_id?: string | null
+          month_index?: number
+          period_month?: string
+          refused_reason?: string | null
+          status?: Database["public"]["Enums"]["fixed_asset_depreciation_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_asset_depreciations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_asset_depreciations_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_assets: {
+        Row: {
+          asset_account_id: string
+          asset_number: string
+          asset_type: Database["public"]["Enums"]["fixed_asset_type"]
+          cost: number
+          created_at: string
+          created_by: string | null
+          depreciation_start_month: string
+          disposal_je_id: string | null
+          disposal_notes: string | null
+          disposal_price: number | null
+          disposal_proceeds_account_id: string | null
+          disposal_reason:
+            | Database["public"]["Enums"]["fixed_asset_disposal_reason"]
+            | null
+          disposed_at: string | null
+          disposed_by: string | null
+          expense_id: string | null
+          expense_unit_index: number | null
+          id: string
+          idempotency_key: string | null
+          in_service_date: string
+          monthly_depreciation: number
+          name: string
+          opening_accumulated: number
+          opening_accumulated_as_of: string | null
+          origin: Database["public"]["Enums"]["fixed_asset_origin"]
+          status: Database["public"]["Enums"]["fixed_asset_status"]
+          tax_group: Database["public"]["Enums"]["fixed_asset_tax_group"]
+          updated_at: string
+          useful_life_months: number
+        }
+        Insert: {
+          asset_account_id: string
+          asset_number: string
+          asset_type: Database["public"]["Enums"]["fixed_asset_type"]
+          cost: number
+          created_at?: string
+          created_by?: string | null
+          depreciation_start_month: string
+          disposal_je_id?: string | null
+          disposal_notes?: string | null
+          disposal_price?: number | null
+          disposal_proceeds_account_id?: string | null
+          disposal_reason?:
+            | Database["public"]["Enums"]["fixed_asset_disposal_reason"]
+            | null
+          disposed_at?: string | null
+          disposed_by?: string | null
+          expense_id?: string | null
+          expense_unit_index?: number | null
+          id?: string
+          idempotency_key?: string | null
+          in_service_date: string
+          monthly_depreciation: number
+          name: string
+          opening_accumulated?: number
+          opening_accumulated_as_of?: string | null
+          origin: Database["public"]["Enums"]["fixed_asset_origin"]
+          status?: Database["public"]["Enums"]["fixed_asset_status"]
+          tax_group: Database["public"]["Enums"]["fixed_asset_tax_group"]
+          updated_at?: string
+          useful_life_months: number
+        }
+        Update: {
+          asset_account_id?: string
+          asset_number?: string
+          asset_type?: Database["public"]["Enums"]["fixed_asset_type"]
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          depreciation_start_month?: string
+          disposal_je_id?: string | null
+          disposal_notes?: string | null
+          disposal_price?: number | null
+          disposal_proceeds_account_id?: string | null
+          disposal_reason?:
+            | Database["public"]["Enums"]["fixed_asset_disposal_reason"]
+            | null
+          disposed_at?: string | null
+          disposed_by?: string | null
+          expense_id?: string | null
+          expense_unit_index?: number | null
+          id?: string
+          idempotency_key?: string | null
+          in_service_date?: string
+          monthly_depreciation?: number
+          name?: string
+          opening_accumulated?: number
+          opening_accumulated_as_of?: string | null
+          origin?: Database["public"]["Enums"]["fixed_asset_origin"]
+          status?: Database["public"]["Enums"]["fixed_asset_status"]
+          tax_group?: Database["public"]["Enums"]["fixed_asset_tax_group"]
+          updated_at?: string
+          useful_life_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_asset_account_id_fkey"
+            columns: ["asset_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_disposal_je_id_fkey"
+            columns: ["disposal_je_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_disposal_proceeds_account_id_fkey"
+            columns: ["disposal_proceeds_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_disposed_by_fkey"
+            columns: ["disposed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
         ]
@@ -9462,6 +9682,19 @@ export type Database = {
         }
         Returns: Json
       }
+      register_existing_fixed_asset_v1: {
+        Args: {
+          p_accumulated: number
+          p_accumulated_as_of: string
+          p_asset_type: Database["public"]["Enums"]["fixed_asset_type"]
+          p_cost: number
+          p_idempotency_key: string
+          p_in_service_date: string
+          p_name: string
+          p_tax_group: Database["public"]["Enums"]["fixed_asset_tax_group"]
+        }
+        Returns: Json
+      }
       void_order_rpc_v14: {
         Args: {
           p_acting_auth_user_id: string
@@ -9836,6 +10069,18 @@ export type Database = {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined
       }
+      dispose_fixed_asset_v1: {
+        Args: {
+          p_asset_id: string
+          p_disposal_date: string
+          p_manager_pin: string
+          p_notes: string
+          p_proceeds_account_id: string
+          p_reason: Database["public"]["Enums"]["fixed_asset_disposal_reason"]
+          p_sale_price: number
+        }
+        Returns: Json
+      }
       do_tap:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
@@ -9994,6 +10239,8 @@ export type Database = {
         }
         Returns: Json
       }
+      get_fixed_asset_v1: { Args: { p_asset_id: string }; Returns: Json }
+      get_fixed_assets_v1: { Args: never; Returns: Json }
       get_kiosk_display_v1: { Args: never; Returns: Json }
       get_kitchen_history_v1: {
         Args: {
@@ -10894,6 +11141,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_expense_equipment_v1: {
+        Args: {
+          p_asset_name?: string
+          p_asset_type: Database["public"]["Enums"]["fixed_asset_type"]
+          p_expense_id: string
+          p_quantity?: number
+          p_tax_group?: Database["public"]["Enums"]["fixed_asset_tax_group"]
+        }
+        Returns: Json
+      }
       set_expense_receipt_v3: {
         Args: {
           p_expected_path?: string
@@ -11341,6 +11598,12 @@ export type Database = {
         | "return_to_kitchen"
         | "waste"
         | "adjustment"
+      fixed_asset_depreciation_status: "posted" | "refused"
+      fixed_asset_disposal_reason: "sale" | "breakage" | "scrap"
+      fixed_asset_origin: "expense" | "opening"
+      fixed_asset_status: "active" | "disposed"
+      fixed_asset_tax_group: "group_1" | "group_2"
+      fixed_asset_type: "equipment" | "production_machine"
       invoice_print_density: "comfortable" | "compact"
       loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
       modifier_group_type: "single_select" | "multi_select"
@@ -11585,6 +11848,12 @@ export const Constants = {
         "waste",
         "adjustment",
       ],
+      fixed_asset_depreciation_status: ["posted", "refused"],
+      fixed_asset_disposal_reason: ["sale", "breakage", "scrap"],
+      fixed_asset_origin: ["expense", "opening"],
+      fixed_asset_status: ["active", "disposed"],
+      fixed_asset_tax_group: ["group_1", "group_2"],
+      fixed_asset_type: ["equipment", "production_machine"],
       invoice_print_density: ["comfortable", "compact"],
       loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],
       modifier_group_type: ["single_select", "multi_select"],

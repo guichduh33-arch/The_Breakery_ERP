@@ -38,6 +38,7 @@ import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimelin
 import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
 import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import { ExpenseReceiptPanel } from '@/features/expenses/components/ExpenseReceiptPanel.js';
+import { ExpenseEquipmentPanel } from '@/features/expenses/components/ExpenseEquipmentPanel.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE, isInvoicePath } from '@/lib/invoiceFiles.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
@@ -293,6 +294,9 @@ export default function ExpenseDetailPage(): JSX.Element {
               </div>
             )}
           </Card>
+
+          {/* ADR-047 — marque « équipement » : débit au compte d'équipement à l'approbation. */}
+          <ExpenseEquipmentPanel expense={expense} />
 
           <Card variant="default" padding="md" className="space-y-2">
             <SectionLabel as="h2" size="sm" className="text-gold">Status Timeline</SectionLabel>
