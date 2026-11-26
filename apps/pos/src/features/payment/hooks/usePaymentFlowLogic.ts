@@ -36,14 +36,10 @@ import type { PaymentSuccessState } from './paymentSuccess';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
 import { getOrderSourceCode } from '@/stores/posSettingsStore';
 import { assertTerminalPaymentAllowed } from '@/features/lan/terminalPaymentAccess';
+import { paymentJournalDetail } from './paymentJournal';
 export type { PaymentSuccessState } from './paymentSuccess';
 
 let dispatching = false;
-
-/** Détail journalisé d'un règlement : un split ne se lit plus sous son seul premier moyen. */
-function tenderBreakdown(tenders: Tender[]): { method: string; amount: number }[] {
-  return tenders.map((t) => ({ method: t.method, amount: t.amount }));
-}
 
 export function usePaymentFlowLogic() {
   const attempt = usePaymentStore((s) => s.attempt);
@@ -378,9 +374,7 @@ export function usePaymentFlowLogic() {
     // payment_failed so the journal shows every attempt, not just outcomes).
     emitPosEvent('payment_started', {
       amount: total,
-      // `method` reste le premier règlement (lecture historique du journal) ;
-      // `split` porte le détail d'un split pour le rapprochement de caisse.
-      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null, split: tenderBreakdown(tendersToShip) },
+      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null, ...paymentJournalDetail(tendersToShip) },
     });
     try {
       const result = await checkout.mutateAsync({ cart: snapshot.cart, payment: tendersToShip, context: snapshot.context });
@@ -423,9 +417,7 @@ export function usePaymentFlowLogic() {
       emitPosEvent('payment_completed', {
         order_number_snap: result.order_number,
         amount: result.amount_received ?? (snapshot.context.outstanding ? 0 : result.total),
-        payload: { method: tendersToShip[0]?.method ?? 'outstanding', split: tenderBreakdown(tendersToShip), change_given: result.change_given,
-          // Ardoise : `amount` = encaissé (souvent 0) ; le reste dû se lit ici.
-          ...(result.outstanding_due !== undefined ? { outstanding_due: result.outstanding_due } : {}) },
+        payload: { method: tendersToShip[0]?.method ?? 'outstanding', change_given: result.change_given, ...paymentJournalDetail(tendersToShip, result.outstanding_due) },
       });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
