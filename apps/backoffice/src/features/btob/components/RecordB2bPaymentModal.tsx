@@ -98,7 +98,11 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                         && amountValid
                         && numericAmount > Number(selectedCustomer.b2b_current_balance ?? 0);
 
-  const canSubmit = attempt.allowed && customerId !== '' && amountValid && !overpaying && !attempt.busy && !attempt.storageError;
+  // La date de paiement est obligatoire : sans elle, la RPC retombait sur now()
+  // en silence et la facture prenait le jour de saisie comme jour d'encaissement.
+  // Une tentative en attente rejoue sa charge figée telle quelle.
+  const paidAtValid   = Boolean(snapshot) || paidAt.trim() !== '';
+  const canSubmit = attempt.allowed && customerId !== '' && amountValid && paidAtValid && !overpaying && !attempt.busy && !attempt.storageError;
 
   function handleClose(): void {
     setFormError(null);
@@ -352,15 +356,20 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
             </div>
             <div className="space-y-1">
               <label htmlFor={dateId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-                Paid at
+                Paid at <span aria-hidden className="text-danger">*</span>
               </label>
               <Input
                 id={dateId}
                 type="datetime-local"
+                required
+                aria-required="true"
                 value={snapshot ? snapshot.paidAt ?? '' : paidAt}
                 disabled={frozen}
                 onChange={(e) => setPaidAt(e.target.value)}
               />
+              {!snapshot && paidAt.trim() === '' && (
+                <p className="text-xs text-text-secondary">Required: the date the customer paid.</p>
+              )}
             </div>
           </div>
 

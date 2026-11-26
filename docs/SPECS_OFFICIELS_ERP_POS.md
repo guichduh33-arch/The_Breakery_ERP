@@ -787,6 +787,15 @@ que la vente (ADR-013 décision 3). Aujourd'hui un règlement B2B en QRIS va en
 banque alors qu'une vente QRIS va au compte d'attente.
 **À LIVRER** — Unifier, **avant** tout rapprochement bancaire.
 
+**RÈGLE** — Un règlement B2B porte la date réelle d'encaissement, choisie par
+l'opérateur à la saisie : elle date le règlement, la facture qu'il solde et son
+écriture. La saisie ne retient jamais le jour courant par défaut (décision de
+Mamat du 2026-11-26).
+**FAIT** — L'écran d'enregistrement d'un règlement B2B du back-office refuse
+l'envoi d'une saisie neuve tant que cette date est vide ; une tentative en
+attente est rejouée telle qu'elle a été enregistrée. La famille `record_b2b_payment` garde
+côté serveur un défaut à l'instant courant lorsque l'argument est omis.
+
 **RÈGLE** — Les comptes d'attente doivent être soldés par le **rapprochement
 bancaire**, mois par mois depuis l'ouverture.
 **À LIVRER** — Les 4 fonctions de rapprochement absentes de la production, puis

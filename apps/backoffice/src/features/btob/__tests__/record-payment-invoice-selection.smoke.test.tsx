@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import { classify } from '@/features/btob/hooks/useRecordB2bPayment.js';
 import { deferred, financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
-import { readFinancialSlot } from '@/lib/pendingFinancialAttempts.js';
+import { readFinancialSlot, runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 
 const mockRpc = vi.fn();
@@ -120,6 +120,14 @@ async function selectCustomer(): Promise<void> {
     expect(screen.queryByRole('option', { name: 'PT Kuta' })).not.toBeNull();
   });
   fireEvent.change(screen.getByLabelText(/^customer$/i), { target: { value: 'b1' } });
+  fillPaidAt();
+}
+
+const PAID_AT = '2026-11-20T10:30';
+
+/** La date de paiement est obligatoire : chaque saisie la renseigne. */
+function fillPaidAt(value: string = PAID_AT): void {
+  fireEvent.change(screen.getByLabelText(/^paid at/i), { target: { value } });
 }
 
 describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
@@ -175,6 +183,24 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     });
     const [, callArgs] = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
     expect(callArgs).not.toHaveProperty('p_invoice_ids');
+    expect(callArgs.p_paid_at).toBe(PAID_AT);
+  });
+
+  it('blocks the payment until a paid-at date is entered', async () => {
+    renderModal();
+    await selectCustomer();
+    fillPaidAt('');
+    fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '100000' } });
+
+    const submit = screen.getByRole('button', { name: /record payment/i });
+    expect(screen.getByLabelText(/^paid at/i)).toBeRequired();
+    expect(screen.getByText('Required: the date the customer paid.')).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(mockRpc).not.toHaveBeenCalled();
+
+    fillPaidAt();
+    await waitFor(() => expect(submit).toBeEnabled());
   });
 
   it('sends a store-credit settlement through the current RPC', async () => {
@@ -252,6 +278,24 @@ describe('durable B2B recovery with real payment hook and modal', () => {
     } finally { INVOICES.push(...savedInvoices); CLIENTS[0]!.b2b_current_balance = 800000; }
   });
 
+  it('replays an older pending payment saved without a paid-at date', async () => {
+    // Une tentative enregistrée avant l'obligation de date n'a pas de paidAt :
+    // elle doit rester vérifiable, avec sa charge figée à l'identique.
+    await expect(runFinancialAttempt({
+      scope, expectedRevision: null, current: () => true,
+      payload: { customerId: 'b1', amount: 100000, method: 'cash' },
+      send: () => Promise.reject(new Error('Response lost')),
+    })).rejects.toThrow('Response lost');
+    renderModal();
+    fireEvent.click(await screen.findByRole('button', { name: /Check pending payment for PT Kuta/ }));
+    expect(screen.queryByText('Required: the date the customer paid.')).not.toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: 'Check pending payment' });
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+    expect(await screen.findByTestId('rp-success')).toBeInTheDocument();
+    expect(mockRpc.mock.calls[0]?.[1]).not.toHaveProperty('p_paid_at');
+  });
+
   it('keeps UNKNOWN after a proven overpayment refusal and rejects malformed 2xx responses', async () => {
     mockRpc.mockReturnValueOnce({ data: { payment_number: 'incomplete' }, error: null })
       .mockReturnValueOnce({ data: null, error: { code: 'P0011', message: 'overpayment_not_allowed (balance: 0, amount: 100000)' } });
@@ -298,6 +342,7 @@ describe('durable B2B recovery with real payment hook and modal', () => {
       expect(screen.getByLabelText(/^amount$/i)).toHaveValue(null);
       expect(screen.getByLabelText(/^customer$/i)).toBeEnabled();
       fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '50000' } });
+      fillPaidAt();
       fireEvent.click(screen.getByRole('button', { name: 'Record payment' }));
       await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
       expect(mockRpc.mock.calls[1]?.[1]).toMatchObject({ p_customer_id: 'b2', p_amount: 50000 });
