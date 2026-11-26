@@ -689,6 +689,9 @@ reste sans chemin : à noter comme limite.
 sur chaque réception. Une réception payée au comptant reste refusée, faute de
 chemin pour annuler un paiement fournisseur. La production attend la
 publication.
+**FAIT** — Développé en dev le 2026-11-26 (ADR-048) : la contre-passation du
+paiement remet le solde payé à zéro, et l'annulation de la réception, qui lit
+ce solde, redevient possible. La production attend la publication.
 
 **FAIT** — Jusqu'au 2026-11-20, ni frais de port, ni escompte n'existaient sur
 un bon de commande : une facture avec port ne pouvait pas être saisie à son
@@ -710,6 +713,25 @@ rapport : bons reçus, hors imports historiques, total moins paiements, compté
 s'il reste positif. Un bon non reçu ne porte pas de dette. Le montant « en
 retard » de l'onglet des paiements suit encore l'ancienne règle de livraison
 attendue.
+
+**RÈGLE** — Un paiement fournisseur porte la date réelle du décaissement,
+choisie à la saisie : elle date le paiement, son écriture et le contrôle de
+période. La saisie ne retient jamais le jour courant par défaut (ADR-048).
+**RÈGLE** — Plusieurs bons d'un même fournisseur se règlent en un seul
+paiement (ADR-048).
+**RÈGLE** — Un paiement fournisseur erroné se corrige par une
+contre-passation, réservée au super admin sous son PIN avec motif, datée du
+jour d'origine et refusée si cette période est fermée. Un paiement déjà
+rapproché avec la banque reste contre-passable (ADR-048).
+**RÈGLE** — Chaque bon de commande montre l'historique détaillé de ses actions,
+avec la date, l'heure et l'auteur (ADR-048).
+**FAIT** — Développés en dev le 2026-11-26 : champ « Paid at » obligatoire sur
+le paiement d'un bon ; action « Pay several orders » sur l'onglet des paiements
+de la fiche fournisseur, répartie du bon le plus ancien au plus récent ; action
+« Reverse » par paiement, visible du super admin, qui ajoute au grand livre une
+ligne négative et une écriture inverse ; section « Activity » sur la fiche du
+bon, lue dans le journal d'audit. La famille `record_po_payment` garde côté
+serveur un défaut à l'instant courant. La production attend la publication.
 
 ---
 

@@ -51,6 +51,7 @@ import {
 import { useSupplierMetrics } from '@/features/suppliers/hooks/useSupplierMetrics.js';
 import { useSupplierOutstanding } from '@/features/suppliers/hooks/useSupplierOutstanding.js';
 import { SupplierPaymentBadge } from '@/features/suppliers/components/SupplierPaymentBadge.js';
+import { SupplierGroupPaymentAction } from '@/features/suppliers/components/SupplierGroupPaymentDialog.js';
 import { useSupplierPurchaseItems } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { useUpdateSupplier } from '@/features/suppliers/hooks/useUpdateSupplier.js';
 import { SupplierFormModal } from '@/features/suppliers/components/SupplierFormModal.js';
@@ -345,6 +346,11 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4">
+          {!purchases.isLoading && (
+            <div className="mb-4 flex justify-end">
+              <SupplierGroupPaymentAction supplierId={id ?? ''} supplierName={supplier.name} rows={purchaseRows} />
+            </div>
+          )}
           <PaymentsSection rows={purchaseRows} ledger={ledger} isLoading={purchases.isLoading} />
         </TabsContent>
 

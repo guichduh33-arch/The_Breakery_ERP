@@ -6539,8 +6539,11 @@ export type Database = {
           method: string
           paid_at: string
           paid_by: string | null
+          payment_group_id: string | null
           purchase_order_id: string
           reference: string | null
+          reversal_of_id: string | null
+          reversal_reason: string | null
         }
         Insert: {
           amount: number
@@ -6550,8 +6553,11 @@ export type Database = {
           method: string
           paid_at?: string
           paid_by?: string | null
+          payment_group_id?: string | null
           purchase_order_id: string
           reference?: string | null
+          reversal_of_id?: string | null
+          reversal_reason?: string | null
         }
         Update: {
           amount?: number
@@ -6561,8 +6567,11 @@ export type Database = {
           method?: string
           paid_at?: string
           paid_by?: string | null
+          payment_group_id?: string | null
           purchase_order_id?: string
           reference?: string | null
+          reversal_of_id?: string | null
+          reversal_reason?: string | null
         }
         Relationships: [
           {
@@ -6577,6 +6586,13 @@ export type Database = {
             columns: ["purchase_order_id"]
             isOneToOne: false
             referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_payments_reversal_of_id_fkey"
+            columns: ["reversal_of_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_payments"
             referencedColumns: ["id"]
           },
         ]
@@ -9257,6 +9273,19 @@ export type Database = {
         }
         Returns: Json
       }
+      _record_po_payment_internal_v2: {
+        Args: {
+          p_actor: string
+          p_amount: number
+          p_idempotency_key: string
+          p_method: string
+          p_paid_at: string
+          p_payment_group_id: string
+          p_po_id: string
+          p_reference: string
+        }
+        Returns: Json
+      }
       _record_sale_stock_v1: {
         Args: {
           p_allow_negative?: boolean
@@ -10841,13 +10870,35 @@ export type Database = {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
       }
-      record_po_payment_v2: {
+      record_po_payment_v3: {
         Args: {
           p_amount: number
           p_idempotency_key?: string
           p_method: string
+          p_paid_at?: string
           p_po_id: string
           p_reference?: string
+        }
+        Returns: Json
+      }
+      record_supplier_payment_v2: {
+        Args: {
+          p_amount: number
+          p_idempotency_key?: string
+          p_method: string
+          p_paid_at?: string
+          p_po_ids: string[]
+          p_reference?: string
+          p_supplier_id: string
+        }
+        Returns: Json
+      }
+      reverse_po_payment_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_manager_pin: string
+          p_payment_id: string
+          p_reason: string
         }
         Returns: Json
       }
