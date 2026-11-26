@@ -37,7 +37,7 @@ export function usePoActivity(poId: string, grnIds: readonly string[]) {
         .order('created_at', { ascending: false })
         .limit(PO_ACTIVITY_LIMIT);
       if (error) throw error;
-      return (data ?? []) as unknown as PoAuditRow[];
+      return data ?? [];
     },
   });
 

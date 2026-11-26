@@ -6,7 +6,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn<(fn: string, args: Record<string, unknown>) => Promise<unknown>>(),
+  from: vi.fn(),
+}));
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: mocks.rpc, from: mocks.from } }));
 
 import { useAuthStore } from '@/stores/authStore.js';
