@@ -42,7 +42,7 @@ SELECT throws_ok($q$SELECT submit_expense_v3((SELECT id FROM iv_vars WHERE k='ca
 SELECT is((SELECT status FROM expenses WHERE id=(SELECT id FROM iv_vars WHERE k='cash')),'draft','failed cash validation leaves draft');
 SELECT throws_ok($q$SELECT set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),(SELECT path FROM iv_vars WHERE k='attach'),NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))$q$,'P0002','invoice_object_not_found','attachment requires existing object');
-SELECT throws_ok($q$SELECT record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),10,'cash',NULL,gen_random_uuid())$q$,
+SELECT throws_ok($q$SELECT record_po_payment_v3((SELECT id FROM iv_vars WHERE k='po'),10,'cash',NULL,gen_random_uuid())$q$,
  '22023','invoice_required_before_payment','PO payment refuses missing invoice');
 SELECT lives_ok($q$INSERT INTO storage.objects(bucket_id,name,owner_id,metadata)
  SELECT 'purchase-invoices',path,auth.uid()::text,'{"mimetype":"application/pdf","size":7}' FROM iv_vars WHERE k='attach'$q$,
@@ -54,9 +54,9 @@ SELECT ok((set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),(SELECT path 
 SELECT throws_ok($q$SELECT set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),NULL,NULL,
  (SELECT id FROM iv_vars WHERE k='attach'))$q$,'22023','po_invoice_key_conflict','changed payload cannot reuse association key');
 SELECT is((SELECT count(*) FROM storage.objects WHERE bucket_id='purchase-invoices'),0::bigint,'PO bytes are inaccessible through direct Storage SELECT');
-INSERT INTO iv_vars(k,id) SELECT 'payment',(record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
+INSERT INTO iv_vars(k,id) SELECT 'payment',(record_po_payment_v3((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
  (SELECT id FROM iv_vars WHERE k='pay-key'))->>'payment_id')::uuid;
-SELECT ok((record_po_payment_v2((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
+SELECT ok((record_po_payment_v3((SELECT id FROM iv_vars WHERE k='po'),100,'cash',NULL,
  (SELECT id FROM iv_vars WHERE k='pay-key'))->>'idempotent_replay')::boolean,'payment replay remains possible');
 SELECT is(set_po_invoice_v2((SELECT id FROM iv_vars WHERE k='po'),NULL,(SELECT path FROM iv_vars WHERE k='attach'),gen_random_uuid())->>'reason',
  'invoice_requires_unpaid_order','invoice cannot be removed after first payment');

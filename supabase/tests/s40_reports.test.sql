@@ -927,11 +927,14 @@ BEGIN
   -- — c'est précisément ce qui la range du côté on_account.
   INSERT INTO orders (
     order_number, order_type, status,
-    subtotal, tax_amount, total, paid_at
+    subtotal, tax_amount, total, created_at, paid_at
   )
   VALUES (
     'ORD-S40-B2B-AR-001', 'b2b', 'paid',
     120000, 0, 120000,
+    -- ADR-049 : la vente B2B compte au jour de sa commande ; commande et
+    -- solde sont posés dans la fenêtre, à des jours distincts.
+    (CURRENT_DATE - INTERVAL '4 days')::timestamptz + INTERVAL '10 hours',
     (CURRENT_DATE - INTERVAL '3 days')::timestamptz + INTERVAL '10 hours'
   )
   RETURNING id INTO v_b2b_id;

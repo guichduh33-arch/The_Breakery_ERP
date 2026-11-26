@@ -128,6 +128,9 @@ BEGIN
     ('#PGTAP-SBC-C2', 'take_out', 'paid',  30000, 0,  30000, '2026-12-20T10:00:00+08', f.sid, f.cc),
     ('#PGTAP-SBC-D1', 'b2b',      'paid', 200000, 0, 200000, '2027-01-20T10:00:00+08', f.sid, f.cd),
     ('#PGTAP-SBC-AN', 'take_out', 'paid',  40000, 0,  40000, '2027-01-09T10:00:00+08', f.sid, NULL);
+  -- ADR-049 : une vente B2B compte au jour de sa commande ; on la commande le
+  -- jour même de son solde, dans la fenêtre.
+  UPDATE orders SET created_at = paid_at WHERE order_number = '#PGTAP-SBC-D1';
 END $$;
 
 -- T6 synthèse
