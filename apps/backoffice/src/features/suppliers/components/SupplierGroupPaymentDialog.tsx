@@ -141,7 +141,8 @@ export function SupplierGroupPaymentDialog({
   }
 
   const label = 'font-data font-semibold text-xs uppercase tracking-widest text-text-secondary';
-  const field = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
+  // L'anneau de focus s'écrit sur chaque contrôle : la garde n° 5 lit la chaîne de classe.
+  const field = 'h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary';
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o && !pay.isPending) onClose(); }}>
@@ -193,7 +194,7 @@ export function SupplierGroupPaymentDialog({
               value={amountText === '' ? (selectedDue > 0 ? String(selectedDue) : '') : amountText}
               onChange={(e) => setAmountText(e.target.value)}
               disabled={pay.isPending}
-              className={field}
+              className={`${field} ${FOCUS_RING}`}
               aria-required="true"
               data-testid="group-pay-amount"
             />
@@ -206,7 +207,7 @@ export function SupplierGroupPaymentDialog({
 
           <div className="space-y-1">
             <label htmlFor={`${reactId}-method`} className={label}>Method</label>
-            <select id={`${reactId}-method`} value={method} disabled={pay.isPending} className={field}
+            <select id={`${reactId}-method`} value={method} disabled={pay.isPending} className={`${field} ${FOCUS_RING}`}
               onChange={(e) => setMethod(e.target.value as PoPaymentMethod)}>
               {METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
@@ -216,7 +217,7 @@ export function SupplierGroupPaymentDialog({
             <label htmlFor={`${reactId}-ref`} className={label}>Reference (optional)</label>
             <input id={`${reactId}-ref`} type="text" maxLength={100} value={reference} disabled={pay.isPending}
               onChange={(e) => setReference(e.target.value)} placeholder="e.g. transfer ref"
-              className={`${field} placeholder:text-text-muted`} />
+              className={`${field} placeholder:text-text-muted ${FOCUS_RING}`} />
           </div>
 
           {pay.error !== null && (
