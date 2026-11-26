@@ -54,8 +54,8 @@ plaçaient pas la même vente le même jour.
 
 Migration `20261126000020_b2b_sales_recognized_at_order_date.sql` : la
 projection partagée est remplacée en place, avec la même liste de colonnes. Une
-v3 aurait obligé à republier une trentaine de fonctions de rapport pour une
-règle unique, et aurait laissé des rapports en désaccord pendant la transition.
+v3 aurait obligé à republier les 31 fonctions de rapport qui la lisaient au
+relevé du 2026-11-26, pour une règle unique, et aurait laissé des rapports en désaccord pendant la transition.
 Preuve : `supabase/tests/b2b_sales_recognized_at_order_date.test.sql`.
 
 ## Réversibilité

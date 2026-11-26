@@ -21,6 +21,8 @@
 --   T8  : PB1 — ardoise et vente de caisse identiques à la projection partagée
 --   T9  : aucun droit direct sur la vue PB1 pour authenticated, anon, PUBLIC
 --   T10 : get_pb1_report_v8 présente, v7 absente, exécutable par authenticated, pas par anon
+--   T11 : get_pb1_report_v8 lit la copie figée, jamais la projection partagée
+--   T12 : get_pb1_report_v8 rend la base taxable de la copie figée (B2B impayée exclue)
 --
 -- Lancé via mcp execute_sql : le verdict sort par RAISE EXCEPTION si un test échoue,
 -- et le ROLLBACK final nettoie la fixture.
@@ -28,7 +30,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE TEMP TABLE b2r_results(n serial, result text);
-INSERT INTO b2r_results(result) SELECT plan(10);
+INSERT INTO b2r_results(result) SELECT plan(12);
 
 CREATE TEMP TABLE b2r_ctx AS
 SELECT o.id AS owner_id, o.auth_user_id AS owner_uid,
@@ -100,6 +102,22 @@ INSERT INTO b2r_results(result) SELECT ok(
   AND has_function_privilege('authenticated','public.get_pb1_report_v8(integer,integer)','EXECUTE')
   AND NOT has_function_privilege('anon','public.get_pb1_report_v8(integer,integer)','EXECUTE'),
   'T10: get_pb1_report_v8 replaces v7 with the same privileges');
+
+INSERT INTO b2r_results(result) SELECT ok(
+  (SELECT prosrc FROM pg_proc WHERE oid = 'public.get_pb1_report_v8(integer,integer)'::regprocedure) ~ 'pb1_recognized_sales_v1'
+  AND (SELECT prosrc FROM pg_proc WHERE oid = 'public.get_pb1_report_v8(integer,integer)'::regprocedure) !~ 'recognized_sales_v2',
+  'T11: get_pb1_report_v8 reads the frozen PB1 projection, never the shared one');
+
+-- La fixture d'octobre 2026 sépare les deux règles d'au moins la B2B impayée
+-- (1 000) : la base rendue doit être celle de la copie figée.
+INSERT INTO b2r_results(result) SELECT ok(
+  (public.get_pb1_report_v8(10, 2026)->>'taxable_base')::numeric
+    = (SELECT COALESCE(SUM(subtotal),0) FROM reporting_private.pb1_recognized_sales_v1
+        WHERE recognized_at::date BETWEEN '2026-10-01' AND '2026-10-31' AND status NOT IN ('voided'))
+  AND (public.get_pb1_report_v8(10, 2026)->>'taxable_base')::numeric
+    <> (SELECT COALESCE(SUM(subtotal),0) FROM reporting_private.recognized_sales_v2
+        WHERE recognized_at::date BETWEEN '2026-10-01' AND '2026-10-31' AND status NOT IN ('voided')),
+  'T12: the PB1 report keeps the previous rule — the unpaid B2B order stays out of its taxable base');
 
 INSERT INTO b2r_results(result) SELECT * FROM finish();
 DO $$ BEGIN
