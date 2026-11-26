@@ -59,7 +59,7 @@ BEGIN
   -- ADR-049 : une vente B2B compte au jour de sa commande ; on la commande le
   -- jour même de son solde, dans la fenêtre.
   UPDATE orders SET created_at = paid_at WHERE id = f.o5;
-END $;
+END $$;
 
 -- T1 happy path : 7 clés
 DO $$

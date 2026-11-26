@@ -131,7 +131,7 @@ BEGIN
   -- ADR-049 : une vente B2B compte au jour de sa commande ; on la commande le
   -- jour même de son solde, dans la fenêtre.
   UPDATE orders SET created_at = paid_at WHERE order_number = '#PGTAP-SBC-D1';
-END $;
+END $$;
 
 -- T6 synthèse
 DO $$
