@@ -8446,7 +8446,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pb1_report_v7: {
+      get_pb1_report_v8: {
         Args: { p_period_month: number; p_period_year: number }
         Returns: Json
       }

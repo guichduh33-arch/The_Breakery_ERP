@@ -1057,6 +1057,14 @@ supprimer : tout rapport qui s'y brancherait échouerait.
 **FAIT** — Les deux vues et leurs fonctions de rafraîchissement sont retirées
 depuis le 2026-11-18, en dev et en production.
 
+**RÈGLE** — Une vente entre dans les rapports de ventes à une seule date :
+l'ardoise de caisse au jour de l'ardoise, la vente de caisse payée au jour du
+paiement, la vente B2B au jour de la commande, qu'elle soit impayée ou soldée.
+Le rapport PB1 garde la règle antérieure pour le B2B, hors PB1
+([ADR-049](adr/049-vente-b2b-reconnue-a-la-date-de-commande.md)).
+**OUVERT** — La base taxable du rapport PB1 inclut le sous-total des commandes
+B2B soldées, alors que l'ADR-040 les met hors PB1 : décision fiscale à prendre.
+
 **FAIT** — Le « rapport de coût de production » mesure en réalité des **achats
 commandés**, réception non incluse.
 **RÈGLE** — Le renommer « dépense d'achat ». Un vrai coût des ventes viendra du

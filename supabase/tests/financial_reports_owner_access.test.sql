@@ -37,7 +37,7 @@ BEGIN
      v_actor.role_code||' has explicit financial permission');
   FOREACH v_call IN ARRAY ARRAY[
    'public.get_gross_margin_by_product_v6(''2000-01-01'',''2000-01-01'')',
-   'public.get_pb1_report_v7(1,2000)',
+   'public.get_pb1_report_v8(1,2000)',
    'public.calculate_pb1_payable_v6(''2000-01-01'',''2000-01-01'')'
   ] LOOP
    INSERT INTO financial_report_results(tap) SELECT throws_ok('SELECT '||v_call,
@@ -62,7 +62,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   FOREACH v_call IN ARRAY ARRAY[
    'public.get_gross_margin_by_product_v6(''2000-01-01'',''2000-01-01'')',
-   'public.get_pb1_report_v7(1,2000)',
+   'public.get_pb1_report_v8(1,2000)',
    'public.calculate_pb1_payable_v6(''2000-01-01'',''2000-01-01'')'
   ] LOOP
    INSERT INTO financial_report_results(tap) SELECT lives_ok('SELECT '||v_call,
@@ -82,7 +82,7 @@ INSERT INTO financial_report_results(tap) SELECT lives_ok(
 INSERT INTO financial_report_results(tap) SELECT lives_ok(
  'SELECT public.get_payments_by_method_v5(''2000-01-01'',''2000-01-01'')','Owner reads payments');
 INSERT INTO financial_report_results(tap) SELECT lives_ok(
- 'SELECT public.get_pb1_report_v7(1,2000)','Owner reads PB1');
+ 'SELECT public.get_pb1_report_v8(1,2000)','Owner reads PB1');
 INSERT INTO financial_report_results(tap) SELECT lives_ok(
  'SELECT public.calculate_pb1_payable_v6(''2000-01-01'',''2000-01-01'')','Owner reads PB1 calculation');
 RESET ROLE;
@@ -90,12 +90,12 @@ SELECT set_config('request.jwt.claim.sub','',true);
 SELECT set_config('request.jwt.claims','{}',true);
 SET LOCAL ROLE authenticated;
 INSERT INTO financial_report_results(tap) SELECT throws_ok(
- 'SELECT public.get_pb1_report_v7(1,2000)','42501','financial_statements_required','Unauthenticated caller denied');
+ 'SELECT public.get_pb1_report_v8(1,2000)','42501','financial_statements_required','Unauthenticated caller denied');
 RESET ROLE;
 INSERT INTO financial_report_results(tap)
  SELECT ok(NOT has_function_privilege('anon',p.oid,'EXECUTE'),p.proname||' denies anon')
  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'
- AND p.proname IN ('get_gross_margin_by_product_v6','get_payments_by_method_v5','get_pb1_report_v7','calculate_pb1_payable_v6');
+ AND p.proname IN ('get_gross_margin_by_product_v6','get_payments_by_method_v5','get_pb1_report_v8','calculate_pb1_payable_v6');
 INSERT INTO financial_report_results(tap) SELECT ok(NOT EXISTS(
  SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'
  AND p.proname ~ '^(get_gross_margin_by_product_v[1-4]|get_payments_by_method_v[1-4]|get_pb1_report_v[1-5]|calculate_pb1_payable_v[1-4])$'),

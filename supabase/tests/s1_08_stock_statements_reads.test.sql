@@ -44,7 +44,7 @@ INSERT INTO s18_calls VALUES
   'SELECT public.get_general_ledger_v5((SELECT id FROM public.accounts WHERE code=''1141''),current_date-30,current_date)'),
  ('get_balance_sheet_v6','statements','SELECT public.get_balance_sheet_v6(current_date)'),
  ('get_profit_loss_v5','statements','SELECT public.get_profit_loss_v5(current_date-30,current_date)'),
- ('get_pb1_report_v7','statements','SELECT public.get_pb1_report_v7(1,2000)');
+ ('get_pb1_report_v8','statements','SELECT public.get_pb1_report_v8(1,2000)');
 GRANT ALL ON s18_results TO authenticated;
 GRANT USAGE,SELECT ON SEQUENCE s18_results_seq_seq TO authenticated;
 GRANT SELECT ON s18_actors,s18_ids,s18_calls TO authenticated;
@@ -120,7 +120,7 @@ CREATE TEMP TABLE s18_functions AS SELECT p.oid,p.proname,p.prosrc FROM pg_proc 
   'get_dashboard_overview_v8','recipe_bom_full_v6','recipe_direct_cost_v4','search_ingredients_v4',
   'get_dashboard_action_queue_v4','get_balance_sheet_v6','get_cash_flow_v5','get_cash_wallet_ledger_v5',
   'get_profit_loss_v5','get_trial_balance_v6','get_gross_margin_by_product_v6','calculate_pb1_payable_v6',
-  'get_pb1_report_v7']);
+  'get_pb1_report_v8']);
 INSERT INTO s18_results(tap) SELECT is((SELECT count(DISTINCT proname) FROM s18_functions),29::bigint,
  'The 29 new read versions exist');
 INSERT INTO s18_results(tap) SELECT is((SELECT string_agg(proname,',' ORDER BY proname) FROM s18_functions
