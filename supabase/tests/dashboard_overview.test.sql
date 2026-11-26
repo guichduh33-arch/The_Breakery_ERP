@@ -104,7 +104,8 @@ BEGIN
             now(), v_profile, 'S63 test void')
     RETURNING id INTO v_o3;
 
-  -- o4 : b2b_pending, 88 000, pas de paid_at -> exclue de tout
+  -- o4 : b2b_pending, 88 000, commandée maintenant, pas de paid_at -> comptée
+  --      AUJOURD'HUI, au jour de sa commande (ADR-049), sans ligne ni client
   INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via)
     VALUES ('#S63O4', 'b2b', 'b2b_pending', 88000, 0, 88000, 'pos')
     RETURNING id INTO v_o4;
@@ -137,14 +138,15 @@ BEGIN
                          WHERE (e->>'date')::date = v_day2), 0);
 
   -- ── Assertions (delta) ────────────────────────────────────────────────
-  -- T1 : net du jour = +50k +30k (o2 compte AUJOURD'HUI malgré le bord UTC) -10k refund ;
-  --      o3 voided (99k) et o4 b2b_pending (88k) invisibles.
-  INSERT INTO _r SELECT 'T01_revenue_today_net_delta_70k',
+  -- T1 : net du jour = +50k +30k (o2 compte AUJOURD'HUI malgré le bord UTC)
+  --      +88k (o4 B2B impayée, au jour de sa commande — ADR-049) -10k refund ;
+  --      o3 voided (99k) invisible.
+  INSERT INTO _r SELECT 'T01_revenue_today_net_delta_158k',
     (v_after->'kpis'->'net_revenue'->>'value')::numeric
-      - (v_before->'kpis'->'net_revenue'->>'value')::numeric = 70000;
-  INSERT INTO _r SELECT 'T02_orders_today_delta_2',
+      - (v_before->'kpis'->'net_revenue'->>'value')::numeric = 158000;
+  INSERT INTO _r SELECT 'T02_orders_today_delta_3',
     (v_after->'kpis'->'orders'->>'value')::int
-      - (v_before->'kpis'->'orders'->>'value')::int = 2;
+      - (v_before->'kpis'->'orders'->>'value')::int = 3;
   INSERT INTO _r SELECT 'T03_items_sold_delta_2_cancelled_excluded',
     (v_after->'kpis'->'items_sold'->>'value')::numeric
       - (v_before->'kpis'->'items_sold'->>'value')::numeric = 2;
@@ -153,12 +155,18 @@ BEGIN
   INSERT INTO _r SELECT 'T04_customers_today_delta_1',
     (v_after->'kpis'->'customers'->>'value')::int
       - (v_before->'kpis'->'customers'->>'value')::int = 1;
-  -- T5 : avg_basket = recalcul indépendant brut/commandes sur la table orders
+  -- T5 : avg_basket = recalcul indépendant brut/commandes sur la table orders,
+  --      avec la date de vente de l'ADR-049 (B2B à la commande, ardoise à
+  --      outstanding_at, sinon au paiement).
   INSERT INTO _r SELECT 'T05_avg_basket_matches_orders_table',
     (v_after->'kpis'->'avg_basket'->>'value')::numeric = (
       SELECT ROUND(SUM(o.total) / COUNT(*), 2) FROM orders o
-       WHERE o.status IN ('paid','completed') AND o.voided_at IS NULL AND o.paid_at IS NOT NULL
-         AND ((o.paid_at AT TIME ZONE v_tz))::date = v_today);
+       WHERE o.voided_at IS NULL AND o.status <> 'voided'
+         AND (o.outstanding_at IS NOT NULL OR o.status IN ('paid','completed')
+              OR (o.order_type = 'b2b' AND o.status = 'b2b_pending'))
+         AND (((CASE WHEN o.order_type = 'b2b' THEN o.created_at
+                     WHEN o.outstanding_at IS NOT NULL THEN o.outstanding_at
+                     ELSE COALESCE(o.paid_at, o.created_at) END) AT TIME ZONE v_tz))::date = v_today);
   -- T6/T7 : série 30 j continue, bornée à aujourd'hui
   INSERT INTO _r SELECT 'T06_revenue_30d_has_30_points',
     jsonb_array_length(v_after->'revenue_30d') = 30;

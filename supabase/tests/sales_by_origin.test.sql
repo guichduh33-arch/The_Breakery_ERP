@@ -56,7 +56,10 @@ BEGIN
     (f.o_leg,  '#PGTAP-ORIG-LEG', 'take_out', 'paid',   60000, 0,  60000, '2027-01-17T13:00:00+08', f.sid, 0, 0, 0, NULL, NULL, NULL),
     (f.o_void, 'P17012027099',    'take_out', 'voided', 999000, 0, 999000, '2027-01-17T14:00:00+08', f.sid, 0, 0, 0, '2027-01-17T15:00:00+08', (SELECT uid FROM _so_fix), 'pgtap fixture'),
     (f.o_prev, 'P12122026001',    'take_out', 'paid',   40000, 0,  40000, '2026-12-12T10:00:00+08', f.sid, 0, 0, 0, NULL, NULL, NULL);
-END $$;
+  -- ADR-049 : une vente B2B compte au jour de sa commande ; on la commande le
+  -- jour même de son solde, dans la fenêtre.
+  UPDATE orders SET created_at = paid_at WHERE id = f.o5;
+END $;
 
 -- T1 happy path : 7 clés
 DO $$
