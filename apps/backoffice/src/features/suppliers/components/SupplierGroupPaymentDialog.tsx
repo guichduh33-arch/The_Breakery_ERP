@@ -60,7 +60,7 @@ function byAge(a: PayablePo, b: PayablePo): number {
   return a.id < b.id ? -1 : 1;
 }
 
-/** Répartition du plus ancien au plus récent, comme `record_supplier_payment_v1`. */
+/** Répartition du plus ancien au plus récent, comme la famille `record_supplier_payment`. */
 export function allocate(selected: readonly PayablePo[], amount: number): Map<string, number> {
   const out = new Map<string, number>();
   let left = amount;

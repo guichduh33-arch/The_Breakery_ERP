@@ -78,3 +78,9 @@ règlement B2B et a demandé la même règle pour les achats.
   reste exigée : ces gardes regardent l'existence d'un paiement, pas son solde.
 - L'annulation d'une réception payée au comptant devient possible après la
   contre-passation de son paiement, puisque son contrôle lit le solde.
+- Le rapport des paiements fournisseurs lit le grand livre tel quel : une
+  contre-passation y apparaît comme une ligne négative du jour d'origine. Les
+  montants se compensent ; le nombre de paiements compte aussi ces lignes.
+- Le serveur n'encadre pas la date saisie (ni futur, ni antérieure au bon) :
+  seul le contrôle de période la borne. Un encadrement serait une décision à
+  prendre.

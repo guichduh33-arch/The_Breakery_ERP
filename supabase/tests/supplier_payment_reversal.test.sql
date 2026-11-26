@@ -1,5 +1,5 @@
 -- ADR-048 : paiements fournisseurs datés, règlement groupé, contre-passation.
---   record_po_payment_v3, record_supplier_payment_v1, reverse_po_payment_v1.
+--   record_po_payment_v3, record_supplier_payment_v2, reverse_po_payment_v1.
 -- Comptes, bons, paiements et écritures de ce test disparaissent avec le ROLLBACK.
 BEGIN;
 \ir helpers/payment_invoice.sql
@@ -84,7 +84,7 @@ SELECT ok(NOT has_function_privilege('authenticated',
   'le helper interne reste fermé aux comptes connectés');
 
 -- ─── 2. Règlement groupé ─────────────────────────────────────────────────────
-INSERT INTO spr SELECT 'grp_res', (record_supplier_payment_v1(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('old')],
+INSERT INTO spr SELECT 'grp_res', (record_supplier_payment_v2(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('old')],
   120000, 'transfer', 'T2 transfer', (pg_temp.dd('d_main') + time '10:00')::timestamptz, pg_temp.v('k_group')))->>'payment_group_id', NULL;
 SELECT is(pg_temp.v('grp_res'), pg_temp.v('k_group'), 'groupé : le groupe porte la clé de la saisie');
 SELECT is((SELECT SUM(amount) FROM purchase_payments WHERE purchase_order_id = pg_temp.v('old')), 100000::numeric,
@@ -94,18 +94,18 @@ SELECT is((SELECT SUM(amount) FROM purchase_payments WHERE purchase_order_id = p
 SELECT is((SELECT count(*)::int FROM journal_entries j JOIN purchase_payments p ON p.id = j.reference_id
             WHERE j.reference_type = 'purchase_payment' AND p.payment_group_id = pg_temp.v('k_group')
               AND j.entry_date = pg_temp.dd('d_main')), 2, 'groupé : une écriture par bon, à la date choisie');
-SELECT is((record_supplier_payment_v1(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('old')],
+SELECT is((record_supplier_payment_v2(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('old')],
   120000, 'transfer', 'T2 transfer', now(), pg_temp.v('k_group')))->>'idempotent_replay', 'true',
   'groupé : la même clé rejoue');
 SELECT is((SELECT count(*)::int FROM purchase_payments WHERE payment_group_id = pg_temp.v('k_group')), 2,
   'groupé : le rejeu n''ajoute aucune ligne');
-SELECT throws_like($q$SELECT record_supplier_payment_v1(pg_temp.v('sup'), ARRAY[pg_temp.v('new')], 30001, 'cash', NULL, now(), gen_random_uuid())$q$,
+SELECT throws_like($q$SELECT record_supplier_payment_v2(pg_temp.v('sup'), ARRAY[pg_temp.v('new')], 30001, 'cash', NULL, now(), gen_random_uuid())$q$,
   'overpayment_not_allowed%', 'groupé : refus au-delà du reste dû');
-SELECT throws_like($q$SELECT record_supplier_payment_v1(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('other')], 1000, 'cash', NULL, now(), gen_random_uuid())$q$,
+SELECT throws_like($q$SELECT record_supplier_payment_v2(pg_temp.v('sup'), ARRAY[pg_temp.v('new'), pg_temp.v('other')], 1000, 'cash', NULL, now(), gen_random_uuid())$q$,
   'po_supplier_mismatch%', 'groupé : refus d''un bon d''un autre fournisseur');
-SELECT throws_like($q$SELECT record_supplier_payment_v1(pg_temp.v('sup'), ARRAY[pg_temp.v('old')], 1000, 'cash', NULL, now(), gen_random_uuid())$q$,
+SELECT throws_like($q$SELECT record_supplier_payment_v2(pg_temp.v('sup'), ARRAY[pg_temp.v('old')], 1000, 'cash', NULL, now(), gen_random_uuid())$q$,
   'po_nothing_due%', 'groupé : refus d''un bon déjà soldé');
-SELECT ok(NOT has_function_privilege('anon', 'record_supplier_payment_v1(uuid,uuid[],numeric,text,text,timestamptz,uuid)', 'execute'),
+SELECT ok(NOT has_function_privilege('anon', 'record_supplier_payment_v2(uuid,uuid[],numeric,text,text,timestamptz,uuid)', 'execute'),
   'groupé : anon ne peut pas l''exécuter');
 
 -- ─── 3. Contre-passation ─────────────────────────────────────────────────────
@@ -164,6 +164,14 @@ SELECT ok(pg_temp.error_of($q$SELECT reverse_po_payment_v1(pg_temp.v('pay_prev')
   LIKE 'period_locked%', 'contre-passation : refusée si la période d''origine est fermée');
 SELECT ok(pg_temp.error_of($q$SELECT record_po_payment_v3(pg_temp.v('new'), 1, 'cash', NULL, gen_random_uuid(), (pg_temp.dd('d_prev') + time '12:00')::timestamptz)$q$)
   LIKE 'period_locked%', 'v3 : refus d''un paiement daté dans une période fermée');
+
+-- ─── 5. Versions ─────────────────────────────────────────────────────────────
+SELECT ok(to_regprocedure('record_supplier_payment_v1(uuid,uuid[],numeric,text,text,timestamptz,uuid)') IS NULL,
+  'groupé : v1 supprimée');
+SELECT ok(to_regprocedure('_guard_po_payment_invoice_v1()') IS NULL, 'garde de facture : v1 supprimée');
+SELECT is((SELECT p.proname::text FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+            WHERE t.tgrelid = 'public.purchase_payments'::regclass AND t.tgname = 'invoice_required_before_payment'),
+  '_guard_po_payment_invoice_v2', 'garde de facture : le déclencheur appelle la v2');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -135,5 +135,7 @@ export function buildPoActivity(audit: readonly PoAuditRow[]): PoActivityEvent[]
         ...(detail !== undefined ? { detail } : {}),
       };
     })
-    .sort((x, y) => Date.parse(y.at) - Date.parse(x.at) || y.id.localeCompare(x.id));
+    // Même instant : l'identifiant d'audit, numérique, départage (jamais en texte : « 9 » > « 10 »).
+    .sort((x, y) => Date.parse(y.at) - Date.parse(x.at)
+      || Number(y.id.slice('audit-'.length)) - Number(x.id.slice('audit-'.length)));
 }

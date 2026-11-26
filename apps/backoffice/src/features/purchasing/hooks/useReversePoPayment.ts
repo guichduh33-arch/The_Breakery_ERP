@@ -98,6 +98,7 @@ export function reversePoPaymentMessage(err: unknown): string {
     case 'period_undefined':
       return 'The accounting period of this payment date is closed. The payment cannot be reversed.';
     default:
-      return 'The reversal failed. Nothing was changed.';
+      // La réponse a pu se perdre après l'écriture : on ne dit pas « rien n'a changé ».
+      return 'The reversal could not be confirmed. Check the payment list before trying again.';
   }
 }

@@ -150,7 +150,7 @@ describe('grouped supplier payment', () => {
     fireEvent.click(submit);
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const [fn, args] = mocks.rpc.mock.calls[0]!;
-    expect(fn).toBe('record_supplier_payment_v1');
+    expect(fn).toBe('record_supplier_payment_v2');
     expect(args).toMatchObject({ p_supplier_id: 'sup-1', p_po_ids: ['a', 'b'], p_amount: 120_000, p_paid_at: '2026-11-21T10:00', p_method: 'transfer' });
   });
 

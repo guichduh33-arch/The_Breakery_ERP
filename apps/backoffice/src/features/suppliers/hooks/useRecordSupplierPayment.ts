@@ -1,5 +1,5 @@
 // ADR-048 — règlement groupé : un seul paiement couvre plusieurs bons d'un
-// même fournisseur (`record_supplier_payment_v1`). Le serveur répartit le
+// même fournisseur (`record_supplier_payment_v2`). Le serveur répartit le
 // montant du plus ancien bon au plus récent, écrit une ligne et une écriture
 // par bon, toutes liées par le même groupe. Gate serveur `purchasing.po.pay`.
 // La clé d'idempotence est celle du groupe : un nouvel essai rejoue.
@@ -50,7 +50,7 @@ export function useRecordSupplierPayment() {
   return useMutation<RecordSupplierPaymentResult, RecordPaymentError, RecordSupplierPaymentArgs>({
     retry: false,
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('record_supplier_payment_v1', {
+      const { data, error } = await supabase.rpc('record_supplier_payment_v2', {
         p_supplier_id:     args.supplierId,
         p_po_ids:          args.poIds,
         p_amount:          args.amount,
@@ -67,6 +67,12 @@ export function useRecordSupplierPayment() {
       const body = data as unknown as RecordSupplierPaymentResult | null;
       if (body === null || !Array.isArray(body.lines) || body.lines.length === 0) {
         throw new RecordPaymentError('unknown', 'The payment was not confirmed. Reload before trying again.');
+      }
+      // Rejeu d'une saisie dont la réponse s'était perdue, mais avec un montant
+      // modifié depuis : le serveur a rendu la PREMIÈRE saisie, pas celle-ci.
+      if (body.idempotent_replay && Math.abs(Number(body.amount_paid) - args.amount) > 0.005) {
+        throw new RecordPaymentError('unknown',
+          'A payment was already recorded from this window with another amount. Close it and check the payment list.');
       }
       return body;
     },
