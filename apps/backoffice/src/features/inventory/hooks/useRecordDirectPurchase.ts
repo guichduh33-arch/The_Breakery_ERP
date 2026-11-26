@@ -8,15 +8,16 @@
 //   1. create_purchase_order_v3  → a 1-line PO (payment_terms='credit')
 //   2. receive_purchase_order → GRN ⇒ DR Inventory / CR Purchase Payable JE
 //                                  + movement_type='purchase' (WAC + price trend)
-//   3. record_po_payment_v2      → DR Payable / CR Cash|Bank JE (only when paid)
+//   3. record_po_payment (v3)    → DR Payable / CR Cash|Bank JE (only when paid),
+//                                  dated on the payment date (ADR-048)
 //
 // Each step is idempotent (deterministic sub-keys derived from one base key) so
 // a retry after a partial failure re-uses the same PO/GRN/payment.
 //
-// Accounting note: receive_purchase_order hardcodes received_date=current_date
-// and the payment posts paid_at=now(), so the JEs land on TODAY. The user's
-// chosen purchase date is stored on the PO (order_date) and echoed in the
-// payment reference; back-dating the JE itself would require an RPC bump.
+// Accounting note: receive_purchase_order hardcodes received_date=current_date,
+// so the reception JE lands on TODAY. The user's chosen purchase date is stored
+// on the PO (order_date). The payment, since ADR-048, carries the chosen
+// payment date (paid_at and its JE).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
@@ -160,10 +161,12 @@ export function useRecordDirectPurchase() {
       // ── 4. Record the payment (only when paid now) ───────────────────────────
       let paymentId: string | null = null;
       if (args.paymentMethod !== null && args.paymentAmount > 0) {
-        const payRes = await rpc('record_po_payment_v2', {
+        const payRes = await rpc('record_po_payment_v3', {
           p_po_id:           po.po_id,
           p_amount:          args.paymentAmount,
           p_method:          args.paymentMethod,
+          // ADR-048 : le paiement et son écriture portent le jour saisi.
+          p_paid_at:         args.paymentDate,
           p_reference:       `Direct purchase ${args.purchaseDate} · paid ${args.paymentDate}`,
           p_idempotency_key: subKey(args.idempotencyKey, 'payment'),
         });

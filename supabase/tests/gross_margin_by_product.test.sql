@@ -235,14 +235,12 @@ BEGIN
   VALUES ('GM Test Product B2B', 'GM-TEST-B2B', v_cat, 5000, 'pcs', 2000)
   RETURNING id INTO v_prod;
 
-  -- Mirrors record_b2b_payment_v3 full-settlement semantics (introduced by v2,
-  -- 20260710000067; carried forward by v3):
-  -- status flips to 'paid' + paid_at is set only once the invoice is fully
-  -- settled (unsettled B2B orders sit in 'b2b_pending' with paid_at NULL and
-  -- are correctly excluded by this RPC's status filter).
+  -- ADR-049 : une vente B2B compte au jour de sa commande (`created_at`),
+  -- soldée ou non. La commande est passée et soldée le même jour de la fenêtre.
   INSERT INTO orders (order_number, order_type, status, customer_id, subtotal, tax_amount, total,
-                       created_via, paid_at)
-  VALUES ('GM-TEST-ORD-B2B', 'b2b', 'paid', v_cust, 10000, 0, 10000, 'pos', '2031-03-18 10:00:00+00')
+                       created_via, created_at, paid_at)
+  VALUES ('GM-TEST-ORD-B2B', 'b2b', 'paid', v_cust, 10000, 0, 10000, 'pos',
+          '2031-03-18 09:00:00+00', '2031-03-18 10:00:00+00')
   RETURNING id INTO v_ord;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product B2B', 5000, 2, 10000);
