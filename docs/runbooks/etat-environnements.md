@@ -26,6 +26,21 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 26 novembre 2026, 18 h 30 — date de paiement obligatoire au règlement B2B, back-office `8dde9529`
+
+Relevé du 26 novembre 2026, vers 18 h 30 UTC+8. PR #777 : back-office seul ;
+aucune migration, aucune Edge Function, aucune installation POS.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `8dde9529` | Fusion de #777. `ci.yml` run `45738643183` (push) réussi ; `pgtap-pr.yml` run `45790637230` (`workflow_dispatch`) réussi, avec `pgtap-exclusive`, `pgtap` et `db-gate` | pgTAP tourne sur la base de dev |
+| Back-office | `production-backoffice.yml`, run `45794893763` sur `8dde9529`, réussi après approbation Production de Mamat ; manifeste vérifié sur 389 fichiers ; alias `backoffice.the-breakery.com` posé le 26 novembre à 10 h 24 UTC ; empreinte de l'artefact manifeste `9f820fae…`. Un premier run, `45739587463`, s'est arrêté au contrôle préalable faute de preuve pgTAP sur le SHA exact : rien n'avait été publié | — |
+| BO servi | `backoffice.the-breakery.com`, 329 fichiers JS relus : le texte d'aide du champ « Paid at » de la modale de règlement B2B est présent ; référence Supabase de production présente, référence de dev absente | Lecture des fichiers servis, pas d'un parcours à l'écran ; aucun règlement saisi en production |
+
+Retour : republier le SHA précédent, `4f250a34`, par le même workflow. Aucune
+donnée n'est à reprendre : le changement ne touche que l'écran de saisie.
+
 ## Complément du 25 novembre 2026, 17 h 10 — règlement des dettes importées, base `9c51bd40`
 
 Relevé du 25 novembre 2026, vers 17 h 10 UTC+8. PR #775 : une migration de
