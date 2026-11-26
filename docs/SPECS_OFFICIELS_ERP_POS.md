@@ -689,9 +689,9 @@ reste sans chemin : à noter comme limite.
 sur chaque réception. Une réception payée au comptant reste refusée, faute de
 chemin pour annuler un paiement fournisseur. La production attend la
 publication.
-**FAIT** — Développé en dev le 2026-11-26 (ADR-048) : la contre-passation du
+**FAIT** — Livré en production le 2026-11-27 (ADR-048) : la contre-passation du
 paiement remet le solde payé à zéro, et l'annulation de la réception, qui lit
-ce solde, redevient possible. La production attend la publication.
+ce solde, redevient possible.
 
 **FAIT** — Jusqu'au 2026-11-20, ni frais de port, ni escompte n'existaient sur
 un bon de commande : une facture avec port ne pouvait pas être saisie à son
@@ -725,13 +725,14 @@ jour d'origine et refusée si cette période est fermée. Un paiement déjà
 rapproché avec la banque reste contre-passable (ADR-048).
 **RÈGLE** — Chaque bon de commande montre l'historique détaillé de ses actions,
 avec la date, l'heure et l'auteur (ADR-048).
-**FAIT** — Développés en dev le 2026-11-26 : champ « Paid at » obligatoire sur
+**FAIT** — Livrés en production le 2026-11-27 : champ « Paid at » obligatoire sur
 le paiement d'un bon ; action « Pay several orders » sur l'onglet des paiements
 de la fiche fournisseur, répartie du bon le plus ancien au plus récent ; action
 « Reverse » par paiement, visible du super admin, qui ajoute au grand livre une
 ligne négative et une écriture inverse ; section « Activity » sur la fiche du
 bon, lue dans le journal d'audit. La famille `record_po_payment` garde côté
-serveur un défaut à l'instant courant. La production attend la publication.
+serveur un défaut à l'instant courant. Preuves datées dans le
+[runbook des environnements](runbooks/etat-environnements.md).
 
 ---
 
@@ -1084,6 +1085,8 @@ l'ardoise de caisse au jour de l'ardoise, la vente de caisse payée au jour du
 paiement, la vente B2B au jour de la commande, qu'elle soit impayée ou soldée.
 Le rapport PB1 garde la règle antérieure pour le B2B, hors PB1
 ([ADR-049](adr/049-vente-b2b-reconnue-a-la-date-de-commande.md)).
+**FAIT** — Livré en production le 2026-11-27 (PR #781). Preuves datées dans le
+[runbook des environnements](runbooks/etat-environnements.md).
 **OUVERT** — La base taxable du rapport PB1 inclut le sous-total des commandes
 B2B soldées, alors que l'ADR-040 les met hors PB1 : décision fiscale à prendre.
 
