@@ -20,7 +20,7 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 describe('achat direct — idempotence des étapes', () => {
   beforeEach(() => vi.clearAllMocks());
-  it.each(['create_purchase_order_v3', 'receive_purchase_order_v8', 'record_po_payment_v2'])(
+  it.each(['create_purchase_order_v3', 'receive_purchase_order_v8', 'record_po_payment_v3'])(
     'reprend la réponse perdue de %s sans modifier les paramètres ni doubler les écritures', async (lostStep) => {
       const writes = new Map<string, number>();
       const confirmed = new Map<string, unknown>();
@@ -46,7 +46,7 @@ describe('achat direct — idempotence des étapes', () => {
         const repeats = mocks.rpc.mock.calls.filter((call) => call[0] === fn);
         for (const repeated of repeats) expect(repeated[1]).toEqual(args);
       }
-      expect(mocks.rpc).toHaveBeenLastCalledWith('record_po_payment_v2', expect.objectContaining({ p_amount: 500000, p_method: 'cash' }));
+      expect(mocks.rpc).toHaveBeenLastCalledWith('record_po_payment_v3', expect.objectContaining({ p_amount: 500000, p_method: 'cash', p_paid_at: '2026-09-09' }));
       expect(result.current.progress).toMatchObject({ poId: 'po', grnId: 'grn', paymentId: 'payment' });
     },
   );

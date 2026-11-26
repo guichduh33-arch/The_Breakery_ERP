@@ -11,6 +11,7 @@ import { formatCurrency } from '@breakery/utils';
 import type { PoPaymentMethod } from '../hooks/useRecordPoPayment.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
+import { PaidAtField } from './PaidAtField.js';
 
 const METHODS: { value: PoPaymentMethod; label: string }[] = [
   { value: 'transfer', label: 'Bank transfer' },
@@ -25,7 +26,7 @@ export interface RecordPaymentDialogProps {
   remainingDue: number;
   onCancel:     () => void;
   onConfirm:    (args: {
-    amount: number; method: PoPaymentMethod; reference?: string; idempotencyKey: string;
+    amount: number; method: PoPaymentMethod; reference?: string; paidAt: string; idempotencyKey: string;
   }) => Promise<void>;
   submitting?:  boolean;
   error?:       string;
@@ -41,15 +42,19 @@ export function RecordPaymentDialog({
   const [amount, setAmount]       = useState<number>(remainingDue > 0 ? remainingDue : 0);
   const [method, setMethod]       = useState<PoPaymentMethod>('transfer');
   const [reference, setReference] = useState<string>('');
+  // ADR-048 : la date réelle du décaissement, jamais le jour courant par défaut.
+  const [paidAt, setPaidAt]       = useState<string>('');
 
   const overpay   = amount > remainingDue + 0.005;
-  const canSubmit = Number.isFinite(amount) && amount > 0 && !overpay && !submitting && !invoiceBlocked;
+  const paidAtOk  = paidAt.trim() !== '';
+  const canSubmit = Number.isFinite(amount) && amount > 0 && !overpay && paidAtOk && !submitting && !invoiceBlocked;
 
   async function handleConfirm(): Promise<void> {
     if (!canSubmit) return;
     await onConfirm({
       amount,
       method,
+      paidAt,
       ...(reference.trim() !== '' ? { reference: reference.trim() } : {}),
       idempotencyKey: idempotencyKey.current,
     });
@@ -84,6 +89,8 @@ export function RecordPaymentDialog({
               <div className="text-xs text-danger">Amount exceeds the remaining due.</div>
             )}
           </div>
+
+          <PaidAtField id={`${reactId}-paid-at`} value={paidAt} onChange={setPaidAt} disabled={submitting} />
 
           <div className="space-y-1">
             <label htmlFor={`${reactId}-method`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">

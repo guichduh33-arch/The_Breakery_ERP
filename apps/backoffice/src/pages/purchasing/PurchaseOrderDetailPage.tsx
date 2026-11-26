@@ -1,7 +1,6 @@
 // Fiche PO : facture privée et contrôles avant règlement.
 
 import { useState, type JSX } from 'react';
-import { formatDateShortWita } from '@breakery/utils';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,7 +8,6 @@ import {
   Pencil,
   Printer,
   Truck,
-  Wallet,
   XCircle,
 } from 'lucide-react';
 import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
@@ -35,7 +33,10 @@ import { ReceiveDialog } from '@/features/purchasing/components/ReceiveDialog.js
 import { CancelDialog } from '@/features/purchasing/components/CancelDialog.js';
 import { RecordPaymentDialog } from '@/features/purchasing/components/RecordPaymentDialog.js';
 import { POPrintView } from '@/features/purchasing/components/POPrintView.js';
-import { PurchaseOrderContent, PaymentStatusBadge, SummaryRow, TimelineItem, fmtDay, fmtIdr } from '@/features/purchasing/components/PurchaseOrderDetailCards.js';
+import { PurchaseOrderContent, SummaryRow, TimelineItem, fmtDay, fmtIdr } from '@/features/purchasing/components/PurchaseOrderDetailCards.js';
+import { PoPaymentsCard } from '@/features/purchasing/components/PoPaymentsCard.js';
+import { PoActivityCard } from '@/features/purchasing/components/PoActivityCard.js';
+import type { PoPaymentMethod } from '@/features/purchasing/hooks/useRecordPoPayment.js';
 import { PoInvoicePanel } from '@/features/purchasing/components/PoInvoicePanel.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { INVOICE_PAYMENT_MESSAGE, isInvoicePath } from '@/lib/invoiceFiles.js';
@@ -217,8 +218,8 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   }
 
   async function handleRecordPayment(args: {
-    amount: number; method: 'cash' | 'transfer' | 'card' | 'qris' | 'edc';
-    reference?: string; idempotencyKey: string;
+    amount: number; method: PoPaymentMethod;
+    reference?: string; paidAt: string; idempotencyKey: string;
   }): Promise<void> {
     if (invoiceBlocked) { setPayError(INVOICE_PAYMENT_MESSAGE); return; }
     setPayError(undefined);
@@ -361,6 +362,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <PoInvoicePanel po={po} hasPayments={hasPayments} fullyPaid={paymentStatus === 'paid'}
             paymentsKnown={payments.data !== undefined} onBusyChange={setInvoiceBusy} />
           <PurchaseOrderContent po={po} canCancelReceipt={canCancel} />
+          <PoActivityCard poId={po.id} grnIds={(po.goods_receipt_notes ?? []).map((g) => g.id)} />
         </div>
 
         <div className="space-y-6">
@@ -378,54 +380,19 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             </div>
           </Card>
 
-          <Card variant="default" padding="md" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <SectionLabel as="h2" size="sm" className="text-gold">Payment Status</SectionLabel>
-              <PaymentStatusBadge status={paymentStatus} />
-            </div>
-            <dl className="space-y-2 text-sm">
-              <SummaryRow label="Total due"  value={fmtIdr(totalDue)} />
-              <SummaryRow label="Paid"       value={fmtIdr(totalPaid)} />
-              <SummaryRow label="Remaining"  value={fmtIdr(remainingDue)} />
-            </dl>
-
-            {payments.data !== undefined && payments.data.payments.length > 0 && (
-              <div className="space-y-1 border-t border-border-subtle pt-3">
-                <SectionLabel as="div" size="xs">Payment history</SectionLabel>
-                <ul className="space-y-1.5">
-                  {payments.data.payments.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between text-xs">
-                      <span className="font-data tabular-nums text-text-secondary">
-                        {formatDateShortWita(p.paid_at)} · <span className="uppercase">{p.method}</span>
-                        {p.reference !== null && p.reference !== '' && (
-                          <span className="text-text-muted"> · {p.reference}</span>
-                        )}
-                      </span>
-                      <span className="font-data tabular-nums text-text-primary">{fmtIdr(p.amount)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {canRecordPay && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => { setPayError(undefined); setShowPay(true); }}
-                disabled={payBlockedByCancel || invoiceBlocked}
-                aria-describedby="po-payment-note"
-              >
-                <Wallet className="h-4 w-4" aria-hidden /> Record payment
-              </Button>
-            )}
-            <p id="po-payment-note" className="text-xs text-text-muted">
-              {payBlockedByCancel
-                ? 'This purchase order is cancelled — no payment can be recorded.'
-                : invoiceBlocked ? INVOICE_PAYMENT_MESSAGE : 'Payment is tracked independently from goods reception.'}
-            </p>
-          </Card>
+          <PoPaymentsCard
+            poId={po.id}
+            poNumber={po.po_number}
+            totalDue={totalDue}
+            totalPaid={totalPaid}
+            remainingDue={remainingDue}
+            paymentStatus={paymentStatus}
+            payments={payments.data?.payments}
+            canRecordPay={canRecordPay}
+            payBlockedByCancel={payBlockedByCancel}
+            invoiceBlocked={invoiceBlocked}
+            onRecordPayment={() => { setPayError(undefined); setShowPay(true); }}
+          />
 
           <Card variant="default" padding="md" className="space-y-2">
             <SectionLabel as="h2" size="sm" className="text-gold">Status Timeline</SectionLabel>

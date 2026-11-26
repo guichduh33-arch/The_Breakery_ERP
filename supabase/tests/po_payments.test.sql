@@ -1,8 +1,10 @@
 -- supabase/tests/po_payments.test.sql
--- Session 46 / Wave A4 — pgTAP suite for purchase_payments table + record_po_payment_v2.
+-- Session 46 / Wave A4 — pgTAP suite for purchase_payments table + record_po_payment_v3.
 --
--- Bumped to v2 (20260821000002) — cancelled-PO guard fix. v1 signature dropped
--- in the same migration; all calls below target v2.
+-- Bumped to v2 (20260821000002) — cancelled-PO guard fix — then to v3
+-- (20261126000001, ADR-048) — real payment date. Each bump dropped the previous
+-- signature; all calls below target v3 with its default date (now).
+-- The dated, grouped and reversal paths live in supplier_payment_reversal.test.sql.
 --
 -- Tests:
 --   T1  — Permission gate: non-authorized user (CASHIER) raises P0003
@@ -11,7 +13,7 @@
 --   T4  — Overpayment rejected (P0001 overpayment_not_allowed)
 --   T5  — Derived status: unpaid → partial → paid transitions
 --   T6  — REVOKE UPDATE/DELETE on purchase_payments enforced for authenticated
---   T7  — REVOKE: anon cannot execute record_po_payment_v2
+--   T7  — REVOKE: anon cannot execute record_po_payment_v3
 --   T8  — Cash payment JE: CR = PURCHASE_CASH_OUT account
 --   T9  — v2 guard: payment refused on a cancelled PO (po_cancelled, P0001)
 --   T10 — v2 no-regression: payment still accepted on a pending PO
@@ -122,7 +124,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM record_po_payment_v2(
+      PERFORM record_po_payment_v3(
         p_po_id           := current_setting('t46p.po_credit', true)::uuid,
         p_amount          := 30000,
         p_method          := 'transfer',
@@ -132,7 +134,7 @@ SELECT throws_ok(
   $gate$,
   'P0003',
   NULL,
-  'T1: CASHIER forbidden (P0003) on record_po_payment_v2'
+  'T1: CASHIER forbidden (P0003) on record_po_payment_v3'
 );
 
 -- ─── T2: Happy path — partial bank payment ────────────────────────────────────
@@ -145,7 +147,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := record_po_payment_v2(
+  v_result := record_po_payment_v3(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 30000,
     p_method          := 'transfer',
@@ -174,7 +176,7 @@ SELECT is(
 
 -- Derived status = 'partial' (30000 of 100000 paid).
 SELECT is(
-  (SELECT (record_po_payment_v2(
+  (SELECT (record_po_payment_v3(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 0.01,
     p_method          := 'transfer',
@@ -194,7 +196,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_r2 := record_po_payment_v2(
+  v_r2 := record_po_payment_v3(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 30000,
     p_method          := 'transfer',
@@ -235,7 +237,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM record_po_payment_v2(
+      PERFORM record_po_payment_v3(
         p_po_id           := current_setting('t46p.po_credit', true)::uuid,
         p_amount          := 999999,   -- far exceeds remaining ~69999.99
         p_method          := 'cash',
@@ -259,7 +261,7 @@ BEGIN
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
   -- Pay the remaining ~69999.99 (100000 - 30000 - 0.01 from T2c sanity call).
-  v_result := record_po_payment_v2(
+  v_result := record_po_payment_v3(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 69999.99,
     p_method          := 'transfer',
@@ -287,12 +289,12 @@ SELECT is(
   'T6b: authenticated cannot DELETE purchase_payments (append-only)'
 );
 
--- ─── T7: REVOKE — anon cannot execute record_po_payment_v2 ────────────────────
+-- ─── T7: REVOKE — anon cannot execute record_po_payment_v3 ────────────────────
 SELECT is(
   (SELECT has_function_privilege('anon',
-     'record_po_payment_v2(uuid,numeric,text,text,uuid)', 'execute')),
+     'record_po_payment_v3(uuid,numeric,text,text,uuid,timestamptz)', 'execute')),
   false,
-  'T7: anon does not have EXECUTE on record_po_payment_v2'
+  'T7: anon does not have EXECUTE on record_po_payment_v3'
 );
 
 -- ─── T8: Cash JE credit account = PURCHASE_CASH_OUT ─────────────────────────
@@ -359,7 +361,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM record_po_payment_v2(
+      PERFORM record_po_payment_v3(
         p_po_id           := current_setting('t46p.po_cancelled', true)::uuid,
         p_amount          := 1000,
         p_method          := 'cash',
@@ -369,7 +371,7 @@ SELECT throws_ok(
   $canc$,
   'P0001',
   'po_cancelled: payment refused on a cancelled purchase order',
-  'T9: record_po_payment_v2 refuses payment on a cancelled PO (po_cancelled)'
+  'T9: record_po_payment_v3 refuses payment on a cancelled PO (po_cancelled)'
 );
 
 -- ─── T10: v2 no-regression — a pending PO stays payable ──────────────────────
@@ -384,7 +386,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := record_po_payment_v2(
+  v_result := record_po_payment_v3(
     p_po_id           := current_setting('t46p.po_pending', true)::uuid,
     p_amount          := 5000,
     p_method          := 'transfer',
@@ -396,7 +398,7 @@ END $$;
 SELECT is(
   current_setting('t46p.pending_pay_status', true),
   'partial',
-  'T10: record_po_payment_v2 still accepts payment on a pending PO (no regression)'
+  'T10: record_po_payment_v3 still accepts payment on a pending PO (no regression)'
 );
 
 SELECT * FROM finish();

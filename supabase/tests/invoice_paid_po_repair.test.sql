@@ -17,7 +17,7 @@ SELECT ok(can_upload_po_invoice_v2((SELECT id FROM inf_state WHERE tag='locked')
 SELECT ok((set_po_invoice_v2((SELECT id FROM inf_state WHERE tag=split_part(s.tag,'-',1)),
  s.path,NULL,s.id)->>'applied')::boolean,'initial invoice association: '||s.tag)
  FROM inf_state s WHERE s.tag LIKE '%-old';
-SELECT lives_ok($q$SELECT record_po_payment_v2(p.id,CASE WHEN p.tag='complete' THEN 1000 ELSE 100 END,
+SELECT lives_ok($q$SELECT record_po_payment_v3(p.id,CASE WHEN p.tag='complete' THEN 1000 ELSE 100 END,
  'cash',NULL,gen_random_uuid()) FROM inf_state p WHERE p.tag IN('partial','complete','locked')$q$,
  'fixtures settle partially and completely through the payment RPC');
 SELECT is(can_upload_po_invoice_v2((SELECT id FROM inf_state WHERE tag='locked')),false,
