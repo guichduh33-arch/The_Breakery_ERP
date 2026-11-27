@@ -1,37 +1,51 @@
 // Relevé prod du 2026-11-27 : une query par produit (~360 sur la caisse)
 // rechargeait chacune `product_modifiers` à chaque push catalogue. Ces tests
-// prouvent qu'elles partagent désormais une seule lecture réseau.
-import { QueryClient } from '@tanstack/react-query';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ProductModifierRow } from '@breakery/domain';
+// prouvent qu'elles partagent désormais une seule lecture réseau, sans rendre
+// un état d'avant un changement du catalogue.
+import { QueryClient, QueryObserver, type QueryObserverOptions } from '@tanstack/react-query';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ModifierGroup, ProductModifierRow } from '@breakery/domain';
+
+interface Page { data: unknown[] | null; error: Error | null }
 
 const mocks = vi.hoisted(() => ({
-  range: vi.fn<(from: number, to: number) => Promise<{ data: unknown[] | null; error: Error | null }>>(),
+  /** Une tranche lue : `after` vaut l'id de curseur (null pour la première). */
+  page: vi.fn<(after: string | null) => Promise<Page>>(),
   eq: vi.fn(),
   is: vi.fn(),
 }));
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({
-        eq: (column: string, value: unknown) => {
-          mocks.eq(column, value);
-          return {
-            is: (c: string, v: unknown) => {
-              mocks.is(c, v);
-              return { order: () => ({ range: mocks.range }) };
-            },
-          };
-        },
+vi.mock('@/lib/supabase', () => {
+  function pageQuery(after: string | null) {
+    return {
+      gt: (_column: string, value: unknown) => pageQuery(String(value)),
+      order: () => pageQuery(after),
+      limit: () => mocks.page(after),
+    };
+  }
+  return {
+    supabase: {
+      from: () => ({
+        select: () => ({
+          eq: (column: string, value: unknown) => {
+            mocks.eq(column, value);
+            return {
+              is: (c: string, v: unknown) => {
+                mocks.is(c, v);
+                return pageQuery(null);
+              },
+            };
+          },
+        }),
       }),
-    }),
-  },
-}));
+    },
+  };
+});
 vi.mock('@/features/lan/hooks/useSaleQueryEnabled', () => ({ useSaleQueryEnabled: (ready: boolean) => ready }));
 
 import {
   ALL_PRODUCT_MODIFIERS_KEY,
+  invalidateProductModifiers,
   modifierRowsFor,
   productModifiersOptions,
 } from '../hooks/useProductModifiers';
@@ -66,12 +80,23 @@ function newClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 5 * 60_000 } } });
 }
 
+const unsubscribers: (() => void)[] = [];
+/** Observers comme dans l'app : ce sont eux que le push catalogue relit. */
+function observe(client: QueryClient, productId: string, categoryId: string | null) {
+  // Les options de l'app visent useQuery ; l'observer brut a une signature voisine.
+  const options = productModifiersOptions({ productId, categoryId }) as unknown as QueryObserverOptions<ModifierGroup[]>;
+  const observer = new QueryObserver<ModifierGroup[]>(client, options);
+  unsubscribers.push(observer.subscribe(() => undefined));
+  return observer;
+}
+
 beforeEach(() => {
-  mocks.range.mockReset();
+  mocks.page.mockReset();
   mocks.eq.mockReset();
   mocks.is.mockReset();
-  mocks.range.mockResolvedValue({ data: rows, error: null });
+  mocks.page.mockResolvedValue({ data: rows, error: null });
 });
+afterEach(() => { unsubscribers.splice(0).forEach((stop) => stop()); });
 
 describe('modifiers partagés', () => {
   it('garde le filtre produit OU catégorie de la requête par produit', () => {
@@ -92,39 +117,60 @@ describe('modifiers partagés', () => {
     const ids = Array.from({ length: 100 }, (_, i) => `p${i}`);
     const results = await Promise.all(ids.map((id) =>
       client.fetchQuery(productModifiersOptions({ productId: id, categoryId: 'cat-a' }))));
-    expect(mocks.range).toHaveBeenCalledTimes(1);
+    expect(mocks.page).toHaveBeenCalledTimes(1);
     expect(results[1]?.map((g) => g.group_name)).toEqual(['Size', 'Milk']);
     expect(results[2]?.map((g) => g.group_name)).toEqual(['Size', 'Milk']);
   });
 
-  it('un push catalogue relit la liste une seule fois pour toutes les queries actives', async () => {
+  it('un push catalogue relit la liste une seule fois pour cinquante produits observés', async () => {
     const client = newClient();
-    const ids = Array.from({ length: 50 }, (_, i) => `p${i}`);
-    await Promise.all(ids.map((id) => client.fetchQuery(productModifiersOptions({ productId: id, categoryId: null }))));
-    expect(mocks.range).toHaveBeenCalledTimes(1);
+    const observers = Array.from({ length: 50 }, (_, i) => observe(client, `p${i}`, null));
+    await vi.waitFor(() => expect(observers.every((o) => o.getCurrentResult().isSuccess)).toBe(true));
+    expect(mocks.page).toHaveBeenCalledTimes(1);
 
-    // Même geste que useCatalogRealtime : invalidation du préfixe, puis relecture.
-    await client.invalidateQueries({ queryKey: ['product-modifiers'], refetchType: 'none' });
-    expect(client.getQueryState(ALL_PRODUCT_MODIFIERS_KEY)?.isInvalidated).toBe(true);
-    // Dans l'app, seules les queries par produit ont des observers (refetch « active ») ;
-    // la liste partagée n'est relue qu'à travers elles.
-    await client.refetchQueries({ queryKey: ['product-modifiers'], type: 'all', predicate: (q) => q.queryKey.length === 3 });
-    expect(mocks.range).toHaveBeenCalledTimes(2);
+    await invalidateProductModifiers(client);
+    expect(mocks.page).toHaveBeenCalledTimes(2);
     expect(client.getQueryState(['product-modifiers', 'p7', null])?.dataUpdateCount).toBe(2);
   });
 
-  it('lit la liste par tranches quand elle dépasse une page', async () => {
-    const page = Array.from({ length: 1000 }, (_, i) => row(`r${i}`, { product_id: 'big' }, `G${i}`));
-    mocks.range.mockImplementation((from: number) => Promise.resolve({ data: from === 0 ? page : [row('last', { product_id: 'big' }, 'Last')], error: null }));
+  it('un second push pendant une lecture en cours ne rend pas l’état d’avant', async () => {
+    const before = [row('old', { product_id: 'p1' }, 'Old')];
+    const after = [row('new', { product_id: 'p1' }, 'New')];
+    let releaseFirst: (page: Page) => void = () => undefined;
+    mocks.page.mockResolvedValueOnce({ data: before, error: null });
+    const client = newClient();
+    const observer = observe(client, 'p1', null);
+    await vi.waitFor(() => expect(observer.getCurrentResult().data?.[0]?.group_name).toBe('Old'));
+
+    // Premier push : la lecture F1 part et reste en vol (elle lira l'état d'avant).
+    mocks.page.mockImplementationOnce(() => new Promise<Page>((resolve) => { releaseFirst = resolve; }));
+    void invalidateProductModifiers(client);
+    await vi.waitFor(() => expect(mocks.page).toHaveBeenCalledTimes(2));
+
+    // Second push pendant F1 : la relecture doit partir à neuf, pas rejoindre F1.
+    mocks.page.mockResolvedValueOnce({ data: after, error: null });
+    const second = invalidateProductModifiers(client);
+    releaseFirst({ data: before, error: null });
+    await second;
+
+    expect(mocks.page).toHaveBeenCalledTimes(3);
+    expect(observer.getCurrentResult().data?.[0]?.group_name).toBe('New');
+    expect(client.getQueryData<ProductModifierRow[]>(ALL_PRODUCT_MODIFIERS_KEY)?.map((r) => r.id)).toEqual(['new']);
+  });
+
+  it('lit la liste par curseur quand elle dépasse une page', async () => {
+    const full = Array.from({ length: 1000 }, (_, i) => row(`r${String(i).padStart(4, '0')}`, { product_id: 'big' }, `G${i}`));
+    mocks.page.mockImplementation((afterId) => Promise.resolve({ data: afterId === null ? full : [row('z-last', { product_id: 'big' }, 'Last')], error: null }));
     const client = newClient();
     const groups = await client.fetchQuery(productModifiersOptions({ productId: 'big', categoryId: null }));
-    expect(mocks.range.mock.calls.map((call) => call[0])).toEqual([0, 1000]);
+    expect(mocks.page.mock.calls.map((call) => call[0])).toEqual([null, 'r0999']);
     expect(groups).toHaveLength(1001);
   });
 
-  it('remonte l’erreur réseau à la query du produit', async () => {
-    mocks.range.mockResolvedValue({ data: null, error: new Error('boom') });
-    const client = newClient();
-    await expect(client.fetchQuery(productModifiersOptions({ productId: 'p1', categoryId: null }))).rejects.toThrow('boom');
+  it('remonte l’erreur réseau à la query du produit, sans nouvelle tentative partagée', async () => {
+    mocks.page.mockResolvedValue({ data: null, error: new Error('boom') });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: 2, retryDelay: 0 } } });
+    await expect(client.fetchQuery({ ...productModifiersOptions({ productId: 'p1', categoryId: null }), retry: false })).rejects.toThrow('boom');
+    expect(mocks.page).toHaveBeenCalledTimes(1);
   });
 });

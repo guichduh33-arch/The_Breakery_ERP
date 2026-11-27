@@ -29,6 +29,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
+import { invalidateProductModifiers } from './useProductModifiers';
 
 // A categories event touches the category nav AND the product grid: rows
 // embed categories(dispatch_station), and grid grouping follows sort_order.
@@ -54,7 +55,9 @@ function invalidateAll(
   keys: readonly (readonly string[])[],
 ): void {
   for (const key of keys) {
-    void qc.invalidateQueries({ queryKey: [...key] });
+    // Options : liste partagée par toutes les queries produit (useProductModifiers).
+    if (key.length === 1 && key[0] === 'product-modifiers') void invalidateProductModifiers(qc);
+    else void qc.invalidateQueries({ queryKey: [...key] });
   }
 }
 

@@ -50,18 +50,20 @@ export const ALL_PRODUCT_MODIFIERS_KEY = ['product-modifiers', '__all__'] as con
  * generated Database types, we coerce the client through `unknown` to a tiny
  * structural interface that exposes only the chain calls we need.
  */
+interface ModifierPageQuery {
+  gt(column: string, value: unknown): ModifierPageQuery;
+  order(column: string): ModifierPageQuery;
+  limit(count: number): Promise<{
+    data: ProductModifierRow[] | null;
+    error: Error | null;
+  }>;
+}
+
 interface ModifierQueryBuilder {
   from(table: string): {
     select(columns: string): {
       eq(column: string, value: unknown): {
-        is(column: string, value: unknown): {
-          order(column: string): {
-            range(from: number, to: number): Promise<{
-              data: ProductModifierRow[] | null;
-              error: Error | null;
-            }>;
-          };
-        };
+        is(column: string, value: unknown): ModifierPageQuery;
       };
     };
   };
@@ -71,24 +73,42 @@ async function fetchAllModifierRows(): Promise<ProductModifierRow[]> {
   // Cast through unknown — see file header NOTE.
   const client = supabase as unknown as ModifierQueryBuilder;
   const rows: ProductModifierRow[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await client
+  // Pagination par curseur sur l'id : une ligne ajoutée ou retirée entre deux
+  // tranches ne décale pas la suivante (ni ligne sautée, ni doublon).
+  let after: string | null = null;
+  for (;;) {
+    let query = client
       .from('product_modifiers')
       .select(MODIFIER_COLUMNS)
       .eq('is_active', true)
-      .is('deleted_at', null)
-      .order('id')
-      .range(from, from + PAGE_SIZE - 1);
+      .is('deleted_at', null);
+    if (after !== null) query = query.gt('id', after);
+    const { data, error } = await query.order('id').limit(PAGE_SIZE);
     if (error) throw error;
     const page = data ?? [];
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    const last = page.at(-1);
+    if (page.length < PAGE_SIZE || !last) return rows;
+    after = last.id;
   }
 }
 
-/** Liste partagée ; un appel en cours est rejoint, pas relancé. */
+/**
+ * Liste partagée ; un appel en cours est rejoint, pas relancé. Une seule
+ * couche de nouvelles tentatives : celle des queries par produit.
+ */
 export function fetchAllProductModifiers(client: QueryClient): Promise<ProductModifierRow[]> {
-  return client.fetchQuery({ queryKey: ALL_PRODUCT_MODIFIERS_KEY, queryFn: fetchAllModifierRows });
+  return client.fetchQuery({ queryKey: ALL_PRODUCT_MODIFIERS_KEY, queryFn: fetchAllModifierRows, retry: false });
+}
+
+/**
+ * Push catalogue : les options ont pu changer. La liste partagée est retirée
+ * avant l'invalidation, pour qu'aucune relecture ne rejoigne un appel parti
+ * avant ce changement (il rendrait l'état d'avant, réputé frais 5 min).
+ */
+export function invalidateProductModifiers(client: QueryClient): Promise<void> {
+  client.removeQueries({ queryKey: ALL_PRODUCT_MODIFIERS_KEY, exact: true });
+  return client.invalidateQueries({ queryKey: ['product-modifiers'] });
 }
 
 /** Lignes qui concernent ce produit : les siennes, puis celles de sa catégorie. */
