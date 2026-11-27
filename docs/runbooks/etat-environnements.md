@@ -26,6 +26,35 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 27 novembre 2026, 22 h 41 — paquet caisse `970d8d22` (journal fidèle, PR #779) et APK 1.25, installés
+
+Relevé du 27 novembre 2026 entre 21 h 13 et 22 h 41, UTC+8. Paquet caisse et
+APK tablettes ; aucune migration, aucune Edge Function, aucun back-office.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+Boutique fermée : aucune session de caisse ouverte en production à 21 h 14 ni
+à 22 h 30, dernière commande à 18 h 05. Le paquet précédent, `e7c43cfd`, ne
+contenait ni #779 ni les autres changements POS fusionnés depuis le 20 novembre ;
+leurs parties serveur étaient déjà en production (compléments antérieurs).
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `970d8d22` | Pointe de `master` (fusion de #782 après #779). `ci.yml` run `45947157244` (push) réussi ; `pgtap-pr.yml` run `46005308879` (`workflow_dispatch`) réussi, avec `pgtap-exclusive`, `pgtap` et `db-gate` | pgTAP tourne sur la base de dev |
+| Paquet | `package-shop-release.yml`, run `46010497834`, réussi après approbation Production de Mamat. Artefact `shop-release-970d8d2246f2e11cb49fc407d492c0151db8d093-1` ; SHA-256 de l'archive `10bf7935…`, égal au fichier `.sha256` ; `release.json` : SHA `970d8d22`, projet de production | — |
+| Caisse, installation | Archive copiée par MeshCentral en deux parts, recollée et relue sur la caisse (`certutil`, même SHA-256). `shop-update.json` généré sur la caisse par script, depuis la tâche « Breakery V3 Production » (nom avec espaces), le lanceur, le Node et la configuration externe relus. `Mettre-a-jour.cmd` : `SHOP_RELEASE_VERIFIED 970d8d22`. `installation.json` à l'état `verified`, 14 h 32 UTC ; lanceur `2bd2377d…` → `77517bc3…` | — |
+| Caisse servie | `/health` des deux origines : `release_sha` `970d8d22`. Point d'entrée servi `index-DLJk8K99.js`, égal à celui du paquet ; ce script contient le détail `outstanding_due` de #779 ; référence de production présente, références dev et V2 absentes | La console du pont s'ouvre au premier plan après la bascule : réduite, pas fermée. Rechargement des écrans caisse et client envoyé par MeshCentral, effet non constaté |
+| Tablettes, APK 1.25 | Fabriquée par `assembleDebug` après copie du `dist` du paquet et `cap sync android`, sans reconstruction du bundle : `com.thebreakery.pos`, version 1.25 (code 26), SHA-256 `85081bd99e5b58d176f080e55a3d37538eba7880e4284435ed9a9fe0cc88455b`. Les 89 fichiers de `assets/public/assets` sont identiques à ceux du paquet. Certificat `100d48b8…`, égal à celui de l'APK 1.24. Conservée hors Git sous `.release-manifests/tablet-apk-1.25-20261127/` | — |
+| Galaxy Tab A8 | `adb install -r` à 22 h 39 sur `R9RT200NJHB`, qui portait la 1.24 (code 25). Après : 1.25 (code 26), fichier installé de même SHA-256, date de première installation inchangée (2026-08-22). L'application s'ouvre sur l'écran du PIN et reconnaît le dernier utilisateur | Batterie à 4 % au relevé. Aucune connexion par PIN, aucune commande, aucune impression essayées |
+| CS30 | `adb install -r` à 22 h 41 sur `A59T11BGT3A01119`, qui portait la 1.24 (code 25). Après : 1.25 (code 26), fichier installé de même SHA-256, date de première installation inchangée (2026-10-08). L'application charge le personnel puis s'ouvre sur l'écran du PIN | Idem. Tout autre appareil Android reste non mis à jour |
+
+Retour : republier le paquet `e7c43cfd` par le même installeur, avec un
+`shop-update.json` rafraîchi ; il reste sur la caisse sous `releases\`.
+L'installeur garde aussi `start.cjs.rollback-970d8d22…`. Le retour d'une
+tablette à la 1.24 exigerait une désinstallation, donc la perte de ses données.
+
+Pour la livraison caisse suivante : `previousRelease` =
+`releases\970d8d2246f2e11cb49fc407d492c0151db8d093`, empreinte du lanceur
+`77517bc3…`.
+
 ## Complément du 27 novembre 2026, 1 h 05 — paiements fournisseurs (ADR-048) et vente B2B à la date de commande (ADR-049), `9c4c96c7`
 
 Relevé du 27 novembre 2026, vers 1 h 05 UTC+8. PR #781, qui intègre la PR #780 :
