@@ -36,6 +36,7 @@ import type { PaymentSuccessState } from './paymentSuccess';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
 import { getOrderSourceCode } from '@/stores/posSettingsStore';
 import { assertTerminalPaymentAllowed } from '@/features/lan/terminalPaymentAccess';
+import { paymentJournalDetail } from './paymentJournal';
 export type { PaymentSuccessState } from './paymentSuccess';
 
 let dispatching = false;
@@ -373,7 +374,7 @@ export function usePaymentFlowLogic() {
     // payment_failed so the journal shows every attempt, not just outcomes).
     emitPosEvent('payment_started', {
       amount: total,
-      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null },
+      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null, ...paymentJournalDetail(tendersToShip) },
     });
     try {
       const result = await checkout.mutateAsync({ cart: snapshot.cart, payment: tendersToShip, context: snapshot.context });
@@ -416,7 +417,7 @@ export function usePaymentFlowLogic() {
       emitPosEvent('payment_completed', {
         order_number_snap: result.order_number,
         amount: result.amount_received ?? (snapshot.context.outstanding ? 0 : result.total),
-        payload: { method: tendersToShip[0]?.method ?? 'outstanding', change_given: result.change_given },
+        payload: { method: tendersToShip[0]?.method ?? 'outstanding', change_given: result.change_given, ...paymentJournalDetail(tendersToShip, result.outstanding_due) },
       });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);

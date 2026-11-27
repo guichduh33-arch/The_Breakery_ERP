@@ -378,7 +378,7 @@ export const useCartStore = create<CartState>()(
         // unauthorized or repeated discounting).
         emitPosEvent(d ? 'discount_applied' : 'discount_removed', {
           ...(d ? { amount: d.amount, reason: d.authorized_by ? 'authorized' : null } : {}),
-          payload: { scope: 'order' },
+          payload: { scope: 'order', ...(d ? { type: d.type, value: d.value, discount_reason: d.reason, authorized_by: d.authorized_by ?? null } : {}) },
         });
       },
 
@@ -399,7 +399,7 @@ export const useCartStore = create<CartState>()(
         emitPosEvent(d ? 'discount_applied' : 'discount_removed', {
           order_item_id: itemId,
           ...(d ? { amount: d.amount, reason: d.authorized_by ? 'authorized' : null } : {}),
-          payload: { scope: 'line' },
+          payload: { scope: 'line', ...(d ? { type: d.type, value: d.value, discount_reason: d.reason, authorized_by: d.authorized_by ?? null } : {}) },
         });
       },
 
