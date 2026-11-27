@@ -36,6 +36,8 @@ export interface TabletCartState {
   orderType: 'dine_in' | 'take_out';
   /** Session 59 (17 D1.1) — order-level free-text note (allergy, "no gluten"...). */
   notes: string | null;
+  /** Dernière note écrite au journal : la saisie ne s'y écrit qu'une fois validée. */
+  journaledNotes: string | null;
   /**
    * Mode AJOUT (2026-08-01) — commande de salle que ce panier vient compléter.
    * `null` = commande neuve. Quand il est posé, la table et le type viennent de
@@ -64,6 +66,8 @@ export interface TabletCartState {
   setTableNumber: (name: string | null) => void;
   setOrderType: (type: 'dine_in' | 'take_out') => void;
   setNotes: (notes: string | null) => void;
+  /** Écrit la note au journal si elle a changé (sortie du champ, envoi). */
+  commitNotes: () => void;
   /** Entre en mode ajout sur une commande, ou en sort (null). */
   setAppendTarget: (target: { id: string; orderNumber: string; tableNumber: string | null } | null) => void;
   clearCart: () => void;
@@ -84,6 +88,7 @@ export const useTabletCartStore = create<TabletCartState>()(
           if (current.pendingSend.waiterId !== waiterId) throw new Error('pending_order_other_waiter');
           return current.pendingSend;
         }
+        current.commitNotes();
         const attempt: TabletSendAttempt = {
           clientUuid: crypto.randomUUID(), waiterId, online,
           cart: JSON.parse(JSON.stringify({ items: current.items, tableNumber: current.tableNumber,
@@ -98,6 +103,7 @@ export const useTabletCartStore = create<TabletCartState>()(
       tableNumber: null,
       orderType: 'dine_in',
       notes: null,
+      journaledNotes: null,
       appendToOrderId: null,
       appendToOrderNumber: null,
 
@@ -163,6 +169,14 @@ export const useTabletCartStore = create<TabletCartState>()(
       setNotes: (notes) => {
         if (get().pendingSend || get().notes === notes) return;
         set({ notes });
+      },
+
+      // Une frappe n'est pas un geste : journaliser chaque caractère noyait le
+      // journal (« Waterm », « Watermel »…). On écrit la note telle que validée.
+      commitNotes: () => {
+        const { notes, journaledNotes } = get();
+        if (notes === journaledNotes) return;
+        set({ journaledNotes: notes });
         emitTabletEvent('note_added', { payload: { notes } });
       },
 
@@ -177,6 +191,7 @@ export const useTabletCartStore = create<TabletCartState>()(
             : {
                 items: [],
                 notes: null,
+                journaledNotes: null,
                 appendToOrderId: target.id,
                 appendToOrderNumber: target.orderNumber,
                 tableNumber: target.tableNumber,
@@ -193,6 +208,7 @@ export const useTabletCartStore = create<TabletCartState>()(
           tableNumber: null,
           orderType: 'dine_in',
           notes: null,
+          journaledNotes: null,
           appendToOrderId: null,
           appendToOrderNumber: null,
         }),
@@ -208,6 +224,7 @@ export const useTabletCartStore = create<TabletCartState>()(
         tableNumber: state.tableNumber,
         orderType: state.orderType,
         notes: state.notes,
+        journaledNotes: state.journaledNotes,
         // La cible d'ajout survit au rechargement comme le reste de la saisie :
         // sans elle, un panier repris après un reload repartirait en commande
         // NEUVE et la table recevrait deux additions.

@@ -32,6 +32,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
   const orderType = useTabletCartStore((s) => s.orderType);
   const notes = useTabletCartStore((s) => s.notes);
   const setNotes = useTabletCartStore((s) => s.setNotes);
+  const commitNotes = useTabletCartStore((s) => s.commitNotes);
   const updateQuantity = useTabletCartStore((s) => s.updateQuantity);
   const removeItem = useTabletCartStore((s) => s.removeItem);
 
@@ -195,6 +196,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
                 disabled={pendingSend !== null}
                 value={notes ?? ''}
                 onChange={(e) => setNotes(e.target.value.length > 0 ? e.target.value : null)}
+                onBlur={commitNotes}
                 placeholder="e.g. no gluten, nut allergy…"
                 rows={2}
                 className="w-full resize-none rounded-md bg-bg-input border border-border-subtle p-2 text-sm text-text-primary placeholder:text-text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
