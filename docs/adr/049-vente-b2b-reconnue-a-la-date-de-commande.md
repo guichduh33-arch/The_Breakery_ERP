@@ -64,3 +64,20 @@ Revenir à la règle antérieure demande un nouvel ADR, puis une migration qui
 redonne à la projection partagée la définition figée dans
 `reporting_private.pb1_recognized_sales_v1`. Aucune donnée n'est modifiée par
 cette décision : seules les lectures changent.
+
+## Bilan factuel
+
+Relevé du 2026-11-27. Livré par la PR #781 (branche `fix/b2b-sales-recognition`),
+fusionnée dans `master` en `9c4c96c7`, puis publié en production le 2026-11-27
+vers 1 h UTC+8 : migration `20261126000020` et back-office. Détail et preuves
+dans `docs/runbooks/etat-environnements.md`, complément du 27 novembre 2026.
+
+- **Base** : la projection partagée date la vente B2B à la commande, impayée ou
+  soldée. Le rapport PB1 lit `reporting_private.pb1_recognized_sales_v1`, dont
+  la définition a la même empreinte `md5` que l'ancienne projection.
+- **Back-office** : l'écran PB1 appelle la v8 du rapport ; les autres rapports
+  gardent leurs fonctions, qui lisent la projection partagée.
+- **Constaté en production au relevé** : 295 commandes B2B entrent dans les
+  rapports de ventes à leur date de commande, dont 76 encore impayées ; le PB1
+  en compte toujours 219, les payées.
+- **Non vérifié** : les écrans de rapport n'ont pas été ouverts en production.

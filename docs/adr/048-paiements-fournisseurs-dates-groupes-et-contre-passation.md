@@ -84,3 +84,22 @@ règlement B2B et a demandé la même règle pour les achats.
 - Le serveur n'encadre pas la date saisie (ni futur, ni antérieure au bon) :
   seul le contrôle de période la borne. Un encadrement serait une décision à
   prendre.
+
+## Bilan factuel
+
+Relevé du 2026-11-27. Livré par la PR #780 (branche
+`feat/supplier-payments-grouped-dated-reversal`), intégrée par la PR #781 et
+fusionnée dans `master` en `9c4c96c7`, puis publié en production le 2026-11-27
+vers 1 h UTC+8 : migrations `20261126000001` et `20261126000002`, et
+back-office. Détail et preuves dans `docs/runbooks/etat-environnements.md`,
+complément du 27 novembre 2026.
+
+- **Base** : paiement d'un bon par la v3 de `record_po_payment`, règlement
+  groupé par la v2 de `record_supplier_payment`, contre-passation par
+  `reverse_po_payment_v1`. Le garde de facture passe en v2 et laisse passer la
+  contre-passation. Ni `anon` ni le client n'exécutent les fonctions internes.
+- **Back-office** : les libellés « Paid at », « Pay several orders » et
+  « Reverse payment » sont présents dans le code servi par le domaine de
+  production, avec les appels aux nouvelles fonctions.
+- **Non vérifié** : aucun paiement, règlement groupé ou contre-passation saisi
+  en production au relevé.

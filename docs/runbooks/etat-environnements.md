@@ -26,6 +26,26 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 27 novembre 2026, 1 h 05 — paiements fournisseurs (ADR-048) et vente B2B à la date de commande (ADR-049), `9c4c96c7`
+
+Relevé du 27 novembre 2026, vers 1 h 05 UTC+8. PR #781, qui intègre la PR #780 :
+trois migrations et le back-office ; aucune Edge Function, aucune installation
+POS. Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Base de production, avant | Cible `yjhhhmjgsmyzyymvixot`. `record_po_payment_v2`, `_guard_po_payment_invoice_v1` et `get_pb1_report_v7` présentes ; `md5` de la définition de `reporting_private.recognized_sales_v2` : `65f4c71b…` ; 84 lignes dans `purchase_payments`. Les trois fichiers chargés dans la table temporaire `migration_staging.chunks`, `md5` égaux aux fichiers du dépôt en fins de ligne LF (`21322450…`, `8567a765…`, `665f12ef…`) ; essai à blanc annulé le 26 novembre | Lecture seule |
+| Preuves du SHA `9c4c96c7` | Fusion de #781 par commit de fusion, tête `bf25daf9`. `ci.yml` run `45847059865` (push) réussi ; `pgtap-pr.yml` run `45854758093` (`workflow_dispatch`) réussi, avec `pgtap-exclusive`, `pgtap` et `db-gate` | pgTAP tourne sur la base de dev |
+| Back-office préparé | `production-backoffice.yml`, run `45861097631`, `stage_only` vrai, réussi après approbation Production de Mamat. Construction vérifiée sur la cible `yjhhhmjgsmyzyymvixot` (329 scripts) ; manifeste vérifié sur 389 fichiers ; empreinte de l'artefact manifeste `37dde690…`. Déploiement `dpl_FpKH5K9Mz3Nv6UHJMBkpFACNY9Tu` `READY`, sans alias ; le domaine servait encore `dpl_HYsAEqPBeX5LctXwkkASrxfxshLK` | — |
+| Base de production, après | Migrations `20261126000001`, `20261126000002` et `20261126000020` appliquées dans cet ordre, sous les versions `20261127010118`, `20261127010128` et `20261127010138`. Présentes : `record_po_payment_v3`, `record_supplier_payment_v2`, `reverse_po_payment_v1`, `_record_po_payment_internal_v2`, `_guard_po_payment_invoice_v2` (branchée sur le trigger `invoice_required_before_payment`), `get_pb1_report_v8` et la vue `reporting_private.pb1_recognized_sales_v1`. Absentes : `record_po_payment_v2`, `record_supplier_payment_v1`, `_guard_po_payment_invoice_v1`, `get_pb1_report_v7`. Les neuf objets relus ont le même `md5` de définition qu'en dev, retours chariot retirés ; `anon` n'en exécute aucun. 84 lignes dans `purchase_payments`, inchangé. Schéma `migration_staging` supprimé | Aucun paiement fournisseur saisi en production au relevé |
+| Bascule | Promotion du déploiement préparé, sans reconstruction : alias `backoffice.the-breakery.com` sur `dpl_FpKH5K9Mz3Nv6UHJMBkpFACNY9Tu` le 26 novembre à 17 h 02 UTC, environ une minute après la première migration | Un onglet resté ouvert sur l'ancien code échoue au paiement d'un bon et au rapport PB1 jusqu'à son rechargement |
+| BO servi | `backoffice.the-breakery.com`, 304 fichiers JS atteints depuis la page d'entrée : appels `record_po_payment_v3`, `record_supplier_payment_v2`, `reverse_po_payment_v1` et `get_pb1_report_v8` présents ; anciens appels absents ; référence Supabase de production présente, référence de dev absente | Lecture des fichiers servis, pas d'un parcours à l'écran |
+| Rapports de ventes | Projection partagée : 295 commandes B2B non annulées, toutes datées à la commande (219 payées, 76 `b2b_pending`), 78 426 500 IDR. Projection figée du PB1 : 219 commandes payées, 61 432 500 IDR, comme avant la migration | Lecture des projections, pas des écrans de rapport |
+
+Retour : aucun geste essayé. L'ancien back-office appelle des fonctions
+supprimées : le republier ne rétablit rien sans recréer ces fonctions. Corriger
+en avant ; les paiements saisis depuis la bascule restent valides.
+
 ## Complément du 26 novembre 2026, 18 h 30 — date de paiement obligatoire au règlement B2B, back-office `8dde9529`
 
 Relevé du 26 novembre 2026, vers 18 h 30 UTC+8. PR #777 : back-office seul ;
