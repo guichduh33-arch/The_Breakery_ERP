@@ -26,6 +26,44 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 28 novembre 2026, 1 h 04 — paquet caisse `bda02a30` (une lecture des options, PR #784) et APK 1.26, installés
+
+Relevé du 27 novembre 2026, 23 h 41, au 28 novembre, 1 h 04, UTC+8. Paquet caisse et
+APK tablettes ; aucune migration, aucune Edge Function, aucun back-office.
+Observé directement, sauf la ligne « Preuves du SHA », rapportée par GitHub.
+Boutique fermée : aucune session de caisse ouverte en production à 23 h 41,
+dernière commande à 18 h 05 le 27 novembre.
+
+Motif : délai d'affichage sur la caisse des commandes envoyées par la tablette.
+Relevé des journaux de production du 27 novembre : envoi tablette rapide côté
+serveur (médiane ~0,1 s), Realtime connecté, mais 176 337 lectures
+`product_modifiers` par la caisse pour 100 commandes — une query d'options par
+produit, toutes relues à chaque push catalogue. La PR #784 les fait partager une
+seule lecture.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `bda02a30` | Fusion de #784 sur la fusion de #783. `ci.yml` run `46025327779` (push) réussi ; `pgtap-pr.yml` run `46027118550` (`workflow_dispatch`) réussi à la seconde tentative : la première a échoué sur une garde de durée (2,58 s pour 2 s) dans le morceau `exclusive`, relancé seul par « Re-run failed jobs » | pgTAP tourne sur la base de dev |
+| Paquet | `package-shop-release.yml`, run `46035013927`, réussi après approbation Production de Mamat. SHA-256 de l'archive `058fbb52…`, égal au fichier `.sha256` ; `release.json` : SHA `bda02a30`, projet de production. Le script d'entrée `index-FrJqC4-C.js` contient la clé partagée des options ; référence de production seule | — |
+| Caisse, installation | Archive copiée par MeshCentral en deux parts, recollée et relue sur la caisse (même SHA-256). `shop-update.json` généré sur la caisse par script : `previousRelease` = `970d8d22`, lanceur `77517bc3…` relu. `Mettre-a-jour.cmd` : `SHOP_RELEASE_VERIFIED bda02a30`. `installation.json` à l'état `verified`, 16 h 58 UTC ; lanceur `77517bc3…` → `a6fb50ed…` | — |
+| Caisse servie | `/health` des deux origines : `release_sha` `bda02a30`. Point d'entrée servi `index-FrJqC4-C.js`, égal à celui du paquet | Écrans caisse et client non rechargés au relevé |
+| Tablettes, APK 1.26 | Fabriquée par `assembleDebug` après copie du `dist` du paquet et `cap sync android` : `com.thebreakery.pos`, version 1.26 (code 27), SHA-256 `fce7800211f01f731177649bac345b9e57ad9d93193a7e61dc1e94cd893a14f9`. Les 89 fichiers de `assets/public/assets` sont identiques à ceux du paquet. Certificat `100d48b8…`, égal à celui des APK 1.24 et 1.25. Conservée hors Git sous `.release-manifests/tablet-apk-1.26-20261128/` | — |
+| CS30 | `adb install -r` à 0 h 54 le 28 novembre sur `A59T11BGT3A01119`, qui portait la 1.25 (code 26). Après : 1.26 (code 27), fichier installé de même SHA-256, date de première installation inchangée (2026-10-08). L'application s'ouvre sur l'écran du PIN | Aucune connexion par PIN, aucune commande, aucune impression essayées |
+| Galaxy Tab A8 | `adb install -r` à 1 h 04 le 28 novembre sur `R9RT200NJHB`, qui portait la 1.25 (code 26). Après : 1.26 (code 27), fichier installé de même SHA-256, date de première installation inchangée (2026-08-22). L'application s'ouvre sur l'écran du PIN | Batterie à 4 % au relevé. Aucune connexion par PIN, aucune commande, aucune impression essayées. Tout autre appareil Android reste non mis à jour |
+
+Effet attendu, non mesuré au relevé : une lecture `product_modifiers` par push
+catalogue et par appareil, au lieu d'une par produit. À vérifier dans les
+journaux d'une journée de service.
+
+Retour : republier le paquet `970d8d22` par le même installeur, avec un
+`shop-update.json` rafraîchi ; il reste sur la caisse sous `releases\`, et
+l'installeur garde `start.cjs.rollback-bda02a30…`. Le retour d'une tablette à la
+1.25 exigerait une désinstallation, donc la perte de ses données.
+
+Pour la livraison caisse suivante : `previousRelease` =
+`releases\bda02a30d083b76127945538246a2c23e5cb30b2`, empreinte du lanceur
+`a6fb50ed…`.
+
 ## Complément du 27 novembre 2026, 22 h 41 — paquet caisse `970d8d22` (journal fidèle, PR #779) et APK 1.25, installés
 
 Relevé du 27 novembre 2026 entre 21 h 13 et 22 h 41, UTC+8. Paquet caisse et
