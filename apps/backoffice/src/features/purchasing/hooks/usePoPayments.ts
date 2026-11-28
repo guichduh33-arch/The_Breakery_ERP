@@ -13,7 +13,10 @@ export interface PoPaymentRow {
   id:         string;
   amount:     number;
   method:     string;
+  /** Jour réel du décaissement (ADR-048) : il date aussi l'écriture. */
   paid_at:    string;
+  /** Instant de la saisie dans le back-office — distinct de `paid_at`. */
+  created_at: string;
   reference:  string | null;
   paid_by:    string | null;
   /** Règlement groupé (ADR-048) : même valeur sur chaque bon de la saisie. */
@@ -41,7 +44,7 @@ export function usePoPayments(poId: string | undefined) {
       if (poId === undefined || poId === '') return { payments: [], totalPaid: 0 };
       const { data, error } = await supabase
         .from('purchase_payments')
-        .select('id, amount, method, paid_at, reference, paid_by, payment_group_id, reversal_of_id, reversal_reason')
+        .select('id, amount, method, paid_at, created_at, reference, paid_by, payment_group_id, reversal_of_id, reversal_reason')
         .eq('purchase_order_id', poId)
         .order('paid_at', { ascending: true })
         .order('created_at', { ascending: true });

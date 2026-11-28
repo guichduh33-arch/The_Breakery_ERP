@@ -40,6 +40,7 @@ const ACTION_LABEL: Record<string, string> = {
   'po.payment_recorded':     'Payment recorded',
   'po.payment_reversed':     'Payment reversed',
   'purchase_order.cancel':   'Order cancelled',
+  'po.correction_started':   'Order correction (super admin)',
 };
 
 const METHOD_LABEL: Record<string, string> = {
@@ -110,6 +111,16 @@ function auditDetail(row: PoAuditRow): string | undefined {
     }
     case 'purchase_order.cancel':
       return str(m.reason) !== null ? `Reason: ${str(m.reason)}` : undefined;
+    case 'po.correction_started': {
+      // ADR-050 : la correction enchaîne contre-passations et annulations,
+      // chacune déjà tracée à part ; cette ligne dit le geste et son motif.
+      const count = (v: unknown): number => (Array.isArray(v) ? v.length : 0);
+      return join([
+        `${count(m.reversed_payment_ids)} payment(s) reversed`,
+        `${count(m.cancelled_grn_ids)} receipt(s) cancelled`,
+        str(m.reason) !== null ? `Reason: ${str(m.reason)}` : null,
+      ]);
+    }
     case 'po.invoice_updated': {
       const path = obj(p.invoice_path);
       if (str(path.to) !== null && str(path.from) === null) return 'Invoice attached';

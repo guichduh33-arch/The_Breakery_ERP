@@ -46,6 +46,8 @@ const ROWS: PurchaseOrderListRow[] = [
     deleted_at:       null,
     metadata:         {},
     idempotency_key:  null,
+    po_paid_amount:   0,
+    po_payment_status: 'unpaid',
     suppliers:        { code: 'CGS', name: 'CAKRA GEMILANG SEJAHTERA' },
   },
   {
@@ -80,6 +82,8 @@ const ROWS: PurchaseOrderListRow[] = [
     deleted_at:       null,
     metadata:         {},
     idempotency_key:  null,
+    po_paid_amount:   90000,
+    po_payment_status: 'paid',
     suppliers:        { code: 'BU', name: 'Banyu Urip' },
   },
 ];
@@ -108,7 +112,16 @@ vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOri
   const actual = await importOriginal<typeof UsePurchaseOrdersListModule>();
   return {
     ...actual,
-    usePurchaseOrdersList: () => ({ data: queryData, isLoading: queryData === undefined, isError: queryError, error: null }),
+    usePurchaseOrdersList: (f: { paymentStatus?: string }) => {
+      const rows = queryData?.filter((r) => f.paymentStatus === undefined || r.po_payment_status === f.paymentStatus);
+      return { data: rows === undefined ? undefined : { rows, total: rows.length }, isLoading: queryData === undefined, isError: false, error: null };
+    },
+    // Les compteurs sont des comptes serveur ; le mock les dérive des lignes.
+    usePurchaseOrderCounts: () => {
+      if (queryData === undefined || queryError) return { data: undefined, isError: queryError };
+      const by = (st: string) => queryData!.filter((r) => r.status === st).length;
+      return { data: { all: queryData.length, pending: by('pending'), partial: by('partial'), received: by('received'), cancelled: by('cancelled') }, isError: false };
+    },
   };
 });
 
@@ -177,6 +190,26 @@ describe('PurchaseOrdersListPage', () => {
     fireEvent.click(screen.getByTestId('counter-pending'));
     expect(screen.getByTestId('counter-pending')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows reception and payment as two separate columns, and links the supplier', () => {
+    renderPage();
+    const rowA = screen.getByRole('link', { name: /PO-202604-0001/i }).closest('tr')!;
+    expect(within(rowA).getByText('To receive')).toBeInTheDocument();
+    expect(within(rowA).getByText('Unpaid')).toBeInTheDocument();
+    const rowB = screen.getByRole('link', { name: /PO-202603-0031/i }).closest('tr')!;
+    expect(within(rowB).getByText('Received')).toBeInTheDocument();
+    expect(within(rowB).getByText('Paid')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /CAKRA GEMILANG SEJAHTERA/i })).toHaveAttribute('href', '/backoffice/suppliers/sup-1');
+  });
+
+  it('filters by payment status and says so when nothing matches', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('po-payment-filter'), { target: { value: 'partial' } });
+    expect(screen.queryByRole('link', { name: /PO-202604-0001/i })).not.toBeInTheDocument();
+    expect(screen.getByText('No purchase order matches these filters')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('po-clear-filters'));
+    expect(screen.getByRole('link', { name: /PO-202604-0001/i })).toBeInTheDocument();
   });
 
   it('shows the New purchase order CTA when create is granted', () => {

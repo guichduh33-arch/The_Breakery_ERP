@@ -20,7 +20,7 @@
 // statut, dates, total) et l'import/export historique.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Download,
   FileText,
@@ -37,15 +37,22 @@ import { ImportEntityModal } from '@/features/data-import/components/ImportEntit
 // deux handlers, pas à l'ouverture de la liste.
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
-import { formatCurrency, formatDateShortWita } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
+  usePurchaseOrderCounts,
   usePurchaseOrdersList,
-  type POStatus,
+  type PoCounterKey,
+  type PoDateField,
+  type PoPaymentFilter,
   type PurchaseOrderListRow,
   type PurchaseOrdersFilters,
 } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
-import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
+import { POStatusBadge, PO_STATUS_LABELS } from '@/features/purchasing/components/POStatusBadge.js';
+import { PoPaymentBadge, PAYMENT_STATUS_LABELS } from '@/features/purchasing/components/PoPaymentBadge.js';
+import { PO_DATE_HINTS, PO_DATE_LABELS, formatPoDay } from '@/features/purchasing/poVocabulary.js';
+import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { ListPagination, coercePageSize } from '@/components/ListPagination.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
 import {
   TOOLBAR_BTN_PRIMARY,
@@ -56,43 +63,32 @@ import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStri
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
-type POFilterKey = POStatus | 'all';
+// Les cinq entrées de la bande — `draft` n'y est pas : aucune RPC ne crée de
+// brouillon aujourd'hui, et un filtre qui ne peut rien rendre est un état menteur.
+// Les libellés sont ceux de la pastille de réception (`PO_STATUS_LABELS`).
+const PO_COUNTERS: readonly { value: PoCounterKey; label: string; tone?: 'warning' }[] = [
+  { value: 'all',       label: 'All orders' },
+  { value: 'pending',   label: PO_STATUS_LABELS.pending,   tone: 'warning' },
+  { value: 'partial',   label: PO_STATUS_LABELS.partial,   tone: 'warning' },
+  { value: 'received',  label: PO_STATUS_LABELS.received },
+  { value: 'cancelled', label: PO_STATUS_LABELS.cancelled },
+];
 
-interface POBucket { count: number; amount: number }
+const PAYMENT_FILTERS: readonly PoPaymentFilter[] = ['unpaid', 'partial', 'paid'];
+const DATE_FIELDS: readonly { value: PoDateField; label: string }[] = [
+  { value: 'order_date',    label: PO_DATE_LABELS.ordered },
+  { value: 'expected_date', label: PO_DATE_LABELS.expected },
+  { value: 'received_date', label: 'Fully received' },
+];
 
-/** Un seau par statut filtrable, plus le total. Les clés sont celles du filtre. */
-type POBuckets = Record<POFilterKey, POBucket>;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-function aggregate(rows: readonly PurchaseOrderListRow[]): POBuckets {
-  const acc: POBuckets = {
-    all:       { count: rows.length, amount: 0 },
-    pending:   { count: 0, amount: 0 },
-    partial:   { count: 0, amount: 0 },
-    received:  { count: 0, amount: 0 },
-    cancelled: { count: 0, amount: 0 },
-    draft:     { count: 0, amount: 0 },
-  };
-  for (const r of rows) {
-    const amount = Number(r.total_amount ?? 0);
-    acc.all.amount += amount;
-    const bucket = acc[r.status as POFilterKey] as POBucket | undefined;
-    if (bucket === undefined) continue;
-    bucket.count  += 1;
-    bucket.amount += amount;
-  }
-  return acc;
+/** Lit une valeur d'URL contre une liste fermée ; tout le reste vaut « aucun filtre ». */
+function pick<T extends string>(raw: string | null, allowed: readonly T[]): T | undefined {
+  return raw !== null && (allowed as readonly string[]).includes(raw) ? (raw as T) : undefined;
 }
 
-// Les cinq entrées de la bande — mêmes valeurs de filtre que les pastilles
-// qu'elle remplace, `draft` compris nulle part : aucune RPC ne crée de brouillon
-// aujourd'hui, et un filtre qui ne peut rien rendre est un état menteur.
-const PO_COUNTERS: readonly { value: POFilterKey; label: string; tone?: 'warning' }[] = [
-  { value: 'all',       label: 'All POs' },
-  { value: 'pending',   label: 'Pending',   tone: 'warning' },
-  { value: 'partial',   label: 'Partial',   tone: 'warning' },
-  { value: 'received',  label: 'Received' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
+const SELECT_CLS = `h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 
 export default function PurchaseOrdersListPage(): JSX.Element {
   const navigate      = useNavigate();
@@ -100,10 +96,32 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   const canRead   = hasPermission('purchasing.po.read');
   const canCreate = hasPermission('purchasing.po.create');
 
-  const [status, setStatus]         = useState<POFilterKey>('all');
-  const [supplierId, setSupplierId] = useState<string>('');
-  const [search, setSearch]         = useState<string>('');
+  // Les filtres vivent dans l'URL : un lien partagé ou un retour arrière depuis
+  // la fiche d'un bon retrouve la même liste, au même endroit.
+  const [params, setParams] = useSearchParams();
+  const status        = pick(params.get('status'), ['pending', 'partial', 'received', 'cancelled'] as const) ?? 'all';
+  const supplierId    = params.get('supplier') ?? '';
+  const search        = params.get('q') ?? '';
+  const paymentStatus = pick(params.get('payment'), PAYMENT_FILTERS);
+  const dateField     = pick(params.get('date_field'), DATE_FIELDS.map((d) => d.value)) ?? 'order_date';
+  const rawFrom       = params.get('from') ?? '';
+  const rawTo         = params.get('to') ?? '';
+  const fromDate      = ISO_DAY.test(rawFrom) ? rawFrom : '';
+  const toDate        = ISO_DAY.test(rawTo) ? rawTo : '';
+  const page          = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
+  const pageSize      = coercePageSize(params.get('size') ?? 50);
   const [importing, setImporting]   = useState<boolean>(false);
+
+  /** Change un filtre et revient en page 1 — sauf quand c'est la page qui change. */
+  function setParam(key: string, value: string): void {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === '' || value === 'all') next.delete(key); else next.set(key, value);
+      if (key !== 'page') next.delete('page');
+      return next;
+    }, { replace: true });
+  }
+  const hasFilters = params.toString() !== '' && [...params.keys()].some((k) => k !== 'page' && k !== 'size');
 
   const exportMut = useHistoricalPurchasesExport();
 
@@ -132,39 +150,48 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   // Les filtres HORS statut : ce sur quoi les compteurs se calculent. Le statut
   // s'ajoute pour la table seule — sans quoi chaque compteur ne compterait que
   // les lignes que son propre filtre a déjà retenues.
-  const counterFilters = useMemo<PurchaseOrdersFilters>(() => ({
+  const counterFilters = useMemo<Omit<PurchaseOrdersFilters, 'status' | 'limit' | 'offset'>>(() => ({
     ...(supplierId !== '' ? { supplierId } : {}),
     ...(search.trim() !== '' ? { search } : {}),
-  }), [supplierId, search]);
+    ...(paymentStatus !== undefined ? { paymentStatus } : {}),
+    dateField,
+    ...(fromDate !== '' ? { fromDate } : {}),
+    ...(toDate !== '' ? { toDate } : {}),
+  }), [supplierId, search, paymentStatus, dateField, fromDate, toDate]);
 
   const filters = useMemo<PurchaseOrdersFilters>(() => ({
     ...counterFilters,
     ...(status !== 'all' ? { status } : {}),
-  }), [counterFilters, status]);
+    limit:  pageSize,
+    offset: (page - 1) * pageSize,
+  }), [counterFilters, status, page, pageSize]);
 
   const list      = usePurchaseOrdersList(filters);
-  const allList   = usePurchaseOrdersList(counterFilters);
-  const suppliers = useSuppliersList({ active: 'active' });
+  const counts    = usePurchaseOrderCounts(counterFilters);
+  // Tous les fournisseurs, inactifs compris : un bon d'un fournisseur désactivé
+  // doit rester filtrable.
+  const suppliers = useSuppliersList({ active: 'all' });
 
-  const rows    = list.data ?? [];
-  const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
-  const countersDown = allList.isError || allList.data === undefined;
+  const rows  = list.data?.rows ?? [];
+  const total = list.data?.total ?? 0;
+  const countersDown = counts.isError || counts.data === undefined;
 
+  // Les compteurs suivent tous les filtres SAUF le statut : un compteur qui se
+  // recalcule sur son propre filtre ne compte plus que lui-même (ADR-025 D2).
+  // Ce sont des comptes serveur exacts — plus le décompte des 50 derniers bons.
   const counters = useMemo<ListCounter[]>(() => PO_COUNTERS.map((c) => {
-    const bucket = buckets[c.value];
+    const n = counts.data?.[c.value] ?? 0;
     return {
       id:    c.value,
       label: c.label,
-      // Un échec de chargement rend un tiret, jamais un zéro : « aucun bon en
-      // attente » et « je n'ai pas pu compter » ne se ressemblent pas.
-      value: countersDown ? '—' : bucket.count,
-      ...(c.tone !== undefined && bucket.count > 0 && !countersDown ? { tone: c.tone } : {}),
-      ...(countersDown ? {} : {
-        title: `${formatCurrency(bucket.amount)} committed across ${String(bucket.count)} purchase order(s). Counted over the 50 most recent POs matching the supplier and search filters.`,
-      }),
-      onSelect: () => { setStatus(c.value); },
+      // Un échec de chargement rend un tiret, jamais un zéro.
+      value: countersDown ? '—' : n,
+      ...(c.tone !== undefined && n > 0 && !countersDown ? { tone: c.tone } : {}),
+      onSelect: () => { setParam('status', c.value); },
     };
-  }), [buckets, countersDown]);
+  // setParam est stable dans les faits (setParams de react-router l'est).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [counts.data, countersDown]);
 
   const columns: readonly DataTableColumn<PurchaseOrderListRow>[] = useMemo(() => [
     {
@@ -183,15 +210,25 @@ export default function PurchaseOrdersListPage(): JSX.Element {
     {
       id:    'supplier',
       header: 'Supplier',
-      render: (r) => <span className="text-text-primary">{r.suppliers?.name ?? '—'}</span>,
+      render: (r) => (
+        <Link
+          to={`/backoffice/suppliers/${r.supplier_id}`}
+          className={`text-text-primary hover:text-gold hover:underline ${FOCUS_RING}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {r.suppliers?.name ?? '—'}
+        </Link>
+      ),
     },
     {
+      // Deux colonnes, deux axes indépendants : un bon reçu peut être impayé,
+      // un bon à recevoir peut être déjà payé.
       id:    'status',
-      header: 'Status',
-      width: '120px',
+      header: 'Reception',
+      width: '150px',
       render: (r) => (
         <span className="flex items-center gap-1">
-          <POStatusBadge status={r.status as POStatus} />
+          <POStatusBadge status={r.status} />
           {r.is_historical_import && (
             <Badge variant="secondary" className="ml-1">Imported</Badge>
           )}
@@ -199,9 +236,22 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       ),
     },
     {
-      id:    'order_date',
-      header: 'Order date',
+      id:    'payment',
+      header: 'Payment',
       width: '120px',
+      render: (r) => (
+        <PoPaymentBadge
+          status={r.status}
+          totalAmount={r.total_amount}
+          paidAmount={Number(r.po_paid_amount ?? 0)}
+          isHistoricalImport={r.is_historical_import}
+        />
+      ),
+    },
+    {
+      id:    'order_date',
+      header: PO_DATE_LABELS.ordered,
+      width: '110px',
       align: 'left',
       // The Mono-Carries-Data Rule nomme l'horodatage : la colonne de montant
       // juste en dessous porte déjà `font-data`, les deux colonnes de DATE
@@ -214,14 +264,21 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       // voisin rendait `08/31/2026`. Deux formats numériques contradictoires
       // dans une même session, sur un produit dont le jour métier est un
       // invariant (ADR-019).
-      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.order_date !== null ? formatDateShortWita(r.order_date) : '—'}</span>,
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{formatPoDay(r.order_date)}</span>,
     },
     {
       id:    'expected_date',
       header: 'Expected',
-      width: '120px',
+      width: '110px',
       align: 'left',
-      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.expected_date !== null ? formatDateShortWita(r.expected_date) : '—'}</span>,
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{formatPoDay(r.expected_date)}</span>,
+    },
+    {
+      id:    'received_date',
+      header: PO_DATE_LABELS.received,
+      width: '110px',
+      align: 'left',
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{formatPoDay(r.received_date)}</span>,
     },
     {
       id:    'total',
@@ -244,7 +301,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       <PageHeader
         className="items-start gap-4"
         title="Purchase Orders"
-        subtitle="Track open and historical POs; receive goods to post inventory + accounting entries."
+        subtitle="Each order has two separate states: reception (goods in stock) and payment (money paid out)."
         actions={
           <>
             {/* Une seule hauteur dans le bandeau : les trois gestes de service
@@ -277,31 +334,50 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         data-testid="po-counters"
       />
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3">
-        <div className="relative flex-1 min-w-[16rem]">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3" data-testid="po-filters">
+        <div className="relative flex-1 min-w-[14rem]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" aria-hidden />
           <input
             id="po-search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setParam('q', e.target.value)}
             placeholder="Search by PO number…"
             maxLength={64}
             aria-label="Search purchase orders"
             className={`h-9 w-full rounded-md border border-border-strong bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
-        <select
-          id="po-supplier"
-          value={supplierId}
-          onChange={(e) => setSupplierId(e.target.value)}
-          aria-label="Supplier filter"
-          className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
-        >
+        <select id="po-supplier" value={supplierId} onChange={(e) => setParam('supplier', e.target.value)}
+          aria-label="Supplier filter" className={SELECT_CLS}>
           <option value="">All suppliers</option>
           {(suppliers.data ?? []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+            <option key={s.id} value={s.id}>{s.name} ({s.code}){s.is_active ? '' : ' — inactive'}</option>
           ))}
         </select>
+        <select id="po-payment" value={paymentStatus ?? ''} onChange={(e) => setParam('payment', e.target.value)}
+          aria-label="Payment filter" className={SELECT_CLS} data-testid="po-payment-filter">
+          <option value="">Any payment</option>
+          {PAYMENT_FILTERS.map((p) => <option key={p} value={p}>{PAYMENT_STATUS_LABELS[p]}</option>)}
+        </select>
+        {/* La plage porte sur la date CHOISIE : les trois ne disent pas la
+            même chose (commande, livraison prévue, réception complète). */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select id="po-date-field" value={dateField} onChange={(e) => setParam('date_field', e.target.value === 'order_date' ? '' : e.target.value)}
+            aria-label="Date the range applies to" className={SELECT_CLS} title={PO_DATE_HINTS.ordered}>
+            {DATE_FIELDS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+          </select>
+          <DateRangePicker
+            start={fromDate} end={toDate}
+            onStartChange={(v) => setParam('from', v)}
+            onEndChange={(v) => setParam('to', v)}
+          />
+        </div>
+        {hasFilters && (
+          <button type="button" className={`text-sm text-text-secondary underline-offset-2 hover:text-text-primary hover:underline ${FOCUS_RING}`}
+            onClick={() => setParams(new URLSearchParams(), { replace: true })} data-testid="po-clear-filters">
+            Clear filters
+          </button>
+        )}
       </div>
 
       {list.error !== null && list.error !== undefined ? (
@@ -310,7 +386,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         </div>
       ) : (
         <DataTable
-          caption="Purchase-order number, supplier, status, order date, expected date and total per purchase order"
+          caption="Purchase-order number, supplier, reception status, payment status, order date, expected delivery, received date and total per purchase order"
           data-testid="po-table"
           columns={columns}
           rows={rows}
@@ -327,13 +403,17 @@ export default function PurchaseOrdersListPage(): JSX.Element {
                   nommait le contraire de ce qu'elle faisait, et l'italique
                   restait seul. Deux défauts déjà corrigés deux fois ailleurs
                   dans cette campagne (2026-08-18). */}
-              <h2 className="mt-3 text-xl font-semibold text-text-primary">No purchase orders yet</h2>
+              <h2 className="mt-3 text-xl font-semibold text-text-primary">
+                {hasFilters || status !== 'all' ? 'No purchase order matches these filters' : 'No purchase orders yet'}
+              </h2>
               <p className="mx-auto mt-1 max-w-prose text-sm text-text-secondary">
-                {canCreate
+                {hasFilters || status !== 'all'
+                  ? 'Change or clear the filters above to see more orders.'
+                  : canCreate
                   ? 'Draft a purchase order to start tracking incoming stock and supplier balances.'
                   : 'A manager must draft a purchase order before any will appear here.'}
               </p>
-              {canCreate && (
+              {canCreate && !hasFilters && status === 'all' && (
                 // Le primitif partagé, pas `TOOLBAR_BTN_PRIMARY` : DESIGN.md
                 // § Boutons borne les chaînes `TOOLBAR_BTN_*` au BANDEAU de page.
                 // Un bouton d'état vide est une action de panneau — il prend le
@@ -348,6 +428,15 @@ export default function PurchaseOrdersListPage(): JSX.Element {
               )}
             </div>
           }
+        />
+      )}
+      {total > 0 && (
+        <ListPagination
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPage={(n) => setParam('page', String(n))}
+          onPageSize={(n) => setParam('size', String(n))}
         />
       )}
 

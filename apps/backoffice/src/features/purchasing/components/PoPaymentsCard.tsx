@@ -8,13 +8,15 @@
 import { useState, type JSX } from 'react';
 import { Undo2, Wallet } from 'lucide-react';
 import { Badge } from '@breakery/ui';
-import { formatCurrency, formatDateShortWita } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
+import { PO_DATE_HINTS, PO_DATE_LABELS, formatPoDay, formatPoInstant } from '../poVocabulary.js';
 import { Button, Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 import { usePaymentGroup, type PoPaymentRow, type PoPaymentStatus } from '../hooks/usePoPayments.js';
-import { PaymentStatusBadge, SummaryRow } from './PurchaseOrderDetailCards.js';
+import { SummaryRow } from './PurchaseOrderDetailCards.js';
+import { PaymentStatusBadge } from './PoPaymentBadge.js';
 import { ReversePaymentDialog } from './ReversePaymentDialog.js';
 
 interface Props {
@@ -44,7 +46,10 @@ export function PoPaymentsCard({
     <Card variant="default" padding="md" className="space-y-3">
       <div className="flex items-center justify-between">
         <SectionLabel as="h2" size="sm" className="text-gold">Payment Status</SectionLabel>
-        <PaymentStatusBadge status={paymentStatus} />
+        {/* Un bon annulé sans paiement n'est pas « Unpaid » : il ne doit rien. */}
+        {payBlockedByCancel && totalPaid === 0
+          ? <span className="text-xs text-text-muted">No payment due</span>
+          : <PaymentStatusBadge status={paymentStatus} />}
       </div>
       <dl className="space-y-2 text-sm">
         <SummaryRow label="Total due"  value={formatCurrency(totalDue)} />
@@ -63,7 +68,8 @@ export function PoPaymentsCard({
                 <li key={p.id} className="space-y-0.5 text-xs" data-testid={isReversal ? 'po-payment-reversal' : 'po-payment-line'}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-data tabular-nums text-text-secondary">
-                      {formatDateShortWita(p.paid_at)} · <span className="uppercase">{p.method}</span>
+                      <span title={PO_DATE_HINTS.paid}>{PO_DATE_LABELS.paid} {formatPoDay(p.paid_at)}</span>
+                      {' · '}<span className="uppercase">{p.method}</span>
                       {p.reference !== null && p.reference !== '' && (
                         <span className="text-text-muted"> · {p.reference}</span>
                       )}
@@ -72,6 +78,11 @@ export function PoPaymentsCard({
                       {formatCurrency(p.amount)}
                     </span>
                   </div>
+                  {/* Le jour payé et l'instant de saisie ne se confondent plus :
+                      une saisie tardive date l'écriture du jour PAYÉ (ADR-048). */}
+                  <p className="font-data tabular-nums text-text-muted" title={PO_DATE_HINTS.recorded}>
+                    {PO_DATE_LABELS.recorded} {formatPoInstant(p.created_at)}
+                  </p>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {isReversal && <Badge variant="outline" className="border-danger text-danger">REVERSAL</Badge>}
                     {isReversed && <Badge variant="outline" className="border-border-strong text-text-secondary">REVERSED</Badge>}

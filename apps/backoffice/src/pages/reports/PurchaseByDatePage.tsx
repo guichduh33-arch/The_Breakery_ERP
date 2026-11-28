@@ -174,7 +174,7 @@ export default function PurchaseByDatePage(): JSX.Element {
     <ReportShell
       title="Purchase by Date"
       subtitle={`${periodLabel(start, end)} · purchase order volume and value by order date`}
-      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Purchases' }]}
       toolbar={toolbar}
       error={current.error}
       isEmpty={!current.isLoading && data !== undefined && rows.length === 0}

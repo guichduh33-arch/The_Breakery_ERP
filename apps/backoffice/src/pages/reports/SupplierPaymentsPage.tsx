@@ -16,7 +16,8 @@
 //  3. LE DÉLAI DE RÈGLEMENT EST PONDÉRÉ. Réception → paiement, pondéré par
 //     montant — payer vite les petites factures ne maquille pas le chiffre.
 
-import { useMemo, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
+import { PO_DATE_LABELS, formatPoDay } from '@/features/purchasing/poVocabulary.js';
 import { Link } from 'react-router-dom';
 import { cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
@@ -63,7 +64,14 @@ export default function SupplierPaymentsPage(): JSX.Element {
   const report = useSupplierPayments({ start, end });
   const summary  = report.data?.summary;
   const openPos  = report.data?.open_pos ?? [];
-  const payments = report.data?.payments ?? [];
+  const allPayments = useMemo(() => report.data?.payments ?? [], [report.data]);
+  // Filtre fournisseur de la table des paiements (harmonisation 2026-11-28).
+  const [paySupplier, setPaySupplier] = useState('');
+  const paySuppliers = useMemo(
+    () => [...new Set(allPayments.map((p) => p.supplier_name))].sort((a, b) => a.localeCompare(b)),
+    [allPayments],
+  );
+  const payments = paySupplier === '' ? allPayments : allPayments.filter((p) => p.supplier_name === paySupplier);
   const asOf     = report.data?.as_of;
 
   // Décaissements par semaine — servi au jour, plié en fenêtres de 7 jours.
@@ -247,7 +255,7 @@ export default function SupplierPaymentsPage(): JSX.Element {
                   <tr className="border-b border-border-subtle text-text-secondary">
                     <th scope="col" className="py-2 pr-3 text-left font-normal">Supplier</th>
                     <th scope="col" className="py-2 pr-3 text-left font-normal">PO</th>
-                    <th scope="col" className="py-2 pr-3 text-left font-normal">Received</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">{PO_DATE_LABELS.received}</th>
                     <th scope="col" className="py-2 pr-3 text-right font-normal">Age</th>
                     <th scope="col" className="py-2 pr-3 text-right font-normal">Total</th>
                     <th scope="col" className="py-2 pr-3 text-right font-normal">Settled</th>
@@ -281,7 +289,7 @@ export default function SupplierPaymentsPage(): JSX.Element {
                           ) : po.po_number}
                         </td>
                         <td className="py-2 text-text-secondary">
-                          {po.received_on !== null ? shortDate(po.received_on) : '—'}
+                          {formatPoDay(po.received_on)}
                         </td>
                         <td className={NUM_CELL}>{po.age_days} d</td>
                         <td className={NUM_CELL}>{formatIdrFull(po.total)}</td>
@@ -314,9 +322,20 @@ export default function SupplierPaymentsPage(): JSX.Element {
         isLoading={report.isLoading}
         testId="payments-table"
       >
+        {paySuppliers.length > 1 && (
+          <label className="mb-2 flex items-center gap-2 text-sm text-text-secondary">
+            <span>Supplier</span>
+            <select value={paySupplier} onChange={(e) => setPaySupplier(e.target.value)}
+              aria-label="Filter payments by supplier" data-testid="payments-supplier-filter"
+              className={cn('h-8 rounded-md border border-border-strong bg-bg-input px-2 text-sm text-text-primary', FOCUS_RING)}>
+              <option value="">All suppliers</option>
+              {paySuppliers.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+        )}
         {payments.length === 0 ? (
           <p className="py-6 text-center text-sm text-text-muted">
-            No supplier payment in this period.
+            {paySupplier === '' ? 'No supplier payment in this period.' : 'No payment to this supplier in this period.'}
           </p>
         ) : (
           <>
@@ -327,7 +346,7 @@ export default function SupplierPaymentsPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th scope="col" className="py-2 pr-3 text-left font-normal">Date</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal" title="The day the money actually left">{PO_DATE_LABELS.paid}</th>
                     <th scope="col" className="py-2 pr-3 text-left font-normal">Supplier</th>
                     <th scope="col" className="py-2 pr-3 text-left font-normal">PO</th>
                     <th scope="col" className="py-2 pr-3 text-left font-normal">Method</th>
@@ -335,15 +354,24 @@ export default function SupplierPaymentsPage(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.slice(0, PAYMENTS_SHOWN).map((p) => (
+                  {payments.slice(0, PAYMENTS_SHOWN).map((p) => {
+                    const poUrl = buildDrilldownUrl('purchase_order', p.po_id);
+                    return (
                     <tr key={p.payment_id} className="border-b border-border-subtle">
-                      <td className="py-2 text-text-secondary">{shortDate(p.paid_on)}</td>
+                      <td className="py-2 text-text-secondary">{formatPoDay(p.paid_on)}</td>
                       <td className="py-2">{p.supplier_name}</td>
-                      <td className="py-2 text-text-secondary">{p.po_number}</td>
+                      <td className="py-2">
+                        {poUrl !== null ? (
+                          <Link to={poUrl} className={cn('text-gold underline-offset-2 hover:underline', FOCUS_RING)}>
+                            {p.po_number}
+                          </Link>
+                        ) : p.po_number}
+                      </td>
                       <td className="py-2 text-text-secondary">{p.method}</td>
                       <td className={NUM_CELL}>{formatIdrFull(p.amount)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

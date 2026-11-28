@@ -10902,6 +10902,15 @@ export type Database = {
         }
         Returns: Json
       }
+      start_po_correction_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_manager_pin: string
+          p_po_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       record_pos_events_v1: {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
@@ -11443,7 +11452,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_purchase_order_v2: {
+      update_purchase_order_v3: {
         Args: { p_patch: Json; p_po_id: string }
         Returns: Json
       }

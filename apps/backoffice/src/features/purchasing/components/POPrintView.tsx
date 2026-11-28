@@ -5,7 +5,7 @@
 // the global stylesheet hide chrome.
 
 import type { JSX } from 'react';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency, formatDateLong, formatQuantity } from '@breakery/utils';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 
 export interface POPrintViewProps {
@@ -31,8 +31,10 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
           <p className="text-sm mt-1">#{po.po_number}</p>
         </div>
         <div className="text-right text-sm">
-          <div><strong>Order date:</strong> {po.order_date ?? '—'}</div>
-          <div><strong>Expected:</strong>   {po.expected_date ?? '—'}</div>
+          {/* Un document envoyé au fournisseur : la date longue, année comprise,
+              plutôt que l'ISO brut (`2026-11-17`). */}
+          <div><strong>Order date:</strong> {po.order_date !== null ? formatDateLong(po.order_date) : '—'}</div>
+          <div><strong>Expected delivery:</strong> {po.expected_date !== null ? formatDateLong(po.expected_date) : '—'}</div>
           <div><strong>Terms:</strong>      {po.payment_terms === 'cash' ? 'Cash' : 'Credit'}</div>
         </div>
       </header>

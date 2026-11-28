@@ -23,6 +23,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
+import { PURCHASE_ORDERS_QUERY_KEY } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 
 export type DirectPurchasePaymentMethod = 'cash' | 'transfer';
 
@@ -189,7 +190,10 @@ export function useRecordDirectPurchase() {
     onSettled: async () => {
       await Promise.all([
         invalidateStockQueries(qc),
-        qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
+        // La clé de la liste des bons est `PURCHASE_ORDERS_QUERY_KEY`
+        // (`purchase-orders-bo`) : l'ancienne clé `purchase-orders` n'existait
+        // nulle part, et la liste restait périmée après un achat direct.
+        qc.invalidateQueries({ queryKey: PURCHASE_ORDERS_QUERY_KEY }),
       ]);
     },
   });
