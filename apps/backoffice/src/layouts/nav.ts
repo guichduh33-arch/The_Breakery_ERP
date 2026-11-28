@@ -315,6 +315,8 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/settings/roles', label: 'Roles & permissions', permission: 'rbac.manage' },
           { to: '/backoffice/users', label: 'Users', end: true, permission: 'users.read' },
           { to: '/backoffice/lan-devices', label: 'LAN devices', permission: 'lan.devices.read' },
+          // Nommer les terminaux du journal d'activité (`register_pos_device_v1`).
+          { to: '/backoffice/pos-terminals', label: 'POS terminals', permission: 'reports.audit.read' },
         ],
       },
     ],
