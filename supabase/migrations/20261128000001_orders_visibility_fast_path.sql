@@ -14,6 +14,16 @@
 -- donc équivalente, ligne pour ligne. Seules les lignes qu'aucune condition rapide
 -- n'accepte paient encore l'appel complet : les commandes réglées des journées dont
 -- un shift reste ouvert.
+--
+-- Limite : l'équivalence vaut pour la lecture. Sur le RETURNING d'une écriture,
+-- les conditions rapides lisent la nouvelle version de la ligne quand
+-- can_view_order_v2(id) relit l'ancienne via le snapshot. Les écritures de commandes
+-- passent par les RPC (AGENTS.md) ; ce cas ne concerne qu'une écriture directe déjà
+-- autorisée par ailleurs.
+--
+-- Les policies d'order_items, promotion_applications, refund_lines et des clés
+-- de rejeu appellent toujours can_view_order_v2 par ligne ; elles restent hors de
+-- ce correctif.
 
 -- Borne de can_view_sales_day_v1 pour un non-propriétaire, calculée une fois :
 -- can_view_sales_day_v1(d) est vrai, hors propriétaire, ssi d < cette borne.

@@ -13,7 +13,8 @@ INSERT INTO public.user_profiles(id,auth_user_id,employee_code,full_name,pin_has
  SELECT id,auth_user_id,'FP-'||id,'Fast path fixture','invalid-test-hash',role_code,true FROM fastpath_actors;
 CREATE TEMP TABLE fastpath_orders(label text PRIMARY KEY,id uuid NOT NULL DEFAULT gen_random_uuid());
 INSERT INTO fastpath_orders(label) VALUES('old_paid'),('old_completed'),('old_outstanding'),('recent_paid'),
- ('today_paid_kitchen'),('today_paid_plain'),('today_pending'),('today_draft_tablet'),('b2b');
+ ('today_paid_kitchen'),('today_paid_plain'),('today_pending'),('today_draft_tablet'),('b2b'),
+ ('old_created_settled_today');
 CREATE TEMP TABLE fastpath_session AS SELECT gen_random_uuid() id;
 GRANT ALL ON fastpath_results TO authenticated;
 GRANT SELECT ON fastpath_actors,fastpath_orders,fastpath_session TO authenticated;
@@ -38,8 +39,13 @@ INSERT INTO public.orders(id,order_number,session_id,status,order_type,created_v
   CASE WHEN o.label LIKE 'old_%' THEN now()-interval '10 days' WHEN o.label='recent_paid' THEN now()-interval '2 days' ELSE now() END,
   CASE WHEN o.label IN('old_paid','old_completed') THEN now()-interval '10 days' WHEN o.label='recent_paid' THEN now()-interval '2 days'
    WHEN o.label LIKE 'today_paid_%' THEN now() END,
-  CASE WHEN o.label='old_outstanding' THEN now()-interval '10 days' END
+  CASE WHEN o.label='old_outstanding' THEN now()-interval '10 days'
+   WHEN o.label='old_created_settled_today' THEN now() END
  FROM fastpath_orders o;
+-- Journée portée par outstanding_at seule : créée il y a dix jours, sans paid_at,
+-- encaissée aujourd'hui. Une borne lue sur paid_at ou created_at la rendrait visible.
+UPDATE public.orders SET status='completed',created_at=now()-interval '10 days'
+ WHERE id=(SELECT id FROM fastpath_orders WHERE label='old_created_settled_today');
 INSERT INTO public.order_items(order_id,product_id,name_snapshot,unit_price,quantity,line_total,kitchen_status,dispatch_station,served_at)
  SELECT o.id,(SELECT id FROM public.products LIMIT 1),'Fast path item',10000,1,10000,
   CASE WHEN o.label='today_paid_kitchen' THEN 'ready' ELSE 'served' END,'kitchen',
@@ -90,9 +96,12 @@ RESET ROLE;
 UPDATE public.pos_sessions SET status='closed',closed_at=now() WHERE id=(SELECT id FROM fastpath_session);
 SELECT pg_temp.check_actor(r,'closed today') FROM unnest(ARRAY['SUPER_ADMIN','ADMIN','CASHIER']) r;
 
--- C. Aucun shift clos ne couvre aujourd'hui : la journée courante reste privée.
-UPDATE public.pos_sessions SET opened_at=now()-interval '3 days',closed_at=now()-interval '2 days'
- WHERE status='closed' AND closed_at::date>=current_date;
+-- C. Le shift fixture se clôt avant-hier. Seule sa clôture change : modifier
+-- opened_at d'un shift doté d'un fond de caisse lève issued_shift_float_is_immutable,
+-- et les shifts DEV restent intouchés. Si aucun autre shift clos ne couvre
+-- aujourd'hui, la journée courante redevient privée ; l'équivalence tient dans
+-- les deux cas.
+UPDATE public.pos_sessions SET closed_at=now()-interval '2 days' WHERE id=(SELECT id FROM fastpath_session);
 SELECT pg_temp.check_actor(r,'today uncovered') FROM unnest(ARRAY['SUPER_ADMIN','ADMIN','CASHIER']) r;
 
 INSERT INTO fastpath_results(tap) SELECT ok(NOT has_function_privilege('anon','public.sales_day_visible_before_v1()','EXECUTE'),
