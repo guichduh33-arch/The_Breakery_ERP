@@ -110,6 +110,7 @@ const SettingsInvoiceTemplatePage = lazy(() => import('@/pages/settings/Settings
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
 const SettingsHistoryPage = lazy(() => import('@/pages/settings/SettingsHistoryPage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
+const PosTerminalsPage = lazy(() => import('@/pages/pos-terminals/PosTerminalsPage.js'));
 const CohortReportPage = lazy(() => import('@/pages/marketing/CohortReportPage.js'));
 const SegmentsPage = lazy(() => import('@/pages/marketing/SegmentsPage.js'));
 const PromoRoiPage = lazy(() => import('@/pages/marketing/PromoRoiPage.js'));
@@ -1276,6 +1277,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="lan.devices.read">
               <LanDevicesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="pos-terminals"
+          element={
+            <PermissionGate required="reports.audit.read">
+              <PosTerminalsPage />
             </PermissionGate>
           }
         />
