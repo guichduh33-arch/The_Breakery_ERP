@@ -11115,6 +11115,7 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      sales_day_visible_before_v1: { Args: never; Returns: string }
       save_expense_term_v1: {
         Args: {
           p_aliases?: string[]
