@@ -26,6 +26,40 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 28 novembre 2026, 22 h 38 — retraits S3-01 et S3-02 appliqués en production, back-office `c04b8775` en attente
+
+Relevé du 28 novembre 2026, de 21 h 50 à 23 h 10, UTC+8. Base de production
+seule ; aucune Edge Function, aucun paquet caisse, aucune APK. Boutique fermée,
+aucun shift ouvert. Observé directement, sauf les lignes rapportées par GitHub.
+
+Motif : inventaire de ce qui est fusionné sur `master` sans être en production,
+demandé par Mamat après la PR #788, fusionnée mais non publiée.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Inventaire, back-office | Production sur `9c4c96c7`. Fusions suivantes touchant `apps/backoffice` ou `packages` : #786 (une ligne de `types.generated.ts`, sans effet d'exécution) et #788 (écran des terminaux POS) | — |
+| Inventaire, caisse et tablettes | Caisse `bda02a30`, APK 1.26. Fusions suivantes : #785 (numéro de version Android, APK déjà installée) et #786 (même ligne de types) | — |
+| Inventaire, fonctions SQL | Les 291 RPC appelées par `master` (`apps`, `packages`, `supabase/functions`, hors tests) existent en production. Seuls écarts : les retraits ci-dessous et la suppression de `complete_order_with_payment_v32`, différée par le complément du 14 novembre jusqu'à vérification des ventes réelles sur `v33` | Comparaison de noms et d'empreintes de définition ; pas d'exécution |
+| Inventaire, Edge Functions | Les 18 fonctions déployées sont à jour du code qu'elles servent. `customer-birthday-notify` et `notification-dispatch` ne sont pas déployées et la production ne porte aucune tâche planifiée vers elles : l'envoi de notifications aux clients reste un geste distinct, non décidé | — |
+| Avant migration | 24 h de `edge_logs` : 4 `open_shift_v1`, 4 `close_shift_v15`, 35 `get_shift_close_preview_v2` ; aucun appel aux versions retirées ni écriture directe sur `pos_sessions`. Aucun appelant SQL ni vue sur les versions retirées hors des enveloppes `close_shift_v10` et `close_shift_v13`. En-têtes de ces enveloppes égaux à ceux du fichier (SQL, `SECURITY INVOKER`, même `search_path`) | — |
+| Migrations | Corps des fichiers `20261119000003_s3_01_revoke_direct_session_insert` et `20261119000006_s3_02_retire_close_shift_v14` à `c04b8775`, avec `SET LOCAL lock_timeout = '5s'` ajouté pour la livraison, appliqués par MCP sous les versions `20261128223836` et `20261128223852` | — |
+| Après migration | `authenticated` ne garde que `SELECT`, `REFERENCES`, `TRIGGER` sur `pos_sessions` ; policies `perm_create` et `perm_update` absentes. `close_shift_v14`, `get_pos_sessions_report_v4` et `get_shift_close_preview_v1` absentes. `close_shift_v10` et `close_shift_v13` appellent `close_shift_v15`, droits inchangés. `close_shift_v12` sans droit d'exécution pour `authenticated` | Aucune ouverture ni clôture de shift essayée |
+| Back-office `c04b8775` | `production-backoffice.yml`, run `46154238507`, approuvé par Mamat, arrêté au contrôle préalable : « Preuve absente : pgtap-pr.yml ». Rien n'a été publié. `pgtap-pr.yml`, run `46154526999` (`workflow_dispatch`) : six morceaux verts, `pgtap-exclusive` rouge sur `po_update.test.sql` et `s3_06_po_delivery_fee_discounts.test.sql`, qui appellent `update_purchase_order_v2`, retirée de la base de dev par une migration de bons de commande non fusionnée | La base de dev est partagée ; le rouge ne vient pas du diff de #788 |
+
+Effet attendu : une session de caisse ne s'ouvre, ne se modifie et ne se clôt
+plus que par les fonctions dédiées. Une APK antérieure à `e7c43cfd` sur un
+appareil Android inconnu ne pourrait plus ouvrir ni clôturer de shift ; aucun
+relevé ne garantit qu'il n'en existe pas.
+
+Retour : rendre `INSERT, UPDATE, DELETE` sur `pos_sessions` à `authenticated` et
+recréer `perm_create` et `perm_update` depuis leur définition d'avant ; recréer
+`close_shift_v14` depuis la migration qui l'a introduite, puis rebrancher les
+enveloppes. Aucun de ces gestes n'a été essayé.
+
+Reste à faire : publier le back-office `c04b8775` (ou un SHA suivant) dès qu'un
+`pgtap-pr.yml` passe sur le SHA exact, c'est-à-dire après la fusion des bons de
+commande ou le retour de la base de dev à l'état de `master`.
+
 ## Complément du 28 novembre 2026, 10 h 58 — visibilité des commandes sans appel par ligne (PR #786), base de production migrée
 
 Relevé du 28 novembre 2026, 7 h à 11 h, UTC+8. Base de production seule : aucune
