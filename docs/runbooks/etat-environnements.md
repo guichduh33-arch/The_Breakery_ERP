@@ -26,6 +26,39 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
 
+## Complément du 28 novembre 2026, 10 h 58 — visibilité des commandes sans appel par ligne (PR #786), base de production migrée
+
+Relevé du 28 novembre 2026, 7 h à 11 h, UTC+8. Base de production seule : aucune
+Edge Function, aucun paquet caisse, aucune APK, aucun back-office. Boutique
+ouverte, un shift ouvert pendant la migration. Observé directement, sauf la ligne
+« Preuves du SHA », rapportée par GitHub.
+
+Motif : délai d'affichage sur la caisse des commandes envoyées par la tablette,
+resté après la PR #784. La lecture caisse de la liste des commandes en attente
+(`orders`, filtre de statut, `limit=100`) durait 4,1 s en moyenne
+(`pg_stat_statements`, 53 590 appels) et dépassait le `statement_timeout` de 8 s
+du rôle `authenticated` : 248 réponses 500 sur 512 lectures entre 10 h et 10 h 58.
+Cause : la policy restrictive `confidentiality_finished_orders` appelait
+`can_view_order_v2(id)` sur chaque commande avant le filtre (égalité d'enum non
+leakproof) ; `EXPLAIN ANALYZE` : 6 593 ms pour 7 209 commandes.
+
+| Surface | Observation | Limite |
+|---|---|---|
+| Preuves du SHA `b9f29d48` | Fusion de #786. `ci.yml` et `pgtap-pr.yml` réussis sur `5505606d`, tête de la PR, dont pgTAP `orders_visibility_fast_path.test.sql` et `dashboard_overview.test.sql` corrigé dans la même PR (série horaire en journée, ADR-049) | pgTAP tourne sur la base de dev |
+| Avant migration, production | Expression de la nouvelle policy évaluée hors policy, en lecture seule, avec les claims d'un CASHIER puis d'un ADMIN : 42 ms au lieu de 6 593 ms ; 0 écart avec `can_view_order_v2` sur les 7 212 commandes, pour les deux rôles | Hors policy et sans session PIN ; la lecture PostgREST réelle n'est pas rejouée |
+| Migration | `orders_visibility_fast_path` appliquée par MCP à 10 h 58, corps du fichier à `b9f29d48`, avec `SET LOCAL lock_timeout = '5s'` ajouté pour la livraison | — |
+| Après migration | Policy restrictive relue : `sales_day_visible_before_v1()` puis `can_view_order_v2(id)` en dernier recours. `anon` sans droit d'exécution, `authenticated` avec. Borne du jour : `2026-11-28`, donc journée courante privée pendant le shift ouvert | — |
+| Lecture caisse | De 10 h 58 à 10 h 59 : 7 réponses 200, aucune 500 ; aucun `statement timeout` dans `postgres_logs` après 10 h 58 | Mesure d'une minute ; à confirmer sur une journée de service |
+
+Effet attendu : plus de réponse 500 sur la liste des commandes en attente, et
+une commande tablette visible sur la caisse au plus tard au tour de lecture suivant.
+Les policies d'`order_items`, `promotion_applications`, `refund_lines` et des clés
+de rejeu appellent toujours `can_view_order_v2` par ligne.
+
+Retour : `ALTER POLICY confidentiality_finished_orders ON public.orders USING
+(can_view_order_v2(id));` restitue la policy d'avant ; la fonction
+`sales_day_visible_before_v1()` peut rester, ou se supprimer ensuite.
+
 ## Complément du 28 novembre 2026, 1 h 04 — paquet caisse `bda02a30` (une lecture des options, PR #784) et APK 1.26, installés
 
 Relevé du 27 novembre 2026, 23 h 41, au 28 novembre, 1 h 04, UTC+8. Paquet caisse et
