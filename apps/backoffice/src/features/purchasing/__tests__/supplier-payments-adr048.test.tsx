@@ -35,7 +35,8 @@ function setUser(role: string, permissions: string[] = []): void {
 }
 
 const pay = (over: Partial<PoPaymentRow>): PoPaymentRow => ({
-  id: 'p1', amount: 100_000, method: 'transfer', paid_at: '2026-11-20T01:30:00Z', reference: null,
+  id: 'p1', amount: 100_000, method: 'transfer', paid_at: '2026-11-20T01:30:00Z',
+  created_at: '2026-11-21T03:00:00Z', reference: null,
   paid_by: null, payment_group_id: null, reversal_of_id: null, reversal_reason: null, ...over,
 });
 

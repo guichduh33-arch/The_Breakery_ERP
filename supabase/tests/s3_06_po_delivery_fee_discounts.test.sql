@@ -155,7 +155,7 @@ SELECT is((SELECT cost_price FROM public.products WHERE id=(SELECT p4 FROM fx)),
   'B: WAC P4 includes discounts, VAT and fee share');
 
 -- ---------------------------------------------------------------- Patch (bon C)
-UPDATE fx SET upd_c = public.update_purchase_order_v2((SELECT po_c FROM fx),
+UPDATE fx SET upd_c = public.update_purchase_order_v3((SELECT po_c FROM fx),
   jsonb_build_object('delivery_fee', 12500));
 SELECT is((SELECT total_amount FROM public.purchase_orders WHERE id=(SELECT po_c FROM fx)),
   (50000 + 5500 + 12500)::numeric, 'C: patching only the fee adds it to the total');
@@ -185,11 +185,11 @@ SELECT ok(to_regprocedure('public.create_purchase_order_v2(uuid,jsonb,date,date,
   AND to_regprocedure('public.receive_purchase_order_v7(uuid,jsonb,uuid)') IS NULL,
   'previous versions are dropped');
 SELECT ok(NOT has_function_privilege('anon','public.create_purchase_order_v3(uuid,jsonb,date,date,text,numeric,text,uuid,numeric,numeric)','EXECUTE')
-  AND NOT has_function_privilege('anon','public.update_purchase_order_v2(uuid,jsonb)','EXECUTE')
+  AND NOT has_function_privilege('anon','public.update_purchase_order_v3(uuid,jsonb)','EXECUTE')
   AND NOT has_function_privilege('anon','public.receive_purchase_order_v8(uuid,jsonb,uuid)','EXECUTE'),
   'anon cannot execute the new RPCs');
 SELECT ok(has_function_privilege('authenticated','public.create_purchase_order_v3(uuid,jsonb,date,date,text,numeric,text,uuid,numeric,numeric)','EXECUTE')
-  AND has_function_privilege('authenticated','public.update_purchase_order_v2(uuid,jsonb)','EXECUTE')
+  AND has_function_privilege('authenticated','public.update_purchase_order_v3(uuid,jsonb)','EXECUTE')
   AND has_function_privilege('authenticated','public.receive_purchase_order_v8(uuid,jsonb,uuid)','EXECUTE'),
   'authenticated keeps EXECUTE on the new RPCs');
 SELECT ok(NOT has_function_privilege('authenticated','public._po_cost_allocation_v1(uuid)','EXECUTE')

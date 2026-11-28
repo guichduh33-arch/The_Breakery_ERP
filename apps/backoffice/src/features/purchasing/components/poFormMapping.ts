@@ -2,7 +2,7 @@
 //
 // S3-06 — Passage bon enregistré ⇄ formulaire d'édition, sorti de la page de
 // détail. Le taux de PPN se déduit de la base taxable (sous-total moins
-// escompte global), comme le fait update_purchase_order_v2.
+// escompte global), comme le fait update_purchase_order_v3.
 
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 import type { UpdatePOItemArg } from '../hooks/useUpdatePurchaseOrder.js';

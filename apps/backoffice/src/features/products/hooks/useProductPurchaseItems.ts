@@ -15,6 +15,7 @@ export interface ProductPurchaseItem {
   order_date:        string;
   status:            string;
   received_date:     string | null;
+  supplier_id:       string;
   supplier_name:     string;
   quantity:          number;
   received_quantity: number;
@@ -37,28 +38,30 @@ export function useProductPurchaseItems(productId: string | null) {
         .select(
           'quantity, received_quantity, unit, unit_cost, subtotal, ' +
             'po:purchase_orders!inner(id, po_number, order_date, status, received_date, ' +
-            'deleted_at, supplier:suppliers(name))',
+            'deleted_at, supplier_id, supplier:suppliers(name))',
         )
         .eq('product_id', productId)
         .is('po.deleted_at', null);
       if (error) throw error;
 
-      type Po = {
+      interface Po {
         id: string;
         po_number: string;
         order_date: string;
         status: string;
         received_date: string | null;
+        supplier_id: string;
         supplier: { name: string } | { name: string }[] | null;
-      };
-      const rows = (data ?? []) as unknown as Array<{
+      }
+      interface ItemRow {
         quantity: number;
         received_quantity: number;
         unit: string;
         unit_cost: number;
         subtotal: number | null;
         po: Po | Po[] | null;
-      }>;
+      }
+      const rows = (data ?? []) as unknown as ItemRow[];
 
       return rows
         .map((r) => {
@@ -71,6 +74,7 @@ export function useProductPurchaseItems(productId: string | null) {
             order_date:        po.order_date,
             status:            po.status,
             received_date:     po.received_date,
+            supplier_id:       po.supplier_id,
             supplier_name:     supplier?.name ?? '—',
             quantity:          Number(r.quantity),
             received_quantity: Number(r.received_quantity),

@@ -20,6 +20,8 @@ import {
   PURCHASE_LINES_PAGE_SIZE, usePurchaseItemLines, type PurchaseItemStatus,
 } from '../hooks/usePurchaseItems.js';
 import { DrilldownLink } from './DrilldownLink.js';
+import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
+import { PO_DATE_LABELS, formatPoDay } from '@/features/purchasing/poVocabulary.js';
 import { formatIdrFull } from '../utils/chartColors.js';
 import { formatCount, periodLabel } from '../utils/reportFigures.js';
 
@@ -37,7 +39,6 @@ export interface PurchaseItemLinesDrawerProps {
 const NUM_CELL = 'px-2 py-1.5 text-right font-data tabular-nums';
 const TH       = 'px-2 py-1.5';
 const DATE     = 'whitespace-nowrap px-2 py-1.5 font-data text-xs text-text-secondary';
-const DASH     = <span className="text-text-subtle">—</span>;
 
 export function PurchaseItemLinesDrawer({
   product, start, end, supplierId, status, onClose,
@@ -97,22 +98,22 @@ export function PurchaseItemLinesDrawer({
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-left text-text-secondary">
-                    <th scope="col" className={TH}>Ordered</th>
-                    <th scope="col" className={TH}>Received</th>
+                    <th scope="col" className={TH}>{PO_DATE_LABELS.ordered}</th>
+                    <th scope="col" className={TH}>{PO_DATE_LABELS.received}</th>
                     <th scope="col" className={TH}>PO#</th>
                     <th scope="col" className={TH}>Supplier</th>
                     <th scope="col" className={`${TH} text-right`}>Qty</th>
                     <th scope="col" className={`${TH} text-right`}>Received qty</th>
                     <th scope="col" className={`${TH} text-right`}>Unit cost</th>
                     <th scope="col" className={`${TH} text-right`}>Subtotal</th>
-                    <th scope="col" className={TH}>Status</th>
+                    <th scope="col" className={TH}>Reception</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l, i) => (
                     <tr key={`${l.po_id}-${i}`} className="border-b border-border-row">
-                      <td className={DATE}>{l.order_date.slice(0, 10)}</td>
-                      <td className={DATE}>{l.received_date !== null ? l.received_date.slice(0, 10) : DASH}</td>
+                      <td className={DATE}>{formatPoDay(l.order_date.slice(0, 10))}</td>
+                      <td className={DATE}>{formatPoDay(l.received_date?.slice(0, 10))}</td>
                       <td className="px-2 py-1.5 font-data">
                         <DrilldownLink entity="purchase_order" id={l.po_id} label={l.po_number} />
                       </td>
@@ -123,7 +124,7 @@ export function PurchaseItemLinesDrawer({
                       <td className={NUM_CELL}>{formatQuantity(l.received_quantity, l.unit)}</td>
                       <td className={NUM_CELL}>{formatIdrFull(l.unit_cost)}</td>
                       <td className={`${NUM_CELL} font-semibold`}>{formatIdrFull(l.subtotal)}</td>
-                      <td className="px-2 py-1.5 capitalize text-text-secondary">{l.status}</td>
+                      <td className="px-2 py-1.5"><POStatusBadge status={l.status} /></td>
                     </tr>
                   ))}
                 </tbody>

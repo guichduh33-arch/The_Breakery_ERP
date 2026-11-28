@@ -11,21 +11,20 @@
 // read-only (payments are recorded on the PO page).
 // S3-07 — l'impayé et le payé viennent du grand livre `purchase_payments`
 // (`useSupplierOutstanding`), selon la règle du rapport des paiements
-// fournisseurs ; le badge par bon aussi (`SupplierPaymentBadge`).
+// fournisseurs ; le badge par bon aussi (`PoPaymentBadge`, commun aux achats).
 //
 // Price Evolution + Analytics also stay read-only — these surfaces require
 // dedicated reporting RPCs (e.g. `mv_supplier_price_history`, `mv_supplier_
 // monthly_volume`) that have not landed yet. We render explanatory empty
 // states there so the tab stack is consistent.
 
-import { lazy, Suspense, useMemo, useState, type JSX, type ReactNode } from 'react';
+import { lazy, Suspense, useState, type JSX, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BarChart3,
   Building2,
   CalendarClock,
-  CheckCircle2,
   Clock,
   CreditCard,
   DollarSign,
@@ -39,18 +38,15 @@ import {
 } from 'lucide-react';
 import { Badge, Tabs, TabsContent } from '@breakery/ui';
 import { Button, Card, EmptyState, KpiTile, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
-import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatNumber } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
-import {
-  useSupplierPurchases,
-  type SupplierPOListRow,
-} from '@/features/suppliers/hooks/useSupplierPurchases.js';
+import { useSupplierPurchases } from '@/features/suppliers/hooks/useSupplierPurchases.js';
 import { useSupplierMetrics } from '@/features/suppliers/hooks/useSupplierMetrics.js';
 import { useSupplierOutstanding } from '@/features/suppliers/hooks/useSupplierOutstanding.js';
-import { SupplierPaymentBadge } from '@/features/suppliers/components/SupplierPaymentBadge.js';
+import { SupplierPurchasesTab } from '@/features/suppliers/components/SupplierPurchasesTab.js';
+import { SupplierPaymentsSection } from '@/features/suppliers/components/SupplierPaymentsSection.js';
 import { SupplierGroupPaymentAction } from '@/features/suppliers/components/SupplierGroupPaymentDialog.js';
 import { useSupplierPurchaseItems } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { useUpdateSupplier } from '@/features/suppliers/hooks/useUpdateSupplier.js';
@@ -70,10 +66,6 @@ const SupplierAnalyticsTab = lazy(() =>
 const SupplierPriceEvolutionTab = lazy(() =>
   import('@/features/suppliers/components/SupplierPriceEvolutionTab.js')
     .then((m) => ({ default: m.SupplierPriceEvolutionTab })),
-);
-const SupplierPaymentDistribution = lazy(() =>
-  import('@/features/suppliers/components/SupplierPaymentDistribution.js')
-    .then((m) => ({ default: m.SupplierPaymentDistribution })),
 );
 
 /** Attente discrète du chunk `charts` — même geste que le Dashboard : papier
@@ -97,15 +89,6 @@ function StatusBadge({ active }: { active: boolean }): JSX.Element {
   );
 }
 
-function PoStatusBadge({ status }: { status: string }): JSX.Element {
-  const tone =
-    status === 'received'  ? 'border-success bg-success-soft text-success' :
-    status === 'partial'   ? 'border-warning bg-warning-soft text-warning' :
-    status === 'cancelled' ? 'border-danger  bg-danger-soft  text-danger'  :
-                             'border-info    bg-info-soft    text-info';
-  return <Badge variant="default" className={tone}>{status}</Badge>;
-}
-
 function fmtIdrPrefixed(amount: number): string {
   // formatCurrency already prefixes "Rp ".
   return formatCurrency(amount);
@@ -121,73 +104,6 @@ function fmtLedger(amount: number | undefined, isError: boolean): string {
 function fmtDays(days: number): string {
   if (!Number.isFinite(days)) return '—';
   return `${formatNumber(days, { digits: 1 })} days`;
-}
-
-function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoading: boolean }): JSX.Element {
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={`po-skel-${i}`} className="h-10 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />
-        ))}
-      </div>
-    );
-  }
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon={Package}
-        title="No purchases yet"
-        description="Drafted or received purchase orders will appear here."
-        size="md"
-      />
-    );
-  }
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
-      <table className="w-full text-sm">
-        <caption className="sr-only">Date, purchase order number, status, item count, total and payment status per order</caption>
-        <thead className="border-b border-border-subtle bg-surface-inert">
-          <tr>
-            <th scope="col" className="px-4 py-3 text-left">
-              <SectionLabel as="span" size="xs">Date</SectionLabel>
-            </th>
-            <th scope="col" className="px-4 py-3 text-left">
-              <SectionLabel as="span" size="xs">PO Number</SectionLabel>
-            </th>
-            <th scope="col" className="px-4 py-3 text-left">
-              <SectionLabel as="span" size="xs">Status</SectionLabel>
-            </th>
-            <th scope="col" className="px-4 py-3 text-right">
-              <SectionLabel as="span" size="xs">Items</SectionLabel>
-            </th>
-            <th scope="col" className="px-4 py-3 text-right">
-              <SectionLabel as="span" size="xs">Total</SectionLabel>
-            </th>
-            <th scope="col" className="px-4 py-3 text-center">
-              <SectionLabel as="span" size="xs">Payment</SectionLabel>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="border-t border-border-subtle hover:bg-surface-4">
-              <td className="px-4 py-3 text-text-secondary tabular-nums">{r.order_date ?? '—'}</td>
-              <td className="px-4 py-3">
-                <Link to={`/backoffice/purchasing/purchase-orders/${r.id}`} className="text-gold hover:underline">
-                  {r.po_number}
-                </Link>
-              </td>
-              <td className="px-4 py-3"><PoStatusBadge status={r.status} /></td>
-              <td className="px-4 py-3 text-right tabular-nums">{r.item_count}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{fmtIdrPrefixed(Number(r.total_amount))}</td>
-              <td className="px-4 py-3 text-center"><SupplierPaymentBadge row={r} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 export default function SupplierDetailPage(): JSX.Element {
@@ -335,7 +251,7 @@ export default function SupplierDetailPage(): JSX.Element {
               Failed to load purchases: {purchases.error.message}
             </div>
           ) : (
-            <PurchasesTab rows={purchaseRows} isLoading={purchases.isLoading} />
+            <SupplierPurchasesTab rows={purchaseRows} isLoading={purchases.isLoading} />
           )}
         </TabsContent>
 
@@ -351,7 +267,7 @@ export default function SupplierDetailPage(): JSX.Element {
               <SupplierGroupPaymentAction supplierId={id ?? ''} supplierName={supplier.name} rows={purchaseRows} />
             </div>
           )}
-          <PaymentsSection rows={purchaseRows} ledger={ledger} isLoading={purchases.isLoading} />
+          <SupplierPaymentsSection rows={purchaseRows} ledger={ledger} isLoading={purchases.isLoading} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
@@ -395,88 +311,3 @@ function DetailRow({
     </div>
   );
 }
-
-function PaymentsSection({
-  rows,
-  ledger,
-  isLoading,
-}: {
-  rows: SupplierPOListRow[];
-  ledger: ReturnType<typeof useSupplierOutstanding>;
-  isLoading: boolean;
-}): JSX.Element {
-  // Le hook précède le retour anticipé : appelé après, il n'existait pas au
-  // rendu de chargement et apparaissait au rendu suivant. L'ordre des hooks
-  // changeait d'un rendu à l'autre — l'invariant que React ne pardonne pas.
-  const overdue = useMemo(() => {
-    const today = Date.now();
-    return rows.reduce((acc, r) => {
-      if (r.status === 'cancelled' || r.payment_terms !== 'credit' || r.received_date !== null) return acc;
-      if (r.expected_date !== null && new Date(r.expected_date).getTime() < today) {
-        return acc + Number(r.total_amount ?? 0);
-      }
-      return acc;
-    }, 0);
-  }, [rows]);
-
-  if (isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />;
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <KpiTile label="Total Paid"   value={fmtLedger(ledger.data?.totalPaid, ledger.isError)}   icon={CheckCircle2} />
-        <KpiTile label="Total Unpaid" value={fmtLedger(ledger.data?.outstanding, ledger.isError)} icon={CreditCard} />
-        <KpiTile label="Overdue"      value={fmtIdrPrefixed(overdue)}              icon={Clock} />
-      </div>
-
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={CreditCard}
-          title="No payment history"
-          description="Once a credit-term PO ships, supplier-side payment status will surface here."
-          size="md"
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-          <Card variant="default" padding="md">
-            <Suspense fallback={<ChartSkeleton />}>
-              <SupplierPaymentDistribution paidAmount={ledger.data?.totalPaid ?? 0} overdueAmount={overdue} />
-            </Suspense>
-          </Card>
-          <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Purchase order, date, total, status and due date per credit-term order</caption>
-            <thead className="border-b border-border-subtle bg-surface-inert">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
-                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
-                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
-                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Status</SectionLabel></th>
-                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Due Date</SectionLabel></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border-subtle">
-                  <td className="px-4 py-3">
-                    <Link to={`/backoffice/purchasing/purchase-orders/${r.id}`} className="text-gold hover:underline">
-                      {r.po_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{r.order_date ?? '—'}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{fmtIdrPrefixed(Number(r.total_amount))}</td>
-                  <td className="px-4 py-3"><SupplierPaymentBadge row={r} /></td>
-                  <td className="px-4 py-3 tabular-nums">{r.expected_date ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-

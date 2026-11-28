@@ -734,6 +734,22 @@ bon, lue dans le journal d'audit. La famille `record_po_payment` garde côté
 serveur un défaut à l'instant courant. Preuves datées dans le
 [runbook des environnements](runbooks/etat-environnements.md).
 
+**RÈGLE** — Le super admin peut corriger un bon de commande déjà reçu et/ou
+payé, en cas d'erreur, par une correction guidée sous son PIN avec motif : les
+paiements sont contre-passés, les réceptions annulées, puis le bon redevient
+modifiable ; réception et paiement se refont ensuite. Rien n'est modifié sur
+place (ADR-050).
+**FAIT** — Développée en dev le 2026-11-28 (ADR-050) : action « Correct order »
+sur la fiche du bon. La production attend la publication.
+
+**RÈGLE** — Chaque écran des achats distingue les dates d'un bon : création de
+la saisie, jour de commande, livraison prévue, réception, jour réel du paiement
+et instant de saisie du paiement, sous les mêmes noms partout.
+**FAIT** — Harmonisé en dev le 2026-11-28 sur la liste des bons, la fiche du
+bon, la fiche fournisseur, l'onglet achats d'un article, le rapport des
+paiements fournisseurs et le détail des lignes d'achat. La production attend la
+publication.
+
 ---
 
 ## 11. Comptabilité et taxes

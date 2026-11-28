@@ -183,7 +183,7 @@ export default function PurchaseItemsPage(): JSX.Element {
     <ReportShell
       title="Purchase Items"
       subtitle={meta}
-      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Purchases' }]}
       toolbar={toolbar}
       filters={<ReportFilterBar defs={filterDefs} filters={filters} />}
       error={q.error}

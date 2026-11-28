@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/purchasing/hooks/useUpdatePurchaseOrder.ts
 //
-// Session 46 — R4: edit a PO header + line items via update_purchase_order_v2.
+// Session 46 — R4: edit a PO header + line items via update_purchase_order_v3.
 // Gated server-side by purchasing.po.edit. The PO is LOCKED (D6) as soon as the
 // first GRN OR the first payment exists, or once it leaves 'pending' — the RPC
 // raises po_locked (P0001), surfaced here as a friendly message.
@@ -110,7 +110,7 @@ export function useUpdatePurchaseOrder() {
       if (args.deliveryFee !== undefined)  patch.delivery_fee  = args.deliveryFee;
       if (args.items !== undefined)        patch.items         = args.items;
 
-      const { data, error } = await supabase.rpc('update_purchase_order_v2', {
+      const { data, error } = await supabase.rpc('update_purchase_order_v3', {
         p_po_id: args.poId,
         p_patch: patch as unknown as Json,
       });

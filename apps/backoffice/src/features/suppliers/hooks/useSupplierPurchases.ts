@@ -21,6 +21,7 @@ export interface SupplierPOListRow extends SupplierPORow {
 }
 
 export const SUPPLIER_PURCHASES_QUERY_KEY = ['supplier-purchases'] as const;
+export const SUPPLIER_PURCHASES_LIMIT = 1000;
 
 export function useSupplierPurchases(supplierId: string | undefined) {
   return useQuery<SupplierPOListRow[]>({
@@ -35,7 +36,11 @@ export function useSupplierPurchases(supplierId: string | undefined) {
         .eq('supplier_id', supplierId)
         .is('deleted_at', null)
         .order('order_date', { ascending: false })
-        .limit(100);
+        // 1 000 = le plafond de PostgREST. À 100, l'onglet, ses filtres et les
+        // tuiles « Total Spent » / « Purchase Orders » ignoraient en silence
+        // les bons plus anciens ; l'onglet dit maintenant quand le plafond est
+        // atteint (SUPPLIER_PURCHASES_LIMIT).
+        .limit(SUPPLIER_PURCHASES_LIMIT);
       if (error) throw error;
       type RowWithItems = SupplierPORow & {
         purchase_order_items: { id: string }[] | null;

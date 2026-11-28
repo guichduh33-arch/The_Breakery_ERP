@@ -196,14 +196,17 @@ describe('SupplierDetailPage (Phase 5.A)', () => {
     await waitFor(() => expect(tile).toHaveTextContent(formatCurrency(1_500_000)));
   });
 
-  it('derives each row payment badge from the ledger, not from payment terms', () => {
+  it('derives each row payment badge from the ledger, whatever the reception', () => {
     currentPerms = new Set(['suppliers.read', 'suppliers.update']);
-    renderPage();
-    // Bon reçu sans paiement → unpaid ; bon encore en attente → pas de dette,
-    // comme la tuile et le rapport : « awaiting receipt ».
-    expect(screen.getAllByText('unpaid')).toHaveLength(1);
-    expect(screen.getAllByText('awaiting receipt')).toHaveLength(1);
-    expect(screen.queryByText('paid')).not.toBeInTheDocument();
+    const { container } = renderPage();
+    // Harmonisation 2026-11-28 : la pastille est celle de la fiche du bon —
+    // le statut de paiement se lit dans le grand livre, reçu ou non. Les deux
+    // bons du mock n'ont aucun paiement : tous deux « Unpaid ». L'ancien
+    // « awaiting receipt » donnait au même bon deux statuts selon la page.
+    const statuses = [...container.querySelectorAll('[data-payment-status]')]
+      .map((el) => el.getAttribute('data-payment-status'));
+    expect(statuses).toEqual(['unpaid', 'unpaid']);
+    expect(screen.queryByText('awaiting receipt')).not.toBeInTheDocument();
   });
 
   it('hides Edit / Deactivate when the user lacks suppliers.update', () => {

@@ -1,6 +1,13 @@
 // apps/backoffice/src/features/purchasing/components/POStatusBadge.tsx
 //
-// Session 13 — Phase 3.A — coloured status pill for the PO list & detail.
+// La pastille de RÉCEPTION d'un bon de commande — l'unique rendu du statut,
+// partout où un bon apparaît (liste, fiche, fournisseur, article, rapports).
+//
+// Le statut d'un bon ne dit QUE la réception : un bon « Received » peut n'être
+// pas payé, un bon « To receive » peut être déjà payé. Le paiement a sa propre
+// pastille (`PoPaymentBadge`). D'où les libellés : « Pending » laissait croire à
+// une attente de validation ou de paiement ; « To receive » et « Partly
+// received » nomment ce qu'on attend. Les valeurs Postgres ne changent pas.
 
 import type { JSX } from 'react';
 import type { POStatus } from '../hooks/usePurchaseOrdersList.js';
@@ -13,21 +20,30 @@ const STYLES: Record<POStatus, string> = {
   cancelled: 'bg-danger-soft text-danger border-danger',
 };
 
-const LABELS: Record<POStatus, string> = {
+export const PO_STATUS_LABELS: Record<POStatus, string> = {
   draft:     'Draft',
-  pending:   'Pending',
-  partial:   'Partial',
+  pending:   'To receive',
+  partial:   'Partly received',
   received:  'Received',
   cancelled: 'Cancelled',
 };
 
-export function POStatusBadge({ status }: { status: POStatus }): JSX.Element {
+function isPoStatus(s: string): s is POStatus {
+  return Object.prototype.hasOwnProperty.call(STYLES, s);
+}
+
+// `string` : le statut arrive tel que PostgREST le rend ; `isPoStatus` le
+// rétrécit avant de lire les tables.
+export function POStatusBadge({ status }: { status: string }): JSX.Element {
+  // Une valeur inconnue s'affiche telle quelle, en neutre : mieux qu'un écran
+  // blanc si la base gagne un statut avant le client.
+  const known = isPoStatus(status);
   return (
     <span
       data-status={status}
-      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs uppercase tracking-widest ${STYLES[status]}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-sm border px-2 py-0.5 text-xs uppercase tracking-widest ${known ? STYLES[status] : STYLES.draft}`}
     >
-      {LABELS[status]}
+      {known ? PO_STATUS_LABELS[status] : status}
     </span>
   );
 }

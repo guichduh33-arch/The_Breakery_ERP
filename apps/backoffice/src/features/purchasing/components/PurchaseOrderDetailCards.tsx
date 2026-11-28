@@ -1,11 +1,11 @@
 import type { JSX } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
-import { Badge } from "@breakery/ui";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/BackofficeUi.js";
 import { SectionLabel } from "@/components/SectionLabel.js";
-import { formatCurrency, formatDateShortWita, formatQuantity } from "@breakery/utils";
+import { formatCurrency, formatQuantity } from "@breakery/utils";
 import type { PurchaseOrderDetail } from "../hooks/usePurchaseOrderDetail.js";
-import type { PoPaymentStatus } from "../hooks/usePoPayments.js";
+import { formatPoDay } from "../poVocabulary.js";
+import { FOCUS_RING } from "@/components/focusRing.js";
 import { GoodsReceiptNotesCard } from "./GoodsReceiptNotesCard.js";
 
 /** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data
@@ -20,8 +20,9 @@ export function fmtIdr(amount: number | string | null): string {
 // Un jour du bon de commande (commande, livraison prévue, réception, jalon) —
 // la colonne ISO brute (`2026-09-05`) était la huitième forme de date que
 // `dates.ts` déclare de trop. Absent = tiret, comme les montants.
+// Délègue au vocabulaire commun des achats (année affichée hors année courante).
 export function fmtDay(d: string | null | undefined): string {
-  return d === null || d === undefined || d === '' ? '—' : formatDateShortWita(d);
+  return formatPoDay(d);
 }
 
 // Quantités commandées / reçues. L'unité occupe sa PROPRE colonne dans la
@@ -38,11 +39,17 @@ export function PurchaseOrderContent({
   return <>
           <Card variant="default" padding="md" className="space-y-4">
             <SectionLabel as="h2" size="sm" className="text-gold">Order Information</SectionLabel>
+            {/* Les dates du bon vivent dans la carte « Key dates » : ici, elles
+                se répétaient sous trois noms différents de ceux de la liste. */}
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Supplier"          value={po.suppliers?.name ?? '—'} mono />
-              <Field label="Order date"        value={fmtDay(po.order_date)} />
-              <Field label="Expected delivery" value={fmtDay(po.expected_date)} />
-              <Field label="Actual delivery"   value={fmtDay(po.received_date)} />
+              <div className="rounded-md bg-surface-inert px-3 py-2">
+                <dt className="text-sm font-medium text-text-secondary">Supplier</dt>
+                <dd className="mt-0.5 text-sm">
+                  <Link to={`/backoffice/suppliers/${po.supplier_id}`} className={`text-gold hover:underline ${FOCUS_RING}`}>
+                    {po.suppliers?.name ?? '—'}
+                  </Link>
+                </dd>
+              </div>
               <Field label="Payment terms"     value={po.payment_terms === 'cash' ? 'Cash on delivery' : 'Credit'} />
               {po.cancel_reason !== null && po.cancel_reason !== '' && (
                 <Field label="Cancel reason"   value={po.cancel_reason} />
@@ -113,15 +120,9 @@ export function PurchaseOrderContent({
   </>;
 }
 
-export function PaymentStatusBadge({ status }: { status: PoPaymentStatus }): JSX.Element {
-  if (status === 'paid') {
-    return <Badge variant="outline" className="border-success text-success">PAID</Badge>;
-  }
-  if (status === 'partial') {
-    return <Badge variant="outline" className="border-border-gold text-gold">PARTIAL</Badge>;
-  }
-  return <Badge variant="outline" className="border-danger text-danger">UNPAID</Badge>;
-}
+// La pastille de paiement vit dans `PoPaymentBadge.tsx`, partagée avec la fiche
+// fournisseur ; ré-exportée ici pour les appelants existants.
+export { PaymentStatusBadge } from "./PoPaymentBadge.js";
 
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {
   return (
@@ -138,32 +139,5 @@ export function SummaryRow({ label, value }: { label: string; value: string }): 
       <dt>{label}</dt>
       <dd className="font-data tabular-nums text-text-primary">{value}</dd>
     </div>
-  );
-}
-
-export function TimelineItem({
-  reached,
-  cancelled = false,
-  label,
-  date,
-}: {
-  reached: boolean;
-  cancelled?: boolean;
-  label: string;
-  date: string;
-}): JSX.Element {
-  return (
-    <li className="flex items-center gap-2">
-      {cancelled ? (
-        <XCircle className="h-3.5 w-3.5 text-danger" aria-hidden />
-      ) : (
-        <CheckCircle2
-          className={`h-3.5 w-3.5 ${reached ? 'text-success' : 'text-text-muted'}`}
-          aria-hidden
-        />
-      )}
-      <span className={reached ? 'text-text-primary' : 'text-text-muted'}>{label}</span>
-      <span className="ml-auto text-text-muted tabular-nums">{date}</span>
-    </li>
   );
 }

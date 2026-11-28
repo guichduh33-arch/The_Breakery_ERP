@@ -182,7 +182,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
     <ReportShell
       title="Purchase by Supplier"
       subtitle={`${periodLabel(served.start, served.end)} · purchase volume, value and lead time per supplier`}
-      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Purchases' }]}
       toolbar={toolbar}
       error={current.error}
       isEmpty={!current.isLoading && data !== undefined && rows.length === 0}

@@ -8,8 +8,10 @@ import {
   Pencil,
   Printer,
   Truck,
+  Undo2,
   XCircle,
 } from 'lucide-react';
+import { CorrectOrderDialog } from '@/features/purchasing/components/CorrectOrderDialog.js';
 import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -33,7 +35,9 @@ import { ReceiveDialog } from '@/features/purchasing/components/ReceiveDialog.js
 import { CancelDialog } from '@/features/purchasing/components/CancelDialog.js';
 import { RecordPaymentDialog } from '@/features/purchasing/components/RecordPaymentDialog.js';
 import { POPrintView } from '@/features/purchasing/components/POPrintView.js';
-import { PurchaseOrderContent, SummaryRow, TimelineItem, fmtDay, fmtIdr } from '@/features/purchasing/components/PurchaseOrderDetailCards.js';
+import { PurchaseOrderContent, SummaryRow, fmtIdr } from '@/features/purchasing/components/PurchaseOrderDetailCards.js';
+import { PoKeyDatesCard } from '@/features/purchasing/components/PoKeyDatesCard.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { PoPaymentsCard } from '@/features/purchasing/components/PoPaymentsCard.js';
 import { PoActivityCard } from '@/features/purchasing/components/PoActivityCard.js';
 import type { PoPaymentMethod } from '@/features/purchasing/hooks/useRecordPoPayment.js';
@@ -94,6 +98,14 @@ function PoDetailShell({ children }: { children: JSX.Element }): JSX.Element {
     </div>
   );
 }
+/** Pourquoi « Edit » est grisé — la raison réelle, pas « reçu ou payé » pour tout. */
+function editLockReason(status: POStatus, hasGrn: boolean, hasPayments: boolean): string {
+  if (status === 'cancelled') return 'Locked — this order is cancelled.';
+  if (hasGrn) return 'Locked — goods were received. The super admin can use “Correct order”.';
+  if (hasPayments) return 'Locked — a payment is recorded. The super admin can use “Correct order”.';
+  return 'Locked — only orders still to receive can be edited.';
+}
+
 export default function PurchaseOrderDetailPage(): JSX.Element {
   const { id }        = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -102,6 +114,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canCancel     = hasPermission('purchasing.po.cancel');
   const canPay        = hasPermission('purchasing.po.pay');
   const canEdit       = hasPermission('purchasing.po.edit');
+  // ADR-050 — la correction guidée est réservée au super admin ; le serveur
+  // re-vérifie le rôle et le PIN.
+  const isOwner       = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN');
+  const [showCorrect, setShowCorrect] = useState(false);
 
   const detail   = usePurchaseOrderDetail(id);
   const receive  = useReceivePurchaseOrder();
@@ -186,8 +202,19 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const invoiceBlocked = missingInvoice || invoiceBusy || pendingInvoice;
   const receiveInvoiceBlocked = po.payment_terms === 'cash' && invoiceBlocked;
 
-  const hasGrn        = (po.goods_receipt_notes?.length ?? 0) > 0;
-  const editable      = canEdit && status === 'pending' && !hasGrn && !hasPayments;
+  // Les mêmes règles que le serveur (`update_purchase_order` v3) : une réception
+  // annulée et un paiement contre-passé ne verrouillent plus le bon — c'est ce
+  // qui rend l'édition possible après une correction guidée (ADR-050).
+  const hasGrn        = (po.goods_receipt_notes ?? []).some((g) => g.cancelled_at === null);
+  const reversedIds   = new Set((payments.data?.payments ?? []).flatMap((p) => (p.reversal_of_id !== null ? [p.reversal_of_id] : [])));
+  const hasLivePay    = (payments.data?.payments ?? []).some((p) => p.reversal_of_id === null && !reversedIds.has(p.id));
+  // Tant que les paiements chargent, on ne sait pas : pas d'édition offerte.
+  const editable      = canEdit && status === 'pending' && !hasGrn && !hasLivePay
+                        && payments.data !== undefined;
+  const livePayments  = (payments.data?.payments ?? []).filter((p) => p.reversal_of_id === null && !reversedIds.has(p.id));
+  const activeGrns    = (po.goods_receipt_notes ?? []).filter((g) => g.cancelled_at === null);
+  const canCorrect    = isOwner && status !== 'cancelled' && !po.is_historical_import
+                        && payments.data !== undefined && (hasGrn || hasLivePay);
 
   async function handleReceive(args: {
     items: { poItemId: string; receivedQuantity: number }[];
@@ -320,7 +347,11 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <h1 className={`${PAGE_TITLE_CLS} tabular-nums`}>{po.po_number}</h1>
             <POStatusBadge status={status} />
           </div>
-          <p className="mt-1 text-sm text-text-secondary">{po.suppliers?.name ?? '—'}</p>
+          <p className="mt-1 text-sm">
+            <Link to={`/backoffice/suppliers/${po.supplier_id}`} className={`text-text-secondary hover:text-text-primary hover:underline ${FOCUS_RING}`}>
+              {po.suppliers?.name ?? '—'}
+            </Link>
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setShowPrint(true)}>
@@ -340,7 +371,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel
             </button>
           )}
-          {/* Session 46 — Edit is wired to update_purchase_order_v2, gated by
+          {/* Session 46 — Edit is wired to update_purchase_order_v3, gated by
               purchasing.po.edit and locked once received or paid (D6). */}
           {canEdit && (
             <button
@@ -348,9 +379,15 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               className={TOOLBAR_BTN_SECONDARY}
               onClick={openEdit}
               disabled={!editable}
-              title={editable ? undefined : 'Locked — PO already received or paid'}
+              title={editable ? undefined : editLockReason(status, hasGrn, hasLivePay)}
             >
               <Pencil className={TOOLBAR_ICON} aria-hidden /> Edit
+            </button>
+          )}
+          {canCorrect && (
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setShowCorrect(true)}
+              data-testid="po-correct-order">
+              <Undo2 className={TOOLBAR_ICON} aria-hidden /> Correct order
             </button>
           )}
         </div>
@@ -359,8 +396,12 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          <PoInvoicePanel po={po} hasPayments={hasPayments} fullyPaid={paymentStatus === 'paid'}
-            paymentsKnown={payments.data !== undefined} onBusyChange={setInvoiceBusy} />
+          {/* Un bon annulé sans facture ne demande plus d'en joindre une « avant
+              de payer » : aucun paiement ne peut plus y être saisi. */}
+          {(status !== 'cancelled' || (po.invoice_path ?? '') !== '') && (
+            <PoInvoicePanel po={po} hasPayments={hasPayments} fullyPaid={paymentStatus === 'paid'}
+              paymentsKnown={payments.data !== undefined} onBusyChange={setInvoiceBusy} />
+          )}
           <PurchaseOrderContent po={po} canCancelReceipt={canCancel} />
           <PoActivityCard poId={po.id} grnIds={(po.goods_receipt_notes ?? []).map((g) => g.id)} />
         </div>
@@ -394,18 +435,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             onRecordPayment={() => { setPayError(undefined); setShowPay(true); }}
           />
 
-          <Card variant="default" padding="md" className="space-y-2">
-            <SectionLabel as="h2" size="sm" className="text-gold">Status Timeline</SectionLabel>
-            <ul className="space-y-1.5 text-xs">
-              <TimelineItem reached={true} label="Drafted" date={fmtDay(po.created_at)} />
-              <TimelineItem reached={status !== 'draft'} label="Confirmed / Sent" date={fmtDay(po.order_date)} />
-              <TimelineItem reached={status === 'partial' || status === 'received'} label="Receiving" date={fmtDay(po.received_date ?? po.expected_date)} />
-              <TimelineItem reached={status === 'received'} label="Received" date={fmtDay(po.received_date)} />
-              {status === 'cancelled' && (
-                <TimelineItem reached={true} cancelled label="Cancelled" date={fmtDay(po.cancelled_at)} />
-              )}
-            </ul>
-          </Card>
+          <PoKeyDatesCard po={po} payments={payments.data?.payments} paymentStatus={paymentStatus} />
         </div>
       </div>
 
@@ -418,6 +448,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           invoiceBlocked={receiveInvoiceBlocked}
           {...(receiveError !== undefined ? { error: receiveError } : {})}
         />
+      )}
+      {showCorrect && (
+        <CorrectOrderDialog poId={po.id} poNumber={po.po_number} payments={livePayments}
+          receipts={activeGrns} onClose={() => setShowCorrect(false)} />
       )}
       {showCancel && (
         <CancelDialog
