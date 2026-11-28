@@ -184,15 +184,21 @@ BEGIN
   --   passerait à 13:00 et échouerait au nightly (20:16 UTC = 04:16 à Makassar).
   SELECT MIN((e->>'hour')::int), MAX((e->>'hour')::int) INTO v_h_min, v_h_max
     FROM jsonb_array_elements(v_after->'hourly_sales') e;
+  --   o4 (B2B impayée) entre aussi dans la série, à l'heure de sa commande
+  --   (ADR-049) : seedée à `now()`, elle tombe dans la fenêtre en journée. L'heure
+  --   de chaque commande suit donc la même date de vente que T05.
   INSERT INTO _r SELECT 'T11_hourly_covers_business_window_only',
     v_hour_a - v_hour_b = (
       SELECT COALESCE(SUM(o.total), 0) FROM orders o
-       WHERE o.order_number IN ('#S63O1', '#S63O2')
-         AND EXTRACT(HOUR FROM (o.paid_at AT TIME ZONE v_tz))::int BETWEEN v_h_min AND v_h_max);
+       WHERE o.order_number IN ('#S63O1', '#S63O2', '#S63O4')
+         AND EXTRACT(HOUR FROM ((CASE WHEN o.order_type = 'b2b' THEN o.created_at
+                                      ELSE o.paid_at END) AT TIME ZONE v_tz))::int
+             BETWEEN v_h_min AND v_h_max);
   -- T11b : et la fenêtre exclut bien quelque chose, sinon T11 se vérifierait
-  --   toute seule le jour où la série passerait à 24 seaux sans qu'on le voie.
+  --   toute seule le jour où la série passerait à 24 seaux sans qu'on le voie :
+  --   o2 (01:00) reste hors du graphe, le delta n'atteint jamais o1+o2+o4.
   INSERT INTO _r SELECT 'T11b_off_hours_order_excluded_from_hourly',
-    NOT (1 BETWEEN v_h_min AND v_h_max) AND v_hour_a - v_hour_b < 80000;
+    NOT (1 BETWEEN v_h_min AND v_h_max) AND v_hour_a - v_hour_b < 168000;
   INSERT INTO _r SELECT 'T12_payment_cash_delta_50k', v_cash_a - v_cash_b = 50000;
 
   -- T13 : sans reports.read -> 42501
